@@ -1,0 +1,101 @@
+formulas:
+  display_title: 'if(title, title, file.name)'
+filters:
+  and:
+    - file.ext == "md"
+    - type == "[[task]]"
+    - not:
+        - file.inFolder("__templates__")
+        - file.inFolder(".trash")
+        - file.inFolder(".obsidian")
+properties:
+  file.name:
+    displayName: Note
+  formula.display_title:
+    displayName: Title
+  id:
+    displayName: ID
+  status:
+    displayName: Status
+  phase:
+    displayName: Phase
+  owner:
+    displayName: Owner
+  parent:
+    displayName: Parent
+  effort:
+    displayName: Effort
+  due:
+    displayName: Due
+  file.mtime:
+    displayName: Updated
+views:
+  - type: table
+    name: Active
+    filters: 'status != "done"'
+    order:
+      - file.name
+      - formula.display_title
+      - id
+      - status
+      - phase
+      - owner
+      - parent
+      - effort
+      - due
+      - file.mtime
+  - type: table
+    name: Done
+    filters: 'status == "done"'
+    order:
+      - file.name
+      - formula.display_title
+      - id
+      - status
+      - phase
+      - owner
+      - parent
+      - effort
+      - due
+      - file.mtime
+  - type: cards
+    name: Board
+    groupBy:
+      property: status
+      direction: ASC
+    order:
+      - file.name
+      - formula.display_title
+      - id
+      - phase
+      - owner
+      - parent
+      - effort
+  - type: cards
+    name: By Phase
+    groupBy:
+      property: phase
+      direction: ASC
+    order:
+      - file.name
+      - formula.display_title
+      - id
+      - status
+      - owner
+      - parent
+  - type: cards
+    name: Backlog
+    filters: 'status == "backlog"'
+  - type: cards
+    name: Next
+    filters: 'status == "next"'
+  - type: cards
+    name: Doing
+    filters: 'status == "doing"'
+  - type: cards
+    name: Blocked
+    filters: 'status == "blocked"'
+  - type: cards
+    name: Done cards
+    filters: 'status == "done"'
+

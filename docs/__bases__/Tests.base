@@ -1,0 +1,90 @@
+formulas:
+  display_title: 'if(title, title, file.name)'
+filters:
+  and:
+    - file.ext == "md"
+    - type == "[[test]]"
+    - not:
+        - file.inFolder("__templates__")
+        - file.inFolder(".trash")
+        - file.inFolder(".obsidian")
+properties:
+  file.name:
+    displayName: Note
+  formula.display_title:
+    displayName: Title
+  id:
+    displayName: ID
+  status:
+    displayName: Status
+  scope:
+    displayName: Scope
+  kind:
+    displayName: Kind
+  level:
+    displayName: Level
+  entrypoint:
+    displayName: Entrypoint
+  owner:
+    displayName: Owner
+  last_run:
+    displayName: Last run
+  file.mtime:
+    displayName: Updated
+views:
+  - type: table
+    name: Active
+    filters: 'status != "deprecated"'
+    order:
+      - file.name
+      - formula.display_title
+      - id
+      - status
+      - scope
+      - kind
+      - level
+      - entrypoint
+      - owner
+      - last_run
+      - file.mtime
+  - type: table
+    name: Passing
+    filters: 'status == "passing"'
+    order:
+      - file.name
+      - formula.display_title
+      - id
+      - scope
+      - kind
+      - level
+      - entrypoint
+      - owner
+      - last_run
+      - file.mtime
+  - type: table
+    name: Failing
+    filters: 'status == "failing"'
+    order:
+      - file.name
+      - formula.display_title
+      - id
+      - scope
+      - kind
+      - level
+      - entrypoint
+      - owner
+      - last_run
+      - file.mtime
+  - type: cards
+    name: Board
+    groupBy:
+      property: status
+      direction: ASC
+    order:
+      - file.name
+      - formula.display_title
+      - id
+      - scope
+      - kind
+      - level
+      - owner

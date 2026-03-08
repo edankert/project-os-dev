@@ -1,0 +1,57 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "HC-001 Document-First Gate. Read SNAPSHOT.yaml and check the focus section. If both focus.task and focus.issue are empty strings, examine the file being edited from the hook input ($ARGUMENTS). If the file path contains 'docs/', 'tools/', or matches SNAPSHOT.yaml, CLAUDE.md, CONTEXT.md, README.md, or AGENTS.md — respond {\"ok\": true}. For any other file, respond {\"ok\": false, \"reason\": \"Document-first rule (HC-001): No active task or issue in SNAPSHOT.yaml focus. Create or update the relevant task/issue before editing code files.\"}. If focus.task or focus.issue is non-empty, respond {\"ok\": true}. If SNAPSHOT.yaml does not exist, respond {\"ok\": true}.",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "prompt",
+            "prompt": "HC-003 Verification Gate. You are reviewing a file edit. The edit details are: $ARGUMENTS\n\nDoes this edit set a status to 'done', 'closed', or 'verified' (in SNAPSHOT.yaml item statuses or markdown frontmatter)? Only respond {\"ok\": false, \"reason\": \"...\"} if status is being set TO done/closed/verified. In that case, the reason should remind to verify all linked TST-* notes are status: passing before finalizing (HC-003). If the edit does NOT transition a status to done/closed/verified, respond {\"ok\": true}.",
+            "timeout": 10
+          },
+          {
+            "type": "prompt",
+            "prompt": "HC-004 Phase Alignment. You are reviewing a file edit. The edit details are: $ARGUMENTS\n\nDoes this edit set a task status to 'doing' (in SNAPSHOT.yaml or markdown frontmatter)? Only respond {\"ok\": false, \"reason\": \"...\"} if a task is being transitioned TO doing. In that case, the reason should remind to verify the task's phase aligns with focus.phase in SNAPSHOT.yaml (HC-004). If the edit does NOT transition a task to doing, respond {\"ok\": true}.",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "tools/adapters/claude-code/hooks/risk-scan-trigger.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "tools/adapters/claude-code/hooks/close-out-check.sh"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "tools/adapters/claude-code/hooks/snapshot-freshness.sh"
+          }
+        ]
+      }
+    ]
+  }
+}

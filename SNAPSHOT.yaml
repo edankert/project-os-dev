@@ -1,0 +1,170 @@
+version: 1
+updated: "2026-03-08T23:00Z"
+
+template:
+  replace_me: false
+
+project:
+  name: "project-os-dev"
+  summary: "Development tracking for the project-os template — features, requirements, decisions, and tasks for evolving the documentation system."
+  repo_root: "."
+
+retention:
+  policy: active-and-recent
+  recent_changes_max: 25
+  keep_closed_issues_in_snapshot: false
+  keep_done_tasks_in_snapshot: false
+  keep_done_features_in_snapshot: false
+  note: "Snapshot keeps active work + recent changes for handoff; notes are the archive."
+
+docs_system:
+  source_of_truth: SNAPSHOT.yaml
+  instructions:
+    - tools/instructions/LIFECYCLE.md
+  references:
+    - docs/PHASES.md
+
+counters:
+  ADR: 4
+  CHG:
+    last_date: 0
+  FEAT: 6
+  ISS: 1
+  REL: 0
+  REQ: 9
+  RISK: 0
+  TASK: 22
+  TST: 0
+  WF: 0
+
+focus:
+  phase: ""
+  feature: ""
+  task: ""
+  issue: ""
+
+items:
+  features: {}
+  # Pruned: FEAT-0001 through FEAT-0006 (all done). Notes preserved under docs/features/.
+
+  tasks: {}
+  # Pruned: TASK-0001 through TASK-0022 (all done). Notes preserved under docs/features/*/plan/tasks/.
+
+  issues: {}
+  # Pruned: ISS-0001 (closed). Note preserved under docs/issues/.
+
+  requirements:
+    REQ-0001:
+      file: docs/requirements/REQ-0001-Tool-Agnostic-Rules.md
+      title: "project-os rules must be maintainable in one place and deliverable to any LLM tool"
+      status: approved
+      owner: user:edwin
+      priority: high
+      implements: [FEAT-0001]
+    REQ-0002:
+      file: docs/requirements/REQ-0002-Native-Instruction-Format.md
+      title: "Adapters must deliver rules in each tool's native instruction format"
+      status: approved
+      owner: user:edwin
+      priority: high
+      implements: [FEAT-0001]
+    REQ-0003:
+      file: docs/requirements/REQ-0003-Hook-Contracts.md
+      title: "Enforcement points must be defined as tool-agnostic contracts"
+      status: approved
+      owner: user:edwin
+      priority: high
+      implements: [FEAT-0002]
+    REQ-0004:
+      file: docs/requirements/REQ-0004-Tool-Specific-Hook-Implementations.md
+      title: "Hook contracts must have runnable implementations for supported tools"
+      status: approved
+      owner: user:edwin
+      priority: medium
+      implements: [FEAT-0002]
+    REQ-0005:
+      file: docs/requirements/REQ-0005-Orchestration-Delegation.md
+      title: "project-os must delegate agent coordination to native tool orchestration"
+      status: approved
+      owner: user:edwin
+      priority: high
+      implements: [FEAT-0003, FEAT-0004]
+    REQ-0006:
+      file: docs/requirements/REQ-0006-Verification-Gating.md
+      title: "Verification gating must block status transitions when linked tests are not passing"
+      status: approved
+      owner: user:edwin
+      priority: high
+      implements: [FEAT-0005]
+    REQ-0007:
+      file: docs/requirements/REQ-0007-Mandatory-Risk-Scans.md
+      title: "Risk scans must be mandatory with explicit trigger checklist"
+      status: approved
+      owner: user:edwin
+      priority: high
+      implements: [FEAT-0005]
+    REQ-0008:
+      file: docs/requirements/REQ-0008-Mandatory-Impact-Analysis.md
+      title: "Impact analysis must run as mandatory preflight for new requirements"
+      status: approved
+      owner: user:edwin
+      priority: high
+      implements: [FEAT-0005]
+    REQ-0009:
+      file: docs/requirements/REQ-0009-Release-Tracking.md
+      title: "Releases must be tracked as first-class notes with traceability to features, changes, and tests"
+      status: approved
+      owner: user:edwin
+      priority: medium
+      implements: [FEAT-0006]
+
+  risks: {}
+  tests: {}
+  releases: {}
+  workflows: {}
+  changes: {}
+
+  decisions:
+    ADR-0001:
+      file: docs/decisions/ADR-0001-Tool-Adapter-Architecture.md
+      title: "Use tool-specific adapters instead of a monolithic CONTEXT.md"
+      status: accepted
+      owner: user:edwin
+      decision: "Deliver project-os rules via tool-specific adapters rather than a single CONTEXT.md"
+      related: [FEAT-0001, REQ-0001, REQ-0002]
+    ADR-0002:
+      file: docs/decisions/ADR-0002-Hook-Contract-Pattern.md
+      title: "Define hook contracts as tool-agnostic specs with tool-specific implementations"
+      status: accepted
+      owner: user:edwin
+      decision: "Separate hook contract definitions (what to enforce) from implementations (how to enforce) using an adapter pattern"
+      related: [FEAT-0002, REQ-0003, REQ-0004]
+    ADR-0003:
+      file: docs/decisions/ADR-0003-Delegate-Orchestration.md
+      title: "Delegate agent coordination to native tool orchestration"
+      status: accepted
+      owner: user:edwin
+      decision: "Remove session/claimed_by orchestration from SNAPSHOT.yaml and let native tools (Agent Teams, Codex parallel) handle multi-agent coordination"
+      related: [FEAT-0003, FEAT-0004, REQ-0005]
+    ADR-0004:
+      file: docs/decisions/ADR-0004-Mandatory-Skill-Steps.md
+      title: "Shift from optional to mandatory skill steps"
+      status: accepted
+      owner: user:edwin
+      decision: "Make risk scans, verification gating, and impact analysis mandatory steps with explicit trigger checklists"
+      related: [FEAT-0005, REQ-0006, REQ-0007, REQ-0008]
+
+metrics:
+  counts:
+    features_total: 6
+    features_done: 6
+    tasks_total: 22
+    tasks_done: 22
+    tests_total: 0
+    tests_passing: 0
+    tests_failing: 0
+    issues_open: 0
+    issues_triage: 0
+    risks_open: 0
+    releases_total: 0
+    decisions_total: 4

@@ -1,0 +1,104 @@
+formulas:
+  display_title: 'if(title, title, file.name)'
+filters:
+  and:
+    - file.ext == "md"
+    - type == "[[issue]]"
+    - not:
+        - file.inFolder("__templates__")
+        - file.inFolder(".trash")
+        - file.inFolder(".obsidian")
+properties:
+  file.name:
+    displayName: Note
+  formula.display_title:
+    displayName: Title
+  id:
+    displayName: ID
+  status:
+    displayName: Status
+  phase:
+    displayName: Phase
+  severity:
+    displayName: Severity
+  component:
+    displayName: Component
+  owner:
+    displayName: Owner
+  file.mtime:
+    displayName: Updated
+views:
+  - type: table
+    name: Active
+    filters:
+      and:
+        - 'status != "fixed"'
+        - 'status != "closed"'
+    order:
+      - file.name
+      - formula.display_title
+      - id
+      - status
+      - phase
+      - severity
+      - component
+      - owner
+      - file.mtime
+  - type: table
+    name: Completed
+    filters:
+      or:
+        - 'status == "fixed"'
+        - 'status == "closed"'
+    order:
+      - file.name
+      - formula.display_title
+      - id
+      - status
+      - phase
+      - severity
+      - component
+      - owner
+      - file.mtime
+  - type: cards
+    name: Board
+    groupBy:
+      property: status
+      direction: ASC
+    order:
+      - file.name
+      - formula.display_title
+      - id
+      - phase
+      - severity
+      - component
+  - type: cards
+    name: By Phase
+    groupBy:
+      property: phase
+      direction: ASC
+    order:
+      - file.name
+      - formula.display_title
+      - id
+      - status
+      - severity
+  - type: cards
+    name: Triage
+    filters: 'status == "triage"'
+  - type: cards
+    name: Open
+    filters: 'status == "open"'
+  - type: cards
+    name: In-progress
+    filters: 'status == "in-progress"'
+  - type: cards
+    name: Blocked
+    filters: 'status == "blocked"'
+  - type: cards
+    name: Fixed
+    filters: 'status == "fixed"'
+  - type: cards
+    name: Closed
+    filters: 'status == "closed"'
+

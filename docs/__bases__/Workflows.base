@@ -1,0 +1,44 @@
+formulas:
+  display_title: 'if(title, title, file.name)'
+filters:
+  and:
+    - file.ext == "md"
+    - type == "[[workflow]]"
+    - not:
+        - file.inFolder("__templates__")
+        - file.inFolder(".trash")
+        - file.inFolder(".obsidian")
+properties:
+  file.name:
+    displayName: Note
+  formula.display_title:
+    displayName: Title
+  id:
+    displayName: ID
+  status:
+    displayName: Status
+  owner:
+    displayName: Owner
+  file.mtime:
+    displayName: Updated
+views:
+  - type: table
+    name: All
+    order:
+      - file.name
+      - formula.display_title
+      - id
+      - status
+      - owner
+      - file.mtime
+  - type: cards
+    name: Board
+    groupBy:
+      property: status
+      direction: ASC
+    order:
+      - file.name
+      - formula.display_title
+      - id
+      - owner
+
