@@ -2,9 +2,11 @@
 # HC-006: Close-out Check
 # Claude Code Stop hook
 #
-# Checks if SNAPSHOT.yaml focus is still set (indicating work in progress
-# that wasn't closed out). If focus is set but stop_hook_active is true
-# (we already forced one continuation), allow stopping to prevent loops.
+# Checks that (a) the docs validator passes (SNAPSHOT<->notes sync, link graph,
+# verification invariant) and (b) SNAPSHOT.yaml focus is not still set
+# (indicating work in progress that wasn't closed out). If a check fails but
+# stop_hook_active is true (we already forced one continuation), allow stopping
+# to prevent loops.
 #
 # Exit 0 = allow stop (no output or JSON output)
 
@@ -16,9 +18,26 @@ if [ "$STOP_HOOK_ACTIVE" = "true" ]; then
   exit 0
 fi
 
-SNAPSHOT="SNAPSHOT.yaml"
+PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+SNAPSHOT="$PROJECT_DIR/SNAPSHOT.yaml"
 if [ ! -f "$SNAPSHOT" ]; then
   exit 0
+fi
+
+# Mechanical validation first: block stop while the docs invariants are broken (HC-007).
+VALIDATOR="$PROJECT_DIR/tools/scripts/validate-docs.sh"
+if [ -x "$VALIDATOR" ]; then
+  VALIDATION_OUTPUT=$("$VALIDATOR" --repo-root "$PROJECT_DIR" --quiet 2>&1)
+  if [ $? -eq 1 ]; then
+    SUMMARY=$(echo "$VALIDATION_OUTPUT" | head -10 | tr '\n' ' ' | sed 's/"/\\"/g')
+    cat <<EOF
+{
+  "decision": "block",
+  "reason": "Docs validation failed (HC-007): $SUMMARY -- Fix the snapshot/note drift before finishing (run tools/scripts/validate-docs.sh for the full report)."
+}
+EOF
+    exit 0
+  fi
 fi
 
 # Check if focus.task or focus.issue is still set (work in progress)

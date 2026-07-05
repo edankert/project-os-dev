@@ -4,7 +4,7 @@ id: TEMPLATES-SCHEMAS
 status: active
 owner: team:docs
 created: 2026-01-27
-updated: 2026-01-27
+updated: 2026-05-08
 tags: [templates, schema]
 ---
 
@@ -20,16 +20,13 @@ Conventions (naming, linking, property rules): `../../tools/instructions/OBSIDIA
   - Used by tools/automation to classify notes; the snapshot references these types.
 - (required) `id` (string): Stable identifier (should match the filename prefix).
   - Used for traceability and for `SNAPSHOT.yaml` keys.
-- (recommended) `title` (string): Human-friendly title for dashboards and summaries.
+- (recommended) `title` (string): Human-friendly title for views and summaries.
   - Keep short; no need to repeat the ID.
   - Keep it consistent with `SNAPSHOT.yaml` where possible.
 - (required) `status` (string): Lifecycle state; each note type has its own allowed values.
-- (optional) `phase` (integer 1–N): Development phase for milestone grouping. See `[[PHASES]]` for definitions.
-  - Enables machine-filtering, automated progress tracking, and dashboard grouping.
+- (optional) `phase` (link or integer): Development phase for milestone grouping. Prefer `[[PHASE-####]]` links when using first-class phase notes; legacy integer values may be used during migration. See `[[PHASES]]` for definitions.
+  - Enables machine-filtering, automated progress tracking, and phase grouping.
   - Leave empty/omit for items not tied to a specific phase.
-- (optional) `platform` (string): Target platform for multi-platform projects.
-  Allowed: `ios`, `android`, `shared`, `""` (empty = not platform-specific).
-  Use `shared` for items spanning all platforms. Leave empty for platform-agnostic items.
 - (required) `owner` (string): Accountable person/team (can be `unassigned`).
   - Values must be defined in `[[OWNERSHIP]]` (or be `unassigned`).
 - (required) `created` (date string): Creation date; keep stable.
@@ -68,6 +65,9 @@ Fields:
 - (recommended) `impacts` (list of strings): Affected areas/paths/flows (keep short).
 - (optional) `issues` (list of links): Issues associated with the change.
 - (optional) `features` (list of links): Features associated with the change.
+- (optional) `reviewed_by` (string): Independent reviewer identity (`model:...` or `user:...`), per `tools/skills/independent-review/SKILL.md`.
+- (optional) `review_date` (string/date): Date of the independent review.
+- (optional) `review_verdict` (string): `approved | changes-requested`.
 
 Where used:
 - Tracked in `SNAPSHOT.yaml` (`items.changes`) for agent context and linked from change notes.
@@ -85,6 +85,25 @@ Fields:
 
 Where used:
 - Tracked in `SNAPSHOT.yaml` (`items.features`) for agent context and linked from feature notes.
+
+## `phase.md` (`type: [[phase]]`)
+
+Purpose: define a delivery milestone with explicit scope, linked work, and exit criteria.
+
+Naming:
+- Filename should be `PHASE-####-Short-Name.md`.
+- `id` should match the filename prefix.
+
+Fields:
+- (required) `order` (integer): Sort order for roadmap sequencing.
+- (required) `goal` (string): Short outcome statement for the milestone.
+- (optional) `features` (list of links): Features planned for this phase.
+- (optional) `requirements` (list of links): Requirements introduced or verified in this phase.
+- (optional) `tasks` (list of links): Active or key tasks in this phase.
+- (optional) `issues` (list of links): Issues tied to this phase.
+
+Where used:
+- Tracked in `SNAPSHOT.yaml` (`items.phases`) for agent context and linked from phase-aware items.
 
 ## `issue.md` (`type: [[issue]]`)
 
@@ -113,6 +132,19 @@ Fields:
 
 Where used:
 - Tracked in `SNAPSHOT.yaml` (`items.requirements`) for agent context and linked from requirement notes.
+
+## `reference.md` (`type: [[reference]]`)
+
+Purpose: durable explanatory, registry, or background material that supports project understanding but is not itself a task, feature, workflow, decision, test, issue, requirement, phase, risk, or change.
+
+Fields:
+- (recommended) `scope` (string): Short scope label such as `project`, `docs`, `tooling`, or a domain-specific area.
+- (optional) `related` (list of links/strings): Related notes or repo paths.
+- (optional) `source` (list of strings/links): Provenance or upstream/source documents.
+
+Where used:
+- Surfaced by the cockpit project mode under References and by `/index/references`.
+- Not normally tracked in `SNAPSHOT.yaml` unless a downstream project deliberately promotes a reference collection into active state.
 
 ## `risk.md` (`type: [[risk]]`)
 
@@ -157,30 +189,14 @@ Fields:
 - (optional) `artifacts` (list): Expected artifacts/logs.
 - (optional) `evidence` (list): Evidence from the last run (paths/log excerpts).
 - (optional) `last_run` (string): Timestamp/label for the last execution.
+- (optional) `adequacy` (string): Evidence the test actually guards (see `tools/instructions/TESTING.md`, "Test adequacy").
+- (optional) `mutation_score` (string): Mutation-testing score for the code this test guards, when measured.
+- (optional) `reviewed_by` (string): Independent reviewer identity (`model:...` or `user:...`), per `tools/skills/independent-review/SKILL.md`.
+- (optional) `review_date` (string/date): Date of the independent review.
+- (optional) `review_verdict` (string): `approved | changes-requested`.
 
 Where used:
 - Tracked in `SNAPSHOT.yaml` (`items.tests`) for agent context and linked from test notes.
-
-## `release.md` (`type: [[release]]`)
-
-Purpose: record what was shipped, when, and with what verification evidence.
-
-Naming:
-- Filename should be `REL-####-Short-Name.md`.
-- `id` should match the filename without `.md`.
-
-Fields:
-- (required) `version` (string): Semantic version or release label (e.g. `1.2.0`).
-- (recommended) `tag` (string): Git tag for the release (e.g. `v1.2.0`).
-- (recommended) `date` (string): Release date (ISO 8601).
-- (required) `features` (list of links): Features included in this release (`[[FEAT-...]]`).
-- (optional) `changes` (list of links): Change notes included (`[[CHG-...]]`).
-- (required) `tests_verified` (list of links): Acceptance tests verified for this release (`[[TST-...]]`).
-- (optional) `previous_release` (string/link): Link to the prior release note (`[[REL-...]]`).
-
-Where used:
-- Tracked in `SNAPSHOT.yaml` (`items.releases`) for agent context and linked from release notes.
-- The release-verification skill creates/updates REL-* notes as part of the release gating workflow.
 
 ## `workflow.md` (`type: [[workflow]]`)
 

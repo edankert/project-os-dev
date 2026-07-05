@@ -1,3 +1,13 @@
+---
+type: instruction
+id: INSTR-LIFECYCLE
+status: active
+owner: group:maintainers
+created: 2026-01-27
+updated: 2026-01-27
+tags: [instructions, lifecycle]
+---
+
 # Lifecycle rules (LLM-maintained documentation system)
 
 This documentation system is designed to be maintained by an LLM across the full lifecycle of work: intake → plan → implement → verify → close.
@@ -5,7 +15,7 @@ This documentation system is designed to be maintained by an LLM across the full
 ## Source of truth
 - `../../SNAPSHOT.yaml` is the **canonical, machine-readable active context** for agents/LLMs.
 - Notes under `../../docs/` are the durable human-readable record; keep their frontmatter consistent with the snapshot.
-- Bases dashboards are for human consumption: they render views over note frontmatter and are not canonical for agents.
+- Bases views are for human consumption: they render views over note frontmatter and are not canonical for agents.
 
 ## Test storage (hybrid)
 - Feature-scoped tests belong under the feature they verify:
@@ -18,37 +28,37 @@ This documentation system is designed to be maintained by an LLM across the full
 
 ## Preflight (must happen before code changes)
 When a prompt implies work (bugfix, feature, refactor, behavior change):
-1. **Classify** the prompt as one (or more) of: issue, feature, requirement, risk, chore/docs-only.
-2. **Orchestration check** (multi-agent projects):
-   - If your orchestration layer (e.g., Claude Code Agent Teams, Codex parallel) assigns a specific task, verify it exists in `../../SNAPSHOT.yaml` and that its status allows work (e.g., `backlog`, `next`, not already `done`).
-   - If working without orchestration, select work based on `focus` and item statuses.
+1. **Classify** the prompt as one (or more) of: issue, feature, requirement, risk, chore/docs-only. Run the spec-ambiguity check from `../skills/issue-intake/SKILL.md` (step 1) before allocating IDs — ambiguity is upstream of documentation and cannot be fixed by tracking.
+2. **Orchestration check**:
+   - If Codex or another orchestration layer assigns a specific task, verify it exists in `../../SNAPSHOT.yaml` and that its status allows work (for example, `backlog`, `next`, or `doing`, not already `done`).
+   - If working without an assigned item, select work based on `focus` and item statuses.
 3. **Update `../../SNAPSHOT.yaml` first**:
    - allocate IDs (increment `counters`)
    - create/update `items.*` entries and relationships
    - set `focus` to the active work
 4. **Create/update the relevant notes (from templates)**:
+   - Phase: `../../docs/phases/PHASE-####-*.md` when phase-gated work needs durable scope/exit criteria
    - Issue: `../../docs/issues/ISS-####-*.md`
    - Requirement: `../../docs/requirements/REQ-####-*.md`
    - Feature: `../../docs/features/<slug>/FEAT-####-*.md` plus `plan/PLAN.md`
    - Task: `../../docs/features/<slug>/plan/tasks/TASK-####-*.md` (must have `parent`)
    - Risk: `../../docs/risks/RISK-####-*.md`
-5. **Impact analysis** (when creating or modifying requirements):
-   - Run `../skills/impact-analysis/SKILL.md` to check for tensions with existing requirements on overlapping features.
-   - If conflicts are found: STOP and present resolution options to the user before proceeding with implementation.
-6. Ensure note frontmatter is consistent with the snapshot (IDs/statuses/links) so Bases dashboards reflect reality.
-7. For multi-platform projects: set `platform` in new notes when work is platform-specific.
-   Infer from parent item, code paths, or tags. Leave empty if truly cross-cutting.
+5. **Impact analysis**:
+   - Run `../skills/impact-analysis/SKILL.md` when creating or materially changing requirements.
+   - Also run it for new features or issues that touch existing constrained areas.
+   - If conflicts are found, stop and present resolution options before implementation.
+6. Ensure note frontmatter is consistent with the snapshot (IDs/statuses/links) so Bases views reflect reality.
 
 If the prompt is purely a question/explanation (no work requested), you may skip preflight.
 
 ## Phase alignment (optional gating)
 When the project uses phase-gated development (see `../../docs/PHASES.md`):
-1. **Verify phase**: Check the `phase` property in the task/feature frontmatter before starting work.
-2. **Consult registry**: Review `../../docs/PHASES.md` to understand the boundaries and context of that phase.
+1. **Verify phase**: Check the `phase` property in the task/feature frontmatter before starting work. Prefer `[[PHASE-####]]` links where first-class phase notes exist.
+2. **Consult registry**: Review `../../docs/PHASES.md` and the relevant `../../docs/phases/PHASE-*.md` note to understand the boundaries and context of that phase.
 3. **Prevent phase bleeding**: Do not introduce implementations from future phases prematurely.
    - Example: Don't build Phase 4 export logic while working on a Phase 2 core engine task.
 4. **Flag scope concerns**: If a task requires future-phase dependencies, document it and discuss before proceeding.
-5. **Track active phase**: Keep `focus.phase` in `../../SNAPSHOT.yaml` aligned with the current development milestone.
+5. **Track active phase**: Keep `focus.phase` in `../../SNAPSHOT.yaml` aligned with the current development milestone (`PHASE-*` ID preferred).
 
 ## Mandatory Automated Documentation
 Agents are REQUIRED to automatically keep the documentation system in sync with code changes.
@@ -73,6 +83,8 @@ After completing a task/issue/feature:
 4. If new hazards were introduced (new dependency, env var, contract), add/update a `RISK-*` and link it.
 5. Do not delete completed notes; use status + links to preserve history.
 6. Apply verification gating (see `QUALITY.md`): only close/verify/done when required `[[test]]` notes are `status: passing`.
+7. Run `bash tools/scripts/validate-docs.sh` and fix anything it reports — the same validator runs at pre-commit and in CI, so drift left behind here becomes a build failure there.
+8. If the work created/updated a `TST-*` or `CHG-*` note, or transitions a requirement to `verified` / feature to `done`, run the independent review pass (`../skills/independent-review/SKILL.md`).
 
 ## Snapshot retention (active + recent)
 - Keep `../../SNAPSHOT.yaml` focused on active + recent items.

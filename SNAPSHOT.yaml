@@ -1,5 +1,5 @@
 version: 1
-updated: "2026-03-08T23:00Z"
+updated: "2026-07-05T00:00Z"
 
 template:
   replace_me: false
@@ -27,15 +27,15 @@ docs_system:
 counters:
   ADR: 4
   CHG:
-    last_date: 0
-  FEAT: 6
+    last_date: 20260705
+  FEAT: 9
   ISS: 1
   REL: 0
-  REQ: 9
+  REQ: 12
   RISK: 0
-  TASK: 22
+  TASK: 40
   TST: 0
-  WF: 0
+  WF: 3
 
 focus:
   phase: ""
@@ -44,11 +44,116 @@ focus:
   issue: ""
 
 items:
-  features: {}
+  features:
+    FEAT-0007:
+      file: docs/features/relationship-model/FEAT-0007-Relationship-Model.md
+      title: "Named relationship fields with child-to-parent linking"
+      status: done
+      owner: user:edwin
+      goal: "Replace ambiguous parent/implements fields with semantic named relationships (implements, fixes, affects, specifies, validates) to enable reliable Bases dashboard filtering"
+      requirements: [REQ-0010]
+      tasks: [TASK-0023, TASK-0024, TASK-0025, TASK-0027, TASK-0028, TASK-0029]
+    FEAT-0008:
+      file: docs/features/phase-notes/FEAT-0008-Phase-Notes.md
+      title: "Phases as first-class note type"
+      status: done
+      owner: user:edwin
+      goal: "Promote phases from a single registry file to individual navigable notes with contextual dashboards"
+      requirements: [REQ-0011]
+      tasks: [TASK-0030, TASK-0031, TASK-0033, TASK-0034, TASK-0035]
+      related: [FEAT-0007]
+    FEAT-0009:
+      file: docs/features/cockpit-layout/FEAT-0009-Cockpit-Layout.md
+      title: "Obsidian cockpit layout with NAV.base and CONTEXT.base"
+      status: done
+      owner: user:edwin
+      goal: "Three-pane Obsidian layout: left sidebar for navigation (features, phases, issues), center editor, right sidebar for dynamic context (tasks, requirements, tests related to active note)"
+      requirements: [REQ-0012]
+      tasks: [TASK-0036, TASK-0037, TASK-0038, TASK-0039, TASK-0040]
+      related: [FEAT-0007, FEAT-0008]
   # Pruned: FEAT-0001 through FEAT-0006 (all done). Notes preserved under docs/features/.
 
-  tasks: {}
-  # Pruned: TASK-0001 through TASK-0022 (all done). Notes preserved under docs/features/*/plan/tasks/.
+  tasks:
+    TASK-0023:
+      file: docs/features/relationship-model/plan/tasks/TASK-0023-Update-Schemas.md
+      title: "Update SCHEMAS.md with new relationship fields"
+      status: done
+      parent: FEAT-0007
+    TASK-0024:
+      file: docs/features/relationship-model/plan/tasks/TASK-0024-Update-Templates.md
+      title: "Update note templates (task, issue, requirement, test, feature)"
+      status: done
+      parent: FEAT-0007
+    TASK-0025:
+      file: docs/features/relationship-model/plan/tasks/TASK-0025-Update-Traceability.md
+      title: "Update TRACEABILITY.md link rules"
+      status: done
+      parent: FEAT-0007
+    TASK-0027:
+      file: docs/features/relationship-model/plan/tasks/TASK-0027-Update-Bases-Dashboards.md
+      title: "Update top-level .base dashboards to reflect renamed fields"
+      status: done
+      parent: FEAT-0007
+    TASK-0028:
+      file: docs/features/relationship-model/plan/tasks/TASK-0028-Update-Skills.md
+      title: "Update skills that create/link notes (feature-scaffold, issue-intake, task-breakdown, test-authoring)"
+      status: done
+      parent: FEAT-0007
+    TASK-0029:
+      file: docs/features/relationship-model/plan/tasks/TASK-0029-Update-Snapshot-Schema.md
+      title: "Update SNAPSHOT.md and migrate existing snapshot entries"
+      status: done
+      parent: FEAT-0007
+    TASK-0030:
+      file: docs/features/phase-notes/plan/tasks/TASK-0030-Phase-Template.md
+      title: "Create phase note template and schema"
+      status: done
+      parent: FEAT-0008
+    TASK-0031:
+      file: docs/features/phase-notes/plan/tasks/TASK-0031-Phase-Base-Dashboard.md
+      title: "Create Phases.base top-level dashboard"
+      status: done
+      parent: FEAT-0008
+    TASK-0033:
+      file: docs/features/phase-notes/plan/tasks/TASK-0033-Migrate-Phase-Field.md
+      title: "Change phase field from integer to link across all templates"
+      status: done
+      parent: FEAT-0008
+    TASK-0034:
+      file: docs/features/phase-notes/plan/tasks/TASK-0034-Update-Lifecycle-Instructions.md
+      title: "Update LIFECYCLE.md, SNAPSHOT.md, and phase alignment rules"
+      status: done
+      parent: FEAT-0008
+    TASK-0035:
+      file: docs/features/phase-notes/plan/tasks/TASK-0035-Update-Skills-For-Phases.md
+      title: "Update skills to create/reference phase notes instead of integers"
+      status: done
+      parent: FEAT-0008
+    TASK-0036:
+      file: docs/features/cockpit-layout/plan/tasks/TASK-0036-Create-NAV-Base.md
+      title: "Create NAV.base for left sidebar navigation"
+      status: done
+      parent: FEAT-0009
+    TASK-0037:
+      file: docs/features/cockpit-layout/plan/tasks/TASK-0037-Create-CONTEXT-Base.md
+      title: "Create CONTEXT.base for right sidebar dynamic context"
+      status: done
+      parent: FEAT-0009
+    TASK-0038:
+      file: docs/features/cockpit-layout/plan/tasks/TASK-0038-Remove-Overview-Base-Artifacts.md
+      title: "Remove feature-overview.base template and per-feature Overview.base generation"
+      status: done
+      parent: FEAT-0009
+    TASK-0039:
+      file: docs/features/cockpit-layout/plan/tasks/TASK-0039-Update-DASHBOARD-MD.md
+      title: "Update DASHBOARD.md hub note for cockpit layout"
+      status: done
+      parent: FEAT-0009
+    TASK-0040:
+      file: docs/features/cockpit-layout/plan/tasks/TASK-0040-Document-Workspace-Setup.md
+      title: "Document Obsidian workspace setup for cockpit layout"
+      status: done
+      parent: FEAT-0009
 
   issues: {}
   # Pruned: ISS-0001 (closed). Note preserved under docs/issues/.
@@ -117,12 +222,38 @@ items:
       owner: user:edwin
       priority: medium
       implements: [FEAT-0006]
+    REQ-0010:
+      file: docs/requirements/REQ-0010-Named-Relationship-Fields.md
+      title: "Child notes must use semantic named relationship fields that support multiple values and are filterable by Obsidian Bases"
+      status: draft
+      owner: user:edwin
+      priority: high
+      implements: [FEAT-0007]
+    REQ-0011:
+      file: docs/requirements/REQ-0011-Phase-Notes.md
+      title: "Phases must be navigable first-class notes with contextual dashboards showing all items in that phase"
+      status: draft
+      owner: user:edwin
+      priority: medium
+      implements: [FEAT-0008]
+    REQ-0012:
+      file: docs/requirements/REQ-0012-Cockpit-Layout.md
+      title: "Obsidian must provide a three-pane cockpit layout with navigation, editor, and dynamic context"
+      status: draft
+      owner: user:edwin
+      priority: high
+      implements: [FEAT-0009]
 
   risks: {}
   tests: {}
   releases: {}
   workflows: {}
-  changes: {}
+
+  changes:
+    CHG-20260705-Adopt-Mechanical-Verification:
+      file: docs/changes/CHG-20260705-Adopt-Mechanical-Verification.md
+      title: "Adopt mechanical verification change set from project-os template"
+      status: merged
 
   decisions:
     ADR-0001:
@@ -156,10 +287,10 @@ items:
 
 metrics:
   counts:
-    features_total: 6
-    features_done: 6
-    tasks_total: 22
-    tasks_done: 22
+    features_total: 9
+    features_done: 9
+    tasks_total: 40
+    tasks_done: 38
     tests_total: 0
     tests_passing: 0
     tests_failing: 0

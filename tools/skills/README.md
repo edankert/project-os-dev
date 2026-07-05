@@ -25,6 +25,7 @@ Reusable playbooks for an LLM (or other agents) to keep this documentation syste
 
 ## Skills index
 - Issue intake: `issue-intake/SKILL.md`
+- Phase planning: `phase-planning/SKILL.md`
 - Feature scaffold: `feature-scaffold/SKILL.md`
 - Task breakdown: `task-breakdown/SKILL.md`
 - Test authoring: `test-authoring/SKILL.md`
@@ -32,6 +33,8 @@ Reusable playbooks for an LLM (or other agents) to keep this documentation syste
 - Risk scan: `risk-scan/SKILL.md`
 - Change note: `change-note/SKILL.md`
 - Snapshot sync: `snapshot-sync/SKILL.md`
+- Independent review: `independent-review/SKILL.md`
+- Docs audit: `docs-audit/SKILL.md`
 - Status transition: `status-transition/SKILL.md`
 - Close-out: `close-out/SKILL.md`
 - Workflow authoring: `workflow-authoring/SKILL.md`
@@ -41,5 +44,4 @@ Reusable playbooks for an LLM (or other agents) to keep this documentation syste
 - Project init: `project-init/SKILL.md`
 - Project derive (existing project import): `project-derive/SKILL.md`
 - Ad-hoc prompt intake: `ad-hoc-intake/SKILL.md`
-- Release verification: `release-verification/SKILL.md`
 - Adapter sync: `adapter-sync/SKILL.md`

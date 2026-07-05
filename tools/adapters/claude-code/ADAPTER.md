@@ -64,6 +64,8 @@ These files contain detailed rules. Read them when performing the related operat
 - Test authoring: tools/skills/test-authoring/SKILL.md
 - ADR authoring: tools/skills/adr-authoring/SKILL.md
 - Risk scan: tools/skills/risk-scan/SKILL.md
+- Independent review: tools/skills/independent-review/SKILL.md
+- Docs audit: tools/skills/docs-audit/SKILL.md
 - Ad-hoc intake: tools/skills/ad-hoc-intake/SKILL.md
 - Workflow authoring: tools/skills/workflow-authoring/SKILL.md
 - Backlog grooming: tools/skills/backlog-grooming/SKILL.md
@@ -77,8 +79,9 @@ These files contain detailed rules. Read them when performing the related operat
 ### Notes
 
 - The `@` imports inline the content of each file into Claude Code's context when the CLAUDE.md is loaded
-- Core rules (LIFECYCLE, STATUSES, QUALITY) are always imported because they govern every interaction
-- Reference instructions are listed as paths (not imported) to keep context window lean — Claude Code reads them on demand
+- Core rules (LIFECYCLE) are always imported because it governs every interaction
+- STATUSES and QUALITY are listed as reference instructions — Claude Code reads them on demand when relevant
+- Reference instructions are listed as paths (not imported) to keep context window lean
 - Skill playbooks are listed as paths for the same reason
 
 ## Hook support
@@ -96,47 +99,33 @@ Claude Code supports shell hooks via project-level settings files. project-os ho
 
 ### Installation
 
-Create `.claude/settings.json` in the project root with the hooks configuration from `hooks.json` in this adapter directory:
+Copy the hooks configuration from `hooks.json` in this adapter directory into `.claude/settings.json` in the project root. Or copy the file directly:
 
-```json
-{
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "command": "bash tools/adapters/claude-code/hooks/document-first-gate.sh"
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "command": "bash tools/adapters/claude-code/hooks/verification-gate.sh"
-      },
-      {
-        "matcher": "Write|Edit",
-        "command": "bash tools/adapters/claude-code/hooks/phase-alignment.sh"
-      },
-      {
-        "matcher": "Write|Edit",
-        "command": "bash tools/adapters/claude-code/hooks/risk-scan-trigger.sh"
-      }
-    ],
-    "SessionStart": [
-      {
-        "command": "bash tools/adapters/claude-code/hooks/snapshot-freshness.sh"
-      }
-    ]
-  }
-}
+```bash
+mkdir -p .claude
+cp tools/adapters/claude-code/hooks.json .claude/settings.json
 ```
+
+If `.claude/settings.json` already exists with other settings, merge the `hooks` key manually.
 
 Ensure hook scripts are executable: `chmod +x tools/adapters/claude-code/hooks/*.sh`
 
-### Hook events
+> **Note:** Hook commands use `$CLAUDE_PROJECT_DIR` for reliable path resolution. Claude Code does not guarantee hooks run from the project root, so relative paths are unreliable.
 
-- `PreToolUse`: runs before a tool is executed (can block with exit code 2)
-- `PostToolUse`: runs after a tool completes (advisory only)
-- `SessionStart`: runs when a session begins (advisory only)
+### Hook events and types
+
+| Event | Hooks | Type | Purpose |
+|---|---|---|---|
+| `PreToolUse` | HC-001 Document-First | `command` | Reads SNAPSHOT.yaml, blocks code edits without focus |
+| `PreToolUse` | HC-003 Verification Gate | `command` | **Blocking**: denies status→done/closed/verified while linked TST-* notes are not `passing` (recorded `verification_waiver` escapes; no linked test → `ask`) |
+| `PostToolUse` | HC-004 Phase Alignment | `command` | Detects status→doing, reminds about phase check |
+| `PostToolUse` | HC-005 Risk Scan Trigger | `command` | Detects package/env/CI file changes |
+| `Stop` | HC-006 Close-out Check + HC-007 Docs Validation | `command` | Runs `tools/scripts/validate-docs.sh` and blocks stop on violations; checks focus is cleared, forces close-out if not |
+| `SessionStart` | HC-002 Snapshot Freshness | `command` | Reminds agent to read SNAPSHOT.yaml |
+
+**All hooks are `command` type** (fast shell scripts, no API calls). This avoids LLM cost/latency and 529 overload errors. Stop hooks use `{decision: "block", reason: "..."}` to force continuation. All scripts use `$CLAUDE_PROJECT_DIR` for path resolution. HC-003 and HC-007 need `python3` on PATH (stdlib only); they fail open with a note if it is missing, so a broken runtime never bricks edits — but treat that note as a setup error.
+
+Session hooks are the innermost of three enforcement layers: the same validator also runs at git pre-commit (`bash tools/scripts/install-git-hooks.sh` to install) and in CI (`.github/workflows/validate-docs.yml`). Session hooks and pre-commit can be bypassed; CI cannot — that layering is deliberate.
 
 See `tools/instructions/HOOKS.md` for the full hook contract specifications and `hooks/` in this directory for the implementations.
 

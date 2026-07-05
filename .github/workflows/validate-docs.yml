@@ -1,0 +1,15 @@
+# Non-bypassable backstop for the project-os docs invariants.
+# Session hooks and pre-commit can be skipped (--no-verify); CI cannot.
+name: validate-docs
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate SNAPSHOT.yaml <-> docs consistency
+        run: bash tools/scripts/validate-docs.sh --repo-root "$GITHUB_WORKSPACE"

@@ -15,7 +15,7 @@ tags: [skills, backlog]
 - Tasks are too large or ambiguous.
 
 ## Inputs
-- Bases dashboards and the underlying notes; use `../../../SNAPSHOT.yaml` for canonical agent state.
+- Bases views and the underlying notes; use `../../../SNAPSHOT.yaml` for canonical agent state.
 
 ## Outputs
 - A prioritized `next` set and better-scoped tasks/issues.
@@ -26,3 +26,4 @@ tags: [skills, backlog]
 3. Convert unknowns into `ISS-*` rather than embedding them in tasks.
 4. Update `focus` only when starting execution.
 5. Update snapshot `metrics` after grooming.
+6. Run the cross-document audit (`../docs-audit/SKILL.md`) as part of the grooming cadence — per-edit checks catch single-file drift, but stale cross-note references only surface in a full-graph sweep.

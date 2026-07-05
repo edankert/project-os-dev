@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# project-os pre-commit hook: block commits that violate docs invariants.
+# Installed by tools/scripts/install-git-hooks.sh (do not edit the copy in .git/hooks; edit this file and reinstall).
+#
+# Bypassing with --no-verify defeats the point (agents have been documented doing exactly that);
+# CI runs the same validator as the non-bypassable backstop.
+set -uo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+VALIDATOR="$ROOT/tools/scripts/validate-docs.sh"
+if [[ ! -x "$VALIDATOR" ]]; then
+  echo "pre-commit: $VALIDATOR missing or not executable; refusing to silently skip docs validation." >&2
+  exit 1
+fi
+"$VALIDATOR" --repo-root "$ROOT"
+STATUS=$?
+if [[ $STATUS -ne 0 ]]; then
+  echo "" >&2
+  echo "pre-commit: docs validation failed (see errors above)." >&2
+  echo "Fix the drift (or record an explicit verification_waiver in the note) before committing." >&2
+  exit 1
+fi
+exit 0
