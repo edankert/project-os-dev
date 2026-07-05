@@ -47,11 +47,11 @@ COLLECTION_TYPE = {
 }
 
 ALLOWED_STATUS = {
-    "task": {"backlog", "next", "doing", "blocked", "done"},
-    "issue": {"triage", "open", "in-progress", "blocked", "fixed", "closed"},
-    "feature": {"backlog", "planned", "in-progress", "in-review", "done"},
+    "task": {"backlog", "next", "doing", "blocked", "done", "deferred", "cancelled"},
+    "issue": {"triage", "open", "in-progress", "blocked", "fixed", "closed", "reopened", "wont-fix", "deferred"},
+    "feature": {"backlog", "planned", "in-progress", "in-review", "done", "deferred", "cancelled", "superseded"},
     "phase": {"planned", "active", "done", "deferred"},
-    "requirement": {"draft", "approved", "verified", "retired"},
+    "requirement": {"draft", "approved", "implemented", "verified", "retired", "deferred", "cancelled", "superseded"},
     "risk": {"open", "mitigating", "monitoring", "closed"},
     "workflow": {"draft", "active", "deprecated"},
     "change": {"merged", "reverted"},
