@@ -59,6 +59,36 @@ ALLOWED_STATUS = {
     "test": {"draft", "ready", "passing", "failing", "blocked", "deprecated"},
 }
 
+def load_allowed_status(root):
+    """Overlay ALLOWED_STATUS with the repo's own STATUSES.md.
+
+    STATUSES.md is explicitly per-repo customizable ("If a project needs
+    different states, update this file"), so the repo's Allowed: lines are
+    the source of truth; hardcoded defaults apply only for types the file
+    does not define.
+    """
+    allowed = {k: set(v) for k, v in ALLOWED_STATUS.items()}
+    path = root / "tools" / "instructions" / "STATUSES.md"
+    if not path.is_file():
+        return allowed
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return allowed
+    current = None
+    for line in text.splitlines():
+        m = re.match(r"^##\s+`?\[\[(\w[\w-]*)\]\]`?", line.strip())
+        if m:
+            current = m.group(1).lower()
+            continue
+        if current and re.match(r"^-\s*Allowed\s*:", line.strip(), re.IGNORECASE):
+            vals = set(re.findall(r"`([\w-]+)`", line))
+            if vals:
+                allowed[current] = vals
+            current = None
+    return allowed
+
+
 # collection -> (terminal status, human label)
 TERMINAL = {
     "tasks": "done",
@@ -260,6 +290,7 @@ def validate(root, report):
     counters = snap.get("counters") or {}
     docs_dir = root / "docs"
     note_index = build_note_index(docs_dir)
+    allowed_status = load_allowed_status(root)
 
     def resolves(ref_id):
         for coll in items.values():
@@ -305,7 +336,7 @@ def validate(root, report):
                         report.error("ITEM-STATUS", "%s status drift: snapshot=%s note=%s (%s)" % (item_id, snap_status, fm_status, file_rel))
             status = str(entry.get("status", ""))
             type_key = next(iter(expected_types), None)
-            if status and type_key in ALLOWED_STATUS and status not in ALLOWED_STATUS[type_key]:
+            if status and type_key in allowed_status and status not in allowed_status[type_key]:
                 report.error("STATUS-VALUE", "%s status '%s' not allowed for %s" % (item_id, status, type_key))
 
             # -- link integrity
