@@ -39,8 +39,8 @@ counters:
 
 focus:
   phase: ""
-  feature: "FEAT-0010"
-  task: "TASK-0043"
+  feature: ""
+  task: ""
   issue: ""
 
 items:
@@ -74,7 +74,7 @@ items:
     FEAT-0010:
       file: docs/features/template-completeness/FEAT-0010-Template-Completeness-Program.md
       title: "Template completeness program — consistency debt, native adapters, verification health, fleet sync, tool wiring"
-      status: in-progress
+      status: done
       owner: user:edwin
       goal: "Close the gaps found by the 2026-07-17 full review: template consistency debt, underused native Claude Code machinery, cockpit verification observability, fleet-blind sync tooling, unwired external tools"
       requirements: [REQ-0002, REQ-0006, REQ-0009]
@@ -178,7 +178,7 @@ items:
     TASK-0043:
       file: docs/features/template-completeness/plan/tasks/TASK-0043-Cockpit-Verification-Health.md
       title: "Cockpit verification health: implement FEAT-0018 in project-os-cockpit"
-      status: doing
+      status: done
       parent: FEAT-0010
       external: "../project-os-cockpit/docs/features/verification-health/FEAT-0018-Verification-Health-Surface.md"
     TASK-0044:
@@ -327,9 +327,9 @@ items:
 metrics:
   counts:
     features_total: 10
-    features_done: 9
+    features_done: 10
     tasks_total: 45
-    tasks_done: 42
+    tasks_done: 43
     tests_total: 0
     tests_passing: 0
     tests_failing: 0

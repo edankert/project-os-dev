@@ -15,6 +15,6 @@ Execute the five review-derived steps in order of leverage: fix internal contrad
 
 - [x] TASK-0041: Consistency-debt pass in the template
 - [x] TASK-0042: Native Claude Code adapter (generated native skills, reviewer subagent, one-step install)
-- [ ] TASK-0043: Cockpit verification health (FEAT-0018 in project-os-cockpit)
+- [x] TASK-0043: Cockpit verification health (FEAT-0018 in project-os-cockpit)
 - [x] TASK-0044: Sync manifest + fleet validator
 - [x] TASK-0045: External tool wiring
