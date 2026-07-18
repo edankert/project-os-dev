@@ -1,5 +1,5 @@
 version: 1
-updated: "2026-07-05T00:00Z"
+updated: "2026-07-18T00:00Z"
 
 template:
   replace_me: false
@@ -27,20 +27,20 @@ docs_system:
 counters:
   ADR: 4
   CHG:
-    last_date: 20260705
-  FEAT: 9
+    last_date: 20260717
+  FEAT: 10
   ISS: 1
   REL: 0
   REQ: 12
   RISK: 0
-  TASK: 40
+  TASK: 45
   TST: 0
   WF: 3
 
 focus:
   phase: ""
-  feature: ""
-  task: ""
+  feature: "FEAT-0010"
+  task: "TASK-0043"
   issue: ""
 
 items:
@@ -71,6 +71,15 @@ items:
       requirements: [REQ-0012]
       tasks: [TASK-0036, TASK-0037, TASK-0038, TASK-0039, TASK-0040]
       related: [FEAT-0007, FEAT-0008]
+    FEAT-0010:
+      file: docs/features/template-completeness/FEAT-0010-Template-Completeness-Program.md
+      title: "Template completeness program — consistency debt, native adapters, verification health, fleet sync, tool wiring"
+      status: in-progress
+      owner: user:edwin
+      goal: "Close the gaps found by the 2026-07-17 full review: template consistency debt, underused native Claude Code machinery, cockpit verification observability, fleet-blind sync tooling, unwired external tools"
+      requirements: [REQ-0002, REQ-0006, REQ-0009]
+      tasks: [TASK-0041, TASK-0042, TASK-0043, TASK-0044, TASK-0045]
+      related: [ADR-0001, ADR-0002, ADR-0004]
   # Pruned: FEAT-0001 through FEAT-0006 (all done). Notes preserved under docs/features/.
 
   tasks:
@@ -154,6 +163,36 @@ items:
       title: "Document Obsidian workspace setup for cockpit layout"
       status: done
       parent: FEAT-0009
+    TASK-0041:
+      file: docs/features/template-completeness/plan/tasks/TASK-0041-Consistency-Debt-Pass.md
+      title: "Consistency-debt pass in the project-os template"
+      status: done
+      parent: FEAT-0010
+      blocks: [TASK-0042, TASK-0044, TASK-0045]
+    TASK-0042:
+      file: docs/features/template-completeness/plan/tasks/TASK-0042-Native-Claude-Adapter.md
+      title: "Native Claude Code adapter: plugin, generated skills, reviewer subagent, mechanical review check"
+      status: done
+      parent: FEAT-0010
+      depends: [TASK-0041]
+    TASK-0043:
+      file: docs/features/template-completeness/plan/tasks/TASK-0043-Cockpit-Verification-Health.md
+      title: "Cockpit verification health: implement FEAT-0018 in project-os-cockpit"
+      status: doing
+      parent: FEAT-0010
+      external: "../project-os-cockpit/docs/features/verification-health/FEAT-0018-Verification-Health-Surface.md"
+    TASK-0044:
+      file: docs/features/template-completeness/plan/tasks/TASK-0044-Sync-Manifest-Fleet-Validator.md
+      title: "Sync manifest with baseline divergence detection + fleet-wide validator"
+      status: done
+      parent: FEAT-0010
+      depends: [TASK-0041]
+    TASK-0045:
+      file: docs/features/template-completeness/plan/tasks/TASK-0045-External-Tool-Wiring.md
+      title: "External tool wiring: prettier, markdownlint, yamllint, lychee, mutation tools"
+      status: done
+      parent: FEAT-0010
+      depends: [TASK-0041]
 
   issues: {}
   # Pruned: ISS-0001 (closed). Note preserved under docs/issues/.
@@ -287,10 +326,10 @@ items:
 
 metrics:
   counts:
-    features_total: 9
+    features_total: 10
     features_done: 9
-    tasks_total: 40
-    tasks_done: 38
+    tasks_total: 45
+    tasks_done: 42
     tests_total: 0
     tests_passing: 0
     tests_failing: 0
