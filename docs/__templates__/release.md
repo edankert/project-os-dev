@@ -73,4 +73,4 @@ tags: []
 - [ ] Update SNAPSHOT focus to next milestone
 - [ ] Tag repo: `git tag v<version>`
 - [ ] Push tag: `git push origin v<version>`
-- [ ] Update REL-* status to `published`
+- [ ] Update REL-* status to `released`

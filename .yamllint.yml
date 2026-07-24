@@ -1,0 +1,6 @@
+# project-os YAML style — applies to SNAPSHOT.yaml and tools/sync/MANIFEST.yaml.
+extends: relaxed
+rules:
+  line-length: disable
+  comments-indentation: disable
+  document-start: disable

@@ -4,7 +4,7 @@ id: INSTR-TAXONOMY
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-01-27
+updated: 2026-07-17
 tags: [instructions, taxonomy]
 ---
 
@@ -43,7 +43,8 @@ Project-defined free text label, but keep it stable. Examples:
 - `manual`, `automated`
 
 ## `level` (tests)
-- `unit`, `integration`, `system`, `e2e`
+- `unit`, `integration`, `system`, `e2e`, `acceptance`
+- `acceptance` marks user-level acceptance checks that gate releases (see `TESTING.md` tiers and `../skills/release-verification/SKILL.md`).
 
 ## `scope` (tests)
 - `feature`, `system`

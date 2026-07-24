@@ -28,6 +28,12 @@
   --status-reference: hsl(180 24% 40%);   /* reference / deferred */
   --status-default:   hsl(0 0% 45%);
 
+  /* Severity palette — used by issue group icons + (future) issue badges. */
+  --severity-critical: hsl(5 60% 46%);
+  --severity-high:     hsl(20 60% 46%);
+  --severity-medium:   hsl(45 55% 42%);
+  --severity-low:      hsl(0 0% 50%);
+
   --error-fg: hsl(5 48% 38%);
   --error-bg: hsl(5 38% 96%);
   --warn-fg:  hsl(36 50% 32%);
@@ -67,6 +73,11 @@
   --status-reference: hsl(180 24% 60%);
   --status-default:   hsl(0 0% 60%);
 
+  --severity-critical: hsl(5 60% 65%);
+  --severity-high:     hsl(20 60% 65%);
+  --severity-medium:   hsl(45 55% 60%);
+  --severity-low:      hsl(0 0% 62%);
+
   --error-fg: hsl(5 50% 70%);
   --error-bg: hsl(5 30% 18%);
   --warn-fg:  hsl(36 48% 65%);
@@ -92,11 +103,18 @@ html, body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
-html { height: 100%; }
+html, body { height: 100%; }
+/* Body is the flex-column shell: page-header at top, cockpit fills the
+ * middle, page-footer at the bottom. Lock to viewport height + hide
+ * overflow so the three panes (and the centre column's terminal) can
+ * scroll INTERNALLY. Without this, a long left/right pane stretches the
+ * grid row and the body scroll takes over, dragging the terminal with
+ * it. */
 body {
-  min-height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 a {
@@ -120,6 +138,13 @@ a:focus-visible {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   font-size: 13px;
+  /* Pin both rows to the top so they stay visible if the body scrolls
+   * (mobile layout, long centre-pane content, …). On desktop the
+   * cockpit's internal overflow:hidden already keeps the header
+   * visible, so sticky is a no-op there. */
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 .page-header-row {
   display: flex;
@@ -229,6 +254,45 @@ a:focus-visible {
   font-size: 13px;
   color: var(--text-muted);
 }
+/* Collapsible <details> form (TASK-0032). The summary is a tiny header
+ * row; the body is the existing <dl>. Open by default; JS strips the
+ * open attribute when the user has previously collapsed it. */
+details.metadata-strip > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+details.metadata-strip > summary::-webkit-details-marker { display: none; }
+details.metadata-strip[open] > summary {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.metadata-strip-chevron {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-1px) rotate(45deg);
+  transition: transform 100ms ease;
+  opacity: 0.7;
+}
+details.metadata-strip:not([open]) > summary .metadata-strip-chevron {
+  transform: translateY(1px) rotate(-45deg);
+}
+details.metadata-strip > summary:hover {
+  color: var(--text-muted);
+}
 
 .metadata-strip dl {
   display: grid;
@@ -310,6 +374,7 @@ a:focus-visible {
 .status-chip[data-status="fulfilled"]   { color: var(--status-done); }
 .status-chip[data-status="met"]         { color: var(--status-done); }
 .status-chip[data-status="complete"]    { color: var(--status-done); }
+.status-chip[data-status="implemented"] { color: var(--status-done); }
 .status-chip[data-status="verified"]    { color: var(--status-done); }
 .status-chip[data-status="passing"]     { color: var(--status-done); }
 .status-chip[data-status="published"]   { color: var(--status-done); }

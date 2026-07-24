@@ -51,4 +51,5 @@ tags: [skills, issues]
 8. **Risk scan:**
    - Review the issue against risk scan triggers in `../../instructions/LIFECYCLE.md`.
    - If any trigger applies, run `../risk-scan/SKILL.md` and create/update `RISK-*` notes.
+   - If no trigger applies, record that no new risks were identified in the issue note or final summary — the negative result is part of the scan.
 9. If verification is needed, create a `TST-*` note (use `../test-authoring/SKILL.md`) and link it from the issue/task/requirement as appropriate.

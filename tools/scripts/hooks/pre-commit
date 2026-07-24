@@ -19,4 +19,13 @@ if [[ $STATUS -ne 0 ]]; then
   echo "Fix the drift (or record an explicit verification_waiver in the note) before committing." >&2
   exit 1
 fi
+
+# Generated adapter artifacts must match their sources (regenerate, don't hand-edit).
+GEN="$ROOT/tools/scripts/generate-adapters.py"
+if [[ -f "$GEN" ]] && command -v python3 >/dev/null 2>&1; then
+  if ! python3 "$GEN" --repo-root "$ROOT" --check >/dev/null 2>&1; then
+    echo "pre-commit: generated adapter artifacts are stale; run: python3 tools/scripts/generate-adapters.py" >&2
+    exit 1
+  fi
+fi
 exit 0

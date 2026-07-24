@@ -78,7 +78,7 @@ If the project uses the acceptance test tier system (see `../../instructions/TES
   - FAILING → fix the regression, then re-run
 - Reset STALE and UNTESTED tests to `status: ready` to signal they need re-running.
 
-### 6. Re-run tests
+### 7. Re-run tests
 For each test that needs re-running:
 1. Read the test note's Preconditions and Procedure sections.
 2. If `kind: manual`: present the procedure to the user for execution. The user runs through the steps and reports PASS or FAIL.
@@ -90,11 +90,11 @@ For each test that needs re-running:
    - Add evidence to the Evidence section
 5. Update `../../../SNAPSHOT.yaml` with the new test status.
 
-### 7. Final release gate
+### 8. Final release gate
 - Re-check the matrix: all tests must now be **CURRENT** and `status: passing`.
 - If all pass: "Release verification complete. All N acceptance tests passing."
 
-### 8. Create/update release note
+### 9. Create/update release note
 When all tests pass:
 1. Allocate a new `REL-*` ID from `counters.REL` in SNAPSHOT.yaml.
 2. Create `docs/releases/REL-####-<version>.md` from `docs/__templates__/release.md`:
@@ -110,13 +110,13 @@ When all tests pass:
 4. Update `releases.latest` and prepend to `releases.history` in SNAPSHOT.yaml.
 5. Suggest a git tag: `git tag -a v<version> -m "Release <version>"`.
 
-### 9. Ship the release
+### 10. Ship the release
 After deployment/merge to production:
 1. Update the REL-* note: `status: released`.
 2. Update `releases.latest.status` and the corresponding `releases.history` entry to `released`.
 3. Create a `CHG-*` note documenting the release if appropriate.
 
-### 10. Post-release
+### 11. Post-release
 - The `last_run` dates on all re-run tests now reflect the release verification date.
 - On the next release, only tests linked to features that changed after this date will be flagged as STALE.
 - This creates a natural cycle: change → stale → re-verify → current → change → stale → ...

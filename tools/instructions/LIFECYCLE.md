@@ -74,7 +74,7 @@ Agents are REQUIRED to automatically keep the documentation system in sync with 
 
 ## Close-out (must happen after work)
 After completing a task/issue/feature:
-1. Update the Markdown note status (`done` / `fixed` / `closed` / `done`).
+1. Update the Markdown note status (task `done`, issue `fixed` then `closed`, requirement `verified`, feature `done`).
 2. Update `../../SNAPSHOT.yaml` to reflect:
    - updated statuses
    - new/changed relationships (links)

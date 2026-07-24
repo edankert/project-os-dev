@@ -102,7 +102,7 @@ views:
     name: All (Open)
     filters:
       and:
-        - status.containsAny("accepted", "active", "approved", "backlog", "draft", "in-progress", "next", "open", "pending", "planned", "proposed", "triage", "reference")
+        - status.containsAny("active", "approved", "backlog", "blocked", "doing", "draft", "failing", "implemented", "in-progress", "in-review", "mitigating", "monitoring", "next", "open", "planned", "proposed", "ready", "reopened", "staged", "triage")
     groupBy:
       property: type
       direction: ASC

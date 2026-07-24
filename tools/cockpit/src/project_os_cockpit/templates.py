@@ -149,10 +149,25 @@ def page(
             f'<script type="application/json" id="cockpit-config">{cockpit_config}</script>\n'
             '<div class="cockpit">\n'
             '  <aside id="cockpit-left" class="cockpit-pane cockpit-left" aria-label="Features by phase"></aside>\n'
-            '  <main id="cockpit-centre" class="cockpit-centre">\n'
+            '  <div class="cockpit-centre-column">\n'
+            '    <main id="cockpit-centre" class="cockpit-centre">\n'
             f"{meta_html}"
             f'<article class="content">\n{body_html}\n</article>\n'
-            "  </main>\n"
+            "    </main>\n"
+            '    <div id="cockpit-bottom-resizer" class="cockpit-bottom-resizer" aria-hidden="true"></div>\n'
+            '    <section id="cockpit-bottom-panel" class="cockpit-bottom-panel" aria-label="Embedded tools">\n'
+            '      <header class="cockpit-bottom-header">\n'
+            '        <svg class="cockpit-bottom-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+            '<path d="m7 11 2-2-2-2"/>'
+            '<path d="M11 13h4"/>'
+            '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>'
+            '</svg>\n'
+            '        <span class="cockpit-bottom-title">Terminal</span>\n'
+            '        <button class="cockpit-bottom-toggle" type="button" aria-label="Collapse panel" aria-expanded="true">▾</button>\n'
+            '      </header>\n'
+            '      <div id="cockpit-bottom-body" class="cockpit-bottom-body"></div>\n'
+            '    </section>\n'
+            '  </div>\n'
             '  <aside id="cockpit-right" class="cockpit-pane cockpit-right" aria-label="Relationships"></aside>\n'
             "</div>\n"
             '<script src="/_static/cockpit.js" defer></script>\n'
@@ -183,11 +198,14 @@ def page(
         '<body>\n'
         '<header class="page-header">\n'
         '  <div class="page-header-row page-header-row-1">\n'
+        '    <div id="cockpit-left-toggle-slot" class="cockpit-left-toggle-slot"></div>\n'
         f'    <a class="home-link" href="/" title="Home — {escape(_PROJECT_NAME)}">{escape(_PROJECT_NAME)}</a>\n'
         '    <div id="cockpit-mode-slot" class="cockpit-mode-slot"></div>\n'
         '    <div id="cockpit-platform-slot" class="cockpit-platform-slot"></div>\n'
         '    <div id="cockpit-filter-slot" class="cockpit-filter-slot"></div>\n'
+        '    <div id="cockpit-follow-slot" class="cockpit-follow-slot"></div>\n'
         '    <button class="theme-toggle" type="button" aria-label="Toggle light / dark theme" aria-pressed="false">◐</button>\n'
+        '    <div id="cockpit-right-toggle-slot" class="cockpit-right-toggle-slot"></div>\n'
         '  </div>\n'
         + (
             '  <div class="page-header-row page-header-row-2">\n'
@@ -282,7 +300,18 @@ def _metadata_strip_html(meta: dict[str, Any], resolver: Resolver | None) -> str
         f"  <dt>{escape(k)}</dt>\n  <dd>{v}</dd>"
         for k, v in pairs
     )
-    return f'<aside class="metadata-strip"><dl>\n{rows}\n</dl></aside>\n'
+    # Rendered as <details open> so the strip is collapsible — JS persists
+    # the open/closed state under the cockpit's collapsed-set mechanism so
+    # toggling on one note carries over to subsequent navigations.
+    return (
+        '<details class="metadata-strip" open>\n'
+        '  <summary class="metadata-strip-summary">'
+        '<span class="metadata-strip-chevron" aria-hidden="true"></span>'
+        '<span>Frontmatter</span>'
+        '</summary>\n'
+        f'  <dl>\n{rows}\n</dl>\n'
+        '</details>\n'
+    )
 
 
 def _render_meta_value(key: str, value: Any, resolver: Resolver | None) -> str:
@@ -353,6 +382,7 @@ STATUS_RANK: dict[str, int] = {
     "todo": 32, "open": 33, "pending": 33, "triage": 34, "reference": 35,
     # done
     "done": 60, "fixed": 60, "merged": 60, "published": 60,
+    "implemented": 62,
     "verified": 65, "passing": 65,
     # dead / blocked
     "closed": 80, "obsolete": 81, "blocked": 90, "reopened": 91, "failing": 92,
@@ -361,7 +391,7 @@ STATUS_RANK_DEFAULT: int = 50
 
 # Statuses whose collapsible group defaults to closed (still expandable).
 COLLAPSED_BY_DEFAULT: frozenset[str] = frozenset(
-    {"done", "fixed", "merged", "published", "verified", "passing",
+    {"done", "fixed", "merged", "published", "implemented", "verified", "passing",
      "closed", "obsolete"}
 )
 

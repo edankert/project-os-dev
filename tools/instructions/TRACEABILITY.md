@@ -4,7 +4,7 @@ id: INSTR-TRACEABILITY
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-01-27
+updated: 2026-07-21
 tags: [instructions, traceability]
 ---
 
@@ -15,8 +15,9 @@ This documentation system relies on explicit link graphs so agents can follow re
 ## Required links (minimum)
 - Task (`[[task]]`)
   - Must have exactly one `parent` (feature or issue).
+  - Exception: a `deferred` task has no `parent`; `origin` (the former parent) plus a forward home (`phase`) replace it while parked. On re-adoption a new `parent` is assigned and `origin` stays as history. See `../instructions/STATUSES.md`, "Deferral and re-adoption".
 - Feature (`[[feature]]`)
-  - Should link its `requirements` and `tasks` (frontmatter lists).
+  - Should link its `requirements` and `tasks` (frontmatter lists). `tasks` is the feature's **current scope**; descoped (deferred) children move to the `deferred` list instead.
 - Phase (`[[phase]]`)
   - Should link planned `features`, `requirements`, `tasks`, and `issues` when phase-gated development is used.
   - Items with a `phase` value should link back to the corresponding `PHASE-*` note where possible.

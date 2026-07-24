@@ -10,8 +10,16 @@
  *
  * The browser's EventSource auto-reconnects with backoff when the server
  * restarts; nothing extra is needed here for that.
+ *
+ * Cockpit pages are handled separately: cockpit.js does a soft pane-by-
+ * pane refresh in response to `file-changed` (TASK-0014) so the embedded
+ * terminal session survives. When the cockpit shell is mounted on this
+ * page (presence of #cockpit-centre), bail — the full `location.reload()`
+ * below would tear down the iframe.
  */
 (function () {
+  if (document.getElementById("cockpit-centre")) return;
+
   var meta = document.querySelector('meta[name="project-os-cockpit:source"]');
   if (!meta) return;
   var source = meta.getAttribute("content") || "";

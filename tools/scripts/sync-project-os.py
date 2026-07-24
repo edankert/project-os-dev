@@ -1,0 +1,230 @@
+#!/usr/bin/env python3
+"""Manifest-driven project-os template sync with baseline divergence detection.
+
+Replaces the blunt rsync sync: every template-owned file is compared against the
+baseline (the template commit recorded in .project-os-sync at the last sync).
+
+  target == new template version          -> up to date
+  target missing                          -> copied (seed paths: only ever copied once)
+  target == baseline version              -> safe fast-forward, overwritten
+  target != baseline (locally modified)   -> SKIPPED and reported for hand-merge
+                                             (--force overwrites; 'merge' paths are expected to diverge)
+
+Ownership per path comes from tools/sync/MANIFEST.yaml in the UPSTREAM template
+(more specific path wins). After a non-dry run the upstream HEAD sha is recorded
+in .project-os-sync as the next baseline, git hooks are reinstalled, and derived
+adapter artifacts are regenerated (tools/scripts/generate-adapters.py).
+
+Stdlib only. Usage: sync-project-os.py <path-to-upstream-project-os> [--dry-run] [--force] [--baseline SHA]
+"""
+from __future__ import annotations
+
+import argparse
+import fnmatch
+import re
+import shutil
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+
+STATE_FILE = ".project-os-sync"
+
+
+def parse_manifest(path):
+    owners, excludes = {}, {}
+    section = None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if re.match(r"^paths:\s*$", line):
+            section = "paths"
+            continue
+        if re.match(r"^excludes:\s*$", line):
+            section = "excludes"
+            continue
+        if re.match(r"^\S", line):
+            section = None
+            continue
+        m = re.match(r'^\s+"([^"]+)":\s*(\w[\w-]*)\s*(#.*)?$', line)
+        if section == "paths" and m:
+            owners[m.group(1)] = m.group(2)
+            continue
+        m = re.match(r'^\s+"([^"]+)":\s*\[(.*)\]\s*(#.*)?$', line)
+        if section == "excludes" and m:
+            excludes[m.group(1)] = re.findall(r'"([^"]+)"', m.group(2)) or [
+                p.strip().strip("'") for p in m.group(2).split(",") if p.strip()
+            ]
+    return owners, excludes
+
+
+def ownership_for(rel, owners):
+    """Most specific manifest entry that covers rel (dirs end with '/')."""
+    best, best_len = None, -1
+    for path, owner in owners.items():
+        if path.endswith("/"):
+            if (rel + "/").startswith(path) and len(path) > best_len:
+                best, best_len = owner, len(path)
+        elif rel == path and len(path) > best_len:
+            best, best_len = owner, len(path)
+    return best
+
+
+def excluded(rel, src_base, excludes):
+    for base, patterns in excludes.items():
+        if not (rel + "/").startswith(base):
+            continue
+        for part in rel[len(base):].split("/"):
+            if any(fnmatch.fnmatch(part, pat) for pat in patterns):
+                return True
+    return False
+
+
+def git_show(src_repo, sha, rel):
+    """Bytes of rel at sha in the upstream repo, or None if unavailable."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(src_repo), "show", "%s:%s" % (sha, rel)],
+            capture_output=True, check=True,
+        )
+        return out.stdout
+    except (subprocess.CalledProcessError, OSError):
+        return None
+
+
+def read_state(root):
+    path = root / STATE_FILE
+    if not path.is_file():
+        return {}
+    state = {}
+    for line in path.read_text(encoding="utf-8").splitlines():
+        m = re.match(r"^(\w+):\s*\"?([^\"]*)\"?\s*$", line)
+        if m:
+            state[m.group(1)] = m.group(2)
+    return state
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description="Sync project-os template-owned files with divergence detection.")
+    ap.add_argument("src", help="Path to the upstream project-os template repo")
+    ap.add_argument("--repo-root", default=".", help="Downstream repo root (default: cwd)")
+    ap.add_argument("--dry-run", action="store_true", help="Report actions without writing")
+    ap.add_argument("--force", action="store_true", help="Overwrite locally diverged template-owned files")
+    ap.add_argument("--baseline", default=None, help="Baseline template commit (default: from %s)" % STATE_FILE)
+    args = ap.parse_args(argv)
+
+    src = Path(args.src).resolve()
+    root = Path(args.repo_root).resolve()
+    if not (src / "tools" / "sync" / "MANIFEST.yaml").is_file():
+        print("sync-project-os: no tools/sync/MANIFEST.yaml in upstream %s" % src, file=sys.stderr)
+        return 2
+    if src == root:
+        print("sync-project-os: upstream and downstream are the same directory", file=sys.stderr)
+        return 2
+    owners, excludes = parse_manifest(src / "tools" / "sync" / "MANIFEST.yaml")
+    baseline = args.baseline or read_state(root).get("baseline_sha") or None
+
+    copied, updated, seeded, uptodate = [], [], [], []
+    diverged, merge_pending, gone = [], [], []
+    processed = set()
+
+    def sync_file(rel, owner):
+        if rel in processed:
+            return
+        processed.add(rel)
+        src_file = src / rel
+        target = root / rel
+        new = src_file.read_bytes()
+        if not target.is_file():
+            (seeded if owner == "seed" else copied).append(rel)
+            if not args.dry_run:
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src_file, target)
+            return
+        if owner == "seed":
+            return  # seeded once; downstream owns it now
+        current = target.read_bytes()
+        if current == new:
+            uptodate.append(rel)
+            return
+        base = git_show(src, baseline, rel) if baseline else None
+        if base is not None and current == base:
+            updated.append(rel)
+            if not args.dry_run:
+                shutil.copy2(src_file, target)
+            return
+        if args.force:
+            updated.append(rel + " (forced)")
+            if not args.dry_run:
+                shutil.copy2(src_file, target)
+            return
+        (merge_pending if owner == "merge" else diverged).append(rel)
+
+    # walk manifest-owned files as they exist upstream
+    for rel_base, owner in sorted(owners.items()):
+        if owner in ("project", "generated"):
+            continue
+        base_path = src / rel_base
+        if rel_base.endswith("/"):
+            if not base_path.is_dir():
+                continue
+            for f in sorted(p for p in base_path.rglob("*") if p.is_file()):
+                rel = f.relative_to(src).as_posix()
+                if ".git" in f.parts or excluded(rel, rel_base, excludes):
+                    continue
+                eff = ownership_for(rel, owners)
+                if eff in ("project", "generated"):
+                    continue
+                sync_file(rel, eff)
+            # deletions: downstream files under a template dir that upstream no longer ships
+            tgt_dir = root / rel_base
+            if owner == "template" and tgt_dir.is_dir():
+                for f in sorted(p for p in tgt_dir.rglob("*") if p.is_file()):
+                    rel = f.relative_to(root).as_posix()
+                    if ".git" in f.parts or excluded(rel, rel_base, excludes):
+                        continue
+                    if ownership_for(rel, owners) == "template" and not (src / rel).is_file():
+                        gone.append(rel)
+        elif base_path.is_file():
+            sync_file(rel_base, owner)
+
+    prefix = "[dry-run] " if args.dry_run else ""
+    print("%ssync-project-os: %d copied, %d updated, %d seeded, %d up-to-date (baseline: %s)" % (
+        prefix, len(copied), len(updated), len(seeded), len(uptodate), baseline or "none"))
+    for rel in copied + updated + seeded:
+        print("%s  synced  %s" % (prefix, rel))
+    if diverged:
+        print("%sACTION REQUIRED — locally diverged template-owned files (hand-merge or --force):" % prefix)
+        for rel in diverged:
+            print("%s  DIVERGED  %s" % (prefix, rel))
+    if merge_pending:
+        print("%sExpected-divergence (merge-owned) files left alone — merge upstream changes by hand if relevant:" % prefix)
+        for rel in merge_pending:
+            print("%s  MERGE  %s" % (prefix, rel))
+    if gone:
+        print("%sUpstream no longer ships (left in place; remove manually if obsolete):" % prefix)
+        for rel in gone:
+            print("%s  GONE  %s" % (prefix, rel))
+
+    if not args.dry_run:
+        try:
+            sha = subprocess.run(["git", "-C", str(src), "rev-parse", "HEAD"],
+                                 capture_output=True, check=True, text=True).stdout.strip()
+        except (subprocess.CalledProcessError, OSError):
+            sha = ""
+        if sha:
+            stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+            (root / STATE_FILE).write_text(
+                'baseline_sha: "%s"\nsynced: "%s"\nsource: "%s"\n' % (sha, stamp, src), encoding="utf-8")
+        for cmd in (["bash", str(root / "tools" / "scripts" / "install-git-hooks.sh")],
+                    ["python3", str(root / "tools" / "scripts" / "generate-adapters.py"),
+                     "--repo-root", str(root), "--install-hooks"]):
+            if Path(cmd[1]).is_file():
+                r = subprocess.run(cmd, cwd=root, capture_output=True, text=True)
+                if r.returncode != 0:
+                    print("WARN: %s failed: %s" % (Path(cmd[1]).name, (r.stderr or r.stdout).strip()[:200]))
+
+    print("%sSync complete. Review changes, run bash tools/scripts/validate-docs.sh, then tools/skills/snapshot-sync/SKILL.md for anything it reports." % prefix)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

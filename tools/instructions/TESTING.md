@@ -1,3 +1,13 @@
+---
+type: instruction
+id: INSTR-TESTING
+status: active
+owner: group:maintainers
+created: 2026-03-16
+updated: 2026-07-17
+tags: [instructions, testing]
+---
+
 # Acceptance test rules
 
 This document defines the acceptance test tier system, lifecycle rules, and release gating requirements.
@@ -48,7 +58,7 @@ This document defines the acceptance test tier system, lifecycle rules, and rele
 
 ## Acceptance test document structure
 
-The acceptance test document (`docs/tests/ACCEPTANCE_TESTS.md`) should follow this structure:
+The acceptance test document (`docs/tests/ACCEPTANCE_TESTS.md`) is scaffolded from `../../docs/__templates__/acceptance-tests.md` and should follow this structure:
 
 ```markdown
 # Acceptance Test Suite: <Project> v<version>
@@ -92,7 +102,7 @@ The acceptance test document (`docs/tests/ACCEPTANCE_TESTS.md`) should follow th
 A guarding test that cannot fail does not guard: LLM-authored test suites cluster their blind spots in the same places the LLM-authored fix does. Every Tier 2 regression test (and any `TST-*` gating a terminal status) should carry adequacy evidence in its note:
 
 - **Minimum bar (cheap, always possible):** demonstrate the test fails when the fix is reverted or deliberately broken, and record that in the `TST-*` note's Adequacy section (or `adequacy` frontmatter field).
-- **Stronger bar (when tooling exists):** run mutation testing over the code the test guards and record the score in `mutation_score`. A surviving mutant in the guarded code means the test does not actually guard it.
+- **Stronger bar (when tooling exists):** run mutation testing over the code the test guards and record the score in `mutation_score`. A surviving mutant in the guarded code means the test does not actually guard it. Per-stack tools: `mutmut` (Python), Stryker (`stryker-js`/`stryker-net` for JS/TS/C#), `cargo-mutants` (Rust), PIT/`pitest` (JVM/Kotlin/Android), `muter` (Swift/iOS); record the tool and command in the test note's evidence so runs are reproducible.
 - **Independence:** tests created alongside the fix they guard should get an independent review pass (`../skills/independent-review/SKILL.md`) — the author of a fix must not be the sole judge of its guarding test.
 - **Cadence threshold:** if mutation scores on guarding tests are consistently above ~80%, reduce the adequacy-check cadence; below that, keep checking every guarded fix.
 

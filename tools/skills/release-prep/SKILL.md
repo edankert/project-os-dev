@@ -47,8 +47,8 @@ tags: [skills, release]
 1. Allocate `REL-####` from `counters.REL` in SNAPSHOT.
 2. Create `../../../docs/releases/REL-####-v<version>.md` from `../../../docs/__templates__/release.md`.
 3. Populate:
-   - **Features Included:** All `FEAT-*` with status `done` or `active` that are shipping.
-   - **Features NOT Included:** Any `FEAT-*` with status `todo` or `backlog` with reason for deferral.
+   - **Features Included:** All `FEAT-*` with status `done` (or `in-review` when shipping ahead of final verification) that are shipping.
+   - **Features NOT Included:** Any `FEAT-*` with status `backlog`, `planned`, or `in-progress`, with reason for deferral.
    - **Issues Fixed:** All `ISS-*` with status `fixed` that were fixed since the previous release.
    - **Known Issues:** All `ISS-*` shipping unfixed (from step 1 audit).
    - **Verification:** Acceptance test status summary, unit test counts.
@@ -88,8 +88,8 @@ Status: READY TO SHIP / BLOCKED (reasons)
 ```
 
 ### 8. After deployment
-Once the release is deployed/uploaded:
-1. Update `REL-*` status to `published`.
+Once the release is deployed/uploaded (release statuses follow `../../instructions/STATUSES.md`: `draft` → `staged` → `released`; `../release-verification/SKILL.md` owns the `staged` → `released` transition):
+1. Update `REL-*` status to `released` (via `staged` once verification completes).
 2. Clear `focus.release`.
 3. Remove Tier 3 acceptance tests.
 4. Tag the repo: `git tag -a v<version> -m "Release <version>"`.

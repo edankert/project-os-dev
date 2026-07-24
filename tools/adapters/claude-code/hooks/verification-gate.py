@@ -113,7 +113,19 @@ def main():
     if not TERMINAL_RE.search(new_content):
         return 0
 
-    project_dir = Path(payload.get("cwd") or ".").resolve()
+    # Root resolution: the TARGET file's repo governs the edit (cross-repo edits
+    # must gate against the target's SNAPSHOT, not the session repo's), then cwd,
+    # then CLAUDE_PROJECT_DIR.
+    project_dir = None
+    if file_path:
+        cur = Path(file_path).resolve().parent
+        while cur != cur.parent:
+            if (cur / "SNAPSHOT.yaml").is_file():
+                project_dir = cur
+                break
+            cur = cur.parent
+    if project_dir is None:
+        project_dir = Path(payload.get("cwd") or ".").resolve()
     if not (project_dir / "SNAPSHOT.yaml").is_file():
         import os
         project_dir = Path(os.environ.get("CLAUDE_PROJECT_DIR", ".")).resolve()

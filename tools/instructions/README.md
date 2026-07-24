@@ -4,7 +4,7 @@ id: INSTR-INDEX
 status: active
 owner: group:maintainers
 created: 2026-01-26
-updated: 2026-01-26
+updated: 2026-07-17
 tags: [instructions]
 ---
 
@@ -31,3 +31,7 @@ This directory contains **normative instructions** for how documentation and aut
 - Decisions/ADRs: `DECISIONS.md`
 - Quality/close-out: `QUALITY.md`
 - Hook contracts: `HOOKS.md`
+- Acceptance test tiers: `TESTING.md`
+- Handoff/recovery: `HANDOFF.md`
+- Importing existing projects: `IMPORTING.md`
+- Template syncing: `SYNCING.md`

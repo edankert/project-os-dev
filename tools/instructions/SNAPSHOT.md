@@ -4,7 +4,7 @@ id: INSTR-SNAPSHOT
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-01-27
+updated: 2026-07-21
 tags: [instructions, snapshot]
 ---
 
@@ -21,11 +21,12 @@ tags: [instructions, snapshot]
 - `version` (int): Schema version (bump only when breaking changes are made).
 - `updated` (timestamp string): Last update time.
 - `project` (object): Project metadata (name/summary/repo root).
-- `session` (object, optional): Active agent session metadata for recovery.
+- `team` (object, optional): Team model listing members and the tool adapter each uses. Descriptive only — agent coordination is delegated to the tool's native orchestration, so the snapshot holds no session, claim, or heartbeat state.
 - `retention` (object): Retention policy for keeping the snapshot small (optional but recommended).
 - `counters` (object): Highest allocated IDs per type (used for new ID allocation).
 - `focus` (object): Current in-flight IDs and active phase (empty strings if none).
 - `items` (object): Canonical state for each tracked item type.
+- `releases` (object, optional): Lightweight latest-release context (`releases.latest`, `releases.history`) for agents; full history stays in `REL-*` notes. Ships commented out in the template and is uncommented at the first release by `../skills/release-verification/SKILL.md`.
 - `metrics` (object): Derived counts (optional but recommended).
 
 ## Required `items.*` collections
@@ -40,6 +41,7 @@ The snapshot should contain (at least) these collections:
 - `items.workflows`
 - `items.changes`
 - `items.decisions` (ADRs)
+- `items.releases`
 
 Projects may add collections (e.g. `epics`, `milestones`) if rules are documented and applied consistently.
 
@@ -61,14 +63,11 @@ Each item entry must include:
 - `title` (string): Short human title (no ID).
 - `status` (string)
 - `owner` (string)
-Optional collaboration fields:
-- `claimed_by` (string): Agent/user currently working this item (if any).
-- `claim_started` (string): Timestamp when the claim began.
 
 Then type-specific fields, for example:
 - Phase: `order`, `goal`, `features` (FEAT IDs), `requirements` (REQ IDs), `tasks` (TASK IDs), `issues` (ISS IDs)
-- Feature: `goal`, `phase` (optional), `requirements` (REQ IDs), `tasks` (TASK IDs), `issues` (ISS IDs), `tests` (TST IDs), `workflows` (WF IDs), `release`
-- Task: `parent` (FEAT/ISS ID), `phase` (optional, inherit from parent), `effort`, `due`, `depends`, `blocks`, `related`
+- Feature: `goal`, `phase` (optional), `requirements` (REQ IDs), `tasks` (TASK IDs, current scope), `deferred` (TASK IDs descoped out of scope), `issues` (ISS IDs), `tests` (TST IDs), `workflows` (WF IDs), `release`
+- Task: `parent` (FEAT/ISS ID; empty while `deferred`), `origin` (former parent while parked), `phase` (optional, inherit from parent; required forward home while `deferred`), `effort`, `due`, `depends`, `blocks`, `related`
 - Task: (verification) `tests` (TST IDs) when applicable
 - Issue: `severity`, `component`, `phase` (optional), `features` (FEAT IDs), optional `tasks` (TASK IDs), optional `tests` (TST IDs)
 - Requirement: `priority`, `scope`, `phase` (optional), `features` (FEAT IDs), `verifies` (paths/links), optional `tests` (TST IDs)
@@ -77,6 +76,7 @@ Then type-specific fields, for example:
 - Workflow: `entrypoints` (paths), optional `inputs`/`outputs`
 - Change: `commit`, `pr`, `issues` (ISS IDs), `features` (FEAT IDs)
 - Decision (ADR): `decision`, `context`, `supersedes`, `superseded`, `related` (IDs)
+- Release: `version`, `tag`, `date`, optional `platform`, `features` (FEAT IDs), `changes` (CHG IDs), `tests_verified` (TST IDs), `previous_release`
 
 ## Invariants
 - `file` must point to an existing note under `../../docs/`, and the note’s frontmatter `id` should match the snapshot key.
@@ -86,18 +86,27 @@ Then type-specific fields, for example:
   - If a task `parent: FEAT-0001`, that feature’s `tasks` must include the task ID.
   - If an issue lists `features: [FEAT-0001]`, the feature should list the issue under `issues` (unless intentionally omitted).
 
-## Session fields (optional)
-Use these to support recovery and multi-agent collaboration:
-- `session.agent_id`: identifier for the current agent/user.
-- `session.started`: timestamp for when the session began.
-- `session.last_heartbeat`: timestamp for the last update by the agent.
-- `session.current_step`: short text describing the current work step.
+## Metrics (`metrics.counts`)
+
+`metrics.counts` values are **computed, not hand-maintained**: `tools/scripts/validate-docs.py` recomputes them from all notes under `docs/` (the archive) plus snapshot items, reports discrepancies as errors, and rewrites them with `--fix-metrics`. Definitions (only keys present in the repo's `metrics.counts` are checked):
+
+- `features_total` / `features_done`: all `FEAT-*`; done = status `done`.
+- `phases_total` / `phases_done`: all `PHASE-*`; done = status `done`.
+- `tasks_total` / `tasks_done`: all `TASK-*`; done = status `done`.
+- `tests_total` / `tests_passing` / `tests_failing`: all `TST-*`; by status `passing` / `failing`.
+- `issues_open`: `ISS-*` with status `open`, `in-progress`, `blocked`, or `reopened`; `issues_triage`: status `triage`.
+- `tasks_deferred` / `issues_deferred`: `TASK-*` / `ISS-*` with status `deferred` (parked work stays visible; see `STATUSES.md`, "Deferral and re-adoption").
+- `risks_open`: `RISK-*` with status `open`, `mitigating`, or `monitoring`.
+- `releases_total`: all `REL-*`; `decisions_total`: all `ADR-*`.
+
+## Team model (optional)
+`team.members` lists each participant with the tool adapter they use (`id`, `tool`, `adapter`). It is descriptive context for agents, not coordination state: project-os deliberately holds no `session`, `claimed_by`, `claim_started`, or heartbeat fields — multi-agent coordination belongs to the tool's native orchestration (Agent Teams, Codex parallel runs). Handoff and recovery run off the snapshot, notes, and git instead; see `HANDOFF.md`.
 
 ## Update rules (agent behavior)
 - Agents/LLMs must update the snapshot **before** starting implementation work (create/modify issues/features/tasks/risks as needed).
 - After finishing work, agents/LLMs must update snapshot statuses and relationships and clear/move `focus`.
 - Keep `counters` up to date when allocating new IDs.
-- If using multi-agent collaboration, update `session` and `claimed_by` during work and clear claims on handoff.
+- Record handoff context in the item notes (`HANDOFF.md`), not in snapshot claim fields.
 
 ## Retention policy (active + recent)
 The snapshot is not a full historical database.
@@ -109,6 +118,7 @@ Recommended approach:
   - features: anything not `done`
   - risks: anything not `closed`
   - requirements: keep `approved` requirements that still matter for current work, retire when obsolete
+  - `deferred` items of every type are **active** — never prune them; they stay in the snapshot (with `origin` and a forward home) until re-adopted or cancelled. Parked work that leaves the snapshot is lost work.
 - Keep **recent** changes only in `items.changes` (e.g. last 10–50), and rely on `../../docs/changes/` notes for history.
 - Keep **all history in notes** (issues/tasks/features/changes/ADRs remain in `../../docs/**` even if removed from the snapshot).
 

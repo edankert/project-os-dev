@@ -1,0 +1,54 @@
+# project-os sync manifest — consumed by tools/scripts/sync-project-os.py.
+# Declares per-path ownership for template syncs. More specific paths override less specific ones.
+#
+# ownership values:
+#   template  - template-owned: overwritten when the downstream copy matches the recorded baseline;
+#               locally diverged copies are skipped and reported for hand-merge (--force overrides)
+#   merge     - template-owned base where downstream divergence is EXPECTED (real project content
+#               lives here in some repos); never auto-overwritten when diverged, reported as info
+#   seed      - copied once when missing downstream; never overwritten after that
+#   project   - never touched by sync; listed so the boundary is explicit and auditable
+#   generated - not synced; regenerated post-sync by tools/scripts/generate-adapters.py
+version: 1
+paths:
+  "tools/instructions/": template
+  "tools/skills/": template
+  "tools/agents/": template
+  "tools/adapters/": template
+  "tools/scripts/": template
+  "tools/sync/": template
+  "tools/cockpit/": template
+  "docs/__templates__/": template
+  "docs/__templates__/SCHEMAS.md": merge
+  "docs/__bases__/": template
+  "docs/phases/": merge
+  "docs/PHASES.md": merge
+  "docs/README.md": template
+  "docs/INDEX.md": template
+  "CONTEXT.md": template
+  "AGENTS.md": template
+  "LLM_BRIEF.md": template
+  "SECURITY.md": template
+  "ROADMAP.md": merge
+  "docs/reference/README.md": seed
+  ".github/workflows/validate-docs.yml": seed
+  ".github/workflows/link-check.yml": seed
+  ".prettierrc": seed
+  ".markdownlint.jsonc": seed
+  ".yamllint.yml": seed
+  "SNAPSHOT.yaml": project
+  "CLAUDE.md": project
+  "docs/features/": project
+  "docs/issues/": project
+  "docs/requirements/": project
+  "docs/tests/": project
+  "docs/changes/": project
+  "docs/decisions/": project
+  "docs/workflows/": project
+  "docs/reference/": project
+  "docs/research/": project
+  ".claude/skills/": generated
+  ".claude/agents/": generated
+  ".cursor/rules/": generated
+excludes:
+  "tools/cockpit/": [".venv", "*.egg-info", "__pycache__", ".pytest_cache"]

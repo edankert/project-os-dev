@@ -4,7 +4,7 @@ id: TEMPLATES-README
 status: active
 owner: team:docs
 created: 2026-01-26
-updated: 2026-05-08
+updated: 2026-07-17
 tags: [templates]
 ---
 
@@ -15,9 +15,10 @@ Canonical templates for note types and their front-matter keys.
 Field definitions: `[[SCHEMAS]]`.
 
 ## What goes here
-- One template per note type (`phase.md`, `issue.md`, `feature.md`, `task.md`, `adr.md`, `change.md`, `workflow.md`, etc.).
+- One template per note type (`phase.md`, `issue.md`, `feature.md`, `task.md`, `adr.md`, `change.md`, `workflow.md`, `release.md`, `plan.md`, etc.).
   - Includes `test.md` for manual/automated verification notes.
   - Includes `reference.md` for durable explanatory or registry-style documents.
+  - Includes `acceptance-tests.md` for the consolidated `docs/tests/ACCEPTANCE_TESTS.md` release checklist (see `../../tools/instructions/TESTING.md`).
 
 ## How to use templates
 - Copy the appropriate template into the target directory.

@@ -1,0 +1,23 @@
+name: link-check
+
+# External-URL link checking only; internal note links (wikilinks/IDs) are
+# validated mechanically by tools/scripts/validate-docs.py in the validate-docs workflow.
+on:
+  schedule:
+    - cron: "0 6 * * 1" # weekly, Monday 06:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  lychee:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check external links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --no-progress
+            --scheme https --scheme http
+            --exclude-path docs/__templates__
+            "docs/**/*.md" "tools/**/*.md" "*.md"
+          fail: true

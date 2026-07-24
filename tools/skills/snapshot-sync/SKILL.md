@@ -47,5 +47,5 @@ tags: [skills, snapshot]
    - remove snapshot entries that policy excludes from active state
    - preserve note files as the archive
    - keep recent changes within `recent_changes_max`
-7. If `claimed_by` exists, ensure it is intentional and not stale (update or clear).
+7. Verify `focus` still reflects reality (an item left in `focus` after its work finished is stale handoff state); clear or move it.
 8. Update `metrics` counts in the snapshot after reconciliation and pruning.

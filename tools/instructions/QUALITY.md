@@ -4,7 +4,7 @@ id: INSTR-QUALITY
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-01-27
+updated: 2026-07-21
 tags: [instructions, quality]
 ---
 
@@ -21,9 +21,9 @@ These rules define what “done” means for work tracked in this documentation 
 - If behavior/paths/contracts changed, create a `CHG-*` note and link it.
 
 ## Documentation Fidelity
-- Ensure `metrics` in `../../SNAPSHOT.yaml` accurately reflect the count of `done` features and tasks.
+- Ensure `metrics.counts` in `../../SNAPSHOT.yaml` matches the computed counts (definitions in `SNAPSHOT.md`); the validator checks this and `bash tools/scripts/validate-docs.sh --fix-metrics` rewrites the block when it drifts.
 - Verify that every item in the snapshot has a valid `file` path that exists on disk.
-- Discrepancies between the filesystem and the snapshot are considered a build failure — literally: `tools/scripts/validate-docs.sh` exits non-zero on them and runs at three mechanical layers (session Stop hook, git pre-commit via `tools/scripts/install-git-hooks.sh`, and CI via `.github/workflows/validate-docs.yml`).
+- Discrepancies between the filesystem and the snapshot are considered a build failure — literally: `tools/scripts/validate-docs.sh` exits non-zero on them (metric-count drift included) and runs at three mechanical layers (session Stop hook, git pre-commit via `tools/scripts/install-git-hooks.sh`, and CI via `.github/workflows/validate-docs.yml`).
 - **Mechanical enforcement:** run `bash tools/scripts/validate-docs.sh` to check snapshot↔filesystem agreement, frontmatter/status consistency, counter integrity, link-graph integrity, and the verification invariant. Convention-only rules get silently skipped under context pressure; the validator does not.
 - **Reconciliation:** Use the `snapshot-sync` skill (`../skills/snapshot-sync/SKILL.md`) to reconcile any drift the validator reports; use `../skills/docs-audit/SKILL.md` for the semantic (cross-document) consistency the validator cannot check mechanically.
 
@@ -32,8 +32,9 @@ These rules define what “done” means for work tracked in this documentation 
   - If verification is automated: link to the relevant `[[test]]` and ensure it is `status: passing` (and record evidence in the test note).
   - If verification is manual: the LLM must create a `[[test]]` note with a clear procedure; a human runs it and reports results; the LLM then updates the test to `passing`/`failing` with evidence.
 - Do not mark an issue `closed` unless the verifying test(s) are `passing` (use `fixed` for “implemented but not yet verified”).
-- Do not mark a requirement `verified` unless the verifying test(s) are `passing`.
-- Do not mark a feature `done` unless its required tasks are `done` and required tests are `passing`.
+- Do not mark a requirement `verified` unless the verifying test(s) are `passing`. Use `implemented` for "built, not yet formally verified" — and do set it: leaving a requirement at `draft`/`approved` after all its implementing features have reached a terminal status is a build failure (validator REQ-STALE), because requirement status is how the project reports what still needs building. Where the features were `cancelled`/`superseded` rather than delivered, the requirement is superseded or cancelled — not advanced.
+- Do not tick an acceptance criterion that the delivered system does not satisfy. If the work departed from a criterion, amend/narrow/supersede it with recorded rationale (`../skills/close-out/SKILL.md`, "Requirement advancement"); ticking to fit is the requirement-level equivalent of a fake `done`.
+- Do not mark a feature `done` unless every task in its `tasks:` list is **scope-resolved** — `done` or `cancelled` — and required tests are `passing`. `deferred` never resolves scope: a deferred task must first be descoped out of the `tasks:` list via the deferral procedure (`STATUSES.md`, "Deferral and re-adoption"; `../skills/status-transition/SKILL.md`). Do not flip a parked task to `done`, and do not silently drop it from the list — descope it with `origin` provenance and a forward home. The validator enforces both sides (VERIFY and DEFER checks).
 
 - If a terminal status must be set without passing tests (docs-only chore, config-only change), record an explicit `verification_waiver: <reason>` in the note frontmatter. The waiver is a logged artifact (the validator reports it as a warning); silent skips are a build failure.
 

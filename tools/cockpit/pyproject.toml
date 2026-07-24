@@ -42,6 +42,7 @@ dev = [
 
 [project.scripts]
 project-os-cockpit = "project_os_cockpit.__main__:main"
+cockpit = "project_os_cockpit.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/edankert/project-os-cockpit"

@@ -1,13 +1,13 @@
 ---
 type: adapter
 tool: cursor
-status: draft
+status: active
 owner: group:maintainers
 created: 2026-03-08
-updated: 2026-03-08
+updated: 2026-07-17
 ---
 
-# Cursor Adapter (Stub)
+# Cursor Adapter
 
 ## Overview
 
@@ -35,11 +35,13 @@ Map project-os instructions to scoped rule files:
 
 ### Generating .cursor/rules/
 
-Use the `adapter-sync` skill (`tools/skills/adapter-sync/SKILL.md`) to regenerate rule files from project-os instructions:
+Rule files are generated mechanically — never hand-edit them:
 
+```bash
+python3 tools/scripts/generate-adapters.py
 ```
-"Run tools/skills/adapter-sync/SKILL.md for the cursor adapter"
-```
+
+The generator inlines each mapped instruction into its `.mdc` rule (Cursor has no import mechanism) and adds `skills.mdc`, an always-active index of the skill playbooks. Regenerate after any instruction/skill change (`tools/skills/adapter-sync/SKILL.md` step 1); `--check` verifies freshness.
 
 ### .mdc format
 

@@ -4,7 +4,7 @@ id: INSTR-SYNCING
 status: active
 owner: group:maintainers
 created: 2026-01-29
-updated: 2026-05-08
+updated: 2026-07-17
 tags: [instructions, sync]
 ---
 
@@ -31,6 +31,8 @@ Use this when the project-os template lives outside the dev repo and you want to
 - Optional: `SECURITY.md`, `ROADMAP.md`
 - Optional seed only: `docs/reference/README.md` when the downstream file does not already exist
 - Optional seed only: `.github/workflows/validate-docs.yml` when the downstream file does not already exist (downstream repos own their CI config; the seed just wires up the docs validator)
+- Optional seed only: `.github/workflows/link-check.yml` (weekly lychee external-URL check), `.prettierrc`, `.markdownlint.jsonc`, `.yamllint.yml` — lint/format configs are seeded once and owned downstream after that
+- Regenerated, not synced: `.claude/skills/`, `.claude/agents/`, `.cursor/rules/` are derived from the synced playbooks by `python3 tools/scripts/generate-adapters.py` (the sync script runs it automatically when `python3` is available). Treat them as template-owned build outputs; never hand-edit.
 
 ## Project-owned (do NOT overwrite)
 - `SNAPSHOT.yaml`
@@ -50,10 +52,24 @@ Use this when the project-os template lives outside the dev repo and you want to
 
 `docs/reference/` and other non-lifecycle docs areas are intentionally project-owned: upstream may provide a starter README, but downstream projects use these areas for source, evidence, registry, background, research, and publication material. Template sync must not overwrite them.
 
+## How sync decides what to touch (manifest + baseline)
+
+Ownership is declared per path in `../sync/MANIFEST.yaml` (`template` / `merge` / `seed` / `project` / `generated`; the upstream template's copy is authoritative, most specific path wins). `tools/scripts/sync-project-os.sh` wraps `sync-project-os.py`, which compares each template-owned file against the **baseline** — the upstream commit recorded in `.project-os-sync` at the previous sync:
+
+- target equals the new template version → up to date.
+- target equals the baseline version → clean fast-forward, overwritten.
+- target differs from both → **locally modified**: skipped and reported for hand-merge (`--force` overrides; `merge`-owned paths like `docs/PHASES.md`, `docs/phases/`, `docs/__templates__/SCHEMAS.md` are expected to diverge in repos that keep real content there and are only ever reported).
+
+On the first manifest-based sync no baseline exists, so every locally different file reports as diverged; pass `--baseline <sha>` (the template commit the repo last synced from) to resolve fast-forwards mechanically. After a non-dry run the upstream HEAD is recorded as the new baseline and derived adapter artifacts are regenerated automatically.
+
+## Fleet check
+
+`bash tools/scripts/validate-fleet.sh [fleet-root]` runs the docs validator across every SNAPSHOT-bearing repo under a root (default: this repo's parent) and prints a per-repo errors/warnings/waivers summary — use it before and after template rollouts.
+
 ## Recommended flow
 1. Pull latest upstream project-os.
-2. Run `tools/scripts/sync-project-os.sh <path-to-upstream>`.
-3. Review changes (git diff).
+2. Run `tools/scripts/sync-project-os.sh <path-to-upstream>` (add `--dry-run` first; `--baseline <sha>` on the first manifest-based sync).
+3. Review changes (git diff) and hand-merge anything reported as DIVERGED/MERGE.
 4. Run `bash tools/scripts/validate-docs.sh`, then `tools/skills/snapshot-sync/SKILL.md` for anything it reports.
-5. Re-run `bash tools/scripts/install-git-hooks.sh` (hook scripts may have changed) and, for Claude Code, re-copy `tools/adapters/claude-code/hooks.json` into `.claude/settings.json` if it changed.
+5. Re-run `bash tools/scripts/install-git-hooks.sh` (hook scripts may have changed) and `python3 tools/scripts/generate-adapters.py --install-hooks` (regenerates `.claude/skills/`, `.claude/agents/`, `.cursor/rules/` and installs/merges the Claude Code hook set — replaces the old manual `hooks.json` copy step).
 6. After large syncs, run `tools/skills/docs-audit/SKILL.md` — template sync is a known source of stale cross-document references.

@@ -4,7 +4,7 @@ id: SKILL-INDEPENDENT-REVIEW
 status: active
 owner: group:maintainers
 created: 2026-07-05
-updated: 2026-07-05
+updated: 2026-07-21
 tags: [skills, review, verification]
 ---
 
@@ -31,9 +31,10 @@ A model reviewing its own output shares its blind spots: same-family generation 
 - Findings filed as `ISS-*` notes (status `triage`) when the review surfaces defects.
 
 ## Independence rules
-1. The reviewer must be a **different model family** than the author of the change, or a human. A second session of the same model is NOT independent — it reproduces the same blind spots.
-2. The reviewer gets the notes and the diff, not the author's reasoning transcript. If the change cannot be justified from the notes alone, that is itself a finding (the documentation failed its handoff purpose).
-3. The reviewer's job is to **refute**, not to confirm: actively look for inputs/states where the change is wrong, and for guarding tests that would still pass if the fix were reverted (a test that cannot fail does not guard).
+1. The reviewer must be a **different model family** than the author of the change, or a human. A second session of the same model is NOT independent — it reproduces the same blind spots. Record both sides when it is not obvious: `reviewed_by` names the reviewer, and if the author was also a model, say so in the note (e.g. "authored by model:X, reviewed by model:Y") so a later reader can judge the independence themselves rather than inferring it.
+2. **Never write the verdict before the reviewer returns it.** `review_verdict` is transcribed from what the review actually returned, never anticipated, and never filled in "pending" optimism — recording an approval you expect to receive is the review-level version of ticking an acceptance criterion to fit. If a close-out needs the field present before the review lands, leave it empty and finish the close-out after the verdict arrives.
+3. The reviewer gets the notes and the diff, not the author's reasoning transcript. If the change cannot be justified from the notes alone, that is itself a finding (the documentation failed its handoff purpose).
+4. The reviewer's job is to **refute**, not to confirm: actively look for inputs/states where the change is wrong, and for guarding tests that would still pass if the fix were reverted (a test that cannot fail does not guard).
 
 ## Checklist
 1. Identify the review scope: changed files + the `TST-*`/`CHG-*` notes involved.

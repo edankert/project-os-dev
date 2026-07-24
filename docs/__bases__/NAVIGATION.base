@@ -79,7 +79,7 @@ views:
         - status != "fixed"
         - status != "closed"
     groupBy:
-      property: affects
+      property: parent
       direction: ASC
     order:
       - id
@@ -99,7 +99,7 @@ views:
     filters:
       and:
         - type == link("feature")
-        - status.containsAny("active", "accepted", "approved", "backlog", "draft", "in-progress", "open", "pending", "planned", "proposed", "reopened", "todo", "triage", "reference")
+        - status.containsAny("backlog", "planned", "in-progress", "in-review")
     groupBy:
       property: phase
       direction: ASC
@@ -123,10 +123,9 @@ views:
     filters:
       and:
         - type == link("issue")
-        - '!status.containsAny("fixed", "completed", "done", "fulfilled", "merged", "obsolete", "published", "resolved")'
-        - status != "closed"
+        - status.containsAny("triage", "open", "in-progress", "blocked", "reopened")
     groupBy:
-      property: affects
+      property: parent
       direction: ASC
     order:
       - id

@@ -13,6 +13,8 @@ updated: 2026-05-05
 
 Codex reads project instructions from `AGENTS.md` in the repository root. It can also read referenced files on demand, but `AGENTS.md` should remain self-contained enough to define the startup contract, docs-first gate, canonical state file, and close-out expectations.
 
+Note: `AGENTS.md` is a cross-tool convention, not Codex-specific — several agent tools read it. The root `AGENTS.md`/`LLM_BRIEF.md` pair is therefore the **generic instruction layer** (see `../generic/ADAPTER.md`); this adapter documents how Codex specifically consumes it plus the `tools/agents/*.sh` enforcement scripts.
+
 ## Native instruction files
 
 - `AGENTS.md`: mandatory startup contract and docs-first gate.

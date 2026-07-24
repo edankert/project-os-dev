@@ -14,19 +14,25 @@ shell (FEAT-0006) layer on top of this in later tasks.
 
 from __future__ import annotations
 
+import atexit
+import collections
+import datetime as _dt
 import json
 import logging
 import mimetypes
 import queue
+import threading
+import time
 import urllib.parse
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Iterable
 
-from . import cockpit, renderer, templates
-from .events import EventBus
+from . import cockpit, renderer, templates, terminal_proxy
+from .events import ControlEvent, EventBus, FileEvent
 from .index import Index
+from .terminal import TERMINAL_BASE_PATH, TerminalProcess
 from .watcher import Watcher
 
 # URL plural → frontmatter type singular. Project-os IDs and template names
@@ -49,6 +55,99 @@ INDEX_TYPE_PLURALS: dict[str, str] = {
 log = logging.getLogger("project_os_cockpit.server")
 
 STATIC_DIR: Path = Path(__file__).resolve().parent / "static"
+
+# Tabs whose last_seen heartbeat is older than this are pruned from the
+# state snapshot. The cockpit JS sends a heartbeat every 15 s
+# (TASK-0055); 45 s allows two missed pings before we declare the tab
+# gone.
+_TAB_STALE_SECONDS: int = 45
+_HISTORY_MAX: int = 50
+
+
+def _utc_now_iso() -> str:
+    return _dt.datetime.now(_dt.timezone.utc).isoformat(timespec="milliseconds")
+
+
+def _parse_iso(ts: str) -> float:
+    try:
+        return _dt.datetime.fromisoformat(ts).timestamp()
+    except (ValueError, TypeError):
+        return 0.0
+
+
+class CockpitState:
+    """In-memory snapshot of cockpit activity for the bi-directional
+    awareness API (TASK-0053).
+
+    Tracks three things:
+
+    * ``agent_focus`` — the most recent ``cockpit focus`` call.
+    * ``tabs`` — currently-alive cockpit tabs, keyed by client-generated
+      ``tab_id``, each carrying ``url``, ``following``, ``last_seen``.
+    * ``history`` — a bounded deque of recent navigation events from
+      both the agent (``cockpit focus``) and the user (manual nav in a
+      tab), newest first.
+
+    All mutation goes through a lock — the HTTP server is multi-threaded
+    and the SSE thread, the focus POST handler, and the tab-state POST
+    handler can all touch this concurrently.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._agent_focus: dict[str, Any] | None = None
+        self._tabs: dict[str, dict[str, Any]] = {}
+        self._history: collections.deque[dict[str, Any]] = collections.deque(
+            maxlen=_HISTORY_MAX
+        )
+
+    def record_agent_focus(self, target: str, url: str) -> None:
+        ts = _utc_now_iso()
+        with self._lock:
+            self._agent_focus = {"target": target, "url": url, "ts": ts}
+            self._history.appendleft(
+                {"url": url, "ts": ts, "source": "agent", "target": target}
+            )
+
+    def update_tab(
+        self, tab_id: str, url: str, following: bool
+    ) -> None:
+        ts = _utc_now_iso()
+        with self._lock:
+            prev = self._tabs.get(tab_id)
+            self._tabs[tab_id] = {
+                "url": url,
+                "following": bool(following),
+                "last_seen": ts,
+            }
+            # Only record into history when the URL actually changed —
+            # heartbeats don't create history noise.
+            if not prev or prev.get("url") != url:
+                self._history.appendleft(
+                    {"url": url, "ts": ts, "source": "user", "tab_id": tab_id}
+                )
+
+    def snapshot(self) -> dict[str, Any]:
+        now = time.time()
+        with self._lock:
+            alive = {
+                tid: info
+                for tid, info in self._tabs.items()
+                if now - _parse_iso(info["last_seen"]) <= _TAB_STALE_SECONDS
+            }
+            self._tabs = alive
+            user_view: dict[str, Any] | None = None
+            for info in alive.values():
+                if user_view is None or info["last_seen"] > user_view["ts"]:
+                    user_view = {"url": info["url"], "ts": info["last_seen"]}
+            return {
+                "agent_focus": self._agent_focus,
+                "user_view": user_view,
+                "tabs": [
+                    {"tab_id": tid, **info} for tid, info in alive.items()
+                ],
+                "history": list(self._history),
+            }
 
 # Hidden from directory listings — VCS / editor / OS metadata.
 HIDDEN_NAME_PREFIXES: tuple[str, ...] = (".",)
@@ -90,15 +189,35 @@ class DocsServer:
         # the cockpit JS re-fetch (TASK-0011) attach later.
         self.index.subscribe_to(self.bus)
         self.watcher: Watcher = Watcher(self.docs_root, self.bus)
+        self.cockpit_state: CockpitState = CockpitState()
         # Header home-link label = repo name (parent of docs/), so users
         # always see which project they're browsing.
         templates.set_project_name(
             self.docs_root.parent.name or self.docs_root.name or "docs"
         )
 
+    def _cockpit_url(self) -> str:
+        """Base URL ttyd's child shell uses for COCKPIT_URL.
+
+        When the cockpit binds to 0.0.0.0 (LAN exposure), the terminal's
+        child shell still talks to it via loopback — both run on the
+        same host.
+        """
+        host = self.bind if self.bind not in ("0.0.0.0", "::") else "127.0.0.1"
+        return f"http://{host}:{self.port}"
+
     def run(self) -> None:
-        handler_cls = _make_handler(self.docs_root, self.index, self.bus)
+        handler_cls = _make_handler(
+            self.docs_root, self.index, self.bus,
+            cockpit_url=self._cockpit_url(),
+            cockpit_state=self.cockpit_state,
+        )
         self.watcher.start()
+        # Write the discovery file so the `cockpit` CLI (from any
+        # terminal under the project tree) can auto-find this server.
+        _write_discovery_file(
+            self.docs_root.parent, self._cockpit_url(),
+        )
         try:
             with _NoDNSThreadingHTTPServer(
                 (self.bind, self.port), handler_cls
@@ -123,10 +242,20 @@ class DocsServer:
 
 
 def _make_handler(
-    docs_root: Path, index: Index, bus: EventBus
+    docs_root: Path, index: Index, bus: EventBus,
+    *, cockpit_url: str = "",
+    cockpit_state: CockpitState | None = None,
 ) -> type[BaseHTTPRequestHandler]:
     """Build a request handler class with the per-server collaborators baked in."""
     project_root = docs_root.parent.resolve()
+    state = cockpit_state or CockpitState()
+    # Lazy-instantiated; ttyd doesn't actually spawn until the first
+    # /api/terminal request (the JS client only fetches when the user
+    # opens the bottom panel). cockpit_url is propagated into the
+    # shell's env as COCKPIT_URL for the `cockpit` CLI (TASK-0049).
+    terminal = TerminalProcess(
+        working_dir=project_root, cockpit_url=cockpit_url,
+    )
 
     class Handler(BaseHTTPRequestHandler):
         server_version = "project-os-cockpit/0.1"
@@ -141,6 +270,43 @@ def _make_handler(
                 self._route()
             except BrokenPipeError:
                 # Client disconnected mid-response; nothing to do.
+                pass
+
+        def do_POST(self) -> None:  # noqa: N802 — http.server API
+            try:
+                self._route_post()
+            except BrokenPipeError:
+                pass
+
+        def _route_post(self) -> None:
+            parsed = urllib.parse.urlsplit(self.path)
+            path = urllib.parse.unquote(parsed.path)
+            if path == "/api/cockpit/focus":
+                self._serve_cockpit_focus()
+                return
+            if path == "/api/cockpit/tab-state":
+                self._serve_cockpit_tab_state()
+                return
+            # Unknown POST. Drain the request body before responding so
+            # HTTP/1.1 keep-alive framing stays intact: an undrained body
+            # bleeds into the next request line on the same TCP socket,
+            # which the server then parses as a bogus method (the
+            # symptom: ``501 Unsupported method`` for innocent
+            # subsequent GETs of CSS/JS/favicon).
+            self._drain_request_body()
+            self._respond_status(HTTPStatus.NOT_FOUND)
+
+        def _drain_request_body(self) -> None:
+            """Read and discard ``Content-Length`` bytes from the socket."""
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                return
+            if length <= 0:
+                return
+            try:
+                self.rfile.read(length)
+            except (OSError, ValueError):
                 pass
 
         def _route(self) -> None:
@@ -165,6 +331,18 @@ def _make_handler(
 
             if path == "/api/cockpit/context":
                 self._serve_cockpit_context(parsed.query)
+                return
+
+            if path == "/api/cockpit/state":
+                self._serve_cockpit_state()
+                return
+
+            if path == "/api/terminal":
+                self._serve_terminal_info()
+                return
+
+            if path == TERMINAL_BASE_PATH.rstrip("/") or path.startswith(TERMINAL_BASE_PATH):
+                self._proxy_terminal(path)
                 return
 
             if path.startswith("/_static/"):
@@ -260,6 +438,123 @@ def _make_handler(
                     payload["active"] = active
             self._respond_json(payload)
 
+        def _serve_terminal_info(self) -> None:
+            """Return ttyd availability + URL for the embedded terminal.
+
+            Lazy-spawns ttyd on first call (the JS client only fetches
+            this when the user opens the bottom panel for the first
+            time). Subsequent calls reuse the running process.
+            """
+            self._respond_json(terminal.info())
+
+        def _serve_cockpit_focus(self) -> None:
+            """``POST /api/cockpit/focus`` — agent-driven cockpit navigation.
+
+            Body: ``{"target": "<note-id | docs-rel-path | cockpit-url>"}``.
+            Resolves the target to a cockpit URL, broadcasts a
+            ``cockpit:focus`` SSE event, returns ``{ok, url}``. All open
+            cockpit tabs that have "follow agent" enabled jump to the
+            resolved URL. TASK-0048.
+            """
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = 0
+            raw = self.rfile.read(length) if length else b""
+            try:
+                body = json.loads(raw.decode("utf-8")) if raw else {}
+            except (ValueError, UnicodeDecodeError):
+                self._respond_json({"ok": False, "error": "invalid JSON"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            target = (body.get("target") or "").strip()
+            if not target:
+                self._respond_json({"ok": False, "error": "missing 'target'"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            url = _resolve_focus_target(target, index)
+            if url is None:
+                self._respond_json(
+                    {"ok": False, "error": f"could not resolve target: {target!r}"},
+                    status=HTTPStatus.NOT_FOUND,
+                )
+                return
+            state.record_agent_focus(target, url)
+            bus.publish(ControlEvent("cockpit:focus", {"url": url, "target": target}))
+            self._respond_json({"ok": True, "url": url})
+
+        def _serve_cockpit_tab_state(self) -> None:
+            """``POST /api/cockpit/tab-state`` — per-tab heartbeat (TASK-0053).
+
+            Body: ``{"tab_id": "<uuid>", "url": "/docs/...", "following": true}``.
+            Updates the in-memory tabs table; the snapshot
+            (``GET /api/cockpit/state``) prunes tabs that haven't
+            pinged in ``_TAB_STALE_SECONDS``.
+            """
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = 0
+            raw = self.rfile.read(length) if length else b""
+            try:
+                body = json.loads(raw.decode("utf-8")) if raw else {}
+            except (ValueError, UnicodeDecodeError):
+                self._respond_json({"ok": False, "error": "invalid JSON"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            tab_id = (body.get("tab_id") or "").strip()
+            url = (body.get("url") or "").strip()
+            following = bool(body.get("following", True))
+            if not tab_id or not url:
+                self._respond_json(
+                    {"ok": False, "error": "missing 'tab_id' or 'url'"},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            state.update_tab(tab_id, url, following)
+            self._respond_json({"ok": True})
+
+        def _serve_cockpit_state(self) -> None:
+            """``GET /api/cockpit/state`` — read-only snapshot (TASK-0053).
+
+            Returns ``{agent_focus, user_view, tabs, history}``. The
+            agent uses this to know where the user is currently
+            looking before / after work, complementing the
+            agent-drives-cockpit direction.
+            """
+            self._respond_json(state.snapshot())
+
+        def _proxy_terminal(self, path: str) -> None:
+            """Reverse-proxy a request to ttyd (TASK-0047).
+
+            Lazy-starts ttyd if needed (mirrors /api/terminal); HTTP +
+            WebSocket forwarding lives in :mod:`terminal_proxy`. Same-
+            origin proxying lets us inject custom CSS into ttyd's
+            index HTML and (later) a JS bridge for terminal ↔ cockpit
+            communication.
+            """
+            if not TerminalProcess.is_available():
+                self._respond_status(HTTPStatus.SERVICE_UNAVAILABLE)
+                return
+            try:
+                terminal.start()
+            except Exception:
+                log.exception("terminal proxy: lazy start failed")
+                self._respond_status(HTTPStatus.SERVICE_UNAVAILABLE)
+                return
+            port = terminal.port
+            if port is None:
+                self._respond_status(HTTPStatus.SERVICE_UNAVAILABLE)
+                return
+            # Normalise: an iframe with src="/_terminal/" hits us at
+            # "/_terminal/" (with trailing slash); ttyd's -b expects
+            # the prefix verbatim.
+            upstream = path if path.startswith(TERMINAL_BASE_PATH) else TERMINAL_BASE_PATH
+            if self.headers.get("Upgrade", "").lower() == "websocket":
+                terminal_proxy.proxy_websocket(self, port, upstream)
+            else:
+                terminal_proxy.proxy_http(self, port, upstream)
+
         # ---- SSE channel ----
 
         def _serve_sse(self) -> None:
@@ -292,10 +587,18 @@ def _make_handler(
                     except queue.Empty:
                         _send(b": heartbeat\n\n")
                         continue
-                    payload = (
-                        f"event: file-changed\n"
-                        f"data: {ev.rel_path}\n\n"
-                    ).encode("utf-8")
+                    if isinstance(ev, FileEvent):
+                        payload = (
+                            f"event: file-changed\n"
+                            f"data: {ev.rel_path}\n\n"
+                        ).encode("utf-8")
+                    elif isinstance(ev, ControlEvent):
+                        payload = (
+                            f"event: {ev.event_type}\n"
+                            f"data: {json.dumps(ev.data, ensure_ascii=False)}\n\n"
+                        ).encode("utf-8")
+                    else:
+                        continue
                     _send(payload)
             except (BrokenPipeError, ConnectionResetError, OSError):
                 # Client disconnected — normal.
@@ -558,6 +861,69 @@ def _is_under(candidate: Path, root: Path) -> bool:
         return True
     except ValueError:
         return False
+
+
+# ---- Cockpit discovery file (TASK-0051) ----
+# So that an LLM running in any terminal under the project tree (not just
+# the cockpit's embedded ttyd) can find the running cockpit and drive it
+# via the `cockpit` CLI, the server writes its URL to <project>/.cockpit/url
+# on startup and removes the file on shutdown. The CLI walks up from cwd
+# looking for that file.
+
+def _write_discovery_file(project_root: Path, url: str) -> None:
+    try:
+        cockpit_dir = project_root / ".cockpit"
+        cockpit_dir.mkdir(exist_ok=True)
+        (cockpit_dir / "url").write_text(url + "\n", encoding="utf-8")
+        atexit.register(_remove_discovery_file, project_root)
+    except OSError as exc:
+        log.warning("discovery file write failed for %s: %s", project_root, exc)
+
+
+def _remove_discovery_file(project_root: Path) -> None:
+    try:
+        (project_root / ".cockpit" / "url").unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
+def _resolve_focus_target(target: str, index: Index) -> str | None:
+    """Resolve a focus target to a cockpit URL.
+
+    Accepted shapes (most-specific first):
+      * a full cockpit URL like ``/docs/foo/bar.md`` or ``/``
+      * a project-os note ID like ``FEAT-0006`` (resolved via index)
+      * a docs-root-relative path like ``features/cockpit/foo.md``
+      * a top-level support file like ``README.md`` / ``ROADMAP.md``
+
+    Returns ``None`` when the target can't be mapped to anything the
+    cockpit knows how to render.
+    """
+    t = target.strip()
+    if not t:
+        return None
+    # Already an absolute path? Accept anything that looks like a cockpit
+    # route — the cockpit deals with non-renderable URLs by falling back
+    # to a full navigation if its in-pane swap doesn't find #cockpit-centre.
+    if t.startswith("/"):
+        return t
+    # ID lookup via the index (handles FEAT-####, ADR-####, etc.).
+    path = index.by_id(t)
+    if path is not None:
+        rel = index.get(path)
+        if rel is not None:
+            return f"/docs/{rel.rel_path}"
+    # docs-root-relative path?
+    rel_candidate = t
+    if rel_candidate.startswith("docs/"):
+        rel_candidate = rel_candidate[len("docs/"):]
+    abs_candidate = (index.docs_root / rel_candidate).resolve()
+    if _is_under(abs_candidate, index.docs_root) and abs_candidate.is_file():
+        return f"/docs/{rel_candidate}"
+    # Top-level project file (README.md, ROADMAP.md, SECURITY.md)?
+    if t in cockpit.PROJECT_SUPPORT_ROOT_FILES:
+        return f"/{t}"
+    return None
 
 
 def _project_support_rel(path: str) -> str | None:

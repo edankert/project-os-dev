@@ -4,7 +4,7 @@ id: INSTR-STATUSES
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-01-27
+updated: 2026-07-21
 tags: [instructions, statuses]
 ---
 
@@ -14,12 +14,15 @@ This file defines the allowed `status` values and recommended transitions for ea
 
 If a project needs different states, update this file and the templates in `../../docs/__templates__/`.
 
+Terminal-status semantics: `done`/`closed`/`cancelled`/`wont-fix` **resolve** an item's place in its parent's scope (the parent can complete over them). `deferred` does **not** — it is a parked, non-terminal state governed by the deferral rules at the end of this file.
+
 ## `[[task]]`
 - Allowed: `backlog`, `next`, `doing`, `blocked`, `done`, `deferred`, `cancelled`
 - Typical transitions:
   - `backlog` → `next` → `doing` → `done`
   - `doing` → `blocked` → `doing`
-  - `backlog`/`next` → `deferred` (parked) or `cancelled` (will not be done)
+  - `backlog`/`next` → `deferred` (descoped from the parent and parked; see "Deferral and re-adoption") or `cancelled` (will not be done)
+  - `deferred` → `backlog` (re-adopted under a new or the original parent)
 
 ## `[[issue]]`
 - Allowed: `triage`, `open`, `in-progress`, `blocked`, `fixed`, `closed`, `reopened`, `wont-fix`, `deferred`
@@ -27,13 +30,15 @@ If a project needs different states, update this file and the templates in `../.
   - `triage` → `open` → `in-progress` → `fixed` → `closed`
   - `in-progress` → `blocked` → `in-progress`
   - `closed` → `reopened` → `in-progress` (regression)
-  - `triage`/`open` → `wont-fix` (deliberate no-action, keep the note) or `deferred` (parked)
+  - `triage`/`open` → `wont-fix` (deliberate no-action, keep the note) or `deferred` (descoped and parked; see "Deferral and re-adoption")
+  - `deferred` → `open` (re-adopted)
 
 ## `[[feature]]`
 - Allowed: `backlog`, `planned`, `in-progress`, `in-review`, `done`, `deferred`, `cancelled`, `superseded`
 - Typical transitions:
   - `backlog` → `planned` → `in-progress` → `in-review` → `done`
-  - `backlog`/`planned` → `deferred` (parked) or `cancelled` (will not be built)
+  - `backlog`/`planned` → `deferred` (descoped and parked; see "Deferral and re-adoption") or `cancelled` (will not be built)
+  - `deferred` → `planned` (re-adopted)
   - `done` → `superseded` (replaced by a newer feature; link the successor)
 
 ## `[[phase]]`
@@ -46,8 +51,10 @@ If a project needs different states, update this file and the templates in `../.
 - Allowed: `draft`, `approved`, `implemented`, `verified`, `retired`, `deferred`, `cancelled`, `superseded`
 - Typical transitions:
   - `draft` → `approved` → `implemented` → `verified` (`implemented` = built but not yet formally verified; `verified` still requires passing linked tests per `QUALITY.md`)
+  - `approved` → `implemented` is set at **feature close-out**, not independently: once every feature in the requirement's `implements:` list has reached a terminal status, its acceptance criteria are ticked against evidence and any departed-from criterion is reconciled (`../skills/close-out/SKILL.md`, "Requirement advancement"). A requirement left at `draft`/`approved` once all its features are terminal (`done`, `cancelled`, or `superseded`) is a validator error (REQ-STALE) — if the features were cancelled or superseded rather than delivered, supersede or cancel the requirement instead of advancing it.
   - `verified` → `retired`
-  - `draft`/`approved` → `deferred` or `cancelled`
+  - `draft`/`approved` → `deferred` (descoped and parked; see "Deferral and re-adoption") or `cancelled`
+  - `deferred` → `draft` (re-adopted)
   - any → `superseded` (replaced by a newer requirement; link the successor)
 
 ## `[[risk]]`
@@ -76,3 +83,29 @@ If a project needs different states, update this file and the templates in `../.
   - `draft` → `ready` → `passing`
   - `ready` → `failing` → `ready`
   - `ready` → `blocked` → `ready`
+
+## Deferral and re-adoption
+
+`deferred` means "explicitly out of the current parent's scope, still wanted later". It is **not** terminal and never satisfies completeness: a parent whose scope list still contains a deferred item cannot reach a terminal status (enforced by `tools/scripts/validate-docs.py`).
+
+Deferring an item is therefore a **descoping operation**, not just a status flip (decision: ADR "Deferral is a descoping operation" where adopted; procedure: `../skills/status-transition/SKILL.md`):
+
+1. Remove the item's ID from the parent's scope list (e.g. the feature's `tasks:`) and record it in the parent's `deferred:` list instead.
+2. On the deferred item, set `origin:` to the former parent (provenance — where the work was originally scoped) and clear `parent:`.
+3. Give it a forward home: set `phase:` to a real future phase when one exists, else to the `PHASE-999` parking-lot note (create `docs/phases/PHASE-999-Parking-Lot.md` once if absent; all-9s sentinel IDs are counter-exempt).
+4. Mirror all of this in `SNAPSHOT.yaml`. Deferred items count as **active** for snapshot retention — never prune them.
+
+Re-adoption reverses it: assign a new (or the original) parent, add the ID back to that parent's scope list, set the non-parked status (`backlog`/`open`/`draft`/`planned`), and keep `origin:` as history. Backlog grooming reviews every parked item each pass (`../skills/backlog-grooming/SKILL.md`).
+
+## `[[release]]`
+- Allowed: `draft`, `staged`, `released`, `rolled-back`
+- Typical transitions:
+  - `draft` → `staged` → `released` (`staged` = verified and ready to deploy, not yet live; see `../skills/release-verification/SKILL.md`)
+  - `released` → `rolled-back` (rollback occurred; keep the note and link the successor release when one ships)
+
+## `[[plan]]`
+- Allowed: `draft`, `active`, `done`, `superseded`
+- Plans follow their parent feature; most projects leave plans at `draft`/`active`.
+
+## `[[reference]]`
+- Allowed: `active`, `deprecated`

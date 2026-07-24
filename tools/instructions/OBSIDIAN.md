@@ -4,7 +4,7 @@ id: INSTR-OBSIDIAN
 status: active
 owner: group:maintainers
 created: 2026-01-26
-updated: 2026-01-26
+updated: 2026-07-21
 tags: [instructions, obsidian]
 ---
 
@@ -27,3 +27,19 @@ tags: [instructions, obsidian]
   - Tests: `TST-0001-Short-Description.md`
   - Changes: `CHG-YYYYMMDD-Short-Description.md`
   - Risks/Reqs/ADRs/Workflows: same pattern (`ID-Short-Description.md`)
+
+## Workspace setup (three-pane cockpit)
+
+The docs set ships two Bases views (`docs/__bases__/`) designed for a three-pane layout. Setting it up in a repo, once:
+
+1. Open the repo (or the `docs/` folder) as an Obsidian vault. Enable **Bases** (core plugin) — the `.base` files do nothing without it.
+2. **Left pane — navigation:** open `[[NAVIGATION]]` and drag its tab into the left sidebar. It carries per-type views (Features, Phases, Issues, each with an "Open" variant filtered to active statuses). Pin the tab so it survives navigation.
+3. **Centre pane — editor:** the note you are reading or editing. Nothing to configure.
+4. **Right pane — context:** open `[[CONTEXT]]` and drag its tab into the right sidebar. It filters on `file.hasLink(this.file)`, so it re-renders against whatever note is focused in the centre pane, with tabbed views (All, Tasks, Requirements, Issues, Tests, All (Open)).
+5. Save the arrangement (**Workspaces** core plugin → save as e.g. `cockpit`) so the layout can be restored after Obsidian resets panes.
+
+Notes:
+- Both files live in `docs/__bases__/`; the `__`-prefixed folder keeps them out of the note trees while staying inside the vault.
+- The right pane follows the *focused* note. If it looks empty, the focused note has no inbound links yet — that is information, not a bug.
+- Downstream repos get these files from the template sync; per-feature or per-phase `.base` files are deliberately not used (one navigation view plus one context view covers both roles).
+- For a browser-based alternative that needs no Obsidian at all, see `tools/cockpit/README.md`.

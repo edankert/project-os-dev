@@ -4,7 +4,7 @@ id: SKILL-FEATURE-SCAFFOLD
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-01-27
+updated: 2026-07-21
 tags: [skills, features]
 ---
 
@@ -47,7 +47,12 @@ tags: [skills, features]
    - Run `../impact-analysis/SKILL.md` against new or linked requirements.
    - Check for conflicts with existing requirements on overlapping features.
    - If conflicts are found, stop and present resolution options before implementation.
-7. **Risk scan:**
+7. **Requirement approval gate:**
+   - A feature may not move to `in-progress` while any linked requirement is still `draft` — approve it (or amend it first, then approve) so implementation works against agreed criteria.
+   - Approval means the acceptance criteria are the ones you intend to build against; if the plan already departs from them, amend the requirement now rather than at close-out.
+   - The requirement is advanced again at close-out (`../close-out/SKILL.md`, "Requirement advancement").
+8. **Risk scan:**
    - Review the feature against risk scan triggers in `../../instructions/LIFECYCLE.md`.
    - If any trigger applies, run `../risk-scan/SKILL.md` and create/update `RISK-*` notes.
-8. If the feature requires verification, create `TST-*` notes (use `../test-authoring/SKILL.md`) and link them from the feature/requirements/tasks.
+   - If no trigger applies, record that no new risks were identified in the feature note or final summary — the negative result is part of the scan.
+9. If the feature requires verification, create `TST-*` notes (use `../test-authoring/SKILL.md`) and link them from the feature/requirements/tasks.

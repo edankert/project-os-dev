@@ -20,5 +20,5 @@ These rules define how agents and maintainers should format Markdown prose in re
 - Preserve existing line breaks when they carry semantic meaning, command formatting, quoted output, or list hierarchy.
 
 ## Formatter policy
-- Prettier, if used, should run with `proseWrap: "never"`.
+- Prettier, if used, should run with `proseWrap: "never"` — the repo ships this in `.prettierrc`, alongside `.markdownlint.jsonc` and `.yamllint.yml` for optional lint tooling.
 - Markdown linting, if used, should not enforce a prose line-length limit.

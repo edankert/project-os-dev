@@ -20,13 +20,13 @@ from __future__ import annotations
 
 import logging
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable, Union
 
 log = logging.getLogger("project_os_cockpit.events")
 
-Subscriber = Callable[["FileEvent"], None]
+Subscriber = Callable[["Event"], None]
 
 
 @dataclass(frozen=True)
@@ -41,6 +41,23 @@ class FileEvent:
     kind: str
     rel_path: str  # POSIX, relative to docs_root
     abs_path: Path
+
+
+@dataclass(frozen=True)
+class ControlEvent:
+    """Out-of-band cockpit-control event (TASK-0048).
+
+    Published by API endpoints (e.g. ``/api/cockpit/focus``) and
+    forwarded to every open cockpit tab via SSE. The JS-side handler
+    branches on ``event_type`` and dispatches accordingly. ``data`` is
+    JSON-serialised before transport.
+    """
+
+    event_type: str            # e.g. "cockpit:focus", "cockpit:pin"
+    data: dict[str, Any] = field(default_factory=dict)
+
+
+Event = Union[FileEvent, ControlEvent]
 
 
 class EventBus:
@@ -67,7 +84,7 @@ class EventBus:
             except ValueError:
                 pass
 
-    def publish(self, event: FileEvent) -> None:
+    def publish(self, event: Event) -> None:
         with self._lock:
             subs = list(self._subscribers)
         for cb in subs:

@@ -4,14 +4,16 @@ tool: generic
 status: active
 owner: group:maintainers
 created: 2026-03-08
-updated: 2026-03-08
+updated: 2026-07-17
 ---
 
-# Generic Adapter (CONTEXT.md Fallback)
+# Generic Adapter (CONTEXT.md + AGENTS.md)
 
 ## Overview
 
 The generic adapter uses `CONTEXT.md` as a single entry point that works with any LLM tool. It provides the project-os contract, edit policy, invariants, and the operating rule in one file. Tools that support file reading can follow paths to instruction and skill files from CONTEXT.md.
+
+The root `AGENTS.md` (startup contract, docs-first gate, close-out expectations) and `LLM_BRIEF.md` (compact identity/paths/commands) also belong to this generic layer: `AGENTS.md` is a cross-tool convention read by several agent tools, not a Codex-only file. `../codex/ADAPTER.md` documents the Codex-specific consumption of these files.
 
 ## Native instruction format
 

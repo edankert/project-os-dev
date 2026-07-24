@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import posixpath
+import re
 import urllib.parse
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -497,7 +498,7 @@ class Index:
         if record is None:
             return
 
-        raw_targets: list[str] = list(_wikilinks_in_frontmatter(record.frontmatter))
+        raw_targets: list[str] = list(_link_targets_in_frontmatter(record.frontmatter))
         raw_targets.extend(_wikilinks_in_body(record.body))
 
         new_targets: set[Path] = set()
@@ -618,8 +619,77 @@ def _wikilinks_in_body(body: str) -> Iterator[str]:
         yield m.group(1)
 
 
+# project-os ID pattern (TASK-0031). Greedy on the trailing slug so a CHG
+# id like ``CHG-20260509-Cockpit-Card-Subtitles`` resolves as one unit.
+PROJECT_OS_ID_RE: re.Pattern[str] = re.compile(
+    r"\b(?:FEAT|TASK|REQ|ISS|CHG|ADR|RISK|TST|REL|PHASE|WF|PLAN)-[\w-]+"
+)
+
+# Frontmatter fields whose values are *expected* to point at other notes.
+# Extending the wikilink-only extractor with a bare-ID pass is gated to
+# this set so a free-text field can't accidentally turn a passing
+# reference (e.g. "supersedes the FEAT-0001 design") into a hard link.
+_LINK_BEARING_FRONTMATTER_FIELDS: frozenset[str] = frozenset({
+    # structural parent / scope
+    "parent", "phase", "scope", "specifies", "validates", "verifies",
+    # cross-references
+    "affects", "related", "implements", "fixes", "fixed_by",
+    "depends", "blocks", "tests", "impacts",
+    # release chains
+    "previous_release", "next_release",
+    # supersession
+    "supersedes", "superseded_by",
+    # risk / cause graph
+    "causes", "cause", "mitigates", "mitigated_by",
+    # citations / sources
+    "references", "source", "sources", "reverts",
+})
+
+
+def _all_frontmatter_strings(value: Any) -> Iterator[str]:
+    """Recursive scalar walker — yields every string nested inside a
+    frontmatter value (scalar / list / dict)."""
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, list):
+        for item in value:
+            yield from _all_frontmatter_strings(item)
+    elif isinstance(value, dict):
+        for v in value.values():
+            yield from _all_frontmatter_strings(v)
+
+
+def _link_targets_in_frontmatter(fm: dict[str, Any]) -> Iterator[str]:
+    """Walk top-level frontmatter keys yielding link targets.
+
+    For every key: extract ``[[wikilinks]]`` (preserves the historical
+    behaviour). For keys in :data:`_LINK_BEARING_FRONTMATTER_FIELDS`:
+    additionally extract bare project-os IDs that aren't already inside
+    a wikilink span. Self-reference fields (`id`, `aliases`) are not in
+    the link-bearing set, so bare IDs there are ignored.
+    """
+    for key, value in fm.items():
+        is_link_bearing = key in _LINK_BEARING_FRONTMATTER_FIELDS
+        for s in _all_frontmatter_strings(value):
+            wiki_spans = list(WIKILINK_RE.finditer(s))
+            for m in wiki_spans:
+                yield m.group(1)
+            if not is_link_bearing:
+                continue
+            for m in PROJECT_OS_ID_RE.finditer(s):
+                if any(
+                    m.start() >= w.start() and m.end() <= w.end()
+                    for w in wiki_spans
+                ):
+                    continue
+                yield m.group(0)
+
+
 def _wikilinks_in_frontmatter(value: Any) -> Iterator[str]:
-    """Walk a frontmatter value (scalar / list / dict) yielding wikilink targets."""
+    """Back-compat shim — walks a frontmatter value (scalar / list /
+    dict) and yields *only* wikilink targets. Kept for any external
+    importer; the link-graph rebuilder uses
+    :func:`_link_targets_in_frontmatter` instead."""
     if isinstance(value, str):
         for m in WIKILINK_RE.finditer(value):
             yield m.group(1)

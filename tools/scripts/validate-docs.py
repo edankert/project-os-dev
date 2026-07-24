@@ -16,6 +16,17 @@ TRACEABILITY.md define by convention:
      (task done, issue closed, requirement verified, feature done) unless
      every linked TST-* is status: passing — or the note carries an explicit
      recorded waiver (frontmatter key: verification_waiver).
+  7. Deferral invariants (STATUSES.md "Deferral and re-adoption"): deferred
+     never resolves scope — a feature's tasks: list may not contain deferred
+     IDs; deferred items need a forward home (phase), deferred tasks need
+     origin provenance and no parent, and deferred notes may not be pruned
+     from the snapshot.
+  8. Requirement lifecycle (QUALITY.md; close-out "Requirement advancement"):
+     a requirement whose implementing features have all reached a terminal
+     status (done/cancelled/superseded) may not sit at draft/approved
+     (REQ-STALE); features should not implement against a draft requirement
+     (REQ-PREMATURE); an implemented/verified requirement should carry one
+     ticked acceptance criterion per criterion of record (REQ-BOXES).
 
 Exit codes: 0 = clean, 1 = violations found, 2 = usage/internal error.
 
@@ -57,6 +68,7 @@ ALLOWED_STATUS = {
     "change": {"merged", "reverted"},
     "adr": {"proposed", "accepted", "rejected", "superseded"},
     "test": {"draft", "ready", "passing", "failing", "blocked", "deprecated"},
+    "release": {"draft", "staged", "released", "rolled-back"},
 }
 
 def load_allowed_status(root):
@@ -100,7 +112,97 @@ TERMINAL = {
 RELATIONSHIP_FIELDS = (
     "parent", "features", "tasks", "issues", "requirements", "tests",
     "phases", "phase", "depends", "blocks", "mitigation_tasks", "workflows",
+    "origin", "deferred", "implements", "supersedes", "superseded",
 )
+
+# Statuses that resolve an item's place in a parent's scope / a requirement's delivery.
+# `deferred` is deliberately absent (STATUSES.md, "Deferral and re-adoption").
+RESOLVED_STATUSES = ("done", "cancelled", "superseded")
+
+# metrics.counts definitions live in tools/instructions/SNAPSHOT.md ("Metrics")
+METRIC_PREFIXES = {"FEAT", "TASK", "ISS", "PHASE", "TST", "RISK", "REL", "ADR", "REQ"}
+
+
+def compute_metric_counts(items, note_index):
+    """Counts over all notes in docs/ (the archive) plus snapshot items; snapshot status wins where both exist."""
+    statuses = {}
+    for coll in (items.values() if isinstance(items, dict) else []):
+        if not isinstance(coll, dict):
+            continue
+        for item_id, entry in coll.items():
+            if isinstance(entry, dict) and str(entry.get("status", "") or ""):
+                statuses[item_id] = str(entry.get("status", "") or "")
+    for nid, (_path, fm) in note_index.items():
+        statuses.setdefault(nid, str((fm or {}).get("status", "") or ""))
+    by_prefix = {}
+    for the_id, status in statuses.items():
+        m = ID_RE.match(the_id)
+        if m and m.group(1) in METRIC_PREFIXES:
+            by_prefix.setdefault(m.group(1), []).append(status)
+
+    def count(prefix, allowed=None):
+        vals = by_prefix.get(prefix, [])
+        return len(vals) if allowed is None else sum(1 for s in vals if s in allowed)
+
+    return {
+        "features_total": count("FEAT"),
+        "features_done": count("FEAT", {"done"}),
+        "phases_total": count("PHASE"),
+        "phases_done": count("PHASE", {"done"}),
+        "tasks_total": count("TASK"),
+        "tasks_done": count("TASK", {"done"}),
+        "tests_total": count("TST"),
+        "tests_passing": count("TST", {"passing"}),
+        "tests_failing": count("TST", {"failing"}),
+        "issues_open": count("ISS", {"open", "in-progress", "blocked", "reopened"}),
+        "issues_triage": count("ISS", {"triage"}),
+        "tasks_deferred": count("TASK", {"deferred"}),
+        "issues_deferred": count("ISS", {"deferred"}),
+        "requirements_total": count("REQ"),
+        "requirements_implemented": count("REQ", {"implemented", "verified"}),
+        "risks_open": count("RISK", {"open", "mitigating", "monitoring"}),
+        "releases_total": count("REL"),
+        "decisions_total": count("ADR"),
+    }
+
+
+def fix_metrics(root):
+    """Rewrite metrics.counts values in SNAPSHOT.yaml to the computed counts, preserving formatting."""
+    snap_path = root / "SNAPSHOT.yaml"
+    text = snap_path.read_text(encoding="utf-8")
+    snap = load_yaml(text)
+    if not isinstance(snap, dict):
+        return []
+    computed = compute_metric_counts(snap.get("items") or {}, build_note_index(root / "docs"))
+    lines = text.splitlines(keepends=True)
+    changes = []
+    in_metrics = in_counts = False
+    counts_indent = 0
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if re.match(r"^metrics:\s*(#.*)?$", line):
+            in_metrics = True
+            continue
+        if in_metrics and re.match(r"^\S", line):
+            break  # next top-level key
+        if not stripped or stripped.startswith("#"):
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        if in_metrics and re.match(r"^\s+counts:\s*(#.*)?$", line):
+            in_counts, counts_indent = True, indent
+            continue
+        if in_counts:
+            if indent <= counts_indent:
+                in_counts = False
+                continue
+            m = re.match(r"^(\s*)([\w-]+):\s*(-?\d+)\s*(#.*)?$", line)
+            if m and m.group(2) in computed and int(m.group(3)) != computed[m.group(2)]:
+                trailing = (" " + m.group(4)) if m.group(4) else ""
+                lines[i] = "%s%s: %d%s\n" % (m.group(1), m.group(2), computed[m.group(2)], trailing)
+                changes.append("%s: %s -> %d" % (m.group(2), m.group(3), computed[m.group(2)]))
+    if changes:
+        snap_path.write_text("".join(lines), encoding="utf-8")
+    return changes
 
 
 # ---------------------------------------------------------------- YAML subset
@@ -233,6 +335,56 @@ def note_type(fm):
     if isinstance(t, str):
         return t.strip().strip("\"'").strip("[]").lower()
     return ""
+
+
+def has_value(v):
+    """True when a frontmatter/snapshot field holds real content (not None/''/[])."""
+    if v is None:
+        return False
+    if isinstance(v, list):
+        return any(str(x).strip() for x in v)
+    return bool(str(v).strip())
+
+
+UNCHECKED_RE = re.compile(r"^\s*[-*+]\s*\[\s\]")
+CHECKED_RE = re.compile(r"^\s*[-*+]\s*\[[xX]\]")
+FENCE_RE = re.compile(r"^\s*(```|~~~)")
+
+
+def count_acceptance_boxes(path):
+    """Count (unticked, ticked) criteria in a requirement note's Acceptance Criteria section.
+
+    Fenced code blocks are skipped entirely: a `# comment` inside a fence must not be
+    read as a heading that ends the section, and a `- [ ]` inside one is not a criterion.
+    Falls back to the whole body when the note has no Acceptance heading.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return (0, 0)
+    if text.startswith("---"):
+        end = text.find("\n---", 3)
+        if end != -1:
+            text = text[end + 4:]
+    section, seen_section, in_fence, body = [], False, False, []
+    for line in text.splitlines():
+        if FENCE_RE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        body.append(line)
+        if re.match(r"^#{1,6}\s", line):
+            if re.match(r"^#{1,6}\s+Acceptance\b", line, re.IGNORECASE):
+                seen_section, section = True, []
+                continue
+            if seen_section:
+                break  # next heading ends the section
+        if seen_section:
+            section.append(line)
+    scan = section if seen_section else body
+    return (sum(1 for l in scan if UNCHECKED_RE.match(l)),
+            sum(1 for l in scan if CHECKED_RE.match(l)))
 
 
 class Report:
@@ -369,8 +521,89 @@ def validate(root, report):
                         for task_ref in extract_ids(entry.get("tasks")):
                             t_entry = (items.get("tasks") or {}).get(task_ref)
                             t_status = str(t_entry.get("status", "")) if isinstance(t_entry, dict) else str((note_index.get(task_ref, (None, {}))[1] or {}).get("status", ""))
-                            if t_status and t_status != "done":
-                                report.error("VERIFY", "%s is done but task %s is '%s'" % (item_id, task_ref, t_status))
+                            if t_status and t_status not in ("done", "cancelled"):
+                                report.error("VERIFY", "%s is done but task %s is '%s', not scope-resolved (done/cancelled)" % (item_id, task_ref, t_status))
+
+            # -- deferral invariants (STATUSES.md "Deferral and re-adoption")
+            if coll_name == "features":
+                for task_ref in extract_ids(entry.get("tasks")):
+                    t_entry = (items.get("tasks") or {}).get(task_ref)
+                    t_status = str(t_entry.get("status", "")) if isinstance(t_entry, dict) else str((note_index.get(task_ref, (None, {}))[1] or {}).get("status", ""))
+                    if t_status == "deferred":
+                        report.error("DEFER-SCOPE", "%s lists deferred task %s in tasks: (its scope); descope it into deferred: per the deferral procedure (tools/skills/status-transition/SKILL.md)" % (item_id, task_ref))
+            # a blank snapshot status must not mask a deferred note
+            eff_status = status or str(fm.get("status", "") or "")
+            if eff_status == "deferred" and coll_name in ("tasks", "issues", "requirements", "features"):
+                if not (has_value(entry.get("phase")) or has_value(fm.get("phase"))):
+                    report.error("DEFER-HOME", "%s is deferred without a forward home: set phase to a future phase or the PHASE-999 parking lot" % item_id)
+                if coll_name == "tasks":
+                    if not (has_value(entry.get("origin")) or has_value(fm.get("origin"))):
+                        report.error("DEFER-ORIGIN", "%s is deferred without origin provenance (the former parent)" % item_id)
+                    if has_value(entry.get("parent")) or has_value(fm.get("parent")):
+                        report.error("DEFER-PARENT", "%s is deferred but still has a parent; descoping clears parent (origin + phase replace it while parked)" % item_id)
+
+    # -- requirement lifecycle (QUALITY.md; close-out "Requirement advancement")
+    def effective_status(the_id):
+        for coll in (items.values() if isinstance(items, dict) else []):
+            if isinstance(coll, dict) and isinstance(coll.get(the_id), dict):
+                snap_status = str(coll[the_id].get("status", "") or "")
+                if snap_status:
+                    return snap_status
+        if the_id in note_index:
+            return str((note_index[the_id][1] or {}).get("status", "") or "")
+        return ""
+
+    def prefix_of(the_id):
+        m = ID_RE.match(the_id)
+        return m.group(1) if m else ""
+
+    reqs_coll = items.get("requirements") if isinstance(items.get("requirements"), dict) else {}
+    req_ids = {k for k in reqs_coll if prefix_of(k) == "REQ"}
+    req_ids.update(nid for nid, (_p, nfm) in note_index.items() if note_type(nfm) == "requirement")
+
+    feature_reqs = {}  # FEAT id -> set of REQ ids it claims to implement
+    for fid, fentry in (items.get("features") or {}).items():
+        if isinstance(fentry, dict):
+            feature_reqs.setdefault(fid, set()).update(extract_ids(fentry.get("requirements")))
+    for nid, (_p, nfm) in note_index.items():
+        if note_type(nfm) == "feature":
+            feature_reqs.setdefault(nid, set()).update(extract_ids((nfm or {}).get("requirements")))
+
+    for req_id in sorted(req_ids):
+        entry = reqs_coll.get(req_id) if isinstance(reqs_coll.get(req_id), dict) else {}
+        note_path, fm = note_index.get(req_id, (None, {}))
+        status = effective_status(req_id)
+        # implementing features: the requirement's own `implements:` plus any feature claiming it
+        feats = {f for f in set(extract_ids(entry.get("implements"))) | set(extract_ids((fm or {}).get("implements"))) if prefix_of(f) == "FEAT"}
+        feats.update(fid for fid, reqs in feature_reqs.items() if req_id in reqs and prefix_of(fid) == "FEAT")
+        feat_status = {f: effective_status(f) for f in feats}
+        known = {f: s for f, s in feat_status.items() if s}
+        all_resolved = bool(known) and all(s in RESOLVED_STATUSES for s in known.values())
+        if status in ("draft", "approved") and all_resolved:
+            report.error("REQ-STALE", "%s is '%s' but every implementing feature (%s) has reached a terminal status; advance it per close-out 'Requirement advancement' (tick criteria with evidence, reconcile departures, set implemented) or supersede it" % (req_id, status, ", ".join("%s=%s" % (f, known[f]) for f in sorted(known))))
+        elif status == "draft" and any(s in ("in-progress", "in-review", "done") for s in known.values()):
+            active = sorted(f for f, s in known.items() if s in ("in-progress", "in-review", "done"))
+            report.warn("REQ-PREMATURE", "%s is still draft but %s is already being implemented; approve or amend the requirement first (feature-scaffold 'Requirement approval gate')" % (req_id, ", ".join(active)))
+        if status in ("implemented", "verified") and note_path is not None:
+            unticked, ticked = count_acceptance_boxes(note_path)
+            criteria = entry.get("acceptance") or (fm or {}).get("acceptance") or []
+            n_criteria = len(criteria) if isinstance(criteria, list) else 0
+            if unticked:
+                report.warn("REQ-BOXES", "%s is '%s' but %d acceptance criterion/criteria remain unticked (%s); tick with evidence or reconcile them" % (req_id, status, unticked, note_path.relative_to(root)))
+            elif n_criteria and not (unticked + ticked):
+                report.warn("REQ-BOXES", "%s is '%s' with %d acceptance criteria but no verification record — its note has no ticked acceptance checkboxes (%s); add one box per criterion with an evidence pointer (SCHEMAS.md)" % (req_id, status, n_criteria, note_path.relative_to(root)))
+            elif n_criteria and (unticked + ticked) != n_criteria:
+                report.warn("REQ-BOXES", "%s is '%s' with %d criteria of record but %d acceptance checkbox(es) (%s); SCHEMAS.md requires one box per criterion, so the verification record is partial" % (req_id, status, n_criteria, unticked + ticked, note_path.relative_to(root)))
+
+    # -- deferred notes must stay in the snapshot (SNAPSHOT.md retention)
+    for item_id, (path, fm) in sorted(note_index.items()):
+        if str((fm or {}).get("status", "") or "") != "deferred":
+            continue
+        if not ID_RE.match(item_id) or ID_RE.match(item_id).group(1) not in ("TASK", "ISS", "REQ", "FEAT", "PHASE"):
+            continue
+        in_snapshot = any(isinstance(c, dict) and item_id in c for c in items.values()) if isinstance(items, dict) else False
+        if not in_snapshot:
+            report.error("DEFER-RETENTION", "%s is deferred but missing from SNAPSHOT.yaml; deferred items are active and never pruned (%s)" % (item_id, path.relative_to(root)))
 
     # -- counter integrity (snapshot IDs and note IDs)
     if path_alias_items:
@@ -393,6 +626,42 @@ def validate(root, report):
         check_counter(sid, "snapshot")
     for nid in sorted(note_index):
         check_counter(nid, str(note_index[nid][0].relative_to(root)))
+
+    # -- metrics counts (computed vs recorded; SNAPSHOT.md "Metrics")
+    metrics = snap.get("metrics") or {}
+    counts = metrics.get("counts") if isinstance(metrics, dict) else None
+    if isinstance(counts, dict):
+        computed = compute_metric_counts(items, note_index)
+        for key in sorted(counts):
+            if key not in computed:
+                continue
+            val = counts[key]
+            try:
+                recorded = int(val)
+            except (TypeError, ValueError):
+                report.error("METRICS", "metrics.counts.%s is not an integer: %r" % (key, val))
+                continue
+            if recorded != computed[key]:
+                report.error("METRICS", "metrics.counts.%s is %d but computed %d (run validate-docs.sh --fix-metrics)" % (key, recorded, computed[key]))
+
+    # -- independent-review fields (QUALITY.md "Independent review (different-model)")
+    for coll_name, settled in (("tests", {"passing"}), ("changes", {"merged"})):
+        coll = items.get(coll_name) or {}
+        if not isinstance(coll, dict):
+            continue
+        for item_id, entry in coll.items():
+            if not isinstance(entry, dict):
+                continue
+            status = str(entry.get("status", ""))
+            if status not in settled:
+                continue
+            file_rel = entry.get("file") or entry.get("path") or ""
+            fm = parse_frontmatter(root / file_rel) or {} if file_rel and (root / file_rel).is_file() else {}
+            verdict = str(fm.get("review_verdict", "") or entry.get("review_verdict", "") or "").strip()
+            if verdict == "changes-requested":
+                report.error("REVIEW", "%s is '%s' but review_verdict is changes-requested" % (item_id, status))
+            elif not verdict:
+                report.warn("REVIEW", "%s is '%s' without independent review (reviewed_by/review_verdict); see QUALITY.md" % (item_id, status))
 
     # -- focus resolution
     focus = snap.get("focus") or {}
@@ -419,6 +688,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Validate project-os SNAPSHOT.yaml <-> docs/ consistency.")
     ap.add_argument("--repo-root", default=None, help="Repo root (default: nearest ancestor with SNAPSHOT.yaml)")
     ap.add_argument("--quiet", action="store_true", help="Suppress warnings and the success line")
+    ap.add_argument("--fix-metrics", action="store_true", help="Rewrite metrics.counts to the computed counts before validating")
     args = ap.parse_args(argv)
 
     if args.repo_root:
@@ -430,6 +700,14 @@ def main(argv=None):
     if not (root / "SNAPSHOT.yaml").is_file():
         print("validate-docs: no SNAPSHOT.yaml found from %s upward" % Path.cwd(), file=sys.stderr)
         return 2
+
+    if args.fix_metrics:
+        try:
+            for change in fix_metrics(root):
+                print("validate-docs: fixed metrics.counts.%s" % change)
+        except Exception as exc:  # noqa: BLE001
+            print("validate-docs: --fix-metrics failed: %s" % exc, file=sys.stderr)
+            return 2
 
     report = Report()
     try:
