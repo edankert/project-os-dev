@@ -1,6 +1,7 @@
 ---
 type: reference
 id: ISSUES-README
+aliases: ["ISSUES-README"]
 status: active
 owner: team:docs
 created: 2026-01-26

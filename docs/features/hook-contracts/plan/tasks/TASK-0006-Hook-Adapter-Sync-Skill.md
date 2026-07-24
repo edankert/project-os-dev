@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0006
+aliases: ["TASK-0006"]
 title: "Create adapter-sync skill for regenerating tool-specific files"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0002-Hook-Contracts]]"
+fixes: []
 effort: S
 due: ""
 depends: [TASK-0002, TASK-0004]

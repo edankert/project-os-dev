@@ -1,6 +1,7 @@
 ---
 type: reference
 id: WORKFLOWS-README
+aliases: ["WORKFLOWS-README"]
 status: active
 owner: team:docs
 created: 2026-01-26

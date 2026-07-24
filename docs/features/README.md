@@ -1,6 +1,7 @@
 ---
 type: reference
 id: FEATURES-README
+aliases: ["FEATURES-README"]
 status: active
 owner: team:docs
 created: 2026-01-26

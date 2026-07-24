@@ -1,6 +1,7 @@
 ---
 type: glossary
 id: GLOSSARY
+aliases: ["GLOSSARY"]
 status: active
 owner: user:edwin
 created: 2026-03-08

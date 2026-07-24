@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0004
+aliases: ["TASK-0004"]
 title: "Define HOOKS.md with tool-agnostic hook contracts"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0002-Hook-Contracts]]"
+fixes: []
 effort: M
 due: ""
 depends: []

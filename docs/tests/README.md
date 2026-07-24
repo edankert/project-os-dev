@@ -1,6 +1,7 @@
 ---
 type: reference
 id: TESTS-README
+aliases: ["TESTS-README"]
 status: active
 owner: team:docs
 created: 2026-01-27

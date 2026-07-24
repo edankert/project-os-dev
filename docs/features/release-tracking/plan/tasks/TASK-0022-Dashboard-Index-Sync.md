@@ -1,12 +1,14 @@
 ---
 type: "[[task]]"
 id: TASK-0022
+aliases: ["TASK-0022"]
 title: "Create releases dashboard, base, update indexes, sync to downstream"
 status: done
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 parent: "[[FEAT-0006]]"
+fixes: []
 effort: S
 tags: [release-tracking]
 ---

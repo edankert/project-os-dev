@@ -1,20 +1,18 @@
 ---
 type: "[[feature]]"
 id: FEAT-0003
+aliases: ["FEAT-0003"]
 title: "Team model replacing agent orchestration"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 goal: "Replace session/claimed_by orchestration in SNAPSHOT.yaml with a team model that delegates coordination to native tool orchestration"
-requirements: ["[[REQ-0005-Orchestration-Delegation]]"]
-tasks: ["[[TASK-0007-Team-Schema]]", "[[TASK-0008-Update-SNAPSHOT-Template]]", "[[TASK-0009-Update-Lifecycle-Preflight]]"]
 release: ""
 related: ["[[ADR-0003-Delegate-Orchestration]]", "[[FEAT-0004-Snapshot-Simplification]]"]
-tests: []
 ---
 
 # Team model replacing agent orchestration

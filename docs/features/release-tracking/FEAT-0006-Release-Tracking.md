@@ -1,14 +1,13 @@
 ---
 type: "[[feature]]"
 id: FEAT-0006
+aliases: ["FEAT-0006"]
 title: "First-class release tracking"
 status: done
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 goal: "Add REL-* note type for full release records plus a lightweight releases section in SNAPSHOT.yaml for agent access"
-requirements: ["[[REQ-0009]]"]
-tasks: ["[[TASK-0018]]", "[[TASK-0019]]", "[[TASK-0020]]", "[[TASK-0021]]", "[[TASK-0022]]"]
 tags: [release-tracking]
 ---
 

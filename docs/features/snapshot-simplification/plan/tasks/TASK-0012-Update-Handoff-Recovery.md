@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0012
+aliases: ["TASK-0012"]
 title: "Rewrite HANDOFF.md for orchestration-agnostic recovery"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0004-Snapshot-Simplification]]"
+fixes: []
 effort: M
 due: ""
 depends: [TASK-0010, TASK-0011]

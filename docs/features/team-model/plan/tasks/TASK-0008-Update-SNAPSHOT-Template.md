@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0008
+aliases: ["TASK-0008"]
 title: "Update SNAPSHOT.yaml template with team model"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0003-Team-Model]]"
+fixes: []
 effort: S
 due: ""
 depends: [TASK-0007]

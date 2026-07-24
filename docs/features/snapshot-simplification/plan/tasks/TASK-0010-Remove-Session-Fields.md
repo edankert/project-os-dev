@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0010
+aliases: ["TASK-0010"]
 title: "Remove session object from SNAPSHOT.yaml template and SNAPSHOT.md"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0004-Snapshot-Simplification]]"
+fixes: []
 effort: S
 due: ""
 depends: []

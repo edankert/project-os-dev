@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0002
+aliases: ["TASK-0002"]
 title: "Create Claude Code adapter with CLAUDE.md import strategy"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0001-Tool-Adapters]]"
+fixes: []
 effort: M
 due: ""
 depends: [TASK-0001]

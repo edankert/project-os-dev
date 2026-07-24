@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0016
+aliases: ["TASK-0016"]
 title: "Add impact analysis to feature-scaffold and issue-intake"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0005-Enforcement-Hardening]]"
+fixes: []
 effort: S
 due: ""
 depends: [TASK-0013]

@@ -1,6 +1,7 @@
 ---
 type: reference
 id: OWNERSHIP
+aliases: ["OWNERSHIP"]
 status: active
 owner: team:docs
 created: 2026-01-27

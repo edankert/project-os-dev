@@ -1,12 +1,14 @@
 ---
 type: "[[task]]"
 id: TASK-0020
+aliases: ["TASK-0020"]
 title: "Add releases section to SNAPSHOT.yaml template and SNAPSHOT.md"
 status: done
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 parent: "[[FEAT-0006]]"
+fixes: []
 effort: M
 tags: [release-tracking]
 ---

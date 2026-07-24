@@ -1,15 +1,14 @@
 ---
 type: "[[feature]]"
 id: FEAT-0005
+aliases: ["FEAT-0005"]
 title: "Enforcement hardening — mandatory skills, verification gating, impact analysis"
 status: done
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
-phase:
+phase: []
 goal: "Harden project-os skill enforcement by making risk scans, verification gating, and impact analysis mandatory steps rather than conditional ones"
-requirements: [REQ-0006, REQ-0007, REQ-0008]
-tasks: [TASK-0013, TASK-0014, TASK-0015, TASK-0016, TASK-0017]
 related: [ADR-0004]
 ---
 

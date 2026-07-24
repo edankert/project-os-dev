@@ -1,6 +1,7 @@
 ---
 type: "[[adr]]"
 id: ADR-0001
+aliases: ["ADR-0001"]
 title: "Use tool-specific adapters instead of a monolithic CONTEXT.md"
 status: accepted
 owner: user:edwin

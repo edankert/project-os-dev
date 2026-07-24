@@ -1,6 +1,7 @@
 ---
 type: "[[adr]]"
 id: ADR-0003
+aliases: ["ADR-0003"]
 title: "Delegate agent coordination to native tool orchestration"
 status: accepted
 owner: user:edwin

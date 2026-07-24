@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0007
+aliases: ["TASK-0007"]
 title: "Define team schema for SNAPSHOT.yaml"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0003-Team-Model]]"
+fixes: []
 effort: S
 due: ""
 depends: []

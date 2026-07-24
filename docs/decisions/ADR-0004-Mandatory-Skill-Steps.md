@@ -1,6 +1,7 @@
 ---
 type: "[[adr]]"
 id: ADR-0004
+aliases: ["ADR-0004"]
 title: "Shift from optional to mandatory skill steps"
 status: accepted
 owner: user:edwin

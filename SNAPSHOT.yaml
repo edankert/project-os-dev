@@ -1,5 +1,5 @@
 version: 1
-updated: "2026-07-18T00:00Z"
+updated: "2026-07-22T00:00Z"
 
 template:
   replace_me: false
@@ -25,23 +25,23 @@ docs_system:
     - docs/PHASES.md
 
 counters:
-  ADR: 4
+  ADR: 6
   CHG:
-    last_date: 20260717
-  FEAT: 10
-  ISS: 1
+    last_date: 20260721
+  FEAT: 12
+  ISS: 4
   REL: 0
-  REQ: 12
+  REQ: 15
   RISK: 0
-  TASK: 45
+  TASK: 52
   TST: 0
   WF: 3
 
 focus:
-  phase: ""
-  feature: ""
   task: ""
   issue: ""
+  feature: ""
+  phase: ""
 
 items:
   features:
@@ -50,8 +50,8 @@ items:
       title: "Named relationship fields with child-to-parent linking"
       status: done
       owner: user:edwin
-      goal: "Replace ambiguous parent/implements fields with semantic named relationships (implements, fixes, affects, specifies, validates) to enable reliable Bases dashboard filtering"
-      requirements: [REQ-0010]
+      goal: "Relationship model for linking notes. NOTE: the semantic-named-field design (implements/fixes/affects/specifies/validates) was reverted in May 2026; the model in force is specified by REQ-0015"
+      requirements: [REQ-0010, REQ-0015]
       tasks: [TASK-0023, TASK-0024, TASK-0025, TASK-0027, TASK-0028, TASK-0029]
     FEAT-0008:
       file: docs/features/phase-notes/FEAT-0008-Phase-Notes.md
@@ -80,6 +80,24 @@ items:
       requirements: [REQ-0002, REQ-0006, REQ-0009]
       tasks: [TASK-0041, TASK-0042, TASK-0043, TASK-0044, TASK-0045]
       related: [ADR-0001, ADR-0002, ADR-0004]
+    FEAT-0011:
+      file: docs/features/deferral-descoping/FEAT-0011-Deferral-Descoping.md
+      title: "Deferral as descoping — deferred items detach from parents and stay tracked"
+      status: done
+      owner: user:edwin
+      goal: "Stop deferred items from satisfying parent completeness: deferral becomes an explicit descoping operation (origin provenance + forward home), enforced by the validator and surfaced until re-adopted or cancelled"
+      requirements: [REQ-0013]
+      tasks: [TASK-0046, TASK-0047, TASK-0048, TASK-0049]
+      related: [ISS-0002, ADR-0005, REQ-0006]
+    FEAT-0012:
+      file: docs/features/requirement-lifecycle/FEAT-0012-Requirement-Lifecycle-Closure.md
+      title: "Requirement lifecycle closure — requirements advance with their features instead of freezing at draft/approved"
+      status: done
+      owner: user:edwin
+      goal: "Close the feature→requirement gap: close-out advances requirements on evidence, scaffolding blocks implementing against draft requirements, the validator makes stale requirements a build failure (REQ-STALE) with unticked criteria and premature implementation surfaced as warnings, and the existing 12 requirements are backfilled"
+      requirements: [REQ-0014]
+      tasks: [TASK-0050, TASK-0051, TASK-0052]
+      related: [ISS-0004, ADR-0006, REQ-0006]
   # Pruned: FEAT-0001 through FEAT-0006 (all done). Notes preserved under docs/features/.
 
   tasks:
@@ -193,95 +211,179 @@ items:
       status: done
       parent: FEAT-0010
       depends: [TASK-0041]
+    TASK-0046:
+      file: docs/features/deferral-descoping/plan/tasks/TASK-0046-Deferral-Semantics-Instructions.md
+      title: "Define deferral-as-descoping semantics in instructions and schemas"
+      status: done
+      parent: FEAT-0011
+      blocks: [TASK-0047, TASK-0048]
+    TASK-0047:
+      file: docs/features/deferral-descoping/plan/tasks/TASK-0047-Deferral-Procedure-Skills.md
+      title: "Deferral procedure in skills: status-transition branch, grooming re-adoption, close-out guard"
+      status: done
+      parent: FEAT-0011
+      depends: [TASK-0046]
+    TASK-0048:
+      file: docs/features/deferral-descoping/plan/tasks/TASK-0048-Validator-Deferral-Checks.md
+      title: "Validator hardening: scope-resolution rule for feature done, DEFER checks, deferred metrics"
+      status: done
+      parent: FEAT-0011
+      depends: [TASK-0046]
+    TASK-0049:
+      file: docs/features/deferral-descoping/plan/tasks/TASK-0049-Cockpit-Parked-Surfacing.md
+      title: "Cockpit: surface deferred as parked (not archived) in status ordering"
+      status: done
+      parent: FEAT-0011
+      external: "../project-os-cockpit/src/project_os_cockpit/cockpit.py"
+    TASK-0050:
+      file: docs/features/requirement-lifecycle/plan/tasks/TASK-0050-Requirement-Closeout-Skills.md
+      title: "Requirement advancement in skills: close-out step, scaffold approval gate, canonical acceptance surface"
+      status: done
+      parent: FEAT-0012
+      blocks: [TASK-0051, TASK-0052]
+    TASK-0051:
+      file: docs/features/requirement-lifecycle/plan/tasks/TASK-0051-Validator-Requirement-Checks.md
+      title: "Validator: REQ-STALE, REQ-PREMATURE, REQ-BOXES checks"
+      status: done
+      parent: FEAT-0012
+      depends: [TASK-0050]
+    TASK-0052:
+      file: docs/features/requirement-lifecycle/plan/tasks/TASK-0052-Backfill-Requirements.md
+      title: "Backfill REQ-0001..0012: verify criteria against shipped state, reconcile superseded criteria, advance statuses"
+      status: done
+      parent: FEAT-0012
+      depends: [TASK-0050]
 
-  issues: {}
+  issues:
+    ISS-0002:
+      file: docs/issues/ISS-0002-Deferred-Items-Satisfy-Parent-Completeness.md
+      title: "Deferred items are treated as complete: parents close over them and parked work vanishes from every active surface"
+      status: fixed
+      severity: high
+      owner: user:edwin
+      related: [FEAT-0011]
+    ISS-0003:
+      file: docs/issues/ISS-0003-Document-First-Hook-Fragile-Focus-Parsing.md
+      title: "Stale vendored hooks in project-os-dev: fragile focus parsing and wrong-repo gating already fixed upstream, plus an unfixed non-repo path case"
+      status: open
+      severity: low
+      owner: user:edwin
+    ISS-0004:
+      file: docs/issues/ISS-0004-Requirements-Never-Advance.md
+      title: "Requirements freeze at draft/approved while their features ship: no lifecycle step ever advances them and acceptance criteria go stale"
+      status: fixed
+      severity: high
+      owner: user:edwin
+      related: [FEAT-0012]
   # Pruned: ISS-0001 (closed). Note preserved under docs/issues/.
 
   requirements:
     REQ-0001:
       file: docs/requirements/REQ-0001-Tool-Agnostic-Rules.md
       title: "project-os rules must be maintainable in one place and deliverable to any LLM tool"
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: high
       implements: [FEAT-0001]
     REQ-0002:
       file: docs/requirements/REQ-0002-Native-Instruction-Format.md
       title: "Adapters must deliver rules in each tool's native instruction format"
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: high
       implements: [FEAT-0001]
     REQ-0003:
       file: docs/requirements/REQ-0003-Hook-Contracts.md
       title: "Enforcement points must be defined as tool-agnostic contracts"
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: high
       implements: [FEAT-0002]
     REQ-0004:
       file: docs/requirements/REQ-0004-Tool-Specific-Hook-Implementations.md
       title: "Hook contracts must have runnable implementations for supported tools"
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: medium
       implements: [FEAT-0002]
     REQ-0005:
       file: docs/requirements/REQ-0005-Orchestration-Delegation.md
       title: "project-os must delegate agent coordination to native tool orchestration"
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: high
       implements: [FEAT-0003, FEAT-0004]
     REQ-0006:
       file: docs/requirements/REQ-0006-Verification-Gating.md
       title: "Verification gating must block status transitions when linked tests are not passing"
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: high
       implements: [FEAT-0005]
     REQ-0007:
       file: docs/requirements/REQ-0007-Mandatory-Risk-Scans.md
       title: "Risk scans must be mandatory with explicit trigger checklist"
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: high
       implements: [FEAT-0005]
     REQ-0008:
       file: docs/requirements/REQ-0008-Mandatory-Impact-Analysis.md
       title: "Impact analysis must run as mandatory preflight for new requirements"
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: high
       implements: [FEAT-0005]
     REQ-0009:
       file: docs/requirements/REQ-0009-Release-Tracking.md
       title: "Releases must be tracked as first-class notes with traceability to features, changes, and tests"
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: medium
       implements: [FEAT-0006]
     REQ-0010:
       file: docs/requirements/REQ-0010-Named-Relationship-Fields.md
       title: "Child notes must use semantic named relationship fields that support multiple values and are filterable by Obsidian Bases"
-      status: draft
+      status: superseded
       owner: user:edwin
       priority: high
       implements: [FEAT-0007]
     REQ-0011:
       file: docs/requirements/REQ-0011-Phase-Notes.md
       title: "Phases must be navigable first-class notes with contextual dashboards showing all items in that phase"
-      status: draft
+      status: implemented
       owner: user:edwin
       priority: medium
       implements: [FEAT-0008]
     REQ-0012:
       file: docs/requirements/REQ-0012-Cockpit-Layout.md
       title: "Obsidian must provide a three-pane cockpit layout with navigation, editor, and dynamic context"
-      status: draft
+      status: implemented
       owner: user:edwin
       priority: high
       implements: [FEAT-0009]
+    REQ-0013:
+      file: docs/requirements/REQ-0013-Deferral-Semantics.md
+      title: "Deferred items must never satisfy parent completeness and must remain tracked with origin provenance and a forward home until re-adopted or cancelled"
+      status: implemented
+      owner: user:edwin
+      priority: high
+      implements: [FEAT-0011]
+    REQ-0014:
+      file: docs/requirements/REQ-0014-Requirement-Lifecycle-Advancement.md
+      title: "Requirements must advance with their implementing features, with acceptance criteria reconciled against what actually shipped"
+      status: implemented
+      owner: user:edwin
+      priority: high
+      implements: [FEAT-0012]
+    REQ-0015:
+      file: docs/requirements/REQ-0015-Relationship-Model.md
+      title: "Relationship model: scalar parent downward, implements upward, feature child lists as scope of record"
+      status: implemented
+      owner: user:edwin
+      priority: high
+      implements: [FEAT-0007, FEAT-0011]
+      supersedes: [REQ-0010]
 
   risks: {}
   tests: {}
@@ -289,6 +391,18 @@ items:
   workflows: {}
 
   changes:
+    CHG-20260721-Requirement-Lifecycle-Closure:
+      file: docs/changes/CHG-20260721-Requirement-Lifecycle-Closure.md
+      title: "Requirements advance on evidence: close-out step, approval gate, REQ-* validator checks, and a 12-requirement backfill"
+      status: merged
+      issues: [ISS-0004]
+      features: [FEAT-0012]
+      reviewed_by: model:claude-opus-4-8
+      review_verdict: approved
+    CHG-20260721-Deferral-As-Descoping:
+      file: docs/changes/CHG-20260721-Deferral-As-Descoping.md
+      title: "Deferral becomes a descoping operation: origin provenance, forward home, validator DEFER checks, parked surfacing"
+      status: merged
     CHG-20260705-Adopt-Mechanical-Verification:
       file: docs/changes/CHG-20260705-Adopt-Mechanical-Verification.md
       title: "Adopt mechanical verification change set from project-os template"
@@ -323,18 +437,36 @@ items:
       owner: user:edwin
       decision: "Make risk scans, verification gating, and impact analysis mandatory steps with explicit trigger checklists"
       related: [FEAT-0005, REQ-0006, REQ-0007, REQ-0008]
+    ADR-0005:
+      file: docs/decisions/ADR-0005-Deferral-As-Descoping.md
+      title: "Deferral is a descoping operation, not a status flip"
+      status: accepted
+      owner: user:edwin
+      decision: "A parent's tasks list is its current scope; done/cancelled resolve scope, deferred may not remain in it — deferring an item detaches it from the parent (origin keeps provenance) and re-homes it to a future phase or the PHASE-999 parking lot"
+      related: [FEAT-0011, REQ-0013, ISS-0002, ADR-0004]
+    ADR-0006:
+      file: docs/decisions/ADR-0006-Requirement-Advancement-On-Evidence.md
+      title: "Requirements advance on evidence at feature close-out; acceptance criteria are reconciled, never ticked to fit"
+      status: accepted
+      owner: user:edwin
+      decision: "Feature close-out must advance each linked requirement to implemented once all its implementing features are done, ticking acceptance boxes only with evidence and reconciling (amend/narrow/supersede) any criterion the delivered work deliberately departed from; frontmatter acceptance: is the criteria of record and body checkboxes are the per-criterion verification record"
+      related: [FEAT-0012, REQ-0014, ISS-0004, ADR-0004]
 
 metrics:
   counts:
-    features_total: 10
-    features_done: 10
-    tasks_total: 45
-    tasks_done: 43
+    features_total: 12
+    features_done: 12
+    tasks_total: 52
+    tasks_done: 50
     tests_total: 0
     tests_passing: 0
     tests_failing: 0
-    issues_open: 0
+    issues_open: 1
     issues_triage: 0
+    tasks_deferred: 0
+    issues_deferred: 0
+    requirements_total: 15
+    requirements_implemented: 14
     risks_open: 0
     releases_total: 0
-    decisions_total: 4
+    decisions_total: 6

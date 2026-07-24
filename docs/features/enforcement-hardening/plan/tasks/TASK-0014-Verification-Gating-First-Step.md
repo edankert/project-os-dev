@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0014
+aliases: ["TASK-0014"]
 title: "Make verification gating first step in close-out"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0005-Enforcement-Hardening]]"
+fixes: []
 effort: S
 due: ""
 depends: []

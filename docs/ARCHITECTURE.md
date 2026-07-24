@@ -1,6 +1,7 @@
 ---
 type: reference
 id: ARCH
+aliases: ["ARCH"]
 status: reference
 owner: user:edwin
 created: 2026-03-08

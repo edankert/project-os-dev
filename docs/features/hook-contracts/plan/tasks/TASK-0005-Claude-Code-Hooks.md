@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0005
+aliases: ["TASK-0005"]
 title: "Implement Claude Code hook scripts and hooks.json"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0002-Hook-Contracts]]"
+fixes: []
 effort: L
 due: ""
 depends: [TASK-0002, TASK-0004]

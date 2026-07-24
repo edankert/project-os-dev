@@ -1,20 +1,18 @@
 ---
 type: "[[feature]]"
 id: FEAT-0002
+aliases: ["FEAT-0002"]
 title: "Hook contract definitions and tool-specific implementations"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 goal: "Define enforceable hook contracts in project-os and provide tool-specific implementations that turn prescriptive skills into deterministic gates"
-requirements: ["[[REQ-0003-Hook-Contracts]]", "[[REQ-0004-Tool-Specific-Hook-Implementations]]"]
-tasks: ["[[TASK-0004-Hook-Contracts-Spec]]", "[[TASK-0005-Claude-Code-Hooks]]", "[[TASK-0006-Hook-Adapter-Sync-Skill]]"]
 release: ""
 related: ["[[ADR-0002-Hook-Contract-Pattern]]", "[[FEAT-0001-Tool-Adapters]]"]
-tests: []
 ---
 
 # Hook contract definitions and tool-specific implementations

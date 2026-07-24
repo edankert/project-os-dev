@@ -1,6 +1,7 @@
 ---
 type: "[[adr]]"
 id: ADR-0002
+aliases: ["ADR-0002"]
 title: "Define hook contracts as tool-agnostic specs with tool-specific implementations"
 status: accepted
 owner: user:edwin

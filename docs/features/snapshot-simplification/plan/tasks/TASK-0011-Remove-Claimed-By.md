@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0011
+aliases: ["TASK-0011"]
 title: "Remove claimed_by/claim_started from item schema and instructions"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0004-Snapshot-Simplification]]"
+fixes: []
 effort: S
 due: ""
 depends: []

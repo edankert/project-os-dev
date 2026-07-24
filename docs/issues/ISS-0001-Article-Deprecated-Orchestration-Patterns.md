@@ -1,6 +1,7 @@
 ---
 type: "[[issue]]"
 id: ISS-0001
+aliases: ["ISS-0001"]
 title: "Use Cases article references deprecated orchestration patterns"
 status: closed
 severity: medium

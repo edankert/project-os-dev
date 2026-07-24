@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0017
+aliases: ["TASK-0017"]
 title: "Add pre-transition gates to status-transition skill"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0005-Enforcement-Hardening]]"
+fixes: []
 effort: M
 due: ""
 depends: []

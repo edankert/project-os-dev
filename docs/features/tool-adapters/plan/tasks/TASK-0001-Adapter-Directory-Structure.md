@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0001
+aliases: ["TASK-0001"]
 title: "Create adapter directory structure and ADAPTER.md template"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0001-Tool-Adapters]]"
+fixes: []
 effort: S
 due: ""
 depends: []

@@ -1,6 +1,7 @@
 ---
 type: "[[workflow]]"
 id: WF-0001
+aliases: ["WF-0001"]
 title: "Existing project derive"
 status: draft
 owner: group:maintainers

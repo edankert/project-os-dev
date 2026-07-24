@@ -1,12 +1,14 @@
 ---
 type: "[[task]]"
 id: TASK-0019
+aliases: ["TASK-0019"]
 title: "Add release status lifecycle, traceability rules, and taxonomy"
 status: done
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 parent: "[[FEAT-0006]]"
+fixes: []
 effort: S
 tags: [release-tracking]
 ---

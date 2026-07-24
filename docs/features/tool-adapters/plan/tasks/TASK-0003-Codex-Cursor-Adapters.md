@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0003
+aliases: ["TASK-0003"]
 title: "Create Codex and Cursor adapter stubs"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0001-Tool-Adapters]]"
+fixes: []
 effort: S
 due: ""
 depends: [TASK-0001]

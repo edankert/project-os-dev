@@ -1,20 +1,18 @@
 ---
 type: "[[feature]]"
 id: FEAT-0001
+aliases: ["FEAT-0001"]
 title: "Tool-specific adapter layer"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 goal: "Replace monolithic CONTEXT.md with tool-specific adapters that deliver project-os rules via each tool's native instruction format"
-requirements: ["[[REQ-0001-Tool-Agnostic-Rules]]", "[[REQ-0002-Native-Instruction-Format]]"]
-tasks: ["[[TASK-0001-Adapter-Directory-Structure]]", "[[TASK-0002-Claude-Code-Adapter]]", "[[TASK-0003-Codex-Cursor-Adapters]]"]
 release: ""
 related: ["[[ADR-0001-Tool-Adapter-Architecture]]"]
-tests: []
 ---
 
 # Tool-specific adapter layer

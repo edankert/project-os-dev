@@ -1,6 +1,7 @@
 ---
 type: reference
 id: CHANGES-README
+aliases: ["CHANGES-README"]
 status: active
 owner: team:docs
 created: 2026-01-26

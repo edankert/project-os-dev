@@ -1,20 +1,18 @@
 ---
 type: "[[feature]]"
 id: FEAT-0004
+aliases: ["FEAT-0004"]
 title: "Remove orchestration fields from SNAPSHOT.yaml"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 goal: "Simplify SNAPSHOT.yaml by removing session/claimed_by fields and positioning it as project context only"
-requirements: ["[[REQ-0005-Orchestration-Delegation]]"]
-tasks: ["[[TASK-0010-Remove-Session-Fields]]", "[[TASK-0011-Remove-Claimed-By]]", "[[TASK-0012-Update-Handoff-Recovery]]"]
 release: ""
 related: ["[[ADR-0003-Delegate-Orchestration]]", "[[FEAT-0003-Team-Model]]"]
-tests: []
 ---
 
 # Remove orchestration fields from SNAPSHOT.yaml

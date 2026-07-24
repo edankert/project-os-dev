@@ -1,6 +1,7 @@
 ---
 type: "[[workflow]]"
 id: WF-0002
+aliases: ["WF-0002"]
 title: "Template sync"
 status: draft
 owner: group:maintainers

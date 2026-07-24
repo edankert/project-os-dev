@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0009
+aliases: ["TASK-0009"]
 title: "Update LIFECYCLE.md preflight to remove claim-checking, add orchestration-agnostic steps"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0003-Team-Model]]"
+fixes: []
 effort: M
 due: ""
 depends: [TASK-0010, TASK-0011]

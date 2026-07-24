@@ -1,6 +1,7 @@
 ---
 type: reference
 id: STYLE
+aliases: ["STYLE"]
 status: reference
 owner: group:maintainers
 created: 2026-01-26

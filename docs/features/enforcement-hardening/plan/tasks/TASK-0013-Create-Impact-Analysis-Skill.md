@@ -1,15 +1,17 @@
 ---
 type: "[[task]]"
 id: TASK-0013
+aliases: ["TASK-0013"]
 title: "Create impact-analysis skill"
 status: done
-phase:
+phase: []
 platform:
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
 source: []
 parent: "[[FEAT-0005-Enforcement-Hardening]]"
+fixes: []
 effort: M
 due: ""
 depends: []
