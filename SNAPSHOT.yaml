@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260724
   FEAT: 12
-  ISS: 4
+  ISS: 5
   REL: 0
   REQ: 15
   RISK: 0
@@ -255,6 +255,11 @@ items:
       depends: [TASK-0050]
 
   issues:
+    ISS-0005:
+      file: docs/issues/ISS-0005-Feature-Less-Requirement-Triage.md
+      title: "Feature-less requirement triage (ADR-0007 follow-up): 14 of 23 resolved mechanically; 9 are a real residue — 5 policies, 3 conventions, 1 unscheduled deliverable"
+      status: open
+      severity: low
     ISS-0002:
       file: docs/issues/ISS-0002-Deferred-Items-Satisfy-Parent-Completeness.md
       title: "Deferred items are treated as complete: parents close over them and parked work vanishes from every active surface"
@@ -472,7 +477,7 @@ metrics:
     tests_total: 0
     tests_passing: 0
     tests_failing: 0
-    issues_open: 1
+    issues_open: 2
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0

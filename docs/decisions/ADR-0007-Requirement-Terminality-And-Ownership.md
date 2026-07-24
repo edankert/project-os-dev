@@ -24,7 +24,7 @@ consequences:
   - "The missing reverse gate is added: a feature cannot be `done` while any requirement that names it has unresolved criteria (unless that requirement is descoped) — applied FORWARD-ONLY; the 114 already-`done` features whose linked criteria are unresolved are grandfathered"
   - "This revises ADR-0006: its `implemented → verified` clause and its 'shared requirements advance when the last feature closes' consequence are removed; its evidence-based ticking, reconcile-never-tick-to-fit, approval-precedes-implementation, and canonical-surfaces clauses are retained"
   - "Cockpit: `implemented` moves from the Delivered band to Done (it is now terminal), partly unwinding the amber Delivered band added 2026-07-22; a second cockpit release and 9-repo sync follow"
-  - "Migration touches template + validator, ~79 `verified → implemented` demotions, 10 many-to-many splits/reassignments, and 5 field-drift link fixes; the 59 feature-less requirements are triaged separately (see follow-up)"
+  - "Migration touches template + validator, ~79 `verified → implemented` demotions, 10 many-to-many splits/reassignments, and 5 field-drift link fixes; the feature-less requirements are triaged separately (see follow-up; [[ISS-0005-Feature-Less-Requirement-Triage]] resolved 14 of 23 and left 9 for a filing decision)"
 supersedes: ""
 superseded: ""
 related: [ADR-0006, ADR-0005, ADR-0004]
@@ -42,7 +42,7 @@ This decision comes out of a downstream investigation in `../your-sudoku` that s
 
 **3. The feature gate is no stronger.** 190 features are `done`; 177 (93%) have neither a linked test nor a waiver. "Feature done" today means "every task was marked done by the same agent that marked them done" — self-report, not verification. So routing requirement closure *through* feature-done (a tempting simplification) would promote 257 requirements on a gate that has never fired.
 
-**4. The relationship is one-feature-to-many-requirements, with a 10-note exception.** Requirements link exactly one feature in 375 of 385 cases; only 10 are many-to-many. Separately, 59 requirements have no feature link at all — a mix of unlinked deliverables (a gap), five false orphans linked via the older `specifies:`/`scope:` field, and genuine cross-cutting invariants. That mix is heterogeneous enough that classifying it is its own task; this ADR deliberately does not.
+**4. The relationship is one-feature-to-many-requirements, with a 10-note exception.** Requirements link exactly one feature in 375 of 385 cases; only 10 are many-to-many. Separately, some requirements have no feature link at all — a mix of unlinked deliverables (a gap), false orphans linked via the older `specifies:`/`scope:` field, and genuine cross-cutting invariants. That mix is heterogeneous enough that classifying it is its own task; this ADR deliberately does not. (A figure of 59 was quoted here when this ADR was written; the triage in [[ISS-0005-Feature-Less-Requirement-Triage]] established the true count as **23** — the original scan read only single-line `implements:` and missed block-form YAML lists.)
 
 Together these say: `verified` is a status that means nothing in practice, the completion gate runs the wrong direction (or not at all), and the many-to-many case is a rounding error worth deleting.
 
