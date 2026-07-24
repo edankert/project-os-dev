@@ -173,7 +173,7 @@ def fix_metrics(root):
     snap = load_yaml(text)
     if not isinstance(snap, dict):
         return []
-    computed = compute_metric_counts(snap.get("items") or {}, build_note_index(root / "docs"))
+    computed = compute_metric_counts(snap.get("items") or {}, build_note_index(root / "docs")[0])
     lines = text.splitlines(keepends=True)
     changes = []
     in_metrics = in_counts = False
@@ -401,10 +401,17 @@ class Report:
 
 # ------------------------------------------------------------------ checks
 def build_note_index(docs_dir):
-    """Map ID -> (path, frontmatter) for every note in docs/ with an ID."""
+    """Map ID -> (path, frontmatter) for every note in docs/ with an ID.
+
+    Also returns claimants: ID -> [paths], every file declaring that ID. The
+    index keeps only the first claimant (setdefault), which is why a second
+    note reusing an ID used to be invisible to every check downstream — see
+    NOTE-DUP-ID.
+    """
     index = {}
+    claimants = {}
     if not docs_dir.is_dir():
-        return index
+        return index, claimants
     for path in sorted(docs_dir.rglob("*.md")):
         if "__templates__" in path.parts or "__bases__" in path.parts:
             continue
@@ -417,7 +424,68 @@ def build_note_index(docs_dir):
             ids.add("%s-%s" % (m.group(1), m.group(2)))
         for i in ids:
             index.setdefault(i, (path, fm if isinstance(fm, dict) else {}))
-    return index
+        # Claiming an ID means *being* that note, which is stricter than the
+        # index's substring matching: composite IDs legitimately embed another
+        # note's ID (a plan is `PLAN-FEAT-0006`, a change may be
+        # `CHG-20260525-FEAT-0009-Chrome-Polish`) and must not count as rival
+        # claims on FEAT-0006/FEAT-0009.
+        fm_id = str((fm or {}).get("id", "") or "").strip().strip("\"'")
+        claimed = set()
+        if fm_id in ids:
+            claimed.add(fm_id)
+        if m:
+            claimed.add("%s-%s" % (m.group(1), m.group(2)))
+        for i in claimed:
+            claimants.setdefault(i, [])
+            if path not in claimants[i]:
+                claimants[i].append(path)
+    return index, claimants
+
+
+def validate_unregistered_notes(root, items, note_index, claimants, allowed_status, report):
+    """Inspect notes the snapshot cannot see.
+
+    Snapshot retention is deliberately active-and-recent: completed work is
+    pruned from SNAPSHOT.yaml and the note becomes the archive. Every other
+    check here resolves an item's status *through* the snapshot, so a note that
+    is not registered is never inspected at all — drift accumulates in it
+    unseen. Being unregistered is normal and is NOT reported; what is reported
+    is the drift that used to hide there.
+    """
+    registered = set()
+    for coll in items.values():
+        if isinstance(coll, dict):
+            registered.update(coll.keys())
+
+    for the_id in sorted(claimants):
+        paths = claimants[the_id]
+        if len(paths) > 1:
+            rels = ", ".join(p.relative_to(root).as_posix() for p in paths)
+            report.error(
+                "NOTE-DUP-ID",
+                "%s is declared by %d notes (%s); IDs must be unique — bare-ID links and lookups "
+                "resolve to whichever is indexed first, so the others are silently unreachable"
+                % (the_id, len(paths), rels),
+            )
+
+    for the_id, (path, fm) in sorted(note_index.items()):
+        if the_id in registered:
+            continue  # covered by STATUS-VALUE / ITEM-STATUS against the snapshot entry
+        nt = note_type(fm)
+        status = str((fm or {}).get("status", "") or "").strip()
+        if not status or nt not in allowed_status:
+            continue
+        if status not in allowed_status[nt]:
+            # Warning, not error, deliberately: this check reaches notes that were
+            # never validated before, so it surfaces years of accumulated legacy
+            # vocabulary at once (173 across the fleet when introduced). Failing
+            # those builds outright would punish repos for drift the tooling
+            # allowed. Graduate to report.error once the fleet is migrated.
+            report.warn(
+                "NOTE-STATUS",
+                "%s status '%s' not allowed for %s (%s); the note is not in SNAPSHOT.yaml, so no "
+                "snapshot-driven check covers it" % (the_id, status, nt, path.relative_to(root).as_posix()),
+            )
 
 
 def validate(root, report):
@@ -441,8 +509,9 @@ def validate(root, report):
     items = snap.get("items") or {}
     counters = snap.get("counters") or {}
     docs_dir = root / "docs"
-    note_index = build_note_index(docs_dir)
+    note_index, note_claimants = build_note_index(docs_dir)
     allowed_status = load_allowed_status(root)
+    validate_unregistered_notes(root, items, note_index, note_claimants, allowed_status, report)
 
     def resolves(ref_id):
         for coll in items.values():

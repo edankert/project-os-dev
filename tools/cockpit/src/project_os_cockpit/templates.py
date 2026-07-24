@@ -19,6 +19,7 @@ from pathlib import PurePosixPath
 from typing import Any, Iterable
 
 from . import __version__ as _VERSION
+from .statuses import COMPLETED_STATUSES
 from .wikilinks import Resolver, resolve_text_to_html
 
 # Project name shown in the header home-link. Set once at server startup
@@ -204,6 +205,7 @@ def page(
         '    <div id="cockpit-platform-slot" class="cockpit-platform-slot"></div>\n'
         '    <div id="cockpit-filter-slot" class="cockpit-filter-slot"></div>\n'
         '    <div id="cockpit-follow-slot" class="cockpit-follow-slot"></div>\n'
+        '    <div id="cockpit-health-slot" class="cockpit-health-slot"></div>\n'
         '    <button class="theme-toggle" type="button" aria-label="Toggle light / dark theme" aria-pressed="false">◐</button>\n'
         '    <div id="cockpit-right-toggle-slot" class="cockpit-right-toggle-slot"></div>\n'
         '  </div>\n'
@@ -283,7 +285,14 @@ def _metadata_strip_html(meta: dict[str, Any], resolver: Resolver | None) -> str
         if key in HIDDEN_META_KEYS:
             continue
         if key in meta and meta[key] not in (None, "", [], {}):
-            pairs.append((key, _render_meta_value(key, meta[key], resolver)))
+            rendered = _render_meta_value(key, meta[key], resolver)
+            if key == "status" and meta.get("verification_waiver") not in (
+                None, "", [], {},
+            ):
+                # Waived terminal status must be visually distinct from a
+                # verified one (FEAT-0018 / TASK-0113).
+                rendered += " " + _waiver_chip()
+            pairs.append((key, rendered))
             seen.add(key)
 
     for key, value in meta.items():
@@ -326,6 +335,14 @@ def _render_meta_value(key: str, value: Any, resolver: Resolver | None) -> str:
     """
     if key == "status":
         return _status_chip(value)
+    if key == "review_verdict":
+        # Independent-review verdict chip (FEAT-0018 / TASK-0113):
+        # green `approved`, red `changes-requested` (CSS keys off
+        # data-verdict; unknown verdicts fall back to the default hue).
+        return _verdict_chip(value)
+    if key == "verification_waiver":
+        # Amber "waived" chip + the recorded reason.
+        return _waiver_chip() + " " + _render_meta_value("", value, resolver)
     if isinstance(value, list):
         if not value:
             return ""
@@ -357,6 +374,27 @@ def _render_scalar(value: Any, resolver: Resolver | None) -> str:
     return escape(text)
 
 
+def _waiver_chip() -> str:
+    """Amber chip marking a recorded verification waiver (TASK-0113)."""
+    return (
+        '<span class="waiver-chip" '
+        'title="Terminal status held under a recorded verification waiver">'
+        'waived</span>'
+    )
+
+
+def _verdict_chip(value: Any) -> str:
+    """Review-verdict chip — green approved / red changes-requested."""
+    text = str(value).strip()
+    if not text:
+        return ""
+    slug = text.lower().replace(" ", "-")
+    return (
+        f'<span class="verdict-chip" data-verdict="{escape(slug)}">'
+        f'{escape(text)}</span>'
+    )
+
+
 def _status_chip(value: Any) -> str:
     if isinstance(value, list):
         return ", ".join(_status_chip(v) for v in value if v)
@@ -373,27 +411,36 @@ def _status_chip(value: Any) -> str:
 
 # Lower rank = earlier in the page. Tuned to satisfy REQ-0007:
 #   active/doing/in-progress first → backlog/triage middle → done/closed last.
+# Membership is checked against statuses.VOCABULARY by
+# tests/test_status_vocabulary.py; the ranks themselves are a reading-order
+# judgement and stay explicit here.
 STATUS_RANK: dict[str, int] = {
     # active / in-progress
-    "active": 10, "doing": 11, "in-progress": 11, "next": 12,
-    "approved": 13, "accepted": 13,
+    "active": 10, "doing": 11, "in-progress": 11, "in-review": 11, "next": 12,
+    "approved": 13, "accepted": 13, "ready": 13, "mitigating": 14,
     # backlog
     "backlog": 30, "planned": 31, "proposed": 31, "draft": 32,
     "todo": 32, "open": 33, "pending": 33, "triage": 34, "reference": 35,
+    # delivered — shipped, not yet signed off (ISS-0023). Ranks between the
+    # backlog and done bands: no longer work-to-do, not yet finished.
+    "implemented": 50, "staged": 51, "monitoring": 52,
     # done
-    "done": 60, "fixed": 60, "merged": 60, "published": 60,
-    "implemented": 62,
+    "done": 60, "fixed": 60, "merged": 60, "published": 60, "resolved": 60,
+    "fulfilled": 61, "met": 61, "complete": 61, "released": 61,
     "verified": 65, "passing": 65,
     # dead / blocked
-    "closed": 80, "obsolete": 81, "blocked": 90, "reopened": 91, "failing": 92,
+    "closed": 80, "obsolete": 81,
+    "retired": 82, "cancelled": 82, "superseded": 82, "wont-fix": 82,
+    "reverted": 82, "rolled-back": 82, "deprecated": 82, "deferred": 83,
+    "blocked": 90, "reopened": 91, "failing": 92,
 }
-STATUS_RANK_DEFAULT: int = 50
+STATUS_RANK_DEFAULT: int = 55
 
-# Statuses whose collapsible group defaults to closed (still expandable).
-COLLAPSED_BY_DEFAULT: frozenset[str] = frozenset(
-    {"done", "fixed", "merged", "published", "implemented", "verified", "passing",
-     "closed", "obsolete"}
-)
+# Statuses whose collapsible group defaults to closed (still expandable) —
+# the terminal ones only. `implemented` is NOT among them: it is delivered
+# but unverified, and collapsing it away hides the work that still owes a
+# verification record (ISS-0023).
+COLLAPSED_BY_DEFAULT: frozenset[str] = COMPLETED_STATUSES
 
 
 def index_page_html(

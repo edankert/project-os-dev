@@ -57,7 +57,7 @@ _WIKILINK_RE = re.compile(r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]")
 _MD_LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]+\)")
 _INLINE_FMT_RE = re.compile(r"(\*\*|__|\*|_|`)([^*_`\n]+?)\1")
 
-SCHEMA_VERSION: int = 2
+SCHEMA_VERSION: int = 3
 
 PROJECT_SUPPORT_ROOT_FILES: tuple[str, ...] = (
     "README.md",
@@ -99,16 +99,25 @@ _TYPE_RANK: dict[str, int] = {t: i for i, t in enumerate(TYPE_ORDER)}
 # actively touching first; archived states last. `deferred` sits in the
 # parked band with blocked — it is descoped-but-still-wanted work, not
 # archived history (project-os STATUSES.md, "Deferral and re-adoption").
+#
+# This is attention priority, which is finer-grained than the colour bands
+# in `statuses.py` — hence an explicit tuple rather than a derivation. The
+# two are kept in step by tests/test_status_vocabulary.py, which fails if
+# any vocabulary status is missing here. `implemented` / `staged` /
+# `monitoring` sit in their own delivered band just above the done family:
+# shipped, but still owing verification, so they outrank finished work.
 TASK_STATUS_ORDER: tuple[str, ...] = (
     "doing", "in-progress", "in-review", "next",
     "blocked", "failing", "reopened", "deferred",
-    "ready", "active", "approved", "accepted",
+    "ready", "active", "approved", "accepted", "mitigating",
     "planned", "triage",
     "todo", "open", "pending", "backlog",
     "draft", "proposed",
-    "done", "merged", "fixed", "fulfilled", "met", "complete",
-    "verified", "passing", "published", "closed",
+    "implemented", "staged", "monitoring",
+    "done", "merged", "fixed", "resolved", "fulfilled", "met", "complete",
+    "verified", "passing", "published", "released", "closed",
     "obsolete", "retired", "cancelled", "superseded", "wont-fix", "reverted",
+    "rolled-back", "deprecated",
     "reference",
 )
 _TASK_STATUS_RANK: dict[str, int] = {s: i for i, s in enumerate(TASK_STATUS_ORDER)}
@@ -127,7 +136,20 @@ _RECENT_BUCKETS = (
     ("earlier", "Earlier"),
 )
 
-NAV_MODES: tuple[str, ...] = ("features", "tasks", "issues", "recent", "library")
+NAV_MODES: tuple[str, ...] = ("features", "tasks", "issues", "active", "recent", "library")
+
+# Active mode (FEAT-0036 / TASK-0164) — in-flight items across all types.
+_ACTIVE_DOING: frozenset[str] = frozenset({
+    "doing", "in-progress", "in_progress", "in-review", "active",
+    "mitigating", "reproducing", "reopened", "blocked", "failing",
+})
+_ACTIVE_NEXT: frozenset[str] = frozenset({
+    "next", "ready", "planned", "approved", "accepted", "triage",
+})
+_ACTIVE_DONE: frozenset[str] = frozenset({
+    "done", "merged", "fixed", "fulfilled", "met", "complete",
+    "verified", "closed", "passing", "published", "resolved",
+})
 DEFAULT_MODE = "features"
 
 # Library mode discovery rules.
@@ -163,8 +185,653 @@ LIBRARY_RARE_TYPES: tuple[str, ...] = (
 # Types that join the untyped Markdown tree in Library mode's Docs-tree group.
 DOC_TREE_INLINE_TYPES: tuple[str, ...] = ("reference",)
 
+# Types that already have their own UX surface elsewhere (dedicated nav
+# modes or rare-type groups) and therefore do NOT appear in the Library
+# "By type" auto-discovery section. Without this skip-set, personal
+# vaults with `task` notes would end up with a duplicate Tasks group in
+# Library on top of the Tasks mode.
+_BY_TYPE_SKIP_IN_LIBRARY: frozenset[str] = frozenset({
+    "feature", "issue", "requirement", "phase", "task",
+}) | frozenset(LIBRARY_RARE_TYPES) | frozenset(DOC_TREE_INLINE_TYPES)
+
+# Minimum count for a discovered type to merit its own Library "By type"
+# group. Below this, the notes still appear in the Docs tree (since the
+# tree relaxation lands together with this work).
+_BY_TYPE_MIN_COUNT: int = 5
+
+# Curated parent-field names tried first when auto-detecting which
+# frontmatter field carries the parent link for a given type. If a note
+# of the type has any one of these fields with a non-empty value, that
+# field wins regardless of whether the value resolves to an indexed note
+# (so a ``project: [[Mother Interview]]`` field still groups the note
+# under its project even when the project doesn't have its own ``.md``).
+# Anything not on this list falls into the resolved-link fallback.
+_PARENT_FIELD_CANDIDATES: tuple[str, ...] = (
+    "parent", "part_of", "partof",
+    "project", "projects",
+    "world", "story", "series", "season", "episode",
+    "chapter", "volume", "book",
+    "page", "comic", "issue",
+    "area", "topic", "domain",
+)
+
+# Frontmatter fields excluded from the resolved-link fallback. These
+# tend to point at templates, assets, or timestamps — they may resolve
+# to indexed notes (a template lives in the vault too) but they are not
+# semantic parent relationships.
+_NON_PARENT_FIELDS: frozenset[str] = frozenset({
+    "template", "templates",
+    "modified", "created", "updated", "date", "due",
+    "image", "images", "cover", "icon", "banner", "thumbnail",
+    "cssclass", "cssclasses",
+    "source", "sources",
+})
+
 # Hard cap on items returned by the recent mode. Anything older falls off.
 _RECENT_LIMIT = 60
+
+
+# Per-type "done" vocabulary (TASK-0176 / TASK-0181), module-level so the
+# stats payload AND the agent work-item enrichment (TASK-0191) share one
+# definition. Terminal-resolved statuses (superseded/retired/cancelled)
+# count done; `deferred` (parked, still intended) stays open work.
+DONE_FEAT = {"done", "released", "merged", "verified", "complete", "superseded", "cancelled"}
+DONE_TASK = {"done", "merged", "verified", "closed", "fixed", "cancelled"}
+DONE_REQ  = {"verified", "met", "fulfilled", "accepted", "retired", "superseded", "cancelled"}
+DONE_ISS  = {"fixed", "closed", "wont-fix", "resolved", "cancelled"}
+PASSING   = {"passing"}
+DONE_BY_TYPE: dict[str, set[str]] = {
+    "feature": DONE_FEAT,
+    "task": DONE_TASK,
+    "requirement": DONE_REQ,
+    "issue": DONE_ISS,
+    "test": PASSING,
+    "risk": {"closed"},
+    "change": {"merged"},
+    "phase": {"done"},
+}
+# Fallback for any other type: the union of every terminal vocabulary.
+_DONE_ANY: set[str] = set().union(*DONE_BY_TYPE.values())
+
+
+def is_done_status(note_type: object, status: object) -> bool:
+    """One per-type done definition for boxes, counts, and work items."""
+    nt = str(note_type or "").lower().strip()
+    st = str(status or "").lower().strip()
+    return st in DONE_BY_TYPE.get(nt, _DONE_ANY)
+
+
+# Canonical short id (prefix + number), e.g. PHASE-0007 out of a bare id or
+# a `[[PHASE-0007-Trends-V2]]` wikilink. The focus fields never hold CHG ids.
+_FOCUS_ID_RE = re.compile(r"[A-Z]+-\d+")
+
+
+def _focus_ids(docs_root: Path) -> list[str]:
+    """Ids declared in the ``focus`` block of the workspace SNAPSHOT
+    (TASK-0193) — the doc-first workflow's "what's being worked on now".
+
+    Reads the top-level ``focus:`` mapping's ``task``/``issue``/
+    ``feature``/``phase``/``requirement`` fields (values may be bare ids
+    or ``[[wikilinks]]``); the free-text ``note`` field is ignored.
+    """
+    path = docs_root.parent / "SNAPSHOT.yaml"
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    ids: list[str] = []
+    in_focus = False
+    for line in text.splitlines():
+        if re.match(r"^focus:\s*(#.*)?$", line):
+            in_focus = True
+            continue
+        if in_focus:
+            # The block ends at the next non-indented, non-blank line.
+            if line and not line[0].isspace():
+                break
+            m = re.match(r"^\s+(task|issue|feature|phase|requirement)\s*:\s*(.+)$", line)
+            if m:
+                hit = _FOCUS_ID_RE.search(m.group(2))
+                if hit:
+                    ids.append(hit.group(0))
+    # De-dup, preserve declaration order.
+    seen: set[str] = set()
+    return [i for i in ids if not (i in seen or seen.add(i))]
+
+
+def work_items_for_session(index: Index, sess: dict[str, Any]) -> list[dict[str, Any]]:
+    """Enrich a session's work into work items (TASK-0191 / TASK-0193).
+
+    The in-flight set is the workspace's declared ``focus`` items UNIONED
+    with the notes touched this prompt. Each item resolves id/title/current
+    status/type from the live index and computes ``done`` with the same
+    per-type sets as the overview boxes. ``current_prompt`` is true for a
+    focus item (declared active work) or a note edited at/after the latest
+    prompt boundary. Focus items lead (declared work first), then touched
+    items by first-touch order. A seeded session with no prompt boundary
+    counts any timestamped touch, so the set survives a sidecar reload.
+    """
+    work_ts = sess.get("work_ts") or {}
+    status_touched = sess.get("status_touched") or {}
+    prompt_started = sess.get("prompt_started")
+    rels = [r for r in (sess.get("work_notes") or []) if isinstance(r, str)]
+
+    # Resolve every rel we may need (touched + status-changed notes) up front.
+    wanted_rels = set(rels) | set(status_touched)
+    by_rel: dict[str, Any] = {}
+    for rec in index.iter_records():
+        if rec.rel_path in wanted_rels:
+            by_rel[rec.rel_path] = rec
+
+    def _item(nid: str, rec: Any, rel: str, ts: object, current: bool) -> dict[str, Any]:
+        return {
+            "id": nid,
+            "rel": rel,
+            "title": (rec.title if rec else None) or "",
+            "status": (rec.status if rec else None) or "",
+            "type": (rec.note_type if rec else None) or "",
+            "done": is_done_status(rec.note_type, rec.status) if rec else False,
+            "ts": ts,
+            "current_prompt": current,
+        }
+
+    by_id: dict[str, dict[str, Any]] = {}
+    order: list[str] = []
+
+    def _add(nid: str, rec: Any, rel: str, ts: object, current: bool) -> None:
+        existing = by_id.get(nid)
+        if existing is not None:  # de-dup across sources
+            if ts and (not existing["ts"] or str(ts) > str(existing["ts"])):
+                existing["ts"] = ts
+            existing["current_prompt"] = existing["current_prompt"] or current
+            if rec and not existing["rel"]:
+                existing.update(_item(nid, rec, rel, existing["ts"], existing["current_prompt"]))
+            return
+        by_id[nid] = _item(nid, rec, rel, ts, current)
+        order.append(nid)
+
+    # 1) SNAPSHOT focus — the declared active work (always current).
+    for fid in _focus_ids(index.docs_root):
+        path = index.by_id(fid)
+        rec = index.get(path) if path else None
+        rel = (rec.rel_path if rec else "") or ""
+        ts = work_ts.get(rel) or (status_touched.get(rel) or {}).get("ts")
+        _add(fid, rec, rel, ts, True)
+
+    # 2) Notes whose status changed this session — the implemented/moved work
+    #    (captures shell-tool writes, survives a restart; always current).
+    for rel, info in sorted(
+        status_touched.items(), key=lambda kv: str(kv[1].get("ts") or "")
+    ):
+        rec = by_rel.get(rel)
+        nid = (rec.note_id if rec else None) or info.get("id") \
+            or rel.rsplit("/", 1)[-1].removesuffix(".md")
+        _add(nid, rec, rel, info.get("ts"), True)
+
+    # 3) Notes touched this prompt — current when at/after the boundary.
+    for rel in rels:
+        rec = by_rel.get(rel)
+        nid = (rec.note_id if rec else None) or rel.rsplit("/", 1)[-1].removesuffix(".md")
+        ts = work_ts.get(rel)
+        current = bool(ts) and (
+            not isinstance(prompt_started, str) or str(ts) >= prompt_started
+        )
+        _add(nid, rec, rel, ts, current)
+
+    return [by_id[i] for i in order]
+
+
+def _exit_criteria_from_body(body: str) -> list[dict[str, Any]]:
+    """Parse ``- [ ] / - [x]`` checkbox lines from a phase note's
+    "Exit Criteria" section (FEAT-0023). Tolerates heading level and
+    case; stops at the next heading."""
+    import re
+    lines = (body or "").splitlines()
+    out: list[dict[str, Any]] = []
+    in_section = False
+    heading = re.compile(r"^#{2,6}\s*exit\s+criteria\b", re.IGNORECASE)
+    any_heading = re.compile(r"^#{1,6}\s")
+    box = re.compile(r"^\s*[-*]\s*\[( |x|X)\]\s+(.*)$")
+    for line in lines:
+        if in_section and any_heading.match(line):
+            break
+        if heading.match(line):
+            in_section = True
+            continue
+        if not in_section:
+            continue
+        m = box.match(line)
+        if m:
+            out.append({
+                "text": m.group(2).strip(),
+                "done": m.group(1).lower() == "x",
+            })
+    return out
+
+
+def stats_payload(
+    index: Index, scope: str | None = None
+) -> dict[str, Any] | None:
+    """Aggregated dashboard payload (FEAT-0017 / TASK-0109).
+
+    All counts are computed from the live index; no extra file IO.
+
+    ``scope`` (FEAT-0023 / TASK-0128) narrows everything — hero,
+    status mix, phases, activity — to one ``PHASE-####``: items whose
+    phase resolves to the scope (directly or inherited via the parent
+    feature), plus phase-less items linked to a scoped feature. Scoped
+    payloads additionally carry ``scope`` (id/title/status/rel) and
+    ``exit_criteria`` parsed from the phase note. Returns ``None``
+    when the scope names no known phase note.
+    """
+    import re
+    from collections import Counter
+    from datetime import date, timedelta
+
+    features     = index.notes_by_type("feature")
+    tasks        = index.notes_by_type("task")
+    issues       = index.notes_by_type("issue")
+    requirements = index.notes_by_type("requirement")
+    tests        = index.notes_by_type("test")
+    risks        = index.notes_by_type("risk")
+    changes      = index.notes_by_type("change")
+    phase_recs   = index.notes_by_type("phase")
+
+    # Per-type done sets are module-level (TASK-0176/0181/0191) so the hero
+    # tiles, the phase boxes, and the agent work-item enrichment all share
+    # one definition — an item is a filled box iff it also counts done.
+    OPEN_ISS  = {"open", "doing", "in-progress", "triage", "backlog"}
+    OPEN_RISK = {"open", "doing"}
+
+    def _norm(s: object) -> str:
+        return str(s or "").lower().strip()
+
+    def _is_done(rec: Any) -> bool:
+        return is_done_status(getattr(rec, "note_type", ""), rec.status)
+
+    def _hero_count(records, done_set):
+        total = len(records)
+        done = sum(1 for r in records if _norm(r.status) in done_set)
+        return {"total": total, "done": done}
+
+    # Activity-date resolution order (most → least authoritative):
+    #   1. frontmatter `updated`  — when the note was last touched
+    #   2. frontmatter `created`  — when the note was first added
+    #   3. the `CHG-YYYYMMDD…` prefix on the ID, as a last-ditch hint
+    # The ID-derived form is loose (no trailing-dash requirement) so
+    # letter-suffixed disambiguators like `CHG-20260418b-…` still match.
+    _CHG_DATE_RE = re.compile(r"CHG-(\d{4})(\d{2})(\d{2})")
+
+    def _activity_date(rec) -> str:
+        fm = rec.frontmatter
+        for key in ("updated", "created"):
+            raw = fm.get(key)
+            if not raw:
+                continue
+            s = str(raw).strip()
+            # Accept "YYYY-MM-DD" or any ISO-8601 prefix of that shape.
+            if len(s) >= 10 and s[4] == "-" and s[7] == "-":
+                return s[:10]
+        if rec.note_id:
+            m = _CHG_DATE_RE.match(rec.note_id)
+            if m:
+                return f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
+        return ""
+
+    _PHASE_RE = re.compile(r"(PHASE-\d+)")
+    _FEAT_ID_RE = re.compile(r"(FEAT-\d+)")
+
+    # Canonical child→feature link field per type, from the project-os
+    # templates under `docs/__templates__/`:
+    #   tasks  →  `parent: "[[FEAT-…]]"`
+    #   issues →  `parent: "[[FEAT-…]]"`
+    #   reqs   →  `implements: "[[FEAT-…]]"`   (see requirement.md)
+    # Anything else is ignored — non-canonical fields like `feature:`
+    # or `features:` won't bind a child to its parent feature; the
+    # author should normalise their notes to match the templates.
+    _PARENT_FIELD_BY_TYPE: dict[str, str] = {
+        "task":        "parent",
+        "issue":       "parent",
+        "requirement": "implements",
+    }
+
+    def _parent_feature_id(rec: Any) -> str | None:
+        field = _PARENT_FIELD_BY_TYPE.get((rec.note_type or "").lower())
+        if not field:
+            return None
+        val = rec.frontmatter.get(field)
+        if not val:
+            return None
+        for c in (val if isinstance(val, list) else [val]):
+            m = _FEAT_ID_RE.search(str(c))
+            if m:
+                return m.group(1)
+        return None
+
+    # Records indexed by note_id so we can resolve `_parent_feature_id`
+    # against the actual feature record (for phase inheritance).
+    records_by_id: dict[str, Any] = {}
+    for rec in [*features, *tasks, *requirements, *issues]:
+        if rec.note_id:
+            records_by_id[rec.note_id] = rec
+
+    def _phase_id_of(rec: Any, _depth: int = 0) -> str | None:
+        ph = rec.frontmatter.get("phase")
+        if ph:
+            m = _PHASE_RE.search(str(ph))
+            if m:
+                return m.group(1)
+        if _depth >= 3:
+            return None
+        fid = _parent_feature_id(rec)
+        if fid:
+            feat = records_by_id.get(fid)
+            if feat is not None and feat is not rec:
+                return _phase_id_of(feat, _depth + 1)
+        return None
+
+    # Phase-note records by canonical PHASE-#### key — used for the
+    # phases list and for scope resolution.
+    phase_record_by_id: dict[str, Any] = {}
+    for p in phase_recs:
+        if p.note_id:
+            m = _PHASE_RE.search(p.note_id)
+            if m:
+                phase_record_by_id[m.group(1)] = p
+
+    scope_block: dict[str, Any] | None = None
+    exit_criteria: list[dict[str, Any]] | None = None
+    if scope:
+        scope_rec = phase_record_by_id.get(scope)
+        if scope_rec is None:
+            return None
+        scope_block = {
+            "id": scope,
+            "title": scope_rec.title or scope,
+            "status": scope_rec.status or "",
+            "rel": scope_rec.rel_path,
+        }
+        exit_criteria = _exit_criteria_from_body(scope_rec.body)
+        scoped_feature_ids = {
+            r.note_id for r in features
+            if r.note_id and _phase_id_of(r) == scope
+        }
+
+        def _linked_feature_ids(rec: Any) -> set[str]:
+            out: set[str] = set()
+            for field in ("features", "related", "implements", "parent"):
+                val = rec.frontmatter.get(field)
+                if not val:
+                    continue
+                for c in (val if isinstance(val, list) else [val]):
+                    for fm_match in _FEAT_ID_RE.finditer(str(c)):
+                        out.add(fm_match.group(1))
+            return out
+
+        def _in_scope(rec: Any) -> bool:
+            pid = _phase_id_of(rec)
+            if pid:
+                return pid == scope
+            # No direct or inherited phase — fall back to any linked
+            # feature living in the scope (covers tests via
+            # `features:`, changes via `features:`, risks via
+            # `related:`).
+            return bool(_linked_feature_ids(rec) & scoped_feature_ids)
+
+        features     = [r for r in features if _phase_id_of(r) == scope]
+        tasks        = [r for r in tasks if _in_scope(r)]
+        issues       = [r for r in issues if _in_scope(r)]
+        requirements = [r for r in requirements if _in_scope(r)]
+        tests        = [r for r in tests if _in_scope(r)]
+        risks        = [r for r in risks if _in_scope(r)]
+        changes      = [r for r in changes if _in_scope(r)]
+    else:
+        def _in_scope(rec: Any) -> bool:  # noqa: ARG001 — unscoped
+            return True
+
+    sorted_chgs = sorted(changes, key=_activity_date, reverse=True)
+    last_change = None
+    if sorted_chgs:
+        r = sorted_chgs[0]
+        last_change = {
+            "id": r.note_id,
+            "title": r.title or r.note_id or "",
+            "rel": r.rel_path,
+            "date": _activity_date(r),
+        }
+
+    hero = {
+        "features": _hero_count(features, DONE_FEAT),
+        "tasks":    _hero_count(tasks, DONE_TASK),
+        "issues": {
+            "total": len(issues),
+            "open":  sum(1 for r in issues if _norm(r.status) in OPEN_ISS),
+        },
+        "tests": {
+            "total":   len(tests),
+            "passing": sum(1 for r in tests if _norm(r.status) in PASSING),
+        },
+        "risks": {
+            "total": len(risks),
+            "open":  sum(1 for r in risks if _norm(r.status) in OPEN_RISK),
+        },
+        "requirements": _hero_count(requirements, DONE_REQ),
+        "last_change": last_change,
+    }
+
+    def _mix(records) -> dict[str, int]:
+        c: Counter[str] = Counter()
+        for r in records:
+            c[_norm(r.status) or "unknown"] += 1
+        return dict(c)
+
+    status_mix = {
+        "features":     _mix(features),
+        "tasks":        _mix(tasks),
+        "issues":       _mix(issues),
+        "requirements": _mix(requirements),
+    }
+
+    DOING_PHASE_BUCKET = {"doing", "in-progress", "active", "in_progress"}
+
+    # Include features alongside tasks in the phase progress bars —
+    # otherwise phases that have features tagged but no top-level
+    # tasks render empty.
+    phase_buckets: dict[str, Counter[str]] = {}
+    for record in [*tasks, *features]:
+        pid = _phase_id_of(record) or "unphased"
+        bucket = ("done" if _is_done(record)
+                  else "in_progress" if _norm(record.status) in DOING_PHASE_BUCKET
+                  else "backlog")
+        phase_buckets.setdefault(pid, Counter())[bucket] += 1
+
+    # Per-phase drill-down: features in the phase + each feature's
+    # children (tasks / requirements / issues with `parent: FEAT-...`).
+    # Items in the phase that don't belong to any feature get bundled
+    # as "loose" so they still show up.
+
+    def _status_bucket(rec: Any) -> str:
+        if _is_done(rec): return "done"
+        if _norm(rec.status) in DOING_PHASE_BUCKET: return "in_progress"
+        return "backlog"
+
+    def _slim(rec: Any, kind: str) -> dict[str, Any]:
+        return {
+            "id": rec.note_id,
+            "title": rec.title or rec.note_id or "",
+            "rel": rec.rel_path,
+            "status": rec.status or "",
+            "bucket": _status_bucket(rec),
+            "type": kind,
+        }
+
+    # Nest a child under its parent feature only when they share a phase.
+    # A child explicitly moved to a different phase (e.g. a deferred task
+    # parked in PHASE-999 whose parent feature lives in PHASE-004) must not
+    # render under its parent's phase section — otherwise the project
+    # overview shows it there while a scoped phase page (which filters by
+    # the child's OWN phase) omits it. Such a child surfaces as loose under
+    # its own phase instead (`loose_by_phase` below already places it), so
+    # both views agree on where it lives (TASK-0182).
+    children_by_parent_id: dict[str, list[Any]] = {}
+    child_records = [*tasks, *requirements, *issues]
+    for c in child_records:
+        fid = _parent_feature_id(c)
+        if not fid:
+            continue
+        parent = records_by_id.get(fid)
+        if parent is not None and (
+            (_phase_id_of(c) or "unphased") != (_phase_id_of(parent) or "unphased")
+        ):
+            continue
+        children_by_parent_id.setdefault(fid, []).append(c)
+
+    # Index features by phase so we can list them per phase below.
+    features_by_phase: dict[str, list[Any]] = {}
+    for feat in features:
+        features_by_phase.setdefault(_phase_id_of(feat) or "unphased", []).append(feat)
+
+    # Build the per-phase loose set: any child whose phase resolves to
+    # the same phase as where it lives, but isn't attached to a feature
+    # IN that phase.
+    feature_ids_by_phase: dict[str, set[str]] = {
+        ph: {f.note_id for f in feats if f.note_id}
+        for ph, feats in features_by_phase.items()
+    }
+
+    loose_by_phase: dict[str, list[Any]] = {}
+    for child in child_records:
+        cph = _phase_id_of(child) or "unphased"
+        fid = _parent_feature_id(child)
+        belongs_to_phase_feature = bool(
+            fid and fid in feature_ids_by_phase.get(cph, set())
+        )
+        if not belongs_to_phase_feature:
+            loose_by_phase.setdefault(cph, []).append(child)
+
+    all_phase_keys = sorted(set(list(phase_buckets.keys()) + list(phase_record_by_id.keys())))
+    if scope:
+        all_phase_keys = [scope]
+    phases_list: list[dict[str, Any]] = []
+    for k in all_phase_keys:
+        rel: str | None = None
+        if k == "unphased":
+            title, st = "Unphased", None
+        else:
+            rec = phase_record_by_id.get(k)
+            title = (rec.title if rec else None) or k
+            st = rec.status if rec else None
+            rel = rec.rel_path if rec else None
+        b = phase_buckets.get(k, Counter())
+        phase_features_payload = []
+        for feat in features_by_phase.get(k, []):
+            children = children_by_parent_id.get(feat.note_id or "", []) if feat.note_id else []
+            phase_features_payload.append({
+                **_slim(feat, "feature"),
+                "children": [_slim(c, (c.note_type or "task").lower()) for c in children],
+            })
+        loose_payload = [_slim(c, (c.note_type or "task").lower())
+                         for c in loose_by_phase.get(k, [])]
+        phases_list.append({
+            "key": k,
+            "title": title,
+            "status": st,
+            "rel": rel,
+            "tasks": {
+                "done": b["done"],
+                "in_progress": b["in_progress"],
+                "backlog": b["backlog"],
+            },
+            "features": phase_features_payload,
+            "loose": loose_payload,
+        })
+
+    today = date.today()
+    monday_today = today - timedelta(days=today.weekday())
+    weeks_meta: list[dict[str, Any]] = []
+    for w in range(12, -1, -1):
+        start = monday_today - timedelta(days=7 * w)
+        weeks_meta.append({
+            "start_date": start.isoformat(),
+            "week_iso": start.strftime("%G-W%V"),
+            "count": 0,
+        })
+    # Activity counts EVERY interesting touch: each note contributes
+    # one event for its `created` date AND one for its `updated` date
+    # AND (when applicable) the CHG-YYYYMMDD ID prefix. We dedupe per
+    # note so a same-day created == updated only counts once.
+    by_start = {w["start_date"]: w for w in weeks_meta}
+    activity_records: list[Any] = []
+    for note_type in (
+        "change", "task", "feature", "issue", "requirement",
+        "risk", "test", "adr", "release", "workflow", "plan",
+    ):
+        activity_records.extend(index.notes_by_type(note_type))
+    if scope:
+        activity_records = [r for r in activity_records if _in_scope(r)]
+
+    def _event_dates(rec: Any) -> set[str]:
+        out: set[str] = set()
+        fm = rec.frontmatter
+        for key in ("created", "updated"):
+            raw = fm.get(key)
+            if not raw:
+                continue
+            s = str(raw).strip()
+            if len(s) >= 10 and s[4] == "-" and s[7] == "-":
+                out.add(s[:10])
+        if rec.note_id:
+            m = _CHG_DATE_RE.match(rec.note_id)
+            if m:
+                out.add(f"{m.group(1)}-{m.group(2)}-{m.group(3)}")
+        return out
+
+    for rec in activity_records:
+        for ds in _event_dates(rec):
+            try:
+                d = date.fromisoformat(ds)
+            except ValueError:
+                continue
+            monday = d - timedelta(days=d.weekday())
+            slot = by_start.get(monday.isoformat())
+            if slot:
+                slot["count"] += 1
+
+    # Recent feed: any note from the same activity_records pool, sorted
+    # by most-recent activity date. CHG-only was a leftover from the
+    # earlier histogram design — most workspaces edit tasks/features
+    # without filing a CHG, so a CHG-only feed under-reports.
+    sorted_activity = sorted(
+        activity_records,
+        key=lambda r: _activity_date(r) or "",
+        reverse=True,
+    )
+    recent: list[dict[str, Any]] = []
+    for r in sorted_activity[:10]:
+        ds = _activity_date(r)
+        if not ds:
+            continue
+        recent.append({
+            "id": r.note_id,
+            "title": r.title or r.note_id or "",
+            "rel": r.rel_path,
+            "date": ds,
+            "type": (r.note_type or "").lower(),
+            "features": list(r.frontmatter.get("features") or []),
+        })
+
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "scope": scope_block,
+        "exit_criteria": exit_criteria,
+        "hero": hero,
+        "phases": phases_list,
+        "status_mix": status_mix,
+        "activity": {
+            "weekly": weeks_meta,
+            "recent": recent,
+        },
+    }
 
 
 def nav_payload(
@@ -194,6 +861,8 @@ def nav_payload(
         groups = _tasks_groups(index, plat)
     elif m == "issues":
         groups = _issues_groups(index, plat)
+    elif m == "active":
+        groups = _active_groups(index, plat)
     elif m == "recent":
         groups = _recent_groups(index, plat)
     elif m == "library":
@@ -397,6 +1066,7 @@ def _requirement_child_item(index: Index, record: NoteRecord) -> dict[str, Any]:
         "url": index.url_for(record.path),
         "subtitle": "",
         "type": record.note_type or "requirement",
+        **_verification_flags(record),
     }
 
 
@@ -460,6 +1130,54 @@ def _issues_groups(
         }
         for key in ordered_keys
     ]
+
+
+def _active_groups(
+    index: Index, platform: str | None = None
+) -> list[dict[str, Any]]:
+    """Active mode (TASK-0164): in-flight items across every type,
+    grouped Doing / Next / Done today, newest activity first. This is
+    the honest landing view for phase-less projects."""
+    today = _dt.date.today()
+    doing: list[NoteRecord] = []
+    nxt: list[NoteRecord] = []
+    done_today: list[NoteRecord] = []
+    for path in index.paths():
+        record = index.get(path)
+        if record is None or record.note_type is None:
+            continue
+        if record.rel_path.startswith("__templates__/"):
+            continue
+        if not _platform_match(record, platform):
+            continue
+        st = (record.status or "").strip().lower()
+        if st in _ACTIVE_DOING:
+            doing.append(record)
+        elif st in _ACTIVE_NEXT:
+            nxt.append(record)
+        elif st in _ACTIVE_DONE and _note_updated(record) == today:
+            done_today.append(record)
+    for lst in (doing, nxt, done_today):
+        lst.sort(
+            key=lambda r: (_note_updated(r) or _dt.date.min),
+            reverse=True,
+        )
+    out: list[dict[str, Any]] = []
+    for key, label, records in (
+        ("doing", "Doing", doing),
+        ("next", "Next", nxt),
+        ("done", "Done today", done_today),
+    ):
+        if not records:
+            continue
+        out.append({
+            "key": key,
+            "label": label,
+            "url": None,
+            "status": None,
+            "items": [_recent_item(index, r) for r in records],
+        })
+    return out
 
 
 def _recent_groups(
@@ -589,6 +1307,11 @@ def _library_groups(
             group["items"] = []
             group["subgroups"] = _changes_subgroups(index, records)
         out.append(group)
+
+    # ----- By type — auto-discovered (personal-vault types like Panel,
+    #       Character, Daily, etc.). Each group nests items under their
+    #       parent note via an auto-detected frontmatter field.
+    out.extend(_library_by_type_groups(index, platform))
 
     return out
 
@@ -750,6 +1473,248 @@ def _past_month_week_subgroups(
             "default_open": False,
         })
     return subgroups
+
+
+def _detect_parent_field(index: Index, type_name: str) -> str | None:
+    """Auto-detect which frontmatter field carries the parent-link for a
+    given note type.
+
+    Strategy (in order):
+
+    1. **Curated names.** If any note of this type has one of
+       :data:`_PARENT_FIELD_CANDIDATES` with a non-empty value, the
+       first one (in curated priority) wins — even if the value
+       doesn't resolve to an indexed note. This lets a
+       ``project: [[Mother Interview]]`` field group the note under
+       its project even when the project folder has no `.md`.
+
+    2. **Resolved-link fallback.** Among the non-curated, non-metadata
+       fields, pick the one most often containing a wikilink that
+       resolves to another indexed note. Excludes
+       :data:`_NON_PARENT_FIELDS` (template, modified, image, ...).
+
+    Returns ``None`` when neither path finds a candidate — the type
+    renders as a flat list under its group.
+    """
+    records = index.notes_by_type(type_name)
+    if not records:
+        return None
+
+    # Step 1: curated names, present-in-any-note check.
+    curated_present: set[str] = set()
+    for record in records:
+        for field_name in record.frontmatter.keys():
+            if isinstance(field_name, str):
+                fn = field_name.lower()
+                if fn in _PARENT_FIELD_CANDIDATES:
+                    raw = record.frontmatter.get(field_name)
+                    if _frontmatter_has_value(raw):
+                        curated_present.add(fn)
+    for curated in _PARENT_FIELD_CANDIDATES:
+        if curated in curated_present:
+            return curated
+
+    # Step 2: resolved-link fallback.
+    counts: dict[str, int] = {}
+    for record in records:
+        for field_name, raw in record.frontmatter.items():
+            if not isinstance(field_name, str):
+                continue
+            fn = field_name.lower()
+            if fn in _NON_PARENT_FIELDS:
+                continue
+            if fn in {"type", "title", "status", "tags", "aliases", "id"}:
+                continue
+            candidates: list[str] = []
+            if isinstance(raw, str):
+                candidates.append(raw)
+            elif isinstance(raw, list):
+                for item in raw:
+                    if isinstance(item, str):
+                        candidates.append(item)
+            for candidate in candidates:
+                target = _strip_wikilink(candidate).strip()
+                if not target:
+                    continue
+                if index.by_id(target):
+                    counts[fn] = counts.get(fn, 0) + 1
+                    break
+    if not counts:
+        return None
+    return max(counts.items(), key=lambda x: x[1])[0]
+
+
+def _frontmatter_has_value(raw: Any) -> bool:
+    """True if a frontmatter value is non-empty (string with chars, or
+    a list with at least one string entry)."""
+    if isinstance(raw, str):
+        return bool(raw.strip())
+    if isinstance(raw, list):
+        return any(isinstance(x, str) and x.strip() for x in raw)
+    return False
+
+
+def _resolve_parent_key(
+    record: NoteRecord, field_name: str, index: Index
+) -> tuple[Path | None, str | None]:
+    """Resolve a record's parent-link field to ``(path, label)``.
+
+    - ``(Path, label)`` if the value resolves to an indexed note.
+    - ``(None, label)`` if the value is a non-empty string but doesn't
+      resolve — the cockpit groups under the raw label (e.g.,
+      ``"Mother Interview"`` when no `Mother Interview.md` exists).
+    - ``(None, None)`` when the field is missing or empty.
+
+    For list fields, the first non-empty entry wins.
+    """
+    raw = record.frontmatter.get(field_name)
+    candidates: list[str] = []
+    if isinstance(raw, str):
+        candidates.append(raw)
+    elif isinstance(raw, list):
+        for item in raw:
+            if isinstance(item, str):
+                candidates.append(item)
+    for candidate in candidates:
+        target = _strip_wikilink(candidate).strip()
+        if not target:
+            continue
+        path = index.by_id(target)
+        if path is not None:
+            return path, None
+        return None, target
+    return None, None
+
+
+def _library_by_type_groups(
+    index: Index, platform: str | None
+) -> list[dict[str, Any]]:
+    """Auto-discovered Library "By type" groups.
+
+    For each note type present in the index whose count is at least
+    :data:`_BY_TYPE_MIN_COUNT` and that isn't already surfaced
+    elsewhere (project-os canonical types, dedicated rare types, the
+    inline-into-docs-tree types), emit a collapsible group whose
+    items are nested under their auto-detected parent note.
+
+    Groups whose parent field can't be detected render as a flat list.
+    """
+    counts = index.type_counts()
+    out: list[dict[str, Any]] = []
+    for type_name in sorted(counts.keys()):
+        if counts[type_name] < _BY_TYPE_MIN_COUNT:
+            continue
+        if type_name in _BY_TYPE_SKIP_IN_LIBRARY:
+            continue
+        records = [
+            r for r in index.notes_by_type(type_name)
+            if _platform_match(r, platform)
+        ]
+        if not records:
+            continue
+        parent_field = _detect_parent_field(index, type_name)
+        items_sorted = sorted(records, key=lambda r: (r.title or "", r.rel_path))
+        if parent_field is None:
+            # No parent — flat list.
+            out.append({
+                "key": f"by-type:{type_name}",
+                "label": _by_type_label(type_name),
+                "url": None,
+                "status": None,
+                "item_layout": "stacked",
+                "items": [_rare_item(index, r) for r in items_sorted],
+            })
+            continue
+        # Bucket by parent. Resolved-note parents key by Path; unresolved
+        # string targets (a folder name or stub mention) key by the raw
+        # label string so notes pointing at the same dangling target
+        # still group together.
+        resolved_by_parent: dict[Path, list[NoteRecord]] = {}
+        unresolved_by_label: dict[str, list[NoteRecord]] = {}
+        orphans: list[NoteRecord] = []
+        for record in records:
+            parent_path, parent_label = _resolve_parent_key(
+                record, parent_field, index
+            )
+            if parent_path is not None:
+                resolved_by_parent.setdefault(parent_path, []).append(record)
+            elif parent_label:
+                unresolved_by_label.setdefault(parent_label, []).append(record)
+            else:
+                orphans.append(record)
+        subgroups: list[dict[str, Any]] = []
+        # Resolved-note buckets — alphabetised by parent title.
+        parented: list[tuple[str, Path]] = []
+        for parent_path in resolved_by_parent:
+            parent_rec = index.get(parent_path)
+            title = (parent_rec.title if parent_rec else None) or parent_path.stem
+            parented.append((title.lower(), parent_path))
+        parented.sort()
+        for _sort_key, parent_path in parented:
+            parent_rec = index.get(parent_path)
+            label = (parent_rec.title if parent_rec else None) or parent_path.stem
+            url = index.url_for(parent_path) if parent_rec else None
+            children = sorted(
+                resolved_by_parent[parent_path],
+                key=lambda r: (r.title or "", r.rel_path),
+            )
+            subgroups.append({
+                "key": f"by-type:{type_name}:{parent_path}",
+                "label": label,
+                "url": url,
+                "status": parent_rec.status if parent_rec else None,
+                "item_layout": "stacked",
+                "items": [_rare_item(index, r) for r in children],
+                "default_open": False,
+            })
+        # Unresolved-label buckets (e.g., a project folder with no `.md`).
+        # Marked with a small "·" suffix in the key for uniqueness;
+        # rendered with the raw label so the user can see what target
+        # the notes claim to belong to.
+        for label in sorted(unresolved_by_label, key=str.lower):
+            children = sorted(
+                unresolved_by_label[label],
+                key=lambda r: (r.title or "", r.rel_path),
+            )
+            subgroups.append({
+                "key": f"by-type:{type_name}:unresolved:{label}",
+                "label": label,
+                "url": None,
+                "status": None,
+                "item_layout": "stacked",
+                "items": [_rare_item(index, r) for r in children],
+                "default_open": False,
+            })
+        if orphans:
+            orphans_sorted = sorted(orphans, key=lambda r: (r.title or "", r.rel_path))
+            subgroups.append({
+                "key": f"by-type:{type_name}:orphans",
+                "label": f"Without {parent_field}",
+                "url": None,
+                "status": None,
+                "item_layout": "stacked",
+                "items": [_rare_item(index, r) for r in orphans_sorted],
+                "default_open": False,
+            })
+        out.append({
+            "key": f"by-type:{type_name}",
+            "label": _by_type_label(type_name),
+            "url": None,
+            "status": None,
+            "item_layout": "stacked",
+            "items": [],
+            "subgroups": subgroups,
+        })
+    return out
+
+
+def _by_type_label(type_name: str) -> str:
+    """Human-readable label for an auto-discovered Library 'By type'
+    group. Title-case the type verbatim — no naive ``+ "s"`` plural
+    (``daily`` → ``Daily``, not ``Dailys``; ``default note`` →
+    ``Default Note``, not ``Default Notes``). The (n) count rendered
+    by the JS in the group header carries the cardinality."""
+    return type_name.strip().title() or type_name
 
 
 def _format_week_range(start: _dt.date, end: _dt.date) -> str:
@@ -969,6 +1934,7 @@ def _rare_item(index: Index, record: NoteRecord) -> dict[str, Any]:
         "url": index.url_for(record.path),
         "subtitle": "",
         "type": record.note_type or "",
+        **_verification_flags(record),
     }
 
 
@@ -1009,6 +1975,46 @@ def _tree_item(record: NoteRecord) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Per-item shapes
 # ---------------------------------------------------------------------------
+
+
+def _has_frontmatter_value(raw: Any) -> bool:
+    """Truthiness for badge-driving frontmatter — empty string / list /
+    dict / None all count as "not recorded"."""
+    if raw is None:
+        return False
+    if isinstance(raw, str):
+        return bool(raw.strip())
+    if isinstance(raw, (list, dict, tuple, set)):
+        return bool(raw)
+    return True
+
+
+def _verification_flags(record: NoteRecord) -> dict[str, Any]:
+    """Verification-surface badge flags for list rows (FEAT-0018 /
+    TASK-0113). Additive, schema-compatible fields:
+
+    - ``waived: true`` when ``verification_waiver`` is non-empty — a
+      terminal status held under a recorded waiver must be visually
+      distinct from a verified one.
+    - ``review_verdict`` (lower-cased) when the independent-review
+      verdict is recorded (``approved`` / ``changes-requested``).
+    - ``adequacy`` (bool, ``test`` notes only): whether the note
+      records adequacy evidence (``adequacy`` or ``mutation_score``)
+      — unguarded "guarding" tests stand out in test views.
+    """
+    flags: dict[str, Any] = {}
+    fm = record.frontmatter or {}
+    if _has_frontmatter_value(fm.get("verification_waiver")):
+        flags["waived"] = True
+    verdict = fm.get("review_verdict")
+    if isinstance(verdict, str) and verdict.strip():
+        flags["review_verdict"] = verdict.strip().lower()
+    if (record.note_type or "") == "test":
+        flags["adequacy"] = (
+            _has_frontmatter_value(fm.get("adequacy"))
+            or _has_frontmatter_value(fm.get("mutation_score"))
+        )
+    return flags
 
 
 def _first_body_paragraph(body: str, *, max_chars: int = 220) -> str:
@@ -1052,6 +2058,7 @@ def _feature_item(index: Index, record: NoteRecord) -> dict[str, Any]:
         "url": index.url_for(record.path),
         "subtitle": record.frontmatter.get("goal") or "",
         "type": record.note_type or "feature",
+        **_verification_flags(record),
     }
 
 
@@ -1063,6 +2070,7 @@ def _task_item(index: Index, record: NoteRecord) -> dict[str, Any]:
         "url": index.url_for(record.path),
         "subtitle": _first_body_paragraph(record.body),
         "type": record.note_type or "task",
+        **_verification_flags(record),
     }
 
 
@@ -1074,6 +2082,7 @@ def _issue_item(index: Index, record: NoteRecord) -> dict[str, Any]:
         "url": index.url_for(record.path),
         "subtitle": _first_body_paragraph(record.body),
         "type": record.note_type or "issue",
+        **_verification_flags(record),
     }
 
 
@@ -1089,6 +2098,7 @@ def _recent_item(index: Index, record: NoteRecord) -> dict[str, Any]:
         "url": index.url_for(record.path),
         "subtitle": " · ".join(parts),
         "type": record.note_type or "",
+        **_verification_flags(record),
     }
 
 
@@ -1120,6 +2130,7 @@ def _context_item(index: Index, record: NoteRecord) -> dict[str, Any]:
         "severity": severity,
         "url": index.url_for(record.path),
         "type": record.note_type or "",
+        **_verification_flags(record),
     }
 
 

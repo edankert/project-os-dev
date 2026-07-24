@@ -18,8 +18,10 @@ import atexit
 import collections
 import datetime as _dt
 import json
+import re
 import logging
 import mimetypes
+import os
 import queue
 import threading
 import time
@@ -30,10 +32,33 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from . import cockpit, renderer, templates, terminal_proxy
+from .agent_actions import load_actions
+from .agent_hooks import AgentSessionTracker
+from .status_diff import StatusTracker
+from .agent_hooks import MAX_BODY_BYTES as _AGENT_HOOK_MAX_BYTES
 from .events import ControlEvent, EventBus, FileEvent
 from .index import Index
 from .terminal import TERMINAL_BASE_PATH, TerminalProcess
+from .validation import ValidationRunner
 from .watcher import Watcher
+
+
+def _desktop_mode() -> bool:
+    """True when the server is running as a sidecar of the Electron shell.
+
+    The Electron shell (FEAT-0007) sets ``COCKPIT_DESKTOP=1`` in the
+    spawned sidecar's environment. In that mode:
+
+    * the ``.cockpit/url`` discovery file is NOT written (the shell
+      drives focus over IPC, not via the on-disk hint), and
+    * the ``/api/terminal`` + ``/_terminal/*`` endpoints short-circuit
+      (the shell mounts a native ``node-pty``-backed pane in the same
+      bottom-panel slot the browser uses for the ttyd iframe).
+
+    Defaults — and therefore mode 1 (per-project browser use) — are
+    unchanged.
+    """
+    return os.environ.get("COCKPIT_DESKTOP") == "1"
 
 # URL plural → frontmatter type singular. Project-os IDs and template names
 # disagree in one place: ``/index/decisions`` indexes ``type: [[adr]]``.
@@ -62,6 +87,30 @@ STATIC_DIR: Path = Path(__file__).resolve().parent / "static"
 # gone.
 _TAB_STALE_SECONDS: int = 45
 _HISTORY_MAX: int = 50
+
+# How long a stored `busy` / `waiting` agent state stays "current"
+# before the snapshot reports it as decayed-to-idle (FEAT-0013 /
+# TASK-0076). Env-overridable so tests can shrink the window without
+# patching internals.
+_AGENT_STATE_DECAY_SECONDS: int = int(
+    os.environ.get("COCKPIT_AGENT_STATE_DECAY_SECONDS", "600")
+)
+
+# Allowed agent-state values. Mirrored by the validator in
+# `_serve_agent_state` (TASK-0077) and the `cockpit signal` CLI
+# subcommand (TASK-0078). `needs-input` (FEAT-0019 / TASK-0114) is
+# hook-fed: the agent is blocked on a human (permission prompt,
+# elicitation, idle prompt).
+_AGENT_STATES: frozenset[str] = frozenset(
+    {"busy", "waiting", "needs-input", "done", "error", "idle"}
+)
+# Only `busy` decays: a working agent that goes silent is a dead worker,
+# so idling its rail dot is correct. Attention states (`waiting`,
+# `needs-input`) must NOT decay — REQ-0018 requires they persist until the
+# user acts or dismisses, since a blocked agent sends no further events
+# and would otherwise vanish from the inbox while still needing you
+# (TASK-0175). The ack/read-state (static-once-seen) handles staleness.
+_AGENT_DECAYABLE_STATES: frozenset[str] = frozenset({"busy"})
 
 
 def _utc_now_iso() -> str:
@@ -93,13 +142,62 @@ class CockpitState:
     handler can all touch this concurrently.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, state_path: Path | None = None) -> None:
         self._lock = threading.Lock()
         self._agent_focus: dict[str, Any] | None = None
+        self._agent_state: dict[str, Any] | None = None
+        # Flag flipped to True after the decay thread (TASK-0077)
+        # observes a stored busy/waiting that has aged out; ensures
+        # we only fire ONE synthetic SSE per decay event.
+        self._agent_state_decay_observed: bool = False
+        # Persisted agent-state file path (FEAT-0010 / TASK-0081).
+        # When set, every state transition (including decay) writes a
+        # mirror copy here so the desktop shell's workspace rail
+        # (TASK-0082) can poll per-workspace state without needing a
+        # live sidecar / SSE subscription per workspace.
+        self._state_path: Path | None = state_path
+        if state_path is not None:
+            self._seed_agent_state_from_file(state_path)
         self._tabs: dict[str, dict[str, Any]] = {}
         self._history: collections.deque[dict[str, Any]] = collections.deque(
             maxlen=_HISTORY_MAX
         )
+
+    def _seed_agent_state_from_file(self, path: Path) -> None:
+        """Load the on-disk agent-state into memory on startup so a
+        cockpit restart doesn't reset the rail dot. Tolerates missing
+        / malformed JSON — the file is best-effort, never required."""
+        try:
+            raw = path.read_text(encoding="utf-8")
+        except OSError:
+            return
+        try:
+            data = json.loads(raw)
+        except (ValueError, TypeError):
+            return
+        if isinstance(data, dict) and isinstance(data.get("state"), str):
+            self._agent_state = data
+
+    def _persist_agent_state(self, payload: dict[str, Any] | None) -> None:
+        """Mirror the in-memory state to disk for cross-workspace
+        readers (TASK-0081). Called from the write paths under the
+        instance lock; failures are logged, never raised."""
+        if self._state_path is None:
+            return
+        try:
+            self._state_path.parent.mkdir(parents=True, exist_ok=True)
+            if payload is None:
+                self._state_path.unlink(missing_ok=True)
+                return
+            self._state_path.write_text(
+                json.dumps(payload, ensure_ascii=False),
+                encoding="utf-8",
+            )
+        except OSError as exc:
+            log.warning(
+                "agent-state file write failed for %s: %s",
+                self._state_path, exc,
+            )
 
     def record_agent_focus(self, target: str, url: str) -> None:
         ts = _utc_now_iso()
@@ -108,6 +206,93 @@ class CockpitState:
             self._history.appendleft(
                 {"url": url, "ts": ts, "source": "agent", "target": target}
             )
+
+    def record_agent_state(
+        self,
+        state: str,
+        target: str | None = None,
+        agent: str | None = None,
+        message: str | None = None,
+        source: str = "manual",
+    ) -> dict[str, Any]:
+        """Record an agent-state transition (FEAT-0013 / TASK-0076).
+
+        Stores the latest declaration and pushes a history row so the
+        agent's activity is observable alongside focus / user-nav. The
+        returned dict is the canonical payload — callers fan it out as
+        a ``cockpit:agent-state`` SSE event.
+        """
+        ts = _utc_now_iso()
+        payload: dict[str, Any] = {"state": state, "ts": ts}
+        if target:
+            payload["target"] = target
+        if agent:
+            payload["agent"] = agent
+        if message:
+            payload["message"] = message
+        if source != "manual":
+            payload["source"] = source
+        with self._lock:
+            self._agent_state = payload
+            # A fresh declaration clears the decay-observed flag so the
+            # next decay event (if any) fires its own SSE.
+            self._agent_state_decay_observed = False
+            self._history.appendleft({
+                "ts": ts, "source": "agent-state", **payload,
+            })
+            self._persist_agent_state(payload)
+        return payload
+
+    def _effective_agent_state(self, now: float) -> dict[str, Any] | None:
+        """Apply lazy decay to the stored agent-state for read paths.
+
+        Stored value is **not** mutated — decay is observation-only at
+        this layer. Returns either the stored payload or, if it has
+        aged out, a synthetic ``{state: "idle", decayed_from: ...,
+        ts: <orig ts>}`` block. The decay-observed flag is what guards
+        SSE re-emission; that's the decay thread's job (TASK-0077).
+        """
+        stored = self._agent_state
+        if stored is None:
+            return None
+        if stored["state"] not in _AGENT_DECAYABLE_STATES:
+            return stored
+        age = now - _parse_iso(stored["ts"])
+        if age <= _AGENT_STATE_DECAY_SECONDS:
+            return stored
+        return {
+            "state": "idle",
+            "decayed_from": stored["state"],
+            "ts": stored["ts"],
+        }
+
+    def decay_tick(self, now: float | None = None) -> dict[str, Any] | None:
+        """Called by the decay thread (TASK-0077). Returns the
+        synthetic SSE payload exactly **once** per decay event;
+        subsequent calls return None until the next fresh state.
+        """
+        if now is None:
+            now = time.time()
+        with self._lock:
+            stored = self._agent_state
+            if stored is None or stored["state"] not in _AGENT_DECAYABLE_STATES:
+                return None
+            age = now - _parse_iso(stored["ts"])
+            if age <= _AGENT_STATE_DECAY_SECONDS:
+                return None
+            if self._agent_state_decay_observed:
+                return None
+            self._agent_state_decay_observed = True
+            synthetic = {
+                "state": "idle",
+                "decayed_from": stored["state"],
+                "ts": stored["ts"],
+            }
+            # Mirror the observable state to disk so the workspace
+            # rail (TASK-0082) sees the same `idle` the SSE consumers
+            # see, without needing to re-derive decay on the reader side.
+            self._persist_agent_state(synthetic)
+            return synthetic
 
     def update_tab(
         self, tab_id: str, url: str, following: bool
@@ -142,6 +327,7 @@ class CockpitState:
                     user_view = {"url": info["url"], "ts": info["last_seen"]}
             return {
                 "agent_focus": self._agent_focus,
+                "agent_state": self._effective_agent_state(now),
                 "user_view": user_view,
                 "tabs": [
                     {"tab_id": tid, **info} for tid, info in alive.items()
@@ -189,7 +375,55 @@ class DocsServer:
         # the cockpit JS re-fetch (TASK-0011) attach later.
         self.index.subscribe_to(self.bus)
         self.watcher: Watcher = Watcher(self.docs_root, self.bus)
-        self.cockpit_state: CockpitState = CockpitState()
+        # Agent-state mirror file lives next to .cockpit/url so the
+        # desktop rail (TASK-0082) can poll all discovered workspaces
+        # uniformly. Unlike the URL file, this IS written in desktop
+        # mode — last-known-state is the contract, not "where is the
+        # cockpit running."
+        state_path = self.docs_root.parent / ".cockpit" / "agent-state.json"
+        self.cockpit_state: CockpitState = CockpitState(state_path=state_path)
+        # Hook-fed session tracker (FEAT-0019 / TASK-0114). Persists the
+        # session index next to the agent-state mirror; also watches
+        # file events for CHG provenance correlation (TASK-0126).
+        self.agent_tracker: AgentSessionTracker = AgentSessionTracker(
+            docs_root=self.docs_root,
+            sessions_path=self.docs_root.parent / ".cockpit" / "sessions.json",
+        )
+
+        def _tracker_file_event(ev) -> None:
+            if isinstance(ev, FileEvent):
+                self.agent_tracker.on_file_event(ev.kind, ev.rel_path)
+
+        self.bus.subscribe(_tracker_file_event)
+        # Docs-validator health runner (FEAT-0018 / TASK-0111). Subscribes
+        # to the same bus the index/SSE use: docs-tree file events schedule
+        # a debounced validator re-run; state changes fan back out as
+        # ``cockpit:validation`` control events. The SNAPSHOT.yaml observer
+        # (the file lives above the docs root, outside the main watcher)
+        # starts in ``run`` and stops with the server.
+        self.validation: ValidationRunner = ValidationRunner(
+            self.docs_root.parent, self.bus, resolver=self.index.resolve,
+        )
+        self.bus.subscribe(self.validation.on_event)
+        # Status-diff layer (FEAT-0036 / TASK-0162): note saves become
+        # cockpit:status-change events feeding the live-work views.
+        # Seeded from the current index so the first scan is silent.
+        self.status_tracker: StatusTracker = StatusTracker(self.docs_root, self.bus)
+        self.status_tracker.seed(self.index)
+        self.bus.subscribe(self.status_tracker.on_event)
+
+        # Correlate status changes to the live session (TASK-0194): the
+        # watcher sees every note status change regardless of how the file
+        # was written, so this captures shell-tool edits the PostToolUse
+        # touch-tracker misses. Subscribed after the status tracker, which
+        # publishes the cockpit:status-change events this consumes.
+        def _tracker_status_event(ev) -> None:
+            if isinstance(ev, ControlEvent) and ev.event_type == "cockpit:status-change":
+                self.agent_tracker.record_status_change(ev.data)
+
+        self.bus.subscribe(_tracker_status_event)
+        # Decay thread shutdown flag — flipped in `run`'s `finally`.
+        self._decay_stop: threading.Event = threading.Event()
         # Header home-link label = repo name (parent of docs/), so users
         # always see which project they're browsing.
         templates.set_project_name(
@@ -211,10 +445,34 @@ class DocsServer:
             self.docs_root, self.index, self.bus,
             cockpit_url=self._cockpit_url(),
             cockpit_state=self.cockpit_state,
+            agent_tracker=self.agent_tracker,
+            validation_runner=self.validation,
+            status_tracker=self.status_tracker,
         )
         self.watcher.start()
+        # SNAPSHOT.yaml sits above the docs root — the validation runner
+        # owns its own non-recursive observer for it (TASK-0111).
+        self.validation.start()
+        # Background decay thread for agent-state (FEAT-0013 / TASK-0077).
+        # Wakes once a minute, asks the state for any aged-out
+        # busy/waiting it should now consider idle, and publishes the
+        # synthetic SSE event when it finds one. Daemon so it dies
+        # with the process even if the explicit stop doesn't fire.
+        self._decay_stop.clear()
+        decay_thread = threading.Thread(
+            target=self._agent_state_decay_loop,
+            name="cockpit-agent-state-decay",
+            daemon=True,
+        )
+        decay_thread.start()
         # Write the discovery file so the `cockpit` CLI (from any
         # terminal under the project tree) can auto-find this server.
+        # Also written in desktop mode since FEAT-0027: it lets
+        # external terminals reach the desktop sidecar (`cockpit
+        # focus/dispatch`) and lets the external agent-state hook POST
+        # to the full pipeline instead of file-writing. If a mode-1
+        # server and the desktop sidecar run on the same repo the last
+        # writer wins — both are valid targets.
         _write_discovery_file(
             self.docs_root.parent, self._cockpit_url(),
         )
@@ -238,17 +496,90 @@ class DocsServer:
                 except KeyboardInterrupt:
                     print("\nproject-os-cockpit: shutting down.", flush=True)
         finally:
+            self._decay_stop.set()
+            decay_thread.join(timeout=2)
+            self.validation.stop()
             self.watcher.stop()
+
+    def _agent_state_decay_loop(self) -> None:
+        """Per-minute decay tick (FEAT-0013 / TASK-0077). On each
+        wake-up, ask the state for any aged-out busy/waiting event;
+        if one is observed, publish a synthetic
+        ``cockpit:agent-state`` SSE so subscribers don't keep
+        showing stale green/amber dots forever."""
+        # Tick interval kept short relative to the decay window
+        # so the synthetic event lands within ~1 min of expiry.
+        # Configurable via env for tests that want sub-second.
+        interval = float(os.environ.get(
+            "COCKPIT_AGENT_STATE_DECAY_TICK_SECONDS", "60",
+        ))
+        while not self._decay_stop.is_set():
+            payload = self.cockpit_state.decay_tick()
+            if payload is not None:
+                try:
+                    self.bus.publish(
+                        ControlEvent("cockpit:agent-state", payload),
+                    )
+                except Exception:
+                    log.exception(
+                        "agent-state decay publish failed",
+                    )
+            # Wait + return immediately on shutdown.
+            if self._decay_stop.wait(timeout=interval):
+                break
+
+
+def _cwd_within_root(cwd: str, project_root: Path) -> bool:
+    """True when ``cwd`` resolves inside ``project_root``.
+
+    Identity guard for hook ingestion (ISS-0007 / TASK-0146): sidecar
+    ports get reused across desktop-app restarts, so a stale
+    ``.cockpit/url`` can route another repo's hook events here. Case
+    is normalised on both sides — macOS paths arrive in mixed case
+    (the ISS-0001 lesson).
+    """
+    try:
+        cand = os.path.realpath(str(cwd))
+        root = os.path.realpath(str(project_root))
+    except (OSError, ValueError):
+        return False
+    # realpath does not canonicalise character case on macOS and
+    # os.path.normcase is a no-op on POSIX, so fold explicitly — the
+    # primary filesystem (APFS) is case-insensitive and mixed-case
+    # paths for the same directory are routine. On a case-sensitive
+    # filesystem this can over-accept a same-name-different-case
+    # sibling; that trade is fine for a guard whose failure mode is
+    # merely accepting a hook event.
+    cand = cand.casefold()
+    root = root.casefold()
+    return cand == root or cand.startswith(root + os.sep)
 
 
 def _make_handler(
     docs_root: Path, index: Index, bus: EventBus,
     *, cockpit_url: str = "",
     cockpit_state: CockpitState | None = None,
+    agent_tracker: AgentSessionTracker | None = None,
+    validation_runner: ValidationRunner | None = None,
+    status_tracker: "StatusTracker | None" = None,
 ) -> type[BaseHTTPRequestHandler]:
     """Build a request handler class with the per-server collaborators baked in."""
     project_root = docs_root.parent.resolve()
     state = cockpit_state or CockpitState()
+    tracker = agent_tracker or AgentSessionTracker(docs_root=docs_root)
+    status_diff = status_tracker
+    validation = validation_runner
+    if validation is None:
+        # Standalone-handler path (tests spin handlers up without a
+        # DocsServer): build a runner on the same bus so file events
+        # still schedule debounced re-runs (TASK-0111).
+        validation = ValidationRunner(
+            project_root, bus, resolver=index.resolve,
+        )
+        bus.subscribe(validation.on_event)
+    # Stats payload cache (TASK-0128): scope key → (index generation,
+    # payload). Invalidation is generation comparison, nothing to evict.
+    _stats_cache: dict[str, tuple[int, dict]] = {}
     # Lazy-instantiated; ttyd doesn't actually spawn until the first
     # /api/terminal request (the JS client only fetches when the user
     # opens the bottom panel). cockpit_url is propagated into the
@@ -287,6 +618,18 @@ def _make_handler(
             if path == "/api/cockpit/tab-state":
                 self._serve_cockpit_tab_state()
                 return
+            if path == "/api/notes/check-toggle":
+                self._serve_check_toggle()
+                return
+            if path == "/api/cockpit/agent-state":
+                self._serve_cockpit_agent_state()
+                return
+            if path == "/api/agent-hook":
+                self._serve_agent_hook(parsed.query)
+                return
+            if path == "/api/cockpit/dispatch":
+                self._serve_cockpit_dispatch()
+                return
             # Unknown POST. Drain the request body before responding so
             # HTTP/1.1 keep-alive framing stays intact: an undrained body
             # bleeds into the next request line on the same TCP socket,
@@ -317,6 +660,10 @@ def _make_handler(
                 self._respond_status(HTTPStatus.NO_CONTENT)
                 return
 
+            if path == "/healthz":
+                self._serve_healthz()
+                return
+
             if path == "/":
                 self._serve_landing()
                 return
@@ -335,6 +682,41 @@ def _make_handler(
 
             if path == "/api/cockpit/state":
                 self._serve_cockpit_state()
+                return
+
+            if path == "/api/cockpit/validation":
+                self._serve_cockpit_validation()
+                return
+
+
+            if path == "/api/cockpit/identity":
+                self._serve_cockpit_identity()
+                return
+
+            if path == "/api/cockpit/transitions":
+                self._respond_json({
+                    "transitions": status_diff.transitions() if status_diff else [],
+                })
+                return
+
+            if path == "/api/cockpit/stats":
+                self._serve_cockpit_stats(parsed.query)
+                return
+
+            if path == "/api/cockpit/sessions":
+                self._serve_cockpit_sessions()
+                return
+
+            if path == "/api/cockpit/actions":
+                self._serve_cockpit_actions()
+                return
+
+            if path == "/api/cockpit/dispatch-requests":
+                self._serve_dispatch_requests()
+                return
+
+            if path == "/api/render":
+                self._serve_render(parsed.query)
                 return
 
             if path == "/api/terminal":
@@ -424,6 +806,33 @@ def _make_handler(
             )
             self._respond_json(payload)
 
+        def _serve_cockpit_stats(self, query_string: str = "") -> None:
+            """``GET /api/cockpit/stats[?scope=PHASE-####]`` — dashboard
+            payload, optionally scoped to one phase (FEAT-0023).
+
+            Payloads are cached per scope and validated against
+            ``index.generation``, so file-event refetches stop
+            re-walking the corpus (TASK-0128).
+            """
+            params = urllib.parse.parse_qs(query_string)
+            scope = (params.get("scope") or [None])[0]
+            scope = scope.strip().upper() if scope else None
+            cache_key = scope or ""
+            generation = index.generation
+            cached = _stats_cache.get(cache_key)
+            if cached is not None and cached[0] == generation:
+                self._respond_json(cached[1])
+                return
+            payload = cockpit.stats_payload(index, scope=scope)
+            if payload is None:
+                self._respond_json(
+                    {"ok": False, "error": f"unknown scope: {scope}"},
+                    status=HTTPStatus.NOT_FOUND,
+                )
+                return
+            _stats_cache[cache_key] = (generation, payload)
+            self._respond_json(payload)
+
         def _serve_cockpit_context(self, query_string: str) -> None:
             params = urllib.parse.parse_qs(query_string)
             this_values = params.get("this", [])
@@ -444,8 +853,452 @@ def _make_handler(
             Lazy-spawns ttyd on first call (the JS client only fetches
             this when the user opens the bottom panel for the first
             time). Subsequent calls reuse the running process.
+
+            In desktop mode (``COCKPIT_DESKTOP=1``) the Electron shell
+            mounts a native node-pty pane instead, so this endpoint
+            returns ``enabled: false`` with a clear reason — the JS
+            client then leaves the bottom-panel slot empty for the
+            shell to fill.
             """
             self._respond_json(terminal.info())
+
+        def _serve_cockpit_agent_state(self) -> None:
+            """``POST /api/cockpit/agent-state`` — agent declares its
+            state (FEAT-0013 / TASK-0077).
+
+            Body: ``{state, target?, agent?, message?}``. ``state`` must
+            be one of ``busy``, ``waiting``, ``done``, ``error``,
+            ``idle``. On success, records the transition on
+            ``CockpitState`` and publishes a ``cockpit:agent-state``
+            SSE event so connected clients (FEAT-0010 rail dots,
+            future browser-side surfaces, OS notifications) update
+            without polling.
+
+            Auto-decay is handled by the background timer thread in
+            ``DocsServer.run`` — when a busy/waiting state ages past
+            ``COCKPIT_AGENT_STATE_DECAY_SECONDS`` (default 600), the
+            thread emits a synthetic event flipping the observable
+            state to ``idle``.
+            """
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = 0
+            raw = self.rfile.read(length) if length else b""
+            try:
+                body = json.loads(raw.decode("utf-8")) if raw else {}
+            except (ValueError, UnicodeDecodeError):
+                self._respond_json({"ok": False, "error": "invalid JSON"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            state_value = (body.get("state") or "").strip().lower()
+            if not state_value:
+                self._respond_json({"ok": False, "error": "missing 'state'"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            if state_value not in _AGENT_STATES:
+                self._respond_json(
+                    {
+                        "ok": False,
+                        "error": (
+                            f"unknown state: {state_value!r} "
+                            f"(allowed: {sorted(_AGENT_STATES)})"
+                        ),
+                    },
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            # Precedence (FEAT-0019 / TASK-0114): while an instrumented
+            # session is live, hook-fed state is authoritative — a
+            # voluntary `cockpit signal` would fight the push feed
+            # (e.g. a remembered `signal done` racing the hooks' `Stop`).
+            # Acknowledge without recording; manual signalling regains
+            # authority the moment no live hook session exists.
+            if tracker.has_live_session():
+                self._respond_json({"ok": True, "superseded_by_hooks": True})
+                return
+            target = body.get("target")
+            agent = body.get("agent")
+            message = body.get("message")
+            # Stringify optional fields if present so we don't bus
+            # arbitrary types through the SSE payload.
+            payload = state.record_agent_state(
+                state_value,
+                target=str(target) if target else None,
+                agent=str(agent) if agent else None,
+                message=str(message) if message else None,
+            )
+            bus.publish(ControlEvent("cockpit:agent-state", payload))
+            self._respond_json({"ok": True})
+
+        def _serve_cockpit_identity(self) -> None:
+            """``GET /api/cockpit/identity`` — who is this sidecar?
+
+            Lets url-file consumers (desktop stale-url janitor, CLI)
+            verify they reached the cockpit for the repo they think
+            they did (ISS-0007 / TASK-0146).
+            """
+            self._respond_json({
+                "root": str(docs_root.parent.resolve()),
+                "docs_root": str(docs_root.resolve()),
+                "pid": os.getpid(),
+            })
+
+        def _serve_agent_hook(self, query_string: str = "") -> None:
+            """``POST /api/agent-hook`` — hook-fed agent lifecycle
+            ingestion (FEAT-0019 / TASK-0114).
+
+            Claude Code command-hooks (and the Codex notify/statusline
+            forwarders) POST their JSON payloads here. The tracker maps
+            them onto the agent-state machine and the activity feed;
+            unknown events are accepted-and-ignored so CLI schema drift
+            never breaks ingestion (RISK-0004). Payloads are untrusted
+            local input: shape-validated, size-capped, clipped at
+            storage, never rendered as HTML.
+
+            Query params ``event`` and ``agent`` provide defaults for
+            ``hook_event_name`` / ``agent`` so shell forwarders can
+            pass a raw upstream blob without rewriting JSON (the
+            statusline and Codex notify scripts use this).
+            """
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = 0
+            if length <= 0:
+                self._respond_json(
+                    {"ok": False, "error": "missing body"},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            if length > _AGENT_HOOK_MAX_BYTES:
+                # Too big to drain politely — reject and drop the
+                # connection so we don't read megabytes we won't use.
+                self.close_connection = True
+                self._respond_json(
+                    {"ok": False, "error": "payload too large"},
+                    status=HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+                )
+                return
+            raw = self.rfile.read(length)
+            try:
+                body = json.loads(raw.decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                self._respond_json(
+                    {"ok": False, "error": "invalid JSON"},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            if not isinstance(body, dict):
+                self._respond_json(
+                    {"ok": False, "error": "body must be a JSON object"},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            params = urllib.parse.parse_qs(query_string)
+            for key, field in (("event", "hook_event_name"), ("agent", "agent")):
+                default = (params.get(key) or [None])[0]
+                if default and not body.get(field):
+                    body[field] = default
+            # Identity guard (ISS-0007 / TASK-0146): reject events from
+            # sessions working in a different repo — a stale
+            # `.cockpit/url` after port reuse would otherwise poison
+            # this workspace's tracker, session index, and rail dot.
+            # 409 makes the external hook's POST fail, and its existing
+            # fallback writes agent-state into the *correct* repo.
+            # Payloads without `cwd` stay accepted (statusline/forwarder
+            # blobs don't always carry one).
+            cwd = body.get("cwd")
+            if isinstance(cwd, str) and cwd and not _cwd_within_root(
+                cwd, docs_root.parent
+            ):
+                self._respond_json(
+                    {
+                        "ok": False,
+                        "error": "wrong-cockpit",
+                        "root": str(docs_root.parent),
+                    },
+                    status=HTTPStatus.CONFLICT,
+                )
+                return
+            outcome = tracker.ingest(body)
+            if not outcome.get("ok"):
+                self._respond_json(
+                    {"ok": False, "error": outcome.get("error", "rejected")},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            state_value = outcome.get("state")
+            if state_value:
+                agent_name = body.get("agent")
+                payload = state.record_agent_state(
+                    state_value,
+                    agent=str(agent_name) if agent_name else "claude",
+                    message=outcome.get("message"),
+                    source="hook",
+                )
+                bus.publish(ControlEvent("cockpit:agent-state", payload))
+            activity = outcome.get("activity")
+            if activity:
+                bus.publish(ControlEvent("cockpit:agent-activity", activity))
+            resp: dict[str, Any] = {
+                "ok": True, "ignored": bool(outcome.get("ignored")),
+            }
+            if outcome.get("duplicate"):
+                resp["duplicate"] = True
+            self._respond_json(resp)
+
+        def _serve_cockpit_dispatch(self) -> None:
+            """``POST /api/cockpit/dispatch`` — dispatch ledger entry
+            (FEAT-0025 / TASK-0135). Body: ``{id, verb?, agent?,
+            enqueue?}``. With ``enqueue`` the record is also stored as
+            a queue-request for the desktop shell (the `cockpit
+            dispatch` CLI path, TASK-0136) and announced over SSE."""
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = 0
+            raw = self.rfile.read(length) if length else b""
+            try:
+                body = json.loads(raw.decode("utf-8")) if raw else {}
+            except (ValueError, UnicodeDecodeError):
+                self._respond_json({"ok": False, "error": "invalid JSON"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            note_id = body.get("id")
+            if not isinstance(note_id, str) or not note_id.strip():
+                self._respond_json({"ok": False, "error": "missing 'id'"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            verb = body.get("verb")
+            agent = body.get("agent")
+            enqueue = bool(body.get("enqueue"))
+            rec = tracker.record_dispatch(
+                note_id.strip().upper(),
+                verb=str(verb) if verb else None,
+                agent=str(agent) if agent else None,
+                enqueue=enqueue,
+            )
+            if enqueue:
+                bus.publish(ControlEvent("cockpit:dispatch-request", rec))
+            self._respond_json({"ok": True, "recorded": rec})
+
+        def _serve_dispatch_requests(self) -> None:
+            """``GET /api/cockpit/dispatch-requests`` — hand queued CLI
+            requests to the desktop shell exactly once (TASK-0136)."""
+            self._respond_json({
+                "schema_version": cockpit.SCHEMA_VERSION,
+                "requests": tracker.take_dispatch_requests(),
+            })
+
+        def _serve_cockpit_actions(self) -> None:
+            """``GET /api/cockpit/actions`` — the agent verb registry
+            (FEAT-0024 / TASK-0131): per-note-type dispatch actions,
+            with optional workspace override from
+            ``tools/adapters/cockpit/actions.yaml``."""
+            self._respond_json({
+                "schema_version": cockpit.SCHEMA_VERSION,
+                "actions": load_actions(project_root),
+            })
+
+        def _serve_cockpit_sessions(self) -> None:
+            """``GET /api/cockpit/sessions`` — newest-first session
+            index for the history browser (FEAT-0022 / TASK-0123)."""
+            self._respond_json({
+                "schema_version": cockpit.SCHEMA_VERSION,
+                "sessions": tracker.sessions_payload(),
+            })
+
+        def _serve_check_toggle(self) -> None:
+            """``POST /api/notes/check-toggle`` — toggle a task-list
+            checkbox in the source ``.md`` (FEAT-0011 / TASK-0074).
+
+            Body: ``{path, index, checked}``. ``index`` is the
+            zero-based ordinal of the checkbox within the rendered
+            HTML — the server walks the source file in the same
+            order pymdownx.tasklist would render and toggles the
+            Nth ``- [ ]`` / ``- [x]`` token.
+
+            The per-file lock makes back-to-back toggles on the same
+            file deterministic (the file watcher will re-emit a
+            file-changed SSE for each successful write, so clients
+            stay in sync).
+            """
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = 0
+            raw = self.rfile.read(length) if length else b""
+            try:
+                body = json.loads(raw.decode("utf-8")) if raw else {}
+            except (ValueError, UnicodeDecodeError):
+                self._respond_json({"ok": False, "error": "invalid JSON"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            rel = (body.get("path") or "").strip()
+            try:
+                idx = int(body.get("index"))
+            except (TypeError, ValueError):
+                self._respond_json({"ok": False, "error": "missing or non-int 'index'"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            if "checked" not in body:
+                self._respond_json({"ok": False, "error": "missing 'checked'"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            checked = bool(body["checked"])
+            if not rel:
+                self._respond_json({"ok": False, "error": "missing 'path'"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            rel = rel.lstrip("/")
+            if rel.startswith("docs/"):
+                rel = rel[len("docs/"):]
+            if any(part == ".." for part in rel.split("/")):
+                self._respond_json({"ok": False, "error": "path traversal blocked"},
+                                   status=HTTPStatus.FORBIDDEN)
+                return
+            target = (docs_root / rel).resolve()
+            if not _is_under(target, docs_root) or not target.is_file() or target.suffix.lower() != ".md":
+                self._respond_json({"ok": False, "error": f"not a markdown file: {rel}"},
+                                   status=HTTPStatus.NOT_FOUND)
+                return
+            ok, error = _toggle_task_at(target, idx, checked)
+            if not ok:
+                self._respond_json({"ok": False, "error": error},
+                                   status=HTTPStatus.NOT_FOUND)
+                return
+            self._respond_json({"ok": True})
+
+        def _serve_render(self, query_string: str) -> None:
+            """``GET /api/render?path=<rel-path>`` — rendered Markdown
+            HTML fragment + metadata (FEAT-0008 / TASK-0067).
+
+            Returns the body HTML the mode-1 page would have wrapped,
+            plus the frontmatter dict, title, and the same
+            ``linked`` / ``backlinks`` shape ``/api/cockpit/context``
+            emits — so the FEAT-0011 native centre pane can fill the
+            doc area and the right pane in one fetch.
+
+            Path traversal is rejected; a leading ``docs/`` is
+            tolerated and stripped (the cockpit URLs use ``/docs/``
+            but our internal paths are docs-root-relative).
+            """
+            params = urllib.parse.parse_qs(query_string)
+            raw_path = (params.get("path") or [None])[0]
+            if not raw_path:
+                self._respond_json(
+                    {"ok": False, "error": "missing 'path' parameter"},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            rel_path = raw_path.strip().lstrip("/")
+            if rel_path.startswith("docs/"):
+                rel_path = rel_path[len("docs/"):]
+            if not rel_path or any(part == ".." for part in rel_path.split("/")):
+                self._respond_json(
+                    {"ok": False, "error": "path traversal blocked"},
+                    status=HTTPStatus.FORBIDDEN,
+                )
+                return
+            target = (docs_root / rel_path).resolve()
+            if not _is_under(target, docs_root):
+                self._respond_json(
+                    {"ok": False, "error": "resolved path escapes docs root"},
+                    status=HTTPStatus.FORBIDDEN,
+                )
+                return
+            if not target.is_file() or target.suffix.lower() != ".md":
+                self._respond_json(
+                    {"ok": False, "error": f"not a markdown file: {rel_path}"},
+                    status=HTTPStatus.NOT_FOUND,
+                )
+                return
+            try:
+                html = renderer.render_markdown_body(
+                    target,
+                    resolver=index.resolve,
+                    asset_resolver=index.resolve_asset,
+                )
+            except Exception as exc:
+                log.exception("render failure for %s", target)
+                self._respond_json(
+                    {
+                        "ok": False,
+                        "error": f"render failed: {type(exc).__name__}: {exc}",
+                    },
+                    status=HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
+                return
+            record = index.get(target)
+            raw_fm = dict(record.frontmatter) if record and record.frontmatter else {}
+            fm = _jsonable(raw_fm)
+            title = (
+                (record.title if record else None)
+                or (fm.get("title") if isinstance(fm.get("title"), str) else None)
+                or target.stem
+            )
+            # Pre-resolve the frontmatter into the same HTML metadata
+            # strip mode-1 emits, so the desktop renderer mounts a
+            # fully-linked card (TASK-0075). Uses the raw (un-jsonable)
+            # frontmatter so date / list / nested-dict values pass into
+            # the renderer with their original Python types, matching
+            # the contract `_metadata_strip_html` expects.
+            metadata_html = templates._metadata_strip_html(
+                raw_fm, resolver=index.resolve,
+            )
+            # Reuse the right-pane payload so the renderer can fill
+            # the linked + backlinks columns in the same fetch. The
+            # `active` block is implied by the response's own
+            # rel_path/title/frontmatter, so we drop it.
+            ctx = cockpit.context_payload(index, rel_path)
+            payload = {
+                "schema_version": cockpit.SCHEMA_VERSION,
+                "rel_path": rel_path,
+                "title": title,
+                "frontmatter": fm,
+                "metadata_html": metadata_html,
+                "html": html,
+                "linked": ctx.get("linked") or [],
+                "backlinks": ctx.get("backlinks") or [],
+            }
+            # CHG provenance (FEAT-0022 / TASK-0126): when this note is
+            # a change note the tracker knows about, say which agent
+            # session produced it — enrichment only, the file is never
+            # touched.
+            if target.stem.upper().startswith("CHG-"):
+                prov = tracker.chg_provenance(target.stem)
+                if prov is not None:
+                    payload["produced_by"] = prov
+            # Dispatch provenance (FEAT-0025 / TASK-0135).
+            id_match = re.match(
+                r"^((?:TASK|ISS|FEAT|REQ|PHASE|RISK)-\d+)",
+                target.stem, re.IGNORECASE,
+            )
+            if id_match:
+                history = tracker.dispatch_history(id_match.group(1).upper())
+                if history:
+                    payload["dispatch_history"] = history
+            self._respond_json(payload)
+
+        def _serve_healthz(self) -> None:
+            """Liveness + identity probe used by the Electron shell's
+            sidecar lifecycle (FEAT-0007 / TASK-0061).
+
+            Returns ``200`` once the HTTP server is accepting requests
+            (the index is built eagerly in ``DocsServer.__init__``, so
+            by the time this endpoint is reachable it is also ready).
+            The body identifies the service so the shell can refuse to
+            attach to a random unrelated process bound to the same
+            port.
+            """
+            self._respond_json({
+                "ok": True,
+                "service": "project-os-cockpit",
+                "schema": cockpit.SCHEMA_VERSION,
+                "docs_root": str(docs_root),
+                "desktop_mode": _desktop_mode(),
+            })
 
         def _serve_cockpit_focus(self) -> None:
             """``POST /api/cockpit/focus`` — agent-driven cockpit navigation.
@@ -521,8 +1374,42 @@ def _make_handler(
             agent uses this to know where the user is currently
             looking before / after work, complementing the
             agent-drives-cockpit direction.
+
+            FEAT-0019 adds the hook-fed ``activity`` (last activity
+            event) and ``session`` (slim live-session record incl.
+            cost snapshot + undocumented flag) blocks.
             """
-            self._respond_json(state.snapshot())
+            snap = state.snapshot()
+            snap.update(tracker.snapshot())
+            # Enrich the live / last session into prompt-scoped work items —
+            # the declared SNAPSHOT focus unioned with notes touched this
+            # prompt, with real title/status/done from the index (TASK-0191 /
+            # TASK-0193). Runs even with no touched notes, so the focus set
+            # still shows.
+            for key in ("session", "last_session"):
+                sess = snap.get(key)
+                if isinstance(sess, dict):
+                    sess["work_items"] = cockpit.work_items_for_session(index, sess)
+            self._respond_json(snap)
+
+        def _serve_cockpit_validation(self) -> None:
+            """``GET /api/cockpit/validation`` — docs-validator health
+            report (FEAT-0018 / TASK-0111).
+
+            Returns the cached ``{ok, state, errors, warnings,
+            checked_at}`` report; the first request after startup runs
+            the validator synchronously. ``state`` distinguishes
+            ``ok`` / ``failing`` / ``unavailable`` (validator exit 2 —
+            e.g. no SNAPSHOT.yaml). Each error carries ``code`` /
+            ``message`` plus, when parseable, the offending ``id``,
+            repo-relative ``rel`` path, and a resolved ``url`` deep
+            link for the drift panel (TASK-0112). Re-runs are watcher-
+            driven (debounced) — clients listen for the
+            ``cockpit:validation`` SSE event instead of polling.
+            """
+            payload = dict(validation.current())
+            payload["schema_version"] = cockpit.SCHEMA_VERSION
+            self._respond_json(payload)
 
         def _proxy_terminal(self, path: str) -> None:
             """Reverse-proxy a request to ttyd (TASK-0047).
@@ -861,6 +1748,88 @@ def _is_under(candidate: Path, root: Path) -> bool:
         return True
     except ValueError:
         return False
+
+
+import re as _re
+
+# Per-file write locks for the checkbox-toggle endpoint (TASK-0074).
+# A click can fire before the previous file-watcher event has propagated
+# back to the renderer, so two toggles in quick succession can race on
+# the same file. One lock per absolute path; lookups are themselves
+# guarded by a module lock so the dict mutation is safe.
+_TASK_TOGGLE_LOCKS_MUTEX = threading.Lock()
+_TASK_TOGGLE_LOCKS: dict[str, threading.Lock] = {}
+
+# Lines that pymdownx.tasklist renders as checkboxes. The leading
+# whitespace is any indent (nested lists are valid); after the bullet
+# (``-``, ``*``, ``+``) come `` [ ]`` / `` [x]`` / `` [X]``.
+_TASK_LINE_RE = _re.compile(r"^(\s*[-*+]\s+)\[([ xX])\](\s)")
+
+
+def _toggle_task_at(
+    target: Path, index: int, checked: bool,
+) -> tuple[bool, str]:
+    """Toggle the ``index``-th task-list checkbox in ``target`` to
+    ``checked``. Returns ``(ok, error_message)``.
+
+    ``index`` is the zero-based ordinal as pymdownx.tasklist would
+    render. The rendered DOM and the source are walked in the same
+    document order, so the Nth rendered checkbox corresponds to the
+    Nth matching source line.
+    """
+    key = str(target)
+    with _TASK_TOGGLE_LOCKS_MUTEX:
+        lock = _TASK_TOGGLE_LOCKS.setdefault(key, threading.Lock())
+    with lock:
+        try:
+            text = target.read_text(encoding="utf-8")
+        except OSError as exc:
+            return False, f"read failed: {exc}"
+        lines = text.splitlines(keepends=True)
+        # Walk once to find the Nth task-list line.
+        seen = -1
+        hit: int | None = None
+        for ln_idx, line in enumerate(lines):
+            if _TASK_LINE_RE.match(line):
+                seen += 1
+                if seen == index:
+                    hit = ln_idx
+                    break
+        if hit is None:
+            return False, (
+                f"checkbox index {index} not found "
+                f"(only {seen + 1} checkbox(es) in file)"
+            )
+        replacement = "x" if checked else " "
+        lines[hit] = _TASK_LINE_RE.sub(
+            lambda m: f"{m.group(1)}[{replacement}]{m.group(3)}",
+            lines[hit],
+            count=1,
+        )
+        try:
+            target.write_text("".join(lines), encoding="utf-8")
+        except OSError as exc:
+            return False, f"write failed: {exc}"
+        return True, ""
+
+
+def _jsonable(value: Any) -> Any:
+    """Coerce frontmatter values into JSON-serialisable shapes.
+
+    YAML-parsed frontmatter can include ``date`` / ``datetime``
+    objects (the project's convention is `created: 2026-05-25`,
+    which PyYAML parses as a ``datetime.date``). ``json.dumps``
+    rejects those; stringify them, recurse into containers, and
+    pass scalars through. Keys are always coerced to str so the
+    output is shape-safe regardless of the original YAML.
+    """
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return value
+    if isinstance(value, (list, tuple)):
+        return [_jsonable(v) for v in value]
+    if isinstance(value, dict):
+        return {str(k): _jsonable(v) for k, v in value.items()}
+    return str(value)
 
 
 # ---- Cockpit discovery file (TASK-0051) ----

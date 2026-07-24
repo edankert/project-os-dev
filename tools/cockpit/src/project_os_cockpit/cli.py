@@ -128,6 +128,60 @@ def _get_json(base: str, path: str) -> tuple[int, dict]:
     return status, parsed
 
 
+def cmd_signal(args: argparse.Namespace) -> int:
+    """``cockpit signal <state> [--target X] [--agent Y] [--message Z]``
+    (FEAT-0013 / TASK-0078).
+
+    Posts to ``/api/cockpit/agent-state`` so the cockpit can surface
+    the agent's state in the workspace rail (FEAT-0010) and on OS
+    notifications (FEAT-0012). Discovery follows the existing
+    ``COCKPIT_URL`` / ``.cockpit/url`` walk-up chain so it works from
+    any terminal under the project tree.
+    """
+    base = args.cockpit_url or _default_base_url()
+    body: dict[str, object] = {"state": args.state}
+    if args.target:
+        body["target"] = args.target
+    if args.agent:
+        body["agent"] = args.agent
+    if args.message:
+        body["message"] = args.message
+    status, parsed = _post_json(base, "/api/cockpit/agent-state", body)
+    if status == 0:
+        return 1
+    if status >= 400 or not parsed.get("ok"):
+        msg = parsed.get("error") or f"HTTP {status}"
+        print(f"cockpit signal: {msg}", file=sys.stderr)
+        return 1
+    print(f"cockpit signal -> {args.state}")
+    return 0
+
+
+def cmd_dispatch(args: argparse.Namespace) -> int:
+    """``cockpit dispatch <ID>`` — queue agent work on a note from any
+    terminal (FEAT-0025 / TASK-0136). The desktop shell picks the
+    request up (SSE when the workspace is open, fetch-on-attach
+    otherwise), resolves the verb template, and types it into the
+    workspace terminal or its dispatch queue."""
+    base = args.cockpit_url or _default_base_url()
+    body: dict = {"id": args.id, "enqueue": True}
+    if args.verb:
+        body["verb"] = args.verb
+    if args.agent:
+        body["agent"] = args.agent
+    status, payload = _post_json(base, "/api/cockpit/dispatch", body)
+    if status == 0:
+        return 1
+    if status >= 400 or not payload.get("ok"):
+        print(f"cockpit: dispatch failed: {payload.get('error', status)}",
+              file=sys.stderr)
+        return 1
+    verb = args.verb or "default verb"
+    print(f"cockpit: queued {verb} for {args.id} — the desktop shell "
+          "will deliver it to the workspace terminal.")
+    return 0
+
+
 def cmd_focus(args: argparse.Namespace) -> int:
     base = args.cockpit_url or _default_base_url()
     status, body = _post_json(base, "/api/cockpit/focus", {"target": args.target})
@@ -188,9 +242,28 @@ def cmd_history(args: argparse.Namespace) -> int:
 
 def _print_state_pretty(body: dict) -> None:
     agent = body.get("agent_focus")
+    agent_state = body.get("agent_state")
     user = body.get("user_view")
     tabs = body.get("tabs") or []
     history = body.get("history") or []
+    if agent_state:
+        # FEAT-0013 — one-line summary: state + (target, agent, message) + ts
+        # + (decayed-from?) so `cockpit state` callers see at a glance
+        # whether the agent is busy, waiting, or has aged out.
+        meta_bits: list[str] = []
+        if agent_state.get("target"):
+            meta_bits.append(f"target: {agent_state['target']}")
+        if agent_state.get("agent"):
+            meta_bits.append(f"agent: {agent_state['agent']}")
+        if agent_state.get("message"):
+            meta_bits.append(f"message: {agent_state['message']}")
+        if agent_state.get("decayed_from"):
+            meta_bits.append(f"decayed from: {agent_state['decayed_from']}")
+        suffix = f"  ({', '.join(meta_bits)})" if meta_bits else ""
+        print(
+            f"agent state : {agent_state.get('state', '?')}{suffix}  "
+            f"@ {agent_state.get('ts', '')}"
+        )
     if agent:
         print(
             f"agent focus : {agent.get('target', '?')}  ({agent.get('url', '')})  "
@@ -268,6 +341,46 @@ def main(argv: list[str] | None = None) -> int:
         help="Emit the raw JSON list instead of the human-readable form.",
     )
     p_history.set_defaults(func=cmd_history)
+
+    p_signal = sub.add_parser(
+        "signal",
+        help="Declare the agent's state (busy / waiting / done / error / idle).",
+        description=(
+            "Post the agent's current state to the cockpit so the "
+            "workspace rail can show 'this workspace needs me' "
+            "(waiting), 'doing work' (busy), or 'idle / done'."
+        ),
+    )
+    p_signal.add_argument(
+        "state",
+        choices=["busy", "waiting", "done", "error", "idle"],
+        help="The state to declare.",
+    )
+    p_signal.add_argument(
+        "--target",
+        default=None,
+        help="Note ID / path the agent is working on or blocked by.",
+    )
+    p_signal.add_argument(
+        "--agent",
+        default=None,
+        help="Agent name (e.g. claude, codex, aider). Freeform.",
+    )
+    p_signal.add_argument(
+        "--message",
+        default=None,
+        help="Short human-readable reason (mostly used with waiting / error).",
+    )
+    p_signal.set_defaults(func=cmd_signal)
+
+    p_dispatch = sub.add_parser(
+        "dispatch",
+        help="queue agent work on a note (delivered by the desktop shell)",
+    )
+    p_dispatch.add_argument("id", help="note ID, e.g. TASK-0115")
+    p_dispatch.add_argument("--verb", help="registry verb key (default: the type's default verb)")
+    p_dispatch.add_argument("--agent", choices=["claude", "codex"], help="agent preference")
+    p_dispatch.set_defaults(func=cmd_dispatch)
 
     args = parser.parse_args(argv)
     return args.func(args)

@@ -82,6 +82,10 @@ class Index:
 
     def __init__(self, docs_root: Path) -> None:
         self.docs_root = docs_root.resolve()
+        # Monotonic change counter (FEAT-0023 / TASK-0128): bumped on
+        # every invalidation so read-side caches (e.g. the stats
+        # payload cache) can validate with a single int comparison.
+        self.generation: int = 0
         self._records: dict[Path, NoteRecord] = {}
         self._by_id: dict[str, Path] = {}
         self._by_alias: dict[str, Path] = {}
@@ -397,6 +401,10 @@ class Index:
     def __len__(self) -> int:
         return len(self._records)
 
+    def iter_records(self):
+        """Iterate every current note record (status-diff seeding etc.)."""
+        return list(self._records.values())
+
     # ---- type / status views ----
 
     def notes_by_type(
@@ -435,6 +443,18 @@ class Index:
         Called by the watcher subscriber on Markdown and image asset events.
         """
         changed_path = changed_path.resolve()
+        # Canonicalise the path's case to docs_root (ISS-0001). On
+        # case-insensitive macOS volumes `.resolve()` does NOT fold case,
+        # so fsevents may report a parent component in a different case
+        # than the walk used (e.g. /Users/Edwin vs /Users/edwin). Without
+        # re-rooting under docs_root the record is re-keyed under the
+        # reported case and `get((docs_root / rel).resolve())` misses it —
+        # the empty-frontmatter symptom on /api/render for files touched
+        # after start. Re-rooting keys every record under the walk's case.
+        _rel = relative_to_ci(changed_path, self.docs_root)
+        if _rel:
+            changed_path = self.docs_root / _rel
+        self.generation += 1
         if changed_path.suffix.lower() in IMAGE_EXTENSIONS:
             self._remove_asset(changed_path)
             if changed_path.exists() and not self._is_excluded_path(changed_path):
@@ -474,8 +494,15 @@ class Index:
         """
         from .events import FileEvent  # local import to avoid cycle at module load
 
-        def _on_event(event: "FileEvent") -> None:
-            if event.abs_path.suffix.lower() != ".md" and event.abs_path.suffix.lower() not in IMAGE_EXTENSIONS:
+        def _on_event(event: object) -> None:
+            # The bus carries both FileEvents (from the watcher) and
+            # ControlEvents (from cockpit:focus, etc.). Only the
+            # FileEvent variety carries an abs_path; the ControlEvent
+            # variety is unrelated to the index and must be ignored.
+            if not isinstance(event, FileEvent):
+                return
+            suffix = event.abs_path.suffix.lower()
+            if suffix != ".md" and suffix not in IMAGE_EXTENSIONS:
                 return
             try:
                 self.invalidate(event.abs_path)

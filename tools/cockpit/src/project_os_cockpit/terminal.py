@@ -93,7 +93,16 @@ class TerminalProcess:
 
     @staticmethod
     def is_available() -> bool:
-        """ttyd binary present on PATH?"""
+        """ttyd binary present on PATH? Always ``False`` in desktop mode.
+
+        Desktop mode (``COCKPIT_DESKTOP=1``) means the Electron shell
+        (FEAT-0007) is hosting this sidecar and mounts a native node-pty
+        pane in the bottom-panel slot itself; spawning ttyd here would
+        be wasted work and would cause two terminals to fight for the
+        same space.
+        """
+        if os.environ.get("COCKPIT_DESKTOP") == "1":
+            return False
         return shutil.which("ttyd") is not None
 
     @staticmethod
@@ -172,6 +181,11 @@ class TerminalProcess:
 
     def info(self) -> dict[str, object]:
         """Return the JSON payload for ``/api/terminal``."""
+        if os.environ.get("COCKPIT_DESKTOP") == "1":
+            return {
+                "enabled": False,
+                "reason": "desktop mode — terminal is provided by the Electron shell (FEAT-0007).",
+            }
         if not self.is_available():
             return {
                 "enabled": False,

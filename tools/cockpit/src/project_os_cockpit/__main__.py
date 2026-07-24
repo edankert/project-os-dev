@@ -47,6 +47,14 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Port for the render endpoint (default: 8765).",
     )
     parser.add_argument(
+        "--no-open",
+        action="store_true",
+        help="Suppress any browser auto-launch. Used by the Electron "
+        "desktop shell, which loads the server URL itself. Currently a "
+        "no-op (the server does not auto-launch a browser) but reserved "
+        "for forward compatibility.",
+    )
+    parser.add_argument(
         "-v",
         "--verbose",
         action="store_true",

@@ -8,7 +8,9 @@ baseline (the template commit recorded in .project-os-sync at the last sync).
   target missing                          -> copied (seed paths: only ever copied once)
   target == baseline version              -> safe fast-forward, overwritten
   target != baseline (locally modified)   -> SKIPPED and reported for hand-merge
-                                             (--force overwrites; 'merge' paths are expected to diverge)
+                                             (--force overwrites template-owned only)
+  'merge'-owned path, diverged            -> ALWAYS skipped, even with --force: real project
+                                             content lives here and would be destroyed
 
 Ownership per path comes from tools/sync/MANIFEST.yaml in the UPSTREAM template
 (more specific path wins). After a non-dry run the upstream HEAD sha is recorded
@@ -151,7 +153,13 @@ def main(argv=None):
             if not args.dry_run:
                 shutil.copy2(src_file, target)
             return
-        if args.force:
+        # --force covers template-owned files only. 'merge' paths are where real
+        # project content lives (a repo's own PHASES.md, ROADMAP.md, SCHEMAS.md);
+        # overwriting one destroys project data, so they are always left for a
+        # hand-merge no matter what. This guard is load-bearing: without it a
+        # forced sync replaced a downstream repo's real 15-phase registry with
+        # the template's placeholder table.
+        if args.force and owner != "merge":
             updated.append(rel + " (forced)")
             if not args.dry_run:
                 shutil.copy2(src_file, target)
@@ -196,7 +204,7 @@ def main(argv=None):
         for rel in diverged:
             print("%s  DIVERGED  %s" % (prefix, rel))
     if merge_pending:
-        print("%sExpected-divergence (merge-owned) files left alone — merge upstream changes by hand if relevant:" % prefix)
+        print("%sExpected-divergence (merge-owned) files left alone (--force does not touch these) — merge upstream changes by hand if relevant:" % prefix)
         for rel in merge_pending:
             print("%s  MERGE  %s" % (prefix, rel))
     if gone:

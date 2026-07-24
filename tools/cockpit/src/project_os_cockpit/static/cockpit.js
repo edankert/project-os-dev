@@ -25,6 +25,7 @@
   var FOLLOW_AGENT_KEY     = "project-os-cockpit.cockpit.follow-agent";
   var TAB_ID_KEY           = "project-os-cockpit.cockpit.tab-id";
   var TAB_HEARTBEAT_MS     = 15000;  // see _TAB_STALE_SECONDS (45s) on the server
+  var HEALTH_PANEL_KEY     = "project-os-cockpit.cockpit.health-panel-open";
 
   // "Project" is first — the orienting mode (directory trees + pinned +
   // rare lifecycle/supporting types). The mode id stays "library" for storage compatibility,
@@ -40,13 +41,25 @@
 
   // Statuses that "Hide completed" filters out. Mirrors the Done-positive
   // and Done-negative palette buckets — anything terminal disappears.
+  //
+  // Canonical membership lives in src/project_os_cockpit/statuses.py
+  // (COMPLETED_STATUSES); tests/test_status_vocabulary.py parses this
+  // object and fails if the two drift apart.
+  //
+  // NOTE: `implemented` / `staged` / `monitoring` are deliberately NOT here
+  // (ISS-0023). They are the Delivered band — shipped but not yet signed
+  // off — and project-os gates `implemented → verified` on passing test
+  // notes (STATUSES.md, QUALITY.md). Hiding them would conceal exactly the
+  // population that still owes a verification record. Do not "fix" this by
+  // adding them; they carry their own amber chip instead.
   var COMPLETED_STATUSES = {
-    // Done — positive (delivered / accepted / verified)
-    done: 1, merged: 1, fixed: 1, fulfilled: 1, met: 1, complete: 1,
-    verified: 1, passing: 1, published: 1, closed: 1,
+    // Done — positive (accepted / verified / shipped)
+    done: 1, merged: 1, fixed: 1, resolved: 1, fulfilled: 1, met: 1,
+    complete: 1, verified: 1, passing: 1, published: 1, released: 1,
+    closed: 1,
     // Done — negative (terminal without success)
     obsolete: 1, retired: 1, cancelled: 1, superseded: 1,
-    "wont-fix": 1, reverted: 1,
+    "wont-fix": 1, reverted: 1, "rolled-back": 1, deprecated: 1,
   };
 
   // ------------------------------------------------------------------ state
@@ -268,6 +281,39 @@
       "data-status": String(status).toLowerCase(),
       text: status,
     });
+  }
+
+  // Verification-surface badges (FEAT-0018 / TASK-0113): amber "waived"
+  // chip, green/red review-verdict chip, and a "no evidence" marker for
+  // TST notes without adequacy evidence. The flags ride on nav/context
+  // item payloads (cockpit.py `_verification_flags`); rendered right
+  // before the status chip so a waived terminal status can't be
+  // mistaken for a verified one.
+  function itemBadges(item) {
+    var out = [];
+    if (!item) return out;
+    if (item.waived) {
+      out.push(el("span", {
+        class: "waiver-chip",
+        text: "waived",
+        title: "Terminal status held under a recorded verification waiver",
+      }));
+    }
+    if (item.review_verdict) {
+      out.push(el("span", {
+        class: "verdict-chip",
+        "data-verdict": String(item.review_verdict).toLowerCase(),
+        text: item.review_verdict,
+      }));
+    }
+    if (item.type === "test" && item.adequacy === false) {
+      out.push(el("span", {
+        class: "adequacy-chip",
+        text: "no evidence",
+        title: "No adequacy evidence recorded (adequacy / mutation_score)",
+      }));
+    }
+    return out;
   }
 
   // ------------------------------------------------------------------ type ordering
@@ -779,6 +825,168 @@
     slot.replaceChildren(btn);
   }
 
+  // ---------------------------------------------------- validation health
+  // FEAT-0018 / TASK-0112 — top-bar badge (green OK / red error count /
+  // grey unavailable) backed by GET /api/cockpit/validation, plus a
+  // drift panel deep-linking each violation to the offending note.
+  // Live updates arrive over the cockpit:validation SSE event; the
+  // panel's open state persists (localStorage) and the panel itself is
+  // untouched by soft live-reload (only the panes re-render).
+
+  var validationCache = null;   // last /api/cockpit/validation payload
+
+  function loadHealthPanelOpen() {
+    try { return localStorage.getItem(HEALTH_PANEL_KEY) === "1"; } catch (e) { return false; }
+  }
+  function saveHealthPanelOpen(v) {
+    try { localStorage.setItem(HEALTH_PANEL_KEY, v ? "1" : "0"); } catch (e) {}
+  }
+  var healthPanelOpen = loadHealthPanelOpen();
+
+  function healthState() {
+    if (!validationCache) return "unknown";
+    if (validationCache.state) return validationCache.state;
+    return validationCache.ok ? "ok" : "failing";
+  }
+
+  function renderHealthBadge() {
+    var slot = document.getElementById("cockpit-health-slot");
+    if (!slot) return;
+    var state = healthState();
+    var errs = (validationCache && validationCache.errors) || [];
+    var label = "…";
+    var title = "Docs validation state unknown";
+    if (state === "ok") {
+      label = "OK";
+      title = "Docs validation: no drift (validate-docs.py)";
+    } else if (state === "failing") {
+      label = String(errs.length);
+      title = "Docs validation: " + errs.length +
+        " violation" + (errs.length === 1 ? "" : "s") +
+        " — click for the drift panel";
+    } else if (state === "unavailable") {
+      label = "n/a";
+      title = "Docs validator unavailable" +
+        (validationCache && validationCache.detail
+          ? ": " + validationCache.detail : "");
+    }
+    var btn = el("button", {
+      class: "health-badge",
+      type: "button",
+      "data-state": state,
+      "aria-expanded": healthPanelOpen ? "true" : "false",
+      "aria-label": title,
+      title: title,
+    }, [
+      el("span", { class: "health-dot", "aria-hidden": "true" }),
+      el("span", { class: "health-label", text: label }),
+    ]);
+    btn.addEventListener("click", function () {
+      setHealthPanelOpen(!healthPanelOpen);
+    });
+    slot.replaceChildren(btn);
+  }
+
+  function setHealthPanelOpen(open) {
+    healthPanelOpen = open;
+    saveHealthPanelOpen(open);
+    renderHealthBadge();
+    renderHealthPanel();
+  }
+
+  function healthPanelRow(entry) {
+    var codeChip = el("span", {
+      class: "health-code mono",
+      text: "[" + (entry.code || "?") + "]",
+    });
+    var msg = el("span", { class: "health-message", text: entry.message || "" });
+    var row;
+    if (entry.url) {
+      // Plain <a href> — the document-level click interceptor routes it
+      // through navigateTo, so the centre pane swaps in-place.
+      row = el("a", {
+        class: "health-row",
+        href: entry.url,
+        title: "Open " + (entry.id || entry.rel || entry.url),
+      }, [codeChip, msg]);
+    } else {
+      row = el("div", { class: "health-row" }, [codeChip, msg]);
+    }
+    return el("li", null, [row]);
+  }
+
+  function renderHealthPanel() {
+    var existing = document.getElementById("cockpit-health-panel");
+    if (!healthPanelOpen) {
+      if (existing) existing.remove();
+      return;
+    }
+    var panel = existing || el("aside", {
+      id: "cockpit-health-panel",
+      class: "health-panel",
+      "aria-label": "Docs validation drift",
+    });
+    var state = healthState();
+    var frag = document.createDocumentFragment();
+    var closeBtn = el("button", {
+      class: "health-panel-close", type: "button",
+      "aria-label": "Close drift panel", text: "×",
+    });
+    closeBtn.addEventListener("click", function () { setHealthPanelOpen(false); });
+    frag.appendChild(el("header", { class: "health-panel-header" }, [
+      el("span", { class: "health-panel-title", text: "Docs validation" }),
+      el("span", {
+        class: "health-panel-checked mono",
+        text: (validationCache && validationCache.checked_at)
+          ? String(validationCache.checked_at).replace("T", " ").slice(0, 19)
+          : "",
+      }),
+      closeBtn,
+    ]));
+    var errs = (validationCache && validationCache.errors) || [];
+    var warns = (validationCache && validationCache.warnings) || [];
+    if (state === "unavailable") {
+      frag.appendChild(el("p", {
+        class: "health-panel-empty",
+        text: "Validator unavailable" +
+          (validationCache && validationCache.detail
+            ? ": " + validationCache.detail : "."),
+      }));
+    } else if (!errs.length) {
+      frag.appendChild(el("p", {
+        class: "health-panel-empty",
+        text: "No drift — SNAPSHOT.yaml and docs/ agree.",
+      }));
+    } else {
+      var list = el("ul", { class: "health-rows" });
+      errs.forEach(function (e2) { list.appendChild(healthPanelRow(e2)); });
+      frag.appendChild(list);
+    }
+    if (warns.length) {
+      frag.appendChild(el("p", { class: "health-warn-label", text: "Warnings" }));
+      var wlist = el("ul", { class: "health-rows health-rows-warn" });
+      warns.forEach(function (w) { wlist.appendChild(healthPanelRow(w)); });
+      frag.appendChild(wlist);
+    }
+    panel.replaceChildren(frag);
+    if (!existing) document.body.appendChild(panel);
+  }
+
+  function mountHealthBadge() {
+    renderHealthBadge();      // placeholder ("…") until the fetch lands
+    renderHealthPanel();      // restore persisted open state
+    fetchJson("/api/cockpit/validation")
+      .then(function (payload) {
+        validationCache = payload;
+        renderHealthBadge();
+        renderHealthPanel();
+      })
+      .catch(function () {
+        validationCache = null;
+        renderHealthBadge();
+      });
+  }
+
   function mountCockpitEventStream() {
     // Listen for control events broadcast by the cockpit server
     // (cockpit:focus today; pin / toggle / etc. later). Browser-native
@@ -810,6 +1018,16 @@
         highlightActiveInLeftPane();
         scrollActiveIntoLeftPaneView();
       });
+    });
+    // Validation health (FEAT-0018 / TASK-0112): badge + drift panel
+    // update live on validator state changes — no reload, no polling.
+    es.addEventListener("cockpit:validation", function (ev) {
+      var payload;
+      try { payload = JSON.parse(ev.data); }
+      catch (e) { return; }
+      validationCache = payload;
+      renderHealthBadge();
+      renderHealthPanel();
     });
     // Soft live-reload (TASK-0014). Replaces sse-reload.js's full
     // `location.reload()` for cockpit pages — refreshes the three panes
@@ -954,8 +1172,7 @@
         ? el("span", { class: "nav-id mono", text: item.id, title: item.id })
         : null,
       el("span", { class: "nav-line-spacer" }),
-      statusChip(item.status),
-    ]);
+    ].concat(itemBadges(item), [statusChip(item.status)]));
     var titleNode = item.title
       ? el("p", {
           class: "nav-title",
@@ -1028,8 +1245,7 @@
       typeIcon(item.type, 12),
       item.id ? el("span", { class: "nav-id mono", text: item.id }) : null,
       el("span", { class: "nav-line-spacer" }),
-      statusChip(item.status),
-    ]);
+    ].concat(itemBadges(item), [statusChip(item.status)]));
     var titleNode = item.title
       ? el("p", {
           class: "nav-title-nested",
@@ -1053,8 +1269,7 @@
       typeIcon(item.type),
       item.id ? el("span", { class: "nav-id mono", text: item.id }) : null,
       el("span", { class: "nav-line-spacer" }),
-      statusChip(item.status),
-    ]);
+    ].concat(itemBadges(item), [statusChip(item.status)]));
     var titleNode = item.title
       ? el("p", {
           class: "nav-title-stacked",
@@ -1270,8 +1485,7 @@
       item.id ? el("span", { class: "ctx-id mono", text: item.id }) : null,
       el("span", { class: "nav-line-spacer" }),
       priorityChip,
-      statusChip(item.status),
-    ]);
+    ].concat(itemBadges(item), [statusChip(item.status)]));
     var titleNode = el("p", {
       class: "ctx-title",
       text: item.title || item.id || "",
@@ -1545,6 +1759,7 @@
   mountModeTabs();
   mountFilterBar();
   mountFollowAgentToggle();
+  mountHealthBadge();
   mountLeftPaneToggle();
   mountRightPaneToggle();
   mountPinButton();
