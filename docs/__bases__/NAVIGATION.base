@@ -1,0 +1,164 @@
+filters:
+  and:
+    - file.ext == "md"
+    - or:
+        - type == link("feature")
+        - type == link("phase")
+        - type == link("issue")
+    - not:
+        - file.inFolder("docs/__templates__")
+        - file.inFolder(".trash")
+        - file.inFolder(".obsidian")
+formulas:
+  display_title: file.asLink(if(title, title, file.name))
+properties:
+  file.name:
+    displayName: Note
+  formula.display_title:
+    displayName: Title
+  id:
+    displayName: ID
+  status:
+    displayName: Status
+  phase:
+    displayName: Phase
+  severity:
+    displayName: Severity
+  order:
+    displayName: Order
+  goal:
+    displayName: Goal
+  file.mtime:
+    displayName: Updated
+views:
+  - type: table
+    name: Features (All)
+    filters: type == "[[feature]]"
+    groupBy:
+      property: phase
+      direction: ASC
+    order:
+      - id
+      - formula.display_title
+      - status
+      - goal
+      - phase
+    sort:
+      - property: status
+        direction: DESC
+      - property: formula.display_title
+        direction: ASC
+      - property: id
+        direction: ASC
+    columnSize:
+      note.id: 92
+      formula.display_title: 153
+      note.status: 69
+      note.goal: 283
+    rowHeight: medium
+  - type: table
+    name: Phases (All)
+    filters: type == "[[phase]]"
+    order:
+      - id
+      - formula.display_title
+      - order
+      - status
+    sort:
+      - property: order
+        direction: ASC
+    columnSize:
+      note.id: 97
+      note.order: 26
+      note.status: 69
+  - type: table
+    name: Issues (All)
+    filters:
+      and:
+        - type == "[[issue]]"
+        - status != "fixed"
+        - status != "closed"
+    groupBy:
+      property: affects
+      direction: ASC
+    order:
+      - id
+      - formula.display_title
+      - status
+      - severity
+    sort:
+      - property: formula.display_title
+        direction: DESC
+      - property: severity
+        direction: DESC
+    columnSize:
+      note.id: 79
+      formula.display_title: 245
+  - type: table
+    name: Features (Open)
+    filters:
+      and:
+        - type == link("feature")
+        - status.containsAny("active", "accepted", "approved", "backlog", "draft", "in-progress", "open", "pending", "planned", "proposed", "reopened", "todo", "triage", "reference")
+    groupBy:
+      property: phase
+      direction: ASC
+    order:
+      - id
+      - formula.display_title
+      - status
+      - goal
+    sort:
+      - property: id
+        direction: ASC
+      - property: status
+        direction: DESC
+    columnSize:
+      note.id: 86
+      formula.display_title: 230
+      note.status: 147
+      note.goal: 273
+  - type: table
+    name: Issues (Open)
+    filters:
+      and:
+        - type == link("issue")
+        - '!status.containsAny("fixed", "completed", "done", "fulfilled", "merged", "obsolete", "published", "resolved")'
+        - status != "closed"
+    groupBy:
+      property: affects
+      direction: ASC
+    order:
+      - id
+      - formula.display_title
+      - status
+      - severity
+    sort:
+      - property: id
+        direction: ASC
+      - property: formula.display_title
+        direction: ASC
+      - property: severity
+        direction: DESC
+    columnSize:
+      note.id: 79
+      formula.display_title: 420
+      note.status: 69
+  - type: table
+    name: Phases (Open)
+    filters:
+      and:
+        - type == link("phase")
+        - status != "done"
+    order:
+      - id
+      - formula.display_title
+      - order
+      - status
+    sort:
+      - property: order
+        direction: ASC
+    columnSize:
+      note.id: 97
+      note.order: 26
+      note.status: 69

@@ -62,8 +62,15 @@ Present the results as a table:
 | TST-0020 | acceptance | failing | 2026-03-05 | FEAT-0003 | 2026-03-04 | FAILING |
 ```
 
-### 5. Gate the release
-- If ANY test has verdict **STALE**, **UNTESTED**, or **FAILING**: **STOP.**
+### 5. Check acceptance test tiers
+If the project uses the acceptance test tier system (see `../../instructions/TESTING.md`):
+- Read `../../../docs/tests/ACCEPTANCE_TESTS.md`.
+- **Tier 1 + Tier 2** tests must ALL be checked (passing). Any unchecked test is a release blocker.
+- **Tier 3** tests do not gate the release — they are informational.
+- A test may be marked as a **release exception** if it cannot be completed. Exceptions must be documented in the release note with justification.
+
+### 6. Gate the release
+- If ANY Tier 1/Tier 2 acceptance test is unchecked, or any `TST-*` note has verdict **STALE**, **UNTESTED**, or **FAILING**: **STOP.**
 - Report: "Release blocked. N tests need attention before release can proceed."
 - List each blocking test with its verdict and what action is needed:
   - STALE → re-run the test procedure

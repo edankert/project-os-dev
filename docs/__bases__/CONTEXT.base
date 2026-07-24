@@ -1,0 +1,122 @@
+filters:
+  and:
+    - or:
+        - file.hasLink(this.file)
+    - not:
+        - file.inFolder("docs/__templates__")
+        - file.inFolder(".trash")
+        - file.inFolder(".obsidian")
+        - type.isEmpty()
+formulas:
+  display_title: file.asLink(if(title, title, file.name))
+properties:
+  file.name:
+    displayName: Note
+  formula.display_title:
+    displayName: Title
+  type:
+    displayName: Type
+  id:
+    displayName: ID
+  status:
+    displayName: Status
+  severity:
+    displayName: Severity
+  priority:
+    displayName: Priority
+  due:
+    displayName: Due
+  last_run:
+    displayName: Last run
+  file.mtime:
+    displayName: Updated
+views:
+  - type: table
+    name: All
+    groupBy:
+      property: type
+      direction: ASC
+    order:
+      - id
+      - formula.display_title
+      - status
+      - priority
+      - effort
+      - phase
+    sort:
+      - property: priority
+        direction: DESC
+      - property: status
+        direction: DESC
+    columnSize:
+      formula.display_title: 307
+      note.type: 88
+      note.status: 74
+  - type: table
+    name: Tasks
+    filters: type == "[[task]]"
+    order:
+      - id
+      - formula.display_title
+      - status
+      - due
+      - effort
+      - phase
+    sort:
+      - property: status
+        direction: ASC
+    columnSize:
+      formula.display_title: 307
+  - type: table
+    name: Requirements
+    filters: type == "[[requirement]]"
+    order:
+      - id
+      - formula.display_title
+      - status
+      - priority
+      - phase
+    sort:
+      - property: status
+        direction: DESC
+  - type: table
+    name: Issues
+    filters: type == "[[issue]]"
+    order:
+      - file.name
+      - status
+      - severity
+      - file.mtime
+    sort:
+      - property: severity
+        direction: ASC
+  - type: table
+    name: Tests
+    filters: type == "[[test]]"
+    order:
+      - file.name
+      - status
+      - last_run
+      - file.mtime
+  - type: table
+    name: All (Open)
+    filters:
+      and:
+        - status.containsAny("accepted", "active", "approved", "backlog", "draft", "in-progress", "next", "open", "pending", "planned", "proposed", "triage", "reference")
+    groupBy:
+      property: type
+      direction: ASC
+    order:
+      - id
+      - formula.display_title
+      - status
+      - priority
+      - effort
+      - phase
+    sort:
+      - property: priority
+        direction: DESC
+      - property: status
+        direction: DESC
+    columnSize:
+      note.status: 74

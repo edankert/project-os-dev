@@ -10,7 +10,7 @@ tags: [bases]
 
 # `docs/__bases__/`
 
-Obsidian Bases definitions (`*.base`) used to render **tables** and **cards** views over notes under `docs/`.
+Obsidian Bases definitions (`*.base`) used for the optional navigation and context panes over notes under `docs/`.
 
 ## Important
 - Bases are a **UI/view layer** only.
@@ -18,9 +18,9 @@ Obsidian Bases definitions (`*.base`) used to render **tables** and **cards** vi
 - The LLM must keep note frontmatter consistent with the snapshot so Bases views stay accurate.
 
 ## What goes here
-- One `*.base` file per dataset (tasks, issues, features, requirements, risks, changes, workflows).
-  - Tests: `[[Tests.base]]`
+- `NAVIGATION.base`: left-pane navigation over features, phases, and issues.
+- `CONTEXT.base`: right-pane context for notes that link to the active note.
 
 ## Linking
-- Embed a view section: `![[Tasks.base#Active]]`
-- Link to a base file: `[[Tasks.base]]`
+- Open or pin `[[NAVIGATION.base]]` for navigation.
+- Open or pin `[[CONTEXT.base]]` for active-note context.

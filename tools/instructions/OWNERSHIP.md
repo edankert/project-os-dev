@@ -41,5 +41,5 @@ tags: [instructions, ownership]
 
 ## Defaults
 - Use `unassigned` for new work items until someone takes ownership.
-- Use `team:docs` for documentation-system structure and dashboards.
+- Use `team:docs` for documentation-system structure and views.
 - Use `group:maintainers` for normative instructions and skills.

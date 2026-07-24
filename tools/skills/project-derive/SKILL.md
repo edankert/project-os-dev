@@ -4,7 +4,7 @@ id: SKILL-PROJECT-DERIVE
 status: active
 owner: group:maintainers
 created: 2026-01-29
-updated: 2026-01-29
+updated: 2026-05-08
 tags: [skills, init, import]
 ---
 
@@ -22,6 +22,7 @@ tags: [skills, init, import]
 ## Outputs
 - `../../../SNAPSHOT.yaml` populated with derived items and clean counters.
 - New notes under `../../../docs/` (issues, features, requirements, tasks, tests, changes, decisions, workflows).
+- Optional source/reference packages under `../../../docs/reference/` when source material should be preserved but not converted into active project-os lifecycle state.
 - Provenance captured for imported items (see `../../instructions/IMPORTING.md`).
 
 ## Rules
@@ -44,7 +45,9 @@ tags: [skills, init, import]
    - Verification → `TST-*`
    - Shipped changes → `CHG-*`
    - Decisions (if present) → `ADR-*`
+   - Roadmap phases/milestones → `PHASE-*`
    - Entry points → `WF-*`
+   - Durable source/reference packages that should not become active project-os lifecycle state → `../../../docs/reference/`
 3. Allocate IDs and draft notes using templates:
    - Keep titles short and stable
    - Link relationships (requirements ↔ features ↔ tasks ↔ tests)
@@ -55,7 +58,15 @@ tags: [skills, init, import]
    - set counters to the highest allocated IDs
    - add entries under `items.*` for all active/relevant items
    - keep `focus` empty unless work is actively in-flight
-5. Create or update workflow notes:
+5. Enable docs-first agent flow in the target repo:
+   - ensure `../../../AGENTS.md` and `../../../LLM_BRIEF.md` are project-specific
+   - ensure helper scripts are executable: `chmod +x ../../../tools/agents/*.sh`
+   - use `../../../tools/agents/start-change.sh` + `../../../tools/agents/check-docs-first.sh` for behavior/path changes
+6. If using Codex, run `../adapter-sync/SKILL.md` so `AGENTS.md`, `LLM_BRIEF.md`, and adapter guidance match the derived project.
+7. Create or update phase notes if roadmap/milestone sources exist:
+   - use `../phase-planning/SKILL.md`
+   - link phase IDs in features/tasks/issues/requirements as appropriate
+8. Create or update workflow notes:
    - use `../workflow-authoring/SKILL.md`
    - link workflow IDs in features/tests as appropriate
-6. Run `../snapshot-sync/SKILL.md` to validate alignment and metrics.
+9. Run `../snapshot-sync/SKILL.md` to validate alignment and metrics.

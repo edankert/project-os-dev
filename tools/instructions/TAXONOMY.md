@@ -23,6 +23,9 @@ See `OWNERSHIP.md` for allowed formats and the canonical registry.
 ## `priority` (requirements)
 - `low`, `medium`, `high`
 
+## `order` (phases)
+Positive integer sort order for roadmap sequencing.
+
 ## `effort` (tasks)
 - `XS`, `S`, `M`, `L`, `XL`
 
@@ -40,10 +43,7 @@ Project-defined free text label, but keep it stable. Examples:
 - `manual`, `automated`
 
 ## `level` (tests)
-- `unit`, `integration`, `system`, `e2e`, `acceptance`
+- `unit`, `integration`, `system`, `e2e`
 
 ## `scope` (tests)
 - `feature`, `system`
-
-## `platform` (all notes except adr, change — optional)
-- `ios`, `android`, `shared`, `""` (empty = not platform-specific)

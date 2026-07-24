@@ -1,0 +1,56 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "project-os-cockpit"
+version = "0.1.0"
+description = "Three-pane web cockpit for project-os documentation: on-the-fly Markdown render with frontmatter awareness, [[wikilink]] resolution, project-os ID linking, and live reload via SSE."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Edwin Dankert", email = "edankert@gmail.com" },
+]
+keywords = ["markdown", "obsidian", "wikilinks", "project-os", "documentation", "live-reload"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Documentation",
+    "Topic :: Text Processing :: Markup :: Markdown",
+]
+dependencies = [
+    "markdown>=3.6",
+    "pymdown-extensions>=10.7",
+    "python-frontmatter>=1.1",
+    "pyyaml>=6.0",
+    "watchdog>=4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+]
+
+[project.scripts]
+project-os-cockpit = "project_os_cockpit.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/edankert/project-os-cockpit"
+Repository = "https://github.com/edankert/project-os-cockpit"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["project_os_cockpit*"]
+
+[tool.setuptools.package-data]
+project_os_cockpit = ["py.typed", "static/*.css", "static/*.js"]
+# Pattern covers cockpit.css / cockpit.js / sse-reload.js / base.css.

@@ -15,13 +15,13 @@ tags: [instructions, snapshot]
 ## Goals
 - Enable another agent to resume work from **one file** (the snapshot) and jump to the right notes via `file`.
 - Make state transitions explicit (status changes, focus changes, relationships).
-- Avoid forcing humans to read the snapshot: human-facing views are the notes and Bases dashboards.
+- Avoid forcing humans to read the snapshot: human-facing views are the notes and Bases views.
 
 ## Required top-level keys
 - `version` (int): Schema version (bump only when breaking changes are made).
 - `updated` (timestamp string): Last update time.
 - `project` (object): Project metadata (name/summary/repo root).
-- `team` (object, optional): Team members and their tool adapters (see Team Model below).
+- `session` (object, optional): Active agent session metadata for recovery.
 - `retention` (object): Retention policy for keeping the snapshot small (optional but recommended).
 - `counters` (object): Highest allocated IDs per type (used for new ID allocation).
 - `focus` (object): Current in-flight IDs and active phase (empty strings if none).
@@ -31,6 +31,7 @@ tags: [instructions, snapshot]
 ## Required `items.*` collections
 The snapshot should contain (at least) these collections:
 - `items.features`
+- `items.phases`
 - `items.tasks`
 - `items.issues`
 - `items.requirements`
@@ -38,14 +39,13 @@ The snapshot should contain (at least) these collections:
 - `items.tests`
 - `items.workflows`
 - `items.changes`
-- `items.releases`
 - `items.decisions` (ADRs)
 
 Projects may add collections (e.g. `epics`, `milestones`) if rules are documented and applied consistently.
 
 ## Focus object
 The `focus` object tracks the current work context:
-- `focus.phase` (integer or empty string): Active development phase (see `../../docs/PHASES.md` for definitions).
+- `focus.phase` (PHASE ID, integer, or empty string): Active development phase. `PHASE-*` IDs are preferred when using first-class phase notes; integer values are accepted for simple projects and migration.
 - `focus.feature` (string): Currently active feature ID (or empty string).
 - `focus.task` (string): Currently active task ID (or empty string).
 - `focus.issue` (string): Currently active issue ID (or empty string).
@@ -53,6 +53,7 @@ The `focus` object tracks the current work context:
 When phase-gated development is used:
 - Update `focus.phase` when transitioning to a new milestone.
 - Agents should verify work aligns with the active phase before starting implementation.
+- Keep `focus.phase` aligned with `items.phases.<PHASE-ID>` when phase notes are used.
 
 ## Required fields per item (minimum)
 Each item entry must include:
@@ -60,11 +61,12 @@ Each item entry must include:
 - `title` (string): Short human title (no ID).
 - `status` (string)
 - `owner` (string)
-
-Optional cross-cutting fields:
-- `platform` (string, optional): Target platform (`ios`, `android`, `shared`, or empty). For multi-platform projects only.
+Optional collaboration fields:
+- `claimed_by` (string): Agent/user currently working this item (if any).
+- `claim_started` (string): Timestamp when the claim began.
 
 Then type-specific fields, for example:
+- Phase: `order`, `goal`, `features` (FEAT IDs), `requirements` (REQ IDs), `tasks` (TASK IDs), `issues` (ISS IDs)
 - Feature: `goal`, `phase` (optional), `requirements` (REQ IDs), `tasks` (TASK IDs), `issues` (ISS IDs), `tests` (TST IDs), `workflows` (WF IDs), `release`
 - Task: `parent` (FEAT/ISS ID), `phase` (optional, inherit from parent), `effort`, `due`, `depends`, `blocks`, `related`
 - Task: (verification) `tests` (TST IDs) when applicable
@@ -74,75 +76,28 @@ Then type-specific fields, for example:
 - Test: `scope`, `kind`, `level`, `entrypoint`, `requirements` (REQ IDs), optional `features`/`issues`/`tasks` (IDs), optional `artifacts`, optional `last_run`
 - Workflow: `entrypoints` (paths), optional `inputs`/`outputs`
 - Change: `commit`, `pr`, `issues` (ISS IDs), `features` (FEAT IDs)
-- Release: `version`, `tag`, `date`, `features` (FEAT IDs), `changes` (CHG IDs), `tests_verified` (TST IDs), `previous_release` (REL ID)
 - Decision (ADR): `decision`, `context`, `supersedes`, `superseded`, `related` (IDs)
-
-## Optional metrics: `by_platform`
-For multi-platform projects, the `metrics` section may include a `by_platform` block with per-platform counts:
-```yaml
-metrics:
-  by_platform:
-    ios: { tasks_total: N, tasks_done: N }
-    android: { tasks_total: N, tasks_done: N }
-    shared: { tasks_total: N, tasks_done: N }
-```
 
 ## Invariants
 - `file` must point to an existing note under `../../docs/`, and the note’s frontmatter `id` should match the snapshot key.
 - Status values must be one of the allowed values (see `STATUSES.md`).
 - Relationships must be **bi-directionally consistent** where applicable:
+  - If an item has `phase: PHASE-0001`, `items.phases.PHASE-0001` should list that item under the appropriate collection when phase notes are used.
   - If a task `parent: FEAT-0001`, that feature’s `tasks` must include the task ID.
   - If an issue lists `features: [FEAT-0001]`, the feature should list the issue under `issues` (unless intentionally omitted).
 
-## Team model (optional)
-Use the `team` object to identify team members and their tool adapters in multi-user or multi-agent projects.
-
-```yaml
-team:
-  members:
-    - id: user:edwin
-      tool: claude-code
-      adapter: tools/adapters/claude-code
-    - id: user:alice
-      tool: codex
-      adapter: tools/adapters/codex
-```
-
-Fields per member:
-- `id` (string): Owner identifier (same format as `owner` — `user:*`, `team:*`, etc.)
-- `tool` (string): LLM tool used by this member (claude-code, codex, cursor, etc.)
-- `adapter` (string): Path to the adapter directory for this member's tool
-
-The team model is informational — it identifies who uses what tool and which adapter applies. Agent coordination (task assignment, parallel execution, conflict avoidance) is delegated to each tool's native orchestration mechanism (e.g., Claude Code Agent Teams, Codex parallel agents).
-
-## Releases section (optional)
-Use the `releases` top-level key for lightweight release tracking that agents can read without scanning notes.
-
-```yaml
-releases:
-  latest:
-    id: REL-0003
-    version: "1.2.0"
-    tag: v1.2.0
-    date: "2026-03-08"
-    status: released
-  history:
-    - { id: REL-0003, version: "1.2.0", date: "2026-03-08", status: released }
-    - { id: REL-0002, version: "1.1.0", date: "2026-02-15", status: released }
-    - { id: REL-0001, version: "1.0.0", date: "2026-01-30", status: released }
-```
-
-Fields:
-- `releases.latest` (object): The most recent release (quick lookup for agents).
-- `releases.history` (list): Recent releases in reverse chronological order. Apply the same retention policy as changes (keep last N).
-- Each entry: `id`, `version`, `tag`, `date`, `status`.
-
-The full release record (features included, tests verified, notes) lives in the `REL-*` note under `items.releases`.
+## Session fields (optional)
+Use these to support recovery and multi-agent collaboration:
+- `session.agent_id`: identifier for the current agent/user.
+- `session.started`: timestamp for when the session began.
+- `session.last_heartbeat`: timestamp for the last update by the agent.
+- `session.current_step`: short text describing the current work step.
 
 ## Update rules (agent behavior)
 - Agents/LLMs must update the snapshot **before** starting implementation work (create/modify issues/features/tasks/risks as needed).
 - After finishing work, agents/LLMs must update snapshot statuses and relationships and clear/move `focus`.
 - Keep `counters` up to date when allocating new IDs.
+- If using multi-agent collaboration, update `session` and `claimed_by` during work and clear claims on handoff.
 
 ## Retention policy (active + recent)
 The snapshot is not a full historical database.

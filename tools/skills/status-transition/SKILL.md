@@ -21,16 +21,9 @@ tags: [skills, statuses]
 
 ## Checklist
 1. Confirm the transition is allowed (see `../../instructions/STATUSES.md`).
-2. **Pre-transition gates (check before applying the transition):**
-   - **Verification gate** — if transitioning a task to `done`, issue to `closed`, requirement to `verified`, or feature to `done`:
-     - List all linked `TST-*` IDs.
-     - Verify each test is `status: passing`.
-     - If any linked test is not `passing`: **STOP. Do not apply the transition.** Report which tests are blocking.
-     - If no tests are linked and the item involves a functional code change: flag to the user that verification may be missing.
-   - **Phase alignment gate** — if transitioning a task to `doing`:
-     - Check the task's `phase` property (or inherited from parent feature).
-     - Check `focus.phase` in `../../../SNAPSHOT.yaml`.
-     - If the task's phase is ahead of the active phase: **STOP. Flag to the user** that this task belongs to a future phase. The user may override, but the override must be explicit.
+2. **Pre-transition gates:**
+   - Verification gate: before transitioning a task to `done`, issue to `closed`, requirement to `verified`, feature to `done`, or phase to `done`, verify linked `TST-*` notes and required child work are complete.
+   - Phase alignment gate: before transitioning a task to `doing`, check the task `phase` (or inherited parent feature phase) against `focus.phase` in `../../../SNAPSHOT.yaml`. If the task is ahead of the active phase, stop and request explicit user confirmation.
 3. Update `../../../SNAPSHOT.yaml`:
    - set the item status
    - update `focus` if this becomes the active item

@@ -1,0 +1,751 @@
+/* project-os-cockpit cockpit layout — REQ-0013.
+ *
+ * Three columns: features-by-phase nav (left), rendered note (centre),
+ * outbound + inbound-only relationships (right). All colors via tokens
+ * from base.css (REQ-0012); no hard-coded values here.
+ */
+
+/* ----- Type-tag tokens (≤60% saturation per REQ-0012) ----- */
+
+:root {
+  --type-feature:     hsl(210 50% 42%);
+  --type-task:        hsl(140 35% 38%);
+  --type-requirement: hsl(270 35% 48%);
+  --type-issue:       hsl(5 50% 46%);
+  --type-risk:        hsl(25 50% 42%);
+  --type-adr:         hsl(190 40% 38%);
+  --type-change:      hsl(45 50% 38%);
+  --type-release:     hsl(165 35% 38%);
+  --type-workflow:    hsl(320 35% 48%);
+  --type-test:        hsl(100 35% 38%);
+  --type-phase:       hsl(285 35% 48%);
+  --type-plan:        hsl(225 25% 48%);
+  --type-reference:   hsl(205 20% 38%);
+  --type-default:     hsl(0 0% 45%);
+}
+[data-theme="dark"] {
+  --type-feature:     hsl(210 50% 65%);
+  --type-task:        hsl(140 35% 60%);
+  --type-requirement: hsl(270 35% 68%);
+  --type-issue:       hsl(5 50% 65%);
+  --type-risk:        hsl(25 50% 60%);
+  --type-adr:         hsl(190 40% 60%);
+  --type-change:      hsl(45 50% 58%);
+  --type-release:     hsl(165 35% 58%);
+  --type-workflow:    hsl(320 35% 68%);
+  --type-test:        hsl(100 35% 58%);
+  --type-phase:       hsl(285 35% 68%);
+  --type-plan:        hsl(225 25% 65%);
+  --type-reference:   hsl(205 20% 68%);
+  --type-default:     hsl(0 0% 60%);
+}
+
+/* ----- Layout shell ----- */
+
+.cockpit {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr) 340px;
+  gap: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.cockpit-pane {
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 13px;
+}
+.cockpit-left {
+  border-left: 0;
+  border-right: 1px solid var(--border);
+}
+
+.cockpit-centre {
+  overflow-y: auto;
+  padding: 24px 32px 80px;
+  background: var(--bg);
+}
+
+/* Mobile-narrow: hide the side panes, centre takes full width. */
+@media (max-width: 900px) {
+  .cockpit {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+  .cockpit-left, .cockpit-right { display: none; }
+}
+
+/* ----- Platform picker (mounted in the page header, hidden when empty) ----- */
+
+.cockpit-platform-slot {
+  display: flex;
+  align-items: center;
+  margin-left: auto;            /* push everything from here toward the right */
+}
+.cockpit-platform-slot:empty {
+  display: none;                /* hide entirely when the project has no platforms */
+}
+.platform-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px;
+  background: transparent;
+}
+.platform-pill {
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--text-muted);
+  border: 0;
+  border-radius: 999px;
+  padding: 2px 10px;
+  cursor: pointer;
+  transition: background-color 80ms ease, color 80ms ease;
+}
+.platform-pill:hover {
+  color: var(--text);
+}
+.platform-pill.is-active {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* ----- Pin button (mounted in the page header when an active note exists) ----- */
+
+.cockpit-pin-slot {
+  display: flex;
+  align-items: center;
+}
+.cockpit-pin-slot:empty {
+  display: none;
+}
+.pin-toggle {
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  background: transparent;
+  color: var(--text-faint);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 2px 6px;
+  cursor: pointer;
+  transition: color 80ms ease, background-color 80ms ease, border-color 80ms ease;
+}
+.pin-toggle:hover {
+  color: var(--text);
+  border-color: var(--border);
+}
+.pin-toggle.is-pinned {
+  color: var(--accent-link);
+}
+
+/* ----- Filter pill (mounted in the page header) ----- */
+
+.cockpit-filter-slot {
+  display: flex;
+  align-items: center;
+  margin-right: 12px;
+}
+/* When the platform slot exists with content, it owns the margin-left:auto;
+ * when it's empty/hidden, the filter slot needs to push itself right. */
+.cockpit-platform-slot:empty + .cockpit-filter-slot {
+  margin-left: auto;
+}
+
+.filter-toggle {
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 12px;
+  cursor: pointer;
+  transition: background-color 80ms ease, border-color 80ms ease, color 80ms ease;
+}
+.filter-toggle:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.filter-toggle.is-active {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+/* ----- Empty / error placeholders ----- */
+
+.cockpit-empty {
+  margin: 14px 14px;
+  color: var(--text-faint);
+  font-style: italic;
+  font-size: 13px;
+}
+.cockpit-error {
+  margin: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--error-fg);
+  border-radius: var(--radius);
+  color: var(--error-fg);
+  background: var(--error-bg);
+  font-size: 12px;
+}
+
+/* ===== Collapsible group primitives (used by both panes) ===== */
+
+/* <details>/<summary> reset — we draw our own chevron. */
+details > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+}
+details > summary::-webkit-details-marker { display: none; }
+
+.group-chevron {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  flex-shrink: 0;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-1px) rotate(45deg);   /* points down (open) */
+  transition: transform 100ms ease;
+  opacity: 0.7;
+}
+details:not([open]) > summary .group-chevron {
+  transform: translateY(1px) rotate(-45deg);    /* points right (closed) */
+}
+
+.group-header-inner {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ===== Left pane: features by phase ===== */
+
+.nav-group {
+  margin: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-group-header {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.nav-group:not([open]) > .nav-group-header {
+  border-bottom: 0;
+}
+.nav-group-header:hover {
+  color: var(--text-muted);
+}
+.nav-group-header .group-header-link {
+  color: inherit;
+  text-decoration: none;
+}
+.nav-group-header .group-header-link:hover {
+  color: var(--accent-link);
+}
+/* The .group-header-inner is flex; spacer pushes the trailing chip
+ * (e.g. the phase status) to the right edge of the header. */
+.nav-group-header .group-header-inner {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.nav-group-spacer {
+  flex: 1 1 auto;
+}
+
+.nav-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Whole cell is an <a>, styled to look like a card. */
+.nav-item {
+  display: block;
+  padding: 8px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+}
+.nav-item:last-child {
+  border-bottom: 0;
+}
+.nav-item:hover {
+  background: var(--surface);
+  text-decoration: none;
+}
+.nav-item.is-active {
+  background: var(--surface-2);
+}
+.nav-item.is-active .nav-title {
+  color: var(--accent-link);
+  font-weight: 600;
+}
+
+.nav-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  line-height: 1.4;
+}
+
+.nav-id {
+  color: var(--text-faint);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.nav-title {
+  color: var(--text);
+  font-weight: 500;
+  flex: 1 1 auto;
+  min-width: 0;
+  word-break: break-word;
+  /* Two-line clamp with ellipsis. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.nav-subtitle {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ----- Nested directory-tree subgroups ----- */
+/* Used by Project mode's docs/reference trees. Subgroups are recursive, so
+ * indentation is driven by the --tree-indent custom property set by the JS
+ * renderer rather than fixed to a single nesting level.
+ */
+.nav-subgroup {
+  margin: 0;
+  border-top: 1px dashed var(--border);
+  background: var(--bg);
+}
+.nav-subgroup > .nav-subgroup-header {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 4px 14px 4px calc(14px + var(--tree-indent, 0px));
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  text-transform: none;            /* lowercase, NOT uppercase like top-level group headers */
+  letter-spacing: 0;
+}
+.nav-subgroup > .nav-subgroup-header:hover {
+  color: var(--text);
+}
+.nav-subgroup > .nav-subgroup-header .group-chevron {
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-width: 1.5px;
+}
+/* Compact file rows inside tree dirs sit under the directory header. */
+.nav-subgroup .nav-item-compact {
+  padding-left: calc(26px + var(--tree-indent, 0px));
+}
+
+/* ----- Stacked layout: status+id top, title underneath ----- */
+/* Used by Project mode's pinned + rare-types groups. */
+.nav-item-stacked {
+  padding: 6px 14px 8px;
+}
+.nav-title-stacked {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.nav-item-stacked:hover .nav-title-stacked {
+  color: var(--accent-link);
+}
+
+/* ----- Compact layout: filename only, tight padding ----- */
+/* Used by Project mode's docs/reference directory trees. */
+.nav-item-compact {
+  padding: 3px 14px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  border-bottom: 1px solid transparent;   /* override .nav-item border for visual quiet */
+}
+.nav-title-compact {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nav-item-compact:hover .nav-title-compact {
+  color: var(--accent-link);
+}
+/* Tighten the group body when compact items are inside. */
+.nav-group-compact .nav-items {
+  padding: 2px 0;
+}
+
+/* ----- Mode tabs (mounted in the page header, Row 1) ----- */
+
+.cockpit-mode-slot {
+  display: flex;
+  align-items: center;
+}
+.nav-mode-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px;
+  background: transparent;
+}
+.nav-mode-tab {
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--text-muted);
+  border: 0;
+  border-radius: 999px;
+  padding: 3px 14px;
+  cursor: pointer;
+  transition: background-color 80ms ease, color 80ms ease;
+}
+.nav-mode-tab:hover {
+  color: var(--text);
+}
+.nav-mode-tab.is-active {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+/* ===== Right pane: relationships, merged per type ===== */
+
+.ctx-group {
+  margin: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Inbound-only items inside a merged type group get a subtle muted look. */
+.ctx-item-inbound {
+  background: var(--surface);
+}
+.ctx-item-inbound .ctx-title {
+  color: var(--text-muted);
+  font-style: italic;
+}
+.ctx-item-inbound:hover {
+  background: var(--surface-2);
+}
+.ctx-item-inbound:hover .ctx-title {
+  color: var(--accent-link);
+}
+
+/* Divider that separates outbound items from inbound-only items inside a group. */
+.ctx-divider {
+  list-style: none;
+  margin: 0;
+  padding: 4px 14px 6px 14px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+  background: var(--surface);
+  border-top: 1px dashed var(--border);
+}
+.ctx-divider-leading {
+  border-top: 0;
+}
+
+.ctx-group-header {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.ctx-group:not([open]) > .ctx-group-header {
+  border-bottom: 0;
+}
+.ctx-group-header:hover .ctx-type-label {
+  filter: brightness(1.1);
+}
+
+/* Type label inside the group header: type-color text, no pill. */
+.ctx-type-label {
+  color: var(--type-default);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+.ctx-type-label[data-type="feature"]     { color: var(--type-feature); }
+.ctx-type-label[data-type="task"]        { color: var(--type-task); }
+.ctx-type-label[data-type="requirement"] { color: var(--type-requirement); }
+.ctx-type-label[data-type="issue"]       { color: var(--type-issue); }
+.ctx-type-label[data-type="risk"]        { color: var(--type-risk); }
+.ctx-type-label[data-type="adr"]         { color: var(--type-adr); }
+.ctx-type-label[data-type="change"]      { color: var(--type-change); }
+.ctx-type-label[data-type="release"]     { color: var(--type-release); }
+.ctx-type-label[data-type="workflow"]    { color: var(--type-workflow); }
+.ctx-type-label[data-type="test"]        { color: var(--type-test); }
+.ctx-type-label[data-type="phase"]       { color: var(--type-phase); }
+.ctx-type-label[data-type="plan"]        { color: var(--type-plan); }
+.ctx-type-label[data-type="reference"]   { color: var(--type-reference); }
+
+.ctx-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Whole cell is an <a>, two-line layout matching the left pane's nav-item. */
+.ctx-item {
+  display: block;
+  padding: 8px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+}
+.ctx-item:last-child {
+  border-bottom: 0;
+}
+.ctx-item:hover {
+  background: var(--surface);
+  text-decoration: none;
+}
+.ctx-group-inbound .ctx-item:hover {
+  background: var(--surface-2);
+}
+
+.ctx-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  line-height: 1.4;
+}
+
+.ctx-id {
+  color: var(--text-faint);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.ctx-title {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ctx-item:hover .ctx-title {
+  color: var(--accent-link);
+}
+
+.ctx-priority {
+  margin-left: auto;          /* push to the right end of the top line */
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 6px;
+}
+.ctx-priority[data-priority="high"]   { color: var(--status-blocked);  border-color: currentColor; }
+.ctx-priority[data-priority="medium"] { color: var(--status-active);   border-color: currentColor; }
+.ctx-priority[data-priority="low"]    { color: var(--status-pending);  border-color: currentColor; }
+
+/* ----- Monospace bits (ids) ----- */
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* ----- Override .page padding when wrapped in .cockpit-centre ----- */
+
+.cockpit-centre .metadata-strip {
+  margin-top: 0;
+}
+
+/* ===== Synthetic home (centre pane on /) ===== */
+
+.cockpit-home {
+  max-width: 880px;
+  margin: 0 auto;
+}
+.cockpit-home h1.home-title {
+  margin: 0 0 18px;
+  font-size: 24px;
+  font-weight: 600;
+}
+.cockpit-home > section {
+  margin: 24px 0;
+  padding: 0;
+}
+.cockpit-home > section > h2 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+
+/* Focus block */
+.home-focus-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.home-focus-row:last-child { border-bottom: 0; }
+.home-focus-label {
+  flex: 0 0 90px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+}
+
+/* Phases */
+.home-phase-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.home-phase-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.home-phase-row:last-child { border-bottom: 0; }
+.home-phase-id { font-family: var(--font-mono); color: var(--text-muted); flex-shrink: 0; }
+.home-phase-title { flex: 1 1 auto; color: var(--text); }
+.muted-count { color: var(--text-faint); font-size: 12px; }
+
+/* Metrics grid */
+.home-metric-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px 18px;
+}
+.home-metric {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.home-metric-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+}
+.home-metric-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Recent changes */
+.home-change-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.home-change-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.home-change-row:last-child { border-bottom: 0; }
+.home-change-id { font-family: var(--font-mono); color: var(--text-muted); flex-shrink: 0; font-size: 11px; }
+.home-change-title { color: var(--text); flex: 1 1 auto; }
+
+/* Browse-by-type fallback */
+.home-indexes .index-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+.home-indexes .index-list a {
+  text-decoration: none;
+  color: var(--text-muted);
+}
+.home-indexes .index-list a:hover { color: var(--accent-link); }

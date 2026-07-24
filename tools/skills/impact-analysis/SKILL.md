@@ -4,7 +4,7 @@ id: SKILL-IMPACT-ANALYSIS
 status: active
 owner: group:maintainers
 created: 2026-03-08
-updated: 2026-03-08
+updated: 2026-05-05
 tags: [skills, impact-analysis, requirements, conflict-detection]
 ---
 
@@ -18,58 +18,34 @@ tags: [skills, impact-analysis, requirements, conflict-detection]
 
 ## Inputs
 - The new or modified item (requirement, feature, or issue).
-- `../../../SNAPSHOT.yaml` (for the full link graph).
-- Relevant notes under `../../../docs/` (requirements, features).
+- `../../../SNAPSHOT.yaml` for the link graph.
+- Relevant notes under `../../../docs/` (requirements, features, issues, decisions).
 
 ## Outputs
 - A list of potentially affected features and their existing requirements.
 - Any identified tensions or contradictions between the new item and existing requirements.
-- If conflicts are found: a summary presented to the user with resolution options.
-- If no conflicts: explicit confirmation that no tensions were identified.
+- If conflicts are found: a summary with resolution options.
+- If no conflicts are found: explicit confirmation.
 
 ## Checklist
-
-### 1. Identify the impact surface
-1. From the new item, identify which features it touches:
-   - New requirement: which features will implement it? (Check `implements` or intended feature links.)
-   - New feature: which existing features share the same component, module, or user-facing area?
-   - New issue: which features does it impact? (Check `features` in the issue.)
-2. List all identified features by ID.
-
-### 2. Gather existing constraints
-For each identified feature:
-1. Read its note and list all linked requirements (`requirements` in frontmatter).
-2. For each linked requirement, read the requirement note — specifically `acceptance` criteria and any scope/constraint language.
-3. Also check for linked ADRs (`decisions`) that may constrain the feature's design.
-
-### 3. Detect tensions
-Compare the new item's intent against each existing constraint:
-1. **Direct contradiction**: Does the new item require behaviour that an existing requirement explicitly prohibits or conflicts with?
-   - Example: New REQ says "add mandatory verification step" vs existing REQ says "minimise onboarding steps."
-2. **Scope overlap**: Does the new item partially overlap an existing requirement's scope in a way that creates ambiguity?
-   - Example: Both requirements define how error messages should be formatted, but with different rules.
-3. **Resource conflict**: Does the new item compete with existing requirements for the same limited resource (UI space, performance budget, API rate limits)?
-4. **Phase conflict**: Does the new item belong to a different phase than the feature it targets?
-
-### 4. Report findings
-If **no tensions** found:
-- State: "Impact analysis complete. No conflicts identified with existing requirements on [list of features checked]."
-- Proceed with the originating skill (feature-scaffold, issue-intake, etc.).
-
-If **tensions found**:
-- Present each tension with:
-  - The conflicting items (IDs and titles)
-  - The nature of the conflict (direct contradiction, scope overlap, resource conflict, phase conflict)
-  - The specific language in each requirement that creates the tension
-- Propose resolution options (at minimum):
-  1. Supersede the older requirement (create new REQ, mark old as `retired`, create ADR documenting the change)
-  2. Scope the new requirement to avoid overlap (e.g., apply to a subset of users/tiers)
-  3. Accept the contradiction and document it as a known trade-off (create ADR)
-- **STOP and wait for user decision.** Do not proceed with implementation until the conflict is resolved.
-
-### 5. Document the resolution
-Once the user chooses a resolution:
-1. Update affected requirement notes (scope changes, retirement, etc.).
-2. Create an ADR if the resolution represents a significant design decision.
-3. Update `../../../SNAPSHOT.yaml` with any new/modified items and relationships.
-4. Proceed with the originating skill.
+1. Identify the impact surface:
+   - New requirement: identify intended implementing features.
+   - New feature: identify existing features sharing the same component, workflow, or user-facing area.
+   - New issue: identify affected features from the issue and snapshot links.
+2. Gather existing constraints:
+   - Read each affected feature note.
+   - Read linked requirement notes, especially acceptance criteria and scope.
+   - Read related ADRs when present.
+3. Detect tensions:
+   - Direct contradiction between requirements.
+   - Overlapping scope with different behavior or acceptance rules.
+   - Resource conflict such as UI space, performance budget, or operational cost.
+   - Phase conflict between the new work and affected feature/task phases.
+4. Report findings:
+   - If no tensions are found, state which features and requirements were checked.
+   - If tensions are found, list each conflict with the involved IDs, conflict type, and relevant requirement language.
+5. Resolve before implementation:
+   - Supersede or retire an older requirement.
+   - Narrow the new requirement scope.
+   - Document a deliberate trade-off with an ADR.
+   - Stop for user decision when the resolution is not obvious.

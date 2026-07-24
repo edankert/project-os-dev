@@ -17,6 +17,9 @@ This documentation system relies on explicit link graphs so agents can follow re
   - Must have exactly one `parent` (feature or issue).
 - Feature (`[[feature]]`)
   - Should link its `requirements` and `tasks` (frontmatter lists).
+- Phase (`[[phase]]`)
+  - Should link planned `features`, `requirements`, `tasks`, and `issues` when phase-gated development is used.
+  - Items with a `phase` value should link back to the corresponding `PHASE-*` note where possible.
 - Issue (`[[issue]]`)
   - Should link impacted `features` and/or planned `tasks` (frontmatter or `related`).
 - Requirement (`[[requirement]]`)
@@ -28,9 +31,6 @@ This documentation system relies on explicit link graphs so agents can follow re
   - Should link mitigation tasks or the items it impacts.
 - Change (`[[change]]`)
   - Should link `issues` and `features` impacted by the change.
-- Release (`[[release]]`)
-  - Must link `features` included and `tests_verified` for the release.
-  - Should link `changes` and `previous_release` for continuity.
 - Decision (`[[adr]]`)
   - Should link related items and use `supersedes`/`superseded` when applicable.
 
