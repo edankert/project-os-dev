@@ -36,6 +36,7 @@ import re
 from pathlib import Path
 from typing import Any
 
+from . import statuses
 from .index import Index, NoteRecord
 
 _CHG_DATE_RE = re.compile(r"^CHG-(\d{4})(\d{2})(\d{2})")
@@ -148,10 +149,7 @@ _ACTIVE_DOING: frozenset[str] = frozenset({
 _ACTIVE_NEXT: frozenset[str] = frozenset({
     "next", "ready", "planned", "approved", "accepted", "triage",
 })
-_ACTIVE_DONE: frozenset[str] = frozenset({
-    "done", "merged", "fixed", "fulfilled", "met", "complete",
-    "verified", "closed", "passing", "published", "resolved",
-})
+_ACTIVE_DONE: frozenset[str] = frozenset(statuses.COMPLETED_STATUSES)
 DEFAULT_MODE = "features"
 
 # Library mode discovery rules.
@@ -238,8 +236,10 @@ _RECENT_LIMIT = 60
 # definition. Terminal-resolved statuses (superseded/retired/cancelled)
 # count done; `deferred` (parked, still intended) stays open work.
 DONE_FEAT = {"done", "released", "merged", "verified", "complete", "superseded", "cancelled"}
+# `implemented` is the terminal requirement status since ADR-0007; `verified` is
+# kept only so repos that have not yet migrated still read correctly.
 DONE_TASK = {"done", "merged", "verified", "closed", "fixed", "cancelled"}
-DONE_REQ  = {"verified", "met", "fulfilled", "accepted", "retired", "superseded", "cancelled"}
+DONE_REQ  = {"implemented", "verified", "met", "fulfilled", "accepted", "retired", "superseded", "cancelled"}
 DONE_ISS  = {"fixed", "closed", "wont-fix", "resolved", "cancelled"}
 PASSING   = {"passing"}
 DONE_BY_TYPE: dict[str, set[str]] = {

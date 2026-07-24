@@ -104,7 +104,8 @@ def band_of(status: str | None) -> str | None:
 
 
 def is_completed(status: str | None) -> bool:
-    """True for terminal statuses only — ``implemented`` is not one."""
+    """True for terminal statuses only. ``implemented`` IS one since ADR-0007;
+    the non-terminal delivered band is now ``staged`` / ``monitoring``."""
     if not status:
         return False
     return status.strip().lower() in COMPLETED_STATUSES

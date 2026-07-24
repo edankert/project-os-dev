@@ -68,7 +68,7 @@ case "$STATUS" in
   deferred)
     HINT="focus item $ACTIVE is 'deferred' (parked, not terminal) — re-adopt it per STATUSES.md before working it, or pick different work."
     ;;
-  done|fixed|closed|cancelled|superseded|wont-fix|verified|retired)
+  done|fixed|closed|cancelled|superseded|wont-fix|implemented|retired)
     HINT="focus item $ACTIVE is '$STATUS' (terminal) — no active work in focus. If this prompt implies new work, delegate preflight to the 'planner' subagent before coding."
     ;;
   *)

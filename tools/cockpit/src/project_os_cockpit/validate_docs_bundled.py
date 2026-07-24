@@ -13,9 +13,24 @@ TRACEABILITY.md define by convention:
   5. Link-graph integrity: every ID referenced from snapshot relationship
      fields or note frontmatter resolves to a snapshot item or a note file.
   6. Verification invariant: no item may hold a terminal status
-     (task done, issue closed, requirement verified, feature done) unless
+     (task done, issue closed, requirement implemented, feature done) unless
      every linked TST-* is status: passing — or the note carries an explicit
      recorded waiver (frontmatter key: verification_waiver).
+  7. Deferral invariants (STATUSES.md "Deferral and re-adoption"): deferred
+     never resolves scope — a feature's tasks: list may not contain deferred
+     IDs; deferred items need a forward home (phase), deferred tasks need
+     origin provenance and no parent, and deferred notes may not be pruned
+     from the snapshot.
+  8. Requirement lifecycle (QUALITY.md; close-out "Requirement advancement";
+     ADR-0007): a requirement whose implementing feature has reached a terminal
+     status (done/cancelled/superseded) may not sit at draft/approved
+     (REQ-STALE); features should not implement against a draft requirement
+     (REQ-PREMATURE); `implemented` is terminal and must carry one ticked-or-
+     reconciled acceptance criterion per criterion of record (REQ-BOXES);
+     `implements:` names at most one feature (REQ-OWNER); and a feature may not
+     be done while a requirement naming it has unresolved criteria
+     (FEATURE-REQ). The last two gates are forward-only — see
+     FEATURE_REQ_GATE_FROM.
 
 Exit codes: 0 = clean, 1 = violations found, 2 = usage/internal error.
 
@@ -51,12 +66,13 @@ ALLOWED_STATUS = {
     "issue": {"triage", "open", "in-progress", "blocked", "fixed", "closed", "reopened", "wont-fix", "deferred"},
     "feature": {"backlog", "planned", "in-progress", "in-review", "done", "deferred", "cancelled", "superseded"},
     "phase": {"planned", "active", "done", "deferred"},
-    "requirement": {"draft", "approved", "implemented", "verified", "retired", "deferred", "cancelled", "superseded"},
+    "requirement": {"draft", "approved", "implemented", "retired", "deferred", "cancelled", "superseded"},
     "risk": {"open", "mitigating", "monitoring", "closed"},
     "workflow": {"draft", "active", "deprecated"},
     "change": {"merged", "reverted"},
     "adr": {"proposed", "accepted", "rejected", "superseded"},
     "test": {"draft", "ready", "passing", "failing", "blocked", "deprecated"},
+    "release": {"draft", "staged", "released", "rolled-back"},
 }
 
 def load_allowed_status(root):
@@ -93,14 +109,129 @@ def load_allowed_status(root):
 TERMINAL = {
     "tasks": "done",
     "issues": "closed",
-    "requirements": "verified",
+    "requirements": "implemented",
     "features": "done",
 }
 
 RELATIONSHIP_FIELDS = (
     "parent", "features", "tasks", "issues", "requirements", "tests",
     "phases", "phase", "depends", "blocks", "mitigation_tasks", "workflows",
+    "origin", "deferred", "implements", "supersedes", "superseded",
 )
+
+# ADR-0007 FEATURE-REQ gate cutover. A feature that closed before this date is
+# grandfathered: its unresolved requirement criteria are reported as a warning
+# (visible debt) rather than an error (blocking). Features touched on or after it
+# are held to the gate. Compared against the feature note's `updated:` date;
+# an absent or unparseable date is treated as grandfathered.
+FEATURE_REQ_GATE_FROM = "2026-07-25"
+
+def _after_gate_cutover(fm):
+    """True when a note was last touched on/after the ADR-0007 gate cutover.
+
+    Used to keep the FEATURE-REQ and terminal REQ-BOXES gates forward-only:
+    work that closed under the old rules stays a warning (visible debt), while
+    anything closed or edited afterwards is a build failure. A missing or
+    unparseable `updated:` is treated as grandfathered — the gate never fires
+    on a note it cannot date.
+    """
+    raw = (fm or {}).get("updated")
+    if raw is None:
+        return False
+    text = str(raw).strip().strip('"').strip("'")[:10]
+    if len(text) != 10 or text[4] != "-" or text[7] != "-":
+        return False
+    return text >= FEATURE_REQ_GATE_FROM
+
+
+# Statuses that resolve an item's place in a parent's scope / a requirement's delivery.
+# `deferred` is deliberately absent (STATUSES.md, "Deferral and re-adoption").
+RESOLVED_STATUSES = ("done", "cancelled", "superseded")
+
+# metrics.counts definitions live in tools/instructions/SNAPSHOT.md ("Metrics")
+METRIC_PREFIXES = {"FEAT", "TASK", "ISS", "PHASE", "TST", "RISK", "REL", "ADR", "REQ"}
+
+
+def compute_metric_counts(items, note_index):
+    """Counts over all notes in docs/ (the archive) plus snapshot items; snapshot status wins where both exist."""
+    statuses = {}
+    for coll in (items.values() if isinstance(items, dict) else []):
+        if not isinstance(coll, dict):
+            continue
+        for item_id, entry in coll.items():
+            if isinstance(entry, dict) and str(entry.get("status", "") or ""):
+                statuses[item_id] = str(entry.get("status", "") or "")
+    for nid, (_path, fm) in note_index.items():
+        statuses.setdefault(nid, str((fm or {}).get("status", "") or ""))
+    by_prefix = {}
+    for the_id, status in statuses.items():
+        m = ID_RE.match(the_id)
+        if m and m.group(1) in METRIC_PREFIXES:
+            by_prefix.setdefault(m.group(1), []).append(status)
+
+    def count(prefix, allowed=None):
+        vals = by_prefix.get(prefix, [])
+        return len(vals) if allowed is None else sum(1 for s in vals if s in allowed)
+
+    return {
+        "features_total": count("FEAT"),
+        "features_done": count("FEAT", {"done"}),
+        "phases_total": count("PHASE"),
+        "phases_done": count("PHASE", {"done"}),
+        "tasks_total": count("TASK"),
+        "tasks_done": count("TASK", {"done"}),
+        "tests_total": count("TST"),
+        "tests_passing": count("TST", {"passing"}),
+        "tests_failing": count("TST", {"failing"}),
+        "issues_open": count("ISS", {"open", "in-progress", "blocked", "reopened"}),
+        "issues_triage": count("ISS", {"triage"}),
+        "tasks_deferred": count("TASK", {"deferred"}),
+        "issues_deferred": count("ISS", {"deferred"}),
+        "requirements_total": count("REQ"),
+        "requirements_implemented": count("REQ", {"implemented", "verified"}),
+        "risks_open": count("RISK", {"open", "mitigating", "monitoring"}),
+        "releases_total": count("REL"),
+        "decisions_total": count("ADR"),
+    }
+
+
+def fix_metrics(root):
+    """Rewrite metrics.counts values in SNAPSHOT.yaml to the computed counts, preserving formatting."""
+    snap_path = root / "SNAPSHOT.yaml"
+    text = snap_path.read_text(encoding="utf-8")
+    snap = load_yaml(text)
+    if not isinstance(snap, dict):
+        return []
+    computed = compute_metric_counts(snap.get("items") or {}, build_note_index(root / "docs")[0])
+    lines = text.splitlines(keepends=True)
+    changes = []
+    in_metrics = in_counts = False
+    counts_indent = 0
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if re.match(r"^metrics:\s*(#.*)?$", line):
+            in_metrics = True
+            continue
+        if in_metrics and re.match(r"^\S", line):
+            break  # next top-level key
+        if not stripped or stripped.startswith("#"):
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        if in_metrics and re.match(r"^\s+counts:\s*(#.*)?$", line):
+            in_counts, counts_indent = True, indent
+            continue
+        if in_counts:
+            if indent <= counts_indent:
+                in_counts = False
+                continue
+            m = re.match(r"^(\s*)([\w-]+):\s*(-?\d+)\s*(#.*)?$", line)
+            if m and m.group(2) in computed and int(m.group(3)) != computed[m.group(2)]:
+                trailing = (" " + m.group(4)) if m.group(4) else ""
+                lines[i] = "%s%s: %d%s\n" % (m.group(1), m.group(2), computed[m.group(2)], trailing)
+                changes.append("%s: %s -> %d" % (m.group(2), m.group(3), computed[m.group(2)]))
+    if changes:
+        snap_path.write_text("".join(lines), encoding="utf-8")
+    return changes
 
 
 # ---------------------------------------------------------------- YAML subset
@@ -235,6 +366,56 @@ def note_type(fm):
     return ""
 
 
+def has_value(v):
+    """True when a frontmatter/snapshot field holds real content (not None/''/[])."""
+    if v is None:
+        return False
+    if isinstance(v, list):
+        return any(str(x).strip() for x in v)
+    return bool(str(v).strip())
+
+
+UNCHECKED_RE = re.compile(r"^\s*[-*+]\s*\[\s\]")
+CHECKED_RE = re.compile(r"^\s*[-*+]\s*\[[xX]\]")
+FENCE_RE = re.compile(r"^\s*(```|~~~)")
+
+
+def count_acceptance_boxes(path):
+    """Count (unticked, ticked) criteria in a requirement note's Acceptance Criteria section.
+
+    Fenced code blocks are skipped entirely: a `# comment` inside a fence must not be
+    read as a heading that ends the section, and a `- [ ]` inside one is not a criterion.
+    Falls back to the whole body when the note has no Acceptance heading.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return (0, 0)
+    if text.startswith("---"):
+        end = text.find("\n---", 3)
+        if end != -1:
+            text = text[end + 4:]
+    section, seen_section, in_fence, body = [], False, False, []
+    for line in text.splitlines():
+        if FENCE_RE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        body.append(line)
+        if re.match(r"^#{1,6}\s", line):
+            if re.match(r"^#{1,6}\s+Acceptance\b", line, re.IGNORECASE):
+                seen_section, section = True, []
+                continue
+            if seen_section:
+                break  # next heading ends the section
+        if seen_section:
+            section.append(line)
+    scan = section if seen_section else body
+    return (sum(1 for l in scan if UNCHECKED_RE.match(l)),
+            sum(1 for l in scan if CHECKED_RE.match(l)))
+
+
 class Report:
     def __init__(self):
         self.errors = []
@@ -249,10 +430,17 @@ class Report:
 
 # ------------------------------------------------------------------ checks
 def build_note_index(docs_dir):
-    """Map ID -> (path, frontmatter) for every note in docs/ with an ID."""
+    """Map ID -> (path, frontmatter) for every note in docs/ with an ID.
+
+    Also returns claimants: ID -> [paths], every file declaring that ID. The
+    index keeps only the first claimant (setdefault), which is why a second
+    note reusing an ID used to be invisible to every check downstream — see
+    NOTE-DUP-ID.
+    """
     index = {}
+    claimants = {}
     if not docs_dir.is_dir():
-        return index
+        return index, claimants
     for path in sorted(docs_dir.rglob("*.md")):
         if "__templates__" in path.parts or "__bases__" in path.parts:
             continue
@@ -265,7 +453,68 @@ def build_note_index(docs_dir):
             ids.add("%s-%s" % (m.group(1), m.group(2)))
         for i in ids:
             index.setdefault(i, (path, fm if isinstance(fm, dict) else {}))
-    return index
+        # Claiming an ID means *being* that note, which is stricter than the
+        # index's substring matching: composite IDs legitimately embed another
+        # note's ID (a plan is `PLAN-FEAT-0006`, a change may be
+        # `CHG-20260525-FEAT-0009-Chrome-Polish`) and must not count as rival
+        # claims on FEAT-0006/FEAT-0009.
+        fm_id = str((fm or {}).get("id", "") or "").strip().strip("\"'")
+        claimed = set()
+        if fm_id in ids:
+            claimed.add(fm_id)
+        if m:
+            claimed.add("%s-%s" % (m.group(1), m.group(2)))
+        for i in claimed:
+            claimants.setdefault(i, [])
+            if path not in claimants[i]:
+                claimants[i].append(path)
+    return index, claimants
+
+
+def validate_unregistered_notes(root, items, note_index, claimants, allowed_status, report):
+    """Inspect notes the snapshot cannot see.
+
+    Snapshot retention is deliberately active-and-recent: completed work is
+    pruned from SNAPSHOT.yaml and the note becomes the archive. Every other
+    check here resolves an item's status *through* the snapshot, so a note that
+    is not registered is never inspected at all — drift accumulates in it
+    unseen. Being unregistered is normal and is NOT reported; what is reported
+    is the drift that used to hide there.
+    """
+    registered = set()
+    for coll in items.values():
+        if isinstance(coll, dict):
+            registered.update(coll.keys())
+
+    for the_id in sorted(claimants):
+        paths = claimants[the_id]
+        if len(paths) > 1:
+            rels = ", ".join(p.relative_to(root).as_posix() for p in paths)
+            report.error(
+                "NOTE-DUP-ID",
+                "%s is declared by %d notes (%s); IDs must be unique — bare-ID links and lookups "
+                "resolve to whichever is indexed first, so the others are silently unreachable"
+                % (the_id, len(paths), rels),
+            )
+
+    for the_id, (path, fm) in sorted(note_index.items()):
+        if the_id in registered:
+            continue  # covered by STATUS-VALUE / ITEM-STATUS against the snapshot entry
+        nt = note_type(fm)
+        status = str((fm or {}).get("status", "") or "").strip()
+        if not status or nt not in allowed_status:
+            continue
+        if status not in allowed_status[nt]:
+            # Warning, not error, deliberately: this check reaches notes that were
+            # never validated before, so it surfaces years of accumulated legacy
+            # vocabulary at once (173 across the fleet when introduced). Failing
+            # those builds outright would punish repos for drift the tooling
+            # allowed. Graduate to report.error once the fleet is migrated.
+            report.warn(
+                "NOTE-STATUS",
+                "%s status '%s' not allowed for %s (%s); the note is not in SNAPSHOT.yaml, so no "
+                "snapshot-driven check covers it" % (the_id, status, nt, path.relative_to(root).as_posix()),
+            )
 
 
 def validate(root, report):
@@ -289,8 +538,9 @@ def validate(root, report):
     items = snap.get("items") or {}
     counters = snap.get("counters") or {}
     docs_dir = root / "docs"
-    note_index = build_note_index(docs_dir)
+    note_index, note_claimants = build_note_index(docs_dir)
     allowed_status = load_allowed_status(root)
+    validate_unregistered_notes(root, items, note_index, note_claimants, allowed_status, report)
 
     def resolves(ref_id):
         for coll in items.values():
@@ -369,8 +619,127 @@ def validate(root, report):
                         for task_ref in extract_ids(entry.get("tasks")):
                             t_entry = (items.get("tasks") or {}).get(task_ref)
                             t_status = str(t_entry.get("status", "")) if isinstance(t_entry, dict) else str((note_index.get(task_ref, (None, {}))[1] or {}).get("status", ""))
-                            if t_status and t_status != "done":
-                                report.error("VERIFY", "%s is done but task %s is '%s'" % (item_id, task_ref, t_status))
+                            if t_status and t_status not in ("done", "cancelled"):
+                                report.error("VERIFY", "%s is done but task %s is '%s', not scope-resolved (done/cancelled)" % (item_id, task_ref, t_status))
+
+            # -- deferral invariants (STATUSES.md "Deferral and re-adoption")
+            if coll_name == "features":
+                for task_ref in extract_ids(entry.get("tasks")):
+                    t_entry = (items.get("tasks") or {}).get(task_ref)
+                    t_status = str(t_entry.get("status", "")) if isinstance(t_entry, dict) else str((note_index.get(task_ref, (None, {}))[1] or {}).get("status", ""))
+                    if t_status == "deferred":
+                        report.error("DEFER-SCOPE", "%s lists deferred task %s in tasks: (its scope); descope it into deferred: per the deferral procedure (tools/skills/status-transition/SKILL.md)" % (item_id, task_ref))
+            # a blank snapshot status must not mask a deferred note
+            eff_status = status or str(fm.get("status", "") or "")
+            if eff_status == "deferred" and coll_name in ("tasks", "issues", "requirements", "features"):
+                if not (has_value(entry.get("phase")) or has_value(fm.get("phase"))):
+                    report.error("DEFER-HOME", "%s is deferred without a forward home: set phase to a future phase or the PHASE-999 parking lot" % item_id)
+                if coll_name == "tasks":
+                    if not (has_value(entry.get("origin")) or has_value(fm.get("origin"))):
+                        report.error("DEFER-ORIGIN", "%s is deferred without origin provenance (the former parent)" % item_id)
+                    if has_value(entry.get("parent")) or has_value(fm.get("parent")):
+                        report.error("DEFER-PARENT", "%s is deferred but still has a parent; descoping clears parent (origin + phase replace it while parked)" % item_id)
+
+    # -- requirement lifecycle (QUALITY.md; close-out "Requirement advancement")
+    def effective_status(the_id):
+        for coll in (items.values() if isinstance(items, dict) else []):
+            if isinstance(coll, dict) and isinstance(coll.get(the_id), dict):
+                snap_status = str(coll[the_id].get("status", "") or "")
+                if snap_status:
+                    return snap_status
+        if the_id in note_index:
+            return str((note_index[the_id][1] or {}).get("status", "") or "")
+        return ""
+
+    def prefix_of(the_id):
+        m = ID_RE.match(the_id)
+        return m.group(1) if m else ""
+
+    reqs_coll = items.get("requirements") if isinstance(items.get("requirements"), dict) else {}
+    req_ids = {k for k in reqs_coll if prefix_of(k) == "REQ"}
+    req_ids.update(nid for nid, (_p, nfm) in note_index.items() if note_type(nfm) == "requirement")
+
+    feature_reqs = {}  # FEAT id -> set of REQ ids it claims to implement
+    for fid, fentry in (items.get("features") or {}).items():
+        if isinstance(fentry, dict):
+            feature_reqs.setdefault(fid, set()).update(extract_ids(fentry.get("requirements")))
+    for nid, (_p, nfm) in note_index.items():
+        if note_type(nfm) == "feature":
+            feature_reqs.setdefault(nid, set()).update(extract_ids((nfm or {}).get("requirements")))
+
+    for req_id in sorted(req_ids):
+        entry = reqs_coll.get(req_id) if isinstance(reqs_coll.get(req_id), dict) else {}
+        note_path, fm = note_index.get(req_id, (None, {}))
+        status = effective_status(req_id)
+        # implementing features: the requirement's own `implements:` plus any feature claiming it
+        feats = {f for f in set(extract_ids(entry.get("implements"))) | set(extract_ids((fm or {}).get("implements"))) if prefix_of(f) == "FEAT"}
+        feats.update(fid for fid, reqs in feature_reqs.items() if req_id in reqs and prefix_of(fid) == "FEAT")
+        feat_status = {f: effective_status(f) for f in feats}
+        known = {f: s for f, s in feat_status.items() if s}
+        all_resolved = bool(known) and all(s in RESOLVED_STATUSES for s in known.values())
+        if status in ("draft", "approved") and all_resolved:
+            report.error("REQ-STALE", "%s is '%s' but every implementing feature (%s) has reached a terminal status; advance it per close-out 'Requirement advancement' (tick criteria with evidence, reconcile departures, set implemented) or supersede it" % (req_id, status, ", ".join("%s=%s" % (f, known[f]) for f in sorted(known))))
+        elif status == "draft" and any(s in ("in-progress", "in-review", "done") for s in known.values()):
+            active = sorted(f for f, s in known.items() if s in ("in-progress", "in-review", "done"))
+            report.warn("REQ-PREMATURE", "%s is still draft but %s is already being implemented; approve or amend the requirement first (feature-scaffold 'Requirement approval gate')" % (req_id, ", ".join(active)))
+        # -- ADR-0007: `implements:` names at most one feature
+        own_feats = sorted({f for f in extract_ids((fm or {}).get("implements")) if prefix_of(f) == "FEAT"})
+        if len(own_feats) > 1:
+            report.error("REQ-OWNER", "%s implements %d features (%s) but a requirement names at most one (ADR-0007); split the requirement, or pick the true owner and drop the rest" % (req_id, len(own_feats), ", ".join(own_feats)))
+
+        if status == "implemented" and note_path is not None:
+            unticked, ticked = count_acceptance_boxes(note_path)
+            criteria = entry.get("acceptance") or (fm or {}).get("acceptance") or []
+            n_criteria = len(criteria) if isinstance(criteria, list) else 0
+            # Forward-only, as for FEATURE-REQ: a requirement that went terminal
+            # before the cutover is grandfathered to a warning (visible debt);
+            # one advanced or touched afterwards is a build failure.
+            emit = report.error if _after_gate_cutover(fm) else report.warn
+            if unticked:
+                emit("REQ-BOXES", "%s is '%s' (terminal) but %d acceptance criterion/criteria remain unticked (%s); tick with evidence or reconcile them" % (req_id, status, unticked, note_path.relative_to(root)))
+            elif n_criteria and not (unticked + ticked):
+                emit("REQ-BOXES", "%s is '%s' (terminal) with %d acceptance criteria but no verification record — its note has no ticked acceptance checkboxes (%s); add one box per criterion with an evidence pointer (SCHEMAS.md)" % (req_id, status, n_criteria, note_path.relative_to(root)))
+            elif n_criteria and (unticked + ticked) != n_criteria:
+                emit("REQ-BOXES", "%s is '%s' (terminal) with %d criteria of record but %d acceptance checkbox(es) (%s); SCHEMAS.md requires one box per criterion, so the verification record is partial" % (req_id, status, n_criteria, unticked + ticked, note_path.relative_to(root)))
+
+    # -- ADR-0007 FEATURE-REQ: a feature may not be `done` while a requirement
+    #    naming it still has an unresolved acceptance criterion. Forward-only.
+    DESCOPED = ("deferred", "cancelled", "superseded")
+    reqs_by_owner = {}   # FEAT id -> [(REQ id, note_path)]
+    for req_id in sorted(req_ids):
+        note_path, fm = note_index.get(req_id, (None, {}))
+        if note_path is None:
+            continue
+        if effective_status(req_id) in DESCOPED:
+            continue
+        for f in extract_ids((fm or {}).get("implements")):
+            if prefix_of(f) == "FEAT":
+                reqs_by_owner.setdefault(f, []).append((req_id, note_path))
+
+    for feat_id, owned in sorted(reqs_by_owner.items()):
+        if effective_status(feat_id) != "done":
+            continue
+        f_path, f_fm = note_index.get(feat_id, (None, {}))
+        unresolved = []
+        for req_id, req_path in owned:
+            unticked, ticked = count_acceptance_boxes(req_path)
+            if unticked:
+                unresolved.append("%s (%d unticked)" % (req_id, unticked))
+        if not unresolved:
+            continue
+        emit = report.error if _after_gate_cutover(f_fm) else report.warn
+        noun = "requirement it owns has" if len(unresolved) == 1 else "requirements it owns have"
+        emit("FEATURE-REQ", "%s is done but a %s unresolved acceptance criteria: %s; tick with evidence, reconcile, or descope the requirement before closing the feature (ADR-0007)" % (feat_id, noun, ", ".join(unresolved)))
+
+    # -- deferred notes must stay in the snapshot (SNAPSHOT.md retention)
+    for item_id, (path, fm) in sorted(note_index.items()):
+        if str((fm or {}).get("status", "") or "") != "deferred":
+            continue
+        if not ID_RE.match(item_id) or ID_RE.match(item_id).group(1) not in ("TASK", "ISS", "REQ", "FEAT", "PHASE"):
+            continue
+        in_snapshot = any(isinstance(c, dict) and item_id in c for c in items.values()) if isinstance(items, dict) else False
+        if not in_snapshot:
+            report.error("DEFER-RETENTION", "%s is deferred but missing from SNAPSHOT.yaml; deferred items are active and never pruned (%s)" % (item_id, path.relative_to(root)))
 
     # -- counter integrity (snapshot IDs and note IDs)
     if path_alias_items:
@@ -393,6 +762,42 @@ def validate(root, report):
         check_counter(sid, "snapshot")
     for nid in sorted(note_index):
         check_counter(nid, str(note_index[nid][0].relative_to(root)))
+
+    # -- metrics counts (computed vs recorded; SNAPSHOT.md "Metrics")
+    metrics = snap.get("metrics") or {}
+    counts = metrics.get("counts") if isinstance(metrics, dict) else None
+    if isinstance(counts, dict):
+        computed = compute_metric_counts(items, note_index)
+        for key in sorted(counts):
+            if key not in computed:
+                continue
+            val = counts[key]
+            try:
+                recorded = int(val)
+            except (TypeError, ValueError):
+                report.error("METRICS", "metrics.counts.%s is not an integer: %r" % (key, val))
+                continue
+            if recorded != computed[key]:
+                report.error("METRICS", "metrics.counts.%s is %d but computed %d (run validate-docs.sh --fix-metrics)" % (key, recorded, computed[key]))
+
+    # -- independent-review fields (QUALITY.md "Independent review (different-model)")
+    for coll_name, settled in (("tests", {"passing"}), ("changes", {"merged"})):
+        coll = items.get(coll_name) or {}
+        if not isinstance(coll, dict):
+            continue
+        for item_id, entry in coll.items():
+            if not isinstance(entry, dict):
+                continue
+            status = str(entry.get("status", ""))
+            if status not in settled:
+                continue
+            file_rel = entry.get("file") or entry.get("path") or ""
+            fm = parse_frontmatter(root / file_rel) or {} if file_rel and (root / file_rel).is_file() else {}
+            verdict = str(fm.get("review_verdict", "") or entry.get("review_verdict", "") or "").strip()
+            if verdict == "changes-requested":
+                report.error("REVIEW", "%s is '%s' but review_verdict is changes-requested" % (item_id, status))
+            elif not verdict:
+                report.warn("REVIEW", "%s is '%s' without independent review (reviewed_by/review_verdict); see QUALITY.md" % (item_id, status))
 
     # -- focus resolution
     focus = snap.get("focus") or {}
@@ -419,6 +824,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Validate project-os SNAPSHOT.yaml <-> docs/ consistency.")
     ap.add_argument("--repo-root", default=None, help="Repo root (default: nearest ancestor with SNAPSHOT.yaml)")
     ap.add_argument("--quiet", action="store_true", help="Suppress warnings and the success line")
+    ap.add_argument("--fix-metrics", action="store_true", help="Rewrite metrics.counts to the computed counts before validating")
     args = ap.parse_args(argv)
 
     if args.repo_root:
@@ -430,6 +836,14 @@ def main(argv=None):
     if not (root / "SNAPSHOT.yaml").is_file():
         print("validate-docs: no SNAPSHOT.yaml found from %s upward" % Path.cwd(), file=sys.stderr)
         return 2
+
+    if args.fix_metrics:
+        try:
+            for change in fix_metrics(root):
+                print("validate-docs: fixed metrics.counts.%s" % change)
+        except Exception as exc:  # noqa: BLE001
+            print("validate-docs: --fix-metrics failed: %s" % exc, file=sys.stderr)
+            return 2
 
     report = Report()
     try:

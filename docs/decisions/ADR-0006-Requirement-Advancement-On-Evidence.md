@@ -7,6 +7,10 @@ status: accepted
 owner: user:edwin
 created: 2026-07-21
 updated: 2026-07-21
+reviewed_by: "model:claude-fable-5"
+review_date: 2026-07-24
+review_verdict: approved
+review_note: "Same-family review (authored by Claude-family Opus, reviewed by model:claude-fable-5) — NOT independent per QUALITY.md; a cross-vendor or human pass is still owed."
 decision: "Feature close-out must advance each linked requirement to implemented once all its implementing features are done, ticking acceptance boxes only with evidence and reconciling (amend/narrow/supersede) any criterion the delivered work deliberately departed from; frontmatter acceptance: is the criteria of record and body checkboxes are the per-criterion verification record"
 context: "No lifecycle step ever touched a requirement after creation, so requirements froze at draft/approved while their features shipped and their acceptance criteria drifted out of agreement with the delivered system (ISS-0004)"
 alternatives:
@@ -19,10 +23,18 @@ consequences:
   - "Feature close-out gets longer — each linked requirement must be walked criterion by criterion"
   - "Departing from a documented criterion now forces an explicit amendment (with rationale) or a supersede, surfacing scope drift that used to pass unnoticed"
   - "Requirements shared by several features only advance when the last one closes, so partial delivery stays visible"
-related: [FEAT-0012, REQ-0014, ISS-0004, ADR-0004]
+related: [FEAT-0012, REQ-0014, ISS-0004, ADR-0004, ADR-0007]
+revised_by: "[[ADR-0007-Requirement-Terminality-And-Ownership]]"
 ---
 
 # Requirements advance on evidence at feature close-out
+
+> **Partly revised by [[ADR-0007-Requirement-Terminality-And-Ownership]] (2026-07-24).** Three clauses below are void:
+> 1. Decision 1's "`implemented → verified` remains gated on passing `TST-*` notes" — the requirement `verified` status was retired; `implemented` is now terminal.
+> 2. The consequence "requirements shared by several features only advance when the last one closes" — a requirement now names **at most one** feature.
+> 3. The consequence "`draft`/`approved` means outstanding, `implemented` means delivered, **`verified` means test-proven**" — the third term no longer exists; verification lives in `TST-*` notes and per-criterion evidence.
+>
+> Everything else here stands, and ADR-0007 depends on it: tick only with evidence; reconcile rather than tick to fit; approval precedes implementation; frontmatter `acceptance:` is the criteria of record and body checkboxes the verification record.
 
 ## Context
 

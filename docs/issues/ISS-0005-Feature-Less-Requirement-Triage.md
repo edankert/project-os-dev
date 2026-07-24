@@ -8,6 +8,10 @@ severity: low
 owner: user:edwin
 created: 2026-07-24
 updated: 2026-07-24
+reviewed_by: "model:claude-fable-5"
+review_date: 2026-07-24
+review_verdict: approved
+review_note: "Same-family review (authored by Claude-family Opus, reviewed by model:claude-fable-5) — NOT independent per QUALITY.md; a cross-vendor or human pass is still owed."
 source: ["[[ADR-0007-Requirement-Terminality-And-Ownership]]"]
 related: ["[[ADR-0007-Requirement-Terminality-And-Ownership]]"]
 ---
@@ -25,7 +29,7 @@ implements:
   - "[[FEAT-0017]]"
 ```
 
-— so 36 correctly-linked requirements were counted as orphans. your-health alone accounts for 35 block-form notes; it was reported as having 38 orphans and actually had 2. Spot-checked against git history: `REQ-0031` has named `FEAT-0017` since before this work began.
+— so 36 correctly-linked requirements were counted as orphans. your-health alone accounts for 36 block-form notes; it was reported as having 38 orphans and actually had 2. Spot-checked against git history: `REQ-0031` has named `FEAT-0017` since before this work began.
 
 This is the third symptom of the same defective regex. It also produced the "10 many-to-many" estimate that turned out to be 11 during the ADR-0007 migration. The lesson worth keeping: **frontmatter has three interchangeable shapes** (inline wikilinks, inline bare IDs, block lists) and any scan that reads one shape silently under-reports. The validator's `extract_ids` handles all three; ad-hoc `grep`/`re.search` passes do not, and every count in this investigation that came from an ad-hoc pass was wrong in the same direction.
 

@@ -3,7 +3,7 @@
 
 Claude Code PreToolUse hook for Write|Edit. Denies an edit that transitions an
 item to a terminal status (task done, issue closed/fixed->closed, requirement
-verified, feature done) while any linked TST-* note is not `status: passing`.
+implemented, feature done) while any linked TST-* note is not `status: passing`.
 
 Escape hatches (both are recorded artifacts, not silence):
   - the new content or the existing note carries `verification_waiver: <reason>`
@@ -20,7 +20,7 @@ import re
 import sys
 from pathlib import Path
 
-TERMINAL_RE = re.compile(r"status:\s*[\"']?(done|closed|verified)[\"']?\b")
+TERMINAL_RE = re.compile(r"status:\s*[\"']?(done|closed|implemented)[\"']?\b")
 ID_RE = re.compile(r"\b((?:TASK|ISS|REQ|FEAT))-(\d{2,})\b")
 TST_RE = re.compile(r"\bTST-\d{2,}\b")
 WAIVER_RE = re.compile(r"verification_waiver:\s*\S")

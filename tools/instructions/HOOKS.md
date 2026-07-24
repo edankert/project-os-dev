@@ -37,7 +37,7 @@ Contract IDs are `HC-001`..`HC-008`. (Earlier revisions of this file used `CHC-0
 
 ## HC-003: Verification gate
 
-- Trigger: before marking a task `done`, issue `closed`, requirement `verified`, or feature `done`.
+- Trigger: before marking a task `done`, issue `closed`, requirement `implemented`, or feature `done`.
 - Rule: `QUALITY.md` — "Verification gating (tests)".
 - Check logic:
   - Find linked `TST-*` IDs from the snapshot and note frontmatter.

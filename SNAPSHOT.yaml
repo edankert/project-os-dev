@@ -317,7 +317,7 @@ items:
       status: implemented
       owner: user:edwin
       priority: high
-      implements: [FEAT-0003, FEAT-0004]
+      implements: [FEAT-0003]
     REQ-0006:
       file: docs/requirements/REQ-0006-Verification-Gating.md
       title: "Verification gating must block status transitions when linked tests are not passing"
@@ -387,7 +387,7 @@ items:
       status: implemented
       owner: user:edwin
       priority: high
-      implements: [FEAT-0007, FEAT-0011]
+      implements: [FEAT-0007]
       supersedes: [REQ-0010]
 
   risks: {}

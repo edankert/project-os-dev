@@ -39,8 +39,7 @@ tags: [skills, statuses]
 Requirements are advanced by the work that delivers them, not on their own schedule:
 
 1. `draft` → `approved`: the criteria are agreed and features may now implement against them (`../feature-scaffold/SKILL.md`, "Requirement approval gate").
-2. `approved` → `implemented`: set at feature close-out once **all** features in the requirement's `implements:` list are `done`, with each acceptance criterion ticked against evidence and any departed-from criterion reconciled — full procedure in `../close-out/SKILL.md`, "Requirement advancement".
-3. `approved` → `implemented` is terminal (ADR-0007): requires every acceptance criterion ticked-with-evidence or reconciled per `../../instructions/QUALITY.md`. There is no `verified` requirement status — verification lives in `[[test]]` notes and the per-criterion evidence pointers.
+2. `approved` → `implemented` — **terminal** (ADR-0007). Set at feature close-out once the single feature named in the requirement's `implements:` is `done`, with every acceptance criterion ticked against evidence or reconciled — full procedure in `../close-out/SKILL.md`, "Requirement advancement". There is no `verified` requirement status; verification lives in `[[test]]` notes and the per-criterion evidence pointers.
 
 ## Deferral procedure (transition to `deferred`)
 

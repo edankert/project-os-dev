@@ -188,7 +188,7 @@ def compute_metric_counts(items, note_index):
         "tasks_deferred": count("TASK", {"deferred"}),
         "issues_deferred": count("ISS", {"deferred"}),
         "requirements_total": count("REQ"),
-        "requirements_implemented": count("REQ", {"implemented", "verified"}),
+        "requirements_implemented": count("REQ", {"implemented"}),
         "risks_open": count("RISK", {"open", "mitigating", "monitoring"}),
         "releases_total": count("REL"),
         "decisions_total": count("ADR"),
@@ -683,7 +683,10 @@ def validate(root, report):
             active = sorted(f for f, s in known.items() if s in ("in-progress", "in-review", "done"))
             report.warn("REQ-PREMATURE", "%s is still draft but %s is already being implemented; approve or amend the requirement first (feature-scaffold 'Requirement approval gate')" % (req_id, ", ".join(active)))
         # -- ADR-0007: `implements:` names at most one feature
-        own_feats = sorted({f for f in extract_ids((fm or {}).get("implements")) if prefix_of(f) == "FEAT"})
+        own_feats = sorted({
+            f for f in (extract_ids(entry.get("implements")) + extract_ids((fm or {}).get("implements")))
+            if prefix_of(f) == "FEAT"
+        })
         if len(own_feats) > 1:
             report.error("REQ-OWNER", "%s implements %d features (%s) but a requirement names at most one (ADR-0007); split the requirement, or pick the true owner and drop the rest" % (req_id, len(own_feats), ", ".join(own_feats)))
 
@@ -712,7 +715,9 @@ def validate(root, report):
             continue
         if effective_status(req_id) in DESCOPED:
             continue
-        for f in extract_ids((fm or {}).get("implements")):
+        r_entry = reqs_coll.get(req_id) if isinstance(reqs_coll.get(req_id), dict) else {}
+        owners = set(extract_ids(r_entry.get("implements"))) | set(extract_ids((fm or {}).get("implements")))
+        for f in sorted(owners):
             if prefix_of(f) == "FEAT":
                 reqs_by_owner.setdefault(f, []).append((req_id, note_path))
 
@@ -728,8 +733,9 @@ def validate(root, report):
         if not unresolved:
             continue
         emit = report.error if _after_gate_cutover(f_fm) else report.warn
-        noun = "requirement it owns has" if len(unresolved) == 1 else "requirements it owns have"
-        emit("FEATURE-REQ", "%s is done but a %s unresolved acceptance criteria: %s; tick with evidence, reconcile, or descope the requirement before closing the feature (ADR-0007)" % (feat_id, noun, ", ".join(unresolved)))
+        noun = ("a requirement it owns has" if len(unresolved) == 1
+                else "requirements it owns have")
+        emit("FEATURE-REQ", "%s is done but %s unresolved acceptance criteria: %s; tick with evidence, reconcile, or descope the requirement before closing the feature (ADR-0007)" % (feat_id, noun, ", ".join(unresolved)))
 
     # -- deferred notes must stay in the snapshot (SNAPSHOT.md retention)
     for item_id, (path, fm) in sorted(note_index.items()):

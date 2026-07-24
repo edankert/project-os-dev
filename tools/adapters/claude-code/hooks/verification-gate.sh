@@ -2,7 +2,7 @@
 # HC-003: Verification Gate (blocking)
 # Claude Code PreToolUse hook for Write/Edit tools.
 #
-# Denies status transitions to done/closed/verified while linked TST-* notes
+# Denies status transitions to done/closed/implemented while linked TST-* notes
 # are not `status: passing`; asks when no test is linked at all. Logic lives in
 # verification-gate.py (JSON/YAML resolution outgrew grep). Requires python3;
 # fails open with a note if unavailable so a missing runtime never bricks edits.
