@@ -52,6 +52,8 @@ Together these say: `verified` is a status that means nothing in practice, the c
 
 The requirement lifecycle becomes `draft → approved → implemented`, with `implemented` terminal. `retired`, `deferred`, `cancelled`, and `superseded` are unchanged. A requirement is `implemented` when its acceptance criteria are each **ticked with evidence or reconciled** (amended/superseded), per ADR-0006 — which this ADR keeps. `REQ-BOXES` is promoted from warning to **error** at the terminal status: a terminal requirement with an unticked, unreconciled criterion is a build failure. The acceptance checkboxes, not a status word, are the evidence surface.
 
+**Requirements are gated on criteria alone — never on linked tests.** A requirement needs no `[[test]]` note to reach `implemented`, and a linked test sitting at `blocked`/`failing`/`draft` does not block it either. Test status is informational for a requirement; where it matters it belongs in the evidence pointer on the criterion it supports. (Amended 2026-07-24 — see below.)
+
 Verification is not abandoned. It lives where it is actually done: `TST-*` notes carry their own `passing`/`failing` status, and each ticked criterion carries an evidence pointer. What is removed is the redundant second ledger — re-recording verification as a requirement status that, across 1,200+ notes, was set on delivery or on nothing far more often than on proof.
 
 ### 2. A requirement implements at most one feature
@@ -84,6 +86,18 @@ Retained from ADR-0006: tick only with evidence; reconcile, never tick to fit; a
 ## Consequences
 
 See frontmatter for the full list. The load-bearing ones: `implemented` becomes an honest terminal state that means "delivered, criteria evidenced", enforced rather than advisory; a feature can no longer close over unbuilt requirements; and the many-to-many ambiguity is deleted rather than modelled. The cost is a one-time migration (79 demotions, 11 ownership splits; the field-drift link fixes landed later with the triage) and the loss of a glance-level "proven vs delivered" distinction that, in 56 of 79 cases, was not true anyway — it survives, queryable, in the TST links and checkboxes.
+
+## Amendment (2026-07-24) — requirements are not test-gated
+
+The first implementation set `TERMINAL["requirements"] = "implemented"` to move the **criteria** gate (REQ-BOXES) onto the new terminal status. But `TERMINAL` also drives the validator's `VERIFY` check, so `implemented` silently inherited the **test** gate as well.
+
+That contradicted this ADR's own premise. The measured case against `verified` was that requirement-level test-gating is the wrong instrument; re-applying it to `implemented` reintroduced it through the back door. Worse, it applied *selectively*: two requirements in identical states — delivered, criteria evidenced — behaved differently based only on whether someone had linked a test. Linking a `blocked` test failed the build; linking nothing passed. It penalised the one behaviour the system wants to encourage, and it conflated `blocked` (never ran) with `failing` (ran and failed).
+
+Independent review flagged the asymmetry at the time ("VERIFY's expansion is not forward-only, unlike its siblings … a real decision recorded nowhere") and it was not acted on. The user caught it by asking why `implemented` requirements were being test-gated at all.
+
+**Fixed**: the validator now exempts `requirements` from the `VERIFY` test-link gate; `REQ-BOXES` (criteria) is their only gate. `VERIFY` continues to apply to tasks, issues and features, where linked tests are the agreed instrument.
+
+**Consequence**: your-sudoku REQ-0086 and REQ-0087 were demoted to `approved` under the wrong rule — solely because they link the blocked `TST-0013`. They are delivered with unevidenced criteria, which is `implemented` with a REQ-BOXES warning. Restored.
 
 ## Numbers corrected (2026-07-24, independent review)
 

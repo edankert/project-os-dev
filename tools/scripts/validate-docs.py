@@ -13,7 +13,7 @@ TRACEABILITY.md define by convention:
   5. Link-graph integrity: every ID referenced from snapshot relationship
      fields or note frontmatter resolves to a snapshot item or a note file.
   6. Verification invariant: no item may hold a terminal status
-     (task done, issue closed, requirement implemented, feature done) unless
+     (task done, issue closed, feature done) unless
      every linked TST-* is status: passing — or the note carries an explicit
      recorded waiver (frontmatter key: verification_waiver).
   7. Deferral invariants (STATUSES.md "Deferral and re-adoption"): deferred
@@ -597,6 +597,16 @@ def validate(root, report):
 
             # -- verification invariant
             terminal = TERMINAL.get(coll_name)
+            # ADR-0007: requirements are gated on their acceptance criteria
+            # (REQ-BOXES), never on linked tests. `verified` was retired
+            # precisely because requirement-level test-gating was the wrong
+            # instrument; re-applying it here — and only to requirements that
+            # happen to link a test — would reintroduce it through the back
+            # door and perversely punish linking one at all. Test status stays
+            # informational for requirements; VERIFY still gates tasks, issues
+            # and features, where linked tests are the agreed instrument.
+            if coll_name == "requirements":
+                terminal = None
             if terminal and status == terminal:
                 waiver = str(fm.get("verification_waiver", "") or entry.get("verification_waiver", "")).strip()
                 linked_tests = set(extract_ids(entry.get("tests"))) | set(extract_ids(fm.get("tests")))

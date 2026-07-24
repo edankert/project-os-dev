@@ -47,7 +47,7 @@ Terminal-status semantics: `done`/`closed`/`cancelled`/`wont-fix` **resolve** an
 
 ## `[[requirement]]`
 - Allowed: `draft`, `approved`, `implemented`, `retired`, `deferred`, `cancelled`, `superseded`
-- **`implemented` is terminal** (ADR-0007). There is no `verified` requirement status: verification lives in `[[test]]` notes (which carry their own `passing`/`failing` status) and in the per-criterion evidence pointers on the acceptance checkboxes. Recording it a second time as a requirement status added no information and, in practice, was set on delivery or on nothing far more often than on proof.
+- **`implemented` is terminal** (ADR-0007), and gated on acceptance criteria alone — never on linked tests. There is no `verified` requirement status: verification lives in `[[test]]` notes (which carry their own `passing`/`failing` status) and in the per-criterion evidence pointers on the acceptance checkboxes. Recording it a second time as a requirement status added no information and, in practice, was set on delivery or on nothing far more often than on proof.
 - Typical transitions:
   - `draft` → `approved` → `implemented`
   - `approved` → `implemented` is set at **feature close-out**, not independently: once the feature named in the requirement's `implements:` has reached a terminal status, its acceptance criteria are ticked against evidence and any departed-from criterion is reconciled (`../skills/close-out/SKILL.md`, "Requirement advancement"). A requirement left at `draft`/`approved` once its feature is terminal (`done`, `cancelled`, or `superseded`) is a validator error (REQ-STALE) — if the feature was cancelled or superseded rather than delivered, supersede or cancel the requirement instead of advancing it.
