@@ -46,16 +46,17 @@
   // (COMPLETED_STATUSES); tests/test_status_vocabulary.py parses this
   // object and fails if the two drift apart.
   //
-  // NOTE: `implemented` / `staged` / `monitoring` are deliberately NOT here
-  // (ISS-0023). They are the Delivered band — shipped but not yet signed
-  // off — and project-os gates `implemented → verified` on passing test
-  // notes (STATUSES.md, QUALITY.md). Hiding them would conceal exactly the
-  // population that still owes a verification record. Do not "fix" this by
-  // adding them; they carry their own amber chip instead.
+  // NOTE: `staged` / `monitoring` are deliberately NOT here (ISS-0023).
+  // They are the Delivered band — shipped but not signed off (a release
+  // ready but not live; a risk mitigated but still watched). Do not "fix"
+  // this by adding them; they carry their own amber chip instead.
+  // `implemented` WAS in that band until ADR-0007 retired the requirement
+  // `verified` status and made `implemented` terminal — it is completed now.
   var COMPLETED_STATUSES = {
     // Done — positive (accepted / verified / shipped)
     done: 1, merged: 1, fixed: 1, resolved: 1, fulfilled: 1, met: 1,
-    complete: 1, verified: 1, passing: 1, published: 1, released: 1,
+    complete: 1, implemented: 1, verified: 1, passing: 1, published: 1,
+    released: 1,
     closed: 1,
     // Done — negative (terminal without success)
     obsolete: 1, retired: 1, cancelled: 1, superseded: 1,

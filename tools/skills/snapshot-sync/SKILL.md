@@ -38,7 +38,7 @@ tags: [skills, snapshot]
 4. Check verification status consistency:
    - task `done` requires linked tests to be `passing`
    - issue `closed` requires linked tests to be `passing`
-   - requirement `verified` requires linked tests to be `passing`
+   - requirement `implemented` (terminal) requires all acceptance criteria ticked-with-evidence or reconciled
    - feature `done` requires required tasks and tests to be complete
 5. Detect orphaned notes:
    - scan `../../../docs/phases/`, `../../../docs/features/`, `../../../docs/issues/`, `../../../docs/requirements/`, `../../../docs/risks/`, and `../../../docs/tests/`

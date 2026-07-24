@@ -19,9 +19,9 @@ acceptance:
   - "Bases surface relationships through the field-agnostic link graph (file.hasLink) rather than per-field contains filters"
   - "The validator enforces link-graph integrity over these fields, including parent, tasks, implements, supersedes/superseded, origin and deferred"
 supersedes: "[[REQ-0010-Named-Relationship-Fields]]"
-implements: ["[[FEAT-0007-Relationship-Model]]", "[[FEAT-0011-Deferral-Descoping]]"]
+implements: ["[[FEAT-0007-Relationship-Model]]"]
 verifies: []
-related: [REQ-0010, REQ-0013, ISS-0004]
+related: ["[[FEAT-0011-Deferral-Descoping]]"]
 tests: []
 ---
 

@@ -423,9 +423,10 @@ STATUS_RANK: dict[str, int] = {
     "todo": 32, "open": 33, "pending": 33, "triage": 34, "reference": 35,
     # delivered — shipped, not yet signed off (ISS-0023). Ranks between the
     # backlog and done bands: no longer work-to-do, not yet finished.
-    "implemented": 50, "staged": 51, "monitoring": 52,
-    # done
+    "staged": 51, "monitoring": 52,
+    # done ( `implemented` is terminal for requirements since ADR-0007 )
     "done": 60, "fixed": 60, "merged": 60, "published": 60, "resolved": 60,
+    "implemented": 62,
     "fulfilled": 61, "met": 61, "complete": 61, "released": 61,
     "verified": 65, "passing": 65,
     # dead / blocked
@@ -437,9 +438,10 @@ STATUS_RANK: dict[str, int] = {
 STATUS_RANK_DEFAULT: int = 55
 
 # Statuses whose collapsible group defaults to closed (still expandable) —
-# the terminal ones only. `implemented` is NOT among them: it is delivered
-# but unverified, and collapsing it away hides the work that still owes a
-# verification record (ISS-0023).
+# the terminal ones only. `staged`/`monitoring` are NOT among them: they are
+# delivered but not signed off, and collapsing them hides work still owing a
+# sign-off (ISS-0023). `implemented` is terminal since ADR-0007, so it does
+# collapse.
 COLLAPSED_BY_DEFAULT: frozenset[str] = COMPLETED_STATUSES
 
 

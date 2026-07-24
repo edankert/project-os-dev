@@ -22,7 +22,8 @@ tags: [skills, statuses]
 ## Checklist
 1. Confirm the transition is allowed (see `../../instructions/STATUSES.md`).
 2. **Pre-transition gates:**
-   - Verification gate: before transitioning a task to `done`, issue to `closed`, requirement to `verified`, feature to `done`, or phase to `done`, verify linked `TST-*` notes are passing and every child in the scope list is scope-resolved (`done` or `cancelled` — never `deferred`; see `../../instructions/QUALITY.md`).
+   - Verification gate: before transitioning a task to `done`, issue to `closed`, requirement to `implemented`, feature to `done`, or phase to `done`, verify linked `TST-*` notes are passing and every child in the scope list is scope-resolved (`done` or `cancelled` — never `deferred`; see `../../instructions/QUALITY.md`).
+   - Feature gate: before transitioning a feature to `done`, verify every requirement naming it in `implements:` has all acceptance criteria ticked-with-evidence or reconciled, or is descoped (validator FEATURE-REQ).
    - Phase alignment gate: before transitioning a task to `doing`, check the task `phase` (or inherited parent feature phase) against `focus.phase` in `../../../SNAPSHOT.yaml`. If the task is ahead of the active phase, stop and request explicit user confirmation.
    - Deferral gate: transitioning to `deferred` is a **descoping operation**, not a plain status flip — run the deferral procedure below, all steps in the same turn.
 3. Update `../../../SNAPSHOT.yaml`:
@@ -39,7 +40,7 @@ Requirements are advanced by the work that delivers them, not on their own sched
 
 1. `draft` → `approved`: the criteria are agreed and features may now implement against them (`../feature-scaffold/SKILL.md`, "Requirement approval gate").
 2. `approved` → `implemented`: set at feature close-out once **all** features in the requirement's `implements:` list are `done`, with each acceptance criterion ticked against evidence and any departed-from criterion reconciled — full procedure in `../close-out/SKILL.md`, "Requirement advancement".
-3. `implemented` → `verified`: requires passing `[[test]]` notes per `../../instructions/QUALITY.md`. Never skip from `approved` straight to `verified`.
+3. `approved` → `implemented` is terminal (ADR-0007): requires every acceptance criterion ticked-with-evidence or reconciled per `../../instructions/QUALITY.md`. There is no `verified` requirement status — verification lives in `[[test]]` notes and the per-criterion evidence pointers.
 
 ## Deferral procedure (transition to `deferred`)
 

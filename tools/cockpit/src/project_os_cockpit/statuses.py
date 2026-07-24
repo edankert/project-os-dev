@@ -28,12 +28,13 @@ Band semantics (REQ-0012, as amended 2026-07-24):
 ``blocked``     stalled or failing
 ``reference``   not lifecycle state at all, or parked out of scope
 
-``delivered`` is the band ISS-0023 added. project-os defines
-``implemented`` as "built but not yet formally verified" and gates
-``implemented → verified`` on passing test notes (STATUSES.md, QUALITY.md),
-so it is *not* completed: it must stay visible when the user hides
-completed work, since it is precisely the population that still owes
-verification.
+``delivered`` is the band ISS-0023 added for work that is shipped but not
+signed off. ``implemented`` was its founding member; ADR-0007 subsequently
+retired the requirement ``verified`` status and made ``implemented``
+terminal, so it now sits in ``done`` and the band keeps ``staged`` and
+``monitoring`` — a release that is ready but not live, and a risk that is
+mitigated but still watched. Both are still genuinely non-terminal, so the
+band and its exclusion from Hide-completed remain correct.
 """
 
 from __future__ import annotations
@@ -52,13 +53,13 @@ BANDS: dict[str, tuple[str, ...]] = {
     ),
     # Non-terminal: delivered, awaiting verification / sign-off.
     "delivered": (
-        "implemented",   # requirement: built, not yet verified
         "staged",        # release: verified and ready, not yet live
         "monitoring",    # risk: mitigated, still under watch
     ),
     "done": (
         "done", "merged", "fixed", "resolved",
         "fulfilled", "met", "complete",
+        "implemented",   # requirement: terminal since ADR-0007
         "verified", "passing", "published", "released", "closed",
     ),
     "archived": (

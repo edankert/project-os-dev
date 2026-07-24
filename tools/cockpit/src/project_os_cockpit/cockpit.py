@@ -103,9 +103,10 @@ _TYPE_RANK: dict[str, int] = {t: i for i, t in enumerate(TYPE_ORDER)}
 # This is attention priority, which is finer-grained than the colour bands
 # in `statuses.py` — hence an explicit tuple rather than a derivation. The
 # two are kept in step by tests/test_status_vocabulary.py, which fails if
-# any vocabulary status is missing here. `implemented` / `staged` /
-# `monitoring` sit in their own delivered band just above the done family:
-# shipped, but still owing verification, so they outrank finished work.
+# any vocabulary status is missing here. `staged` / `monitoring` sit in
+# their own delivered band just above the done family: shipped, but not
+# signed off, so they outrank finished work. `implemented` joined the done
+# family when ADR-0007 made it the terminal requirement status.
 TASK_STATUS_ORDER: tuple[str, ...] = (
     "doing", "in-progress", "in-review", "next",
     "blocked", "failing", "reopened", "deferred",
@@ -113,8 +114,9 @@ TASK_STATUS_ORDER: tuple[str, ...] = (
     "planned", "triage",
     "todo", "open", "pending", "backlog",
     "draft", "proposed",
-    "implemented", "staged", "monitoring",
+    "staged", "monitoring",
     "done", "merged", "fixed", "resolved", "fulfilled", "met", "complete",
+    "implemented",
     "verified", "passing", "published", "released", "closed",
     "obsolete", "retired", "cancelled", "superseded", "wont-fix", "reverted",
     "rolled-back", "deprecated",

@@ -25,7 +25,7 @@ docs_system:
     - docs/PHASES.md
 
 counters:
-  ADR: 6
+  ADR: 7
   CHG:
     last_date: 20260724
   FEAT: 12
@@ -413,6 +413,13 @@ items:
       status: merged
 
   decisions:
+    ADR-0007:
+      file: docs/decisions/ADR-0007-Requirement-Terminality-And-Ownership.md
+      title: "Requirement terminality is `implemented` (retire `verified`); a requirement implements at most one feature; features gate on their requirements' criteria"
+      status: accepted
+      owner: user:edwin
+      decision: "Retire requirement `verified` (implemented becomes terminal, criteria-gated); `implements:` names at most one feature (delete the many-to-many case); add the missing reverse gate so a feature cannot be done until every requirement naming it has resolved criteria, forward-only. Feature-less requirement triage (constraints vs unlinked deliverables) deferred to a follow-up"
+      related: [ADR-0006, ADR-0005, ADR-0004]
     ADR-0001:
       file: docs/decisions/ADR-0001-Tool-Adapter-Architecture.md
       title: "Use tool-specific adapters instead of a monolithic CONTEXT.md"
@@ -473,4 +480,4 @@ metrics:
     requirements_implemented: 14
     risks_open: 0
     releases_total: 0
-    decisions_total: 6
+    decisions_total: 7

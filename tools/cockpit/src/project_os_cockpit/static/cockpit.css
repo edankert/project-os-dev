@@ -1278,7 +1278,6 @@ details:not([open]) > summary .group-chevron {
 .group-icon[data-status="proposed"],
 .group-icon[data-status="triage"]     { color: var(--status-pending); }
 
-.group-icon[data-status="implemented"],
 .group-icon[data-status="staged"],
 .group-icon[data-status="monitoring"] { color: var(--status-delivered); }
 
@@ -1289,6 +1288,7 @@ details:not([open]) > summary .group-chevron {
 .group-icon[data-status="fulfilled"],
 .group-icon[data-status="met"],
 .group-icon[data-status="complete"],
+.group-icon[data-status="implemented"],
 .group-icon[data-status="verified"],
 .group-icon[data-status="passing"],
 .group-icon[data-status="published"],

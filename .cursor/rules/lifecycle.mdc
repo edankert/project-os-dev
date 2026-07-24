@@ -71,7 +71,7 @@ Agents are REQUIRED to automatically keep the documentation system in sync with 
 
 ## Close-out (must happen after work)
 After completing a task/issue/feature:
-1. Update the Markdown note status (task `done`, issue `fixed` then `closed`, requirement `verified`, feature `done`).
+1. Update the Markdown note status (task `done`, issue `fixed` then `closed`, requirement `implemented`, feature `done`).
 2. Update `../../SNAPSHOT.yaml` to reflect:
    - updated statuses
    - new/changed relationships (links)
@@ -81,7 +81,7 @@ After completing a task/issue/feature:
 5. Do not delete completed notes; use status + links to preserve history.
 6. Apply verification gating (see `QUALITY.md`): only close/verify/done when required `[[test]]` notes are `status: passing`.
 7. Run `bash tools/scripts/validate-docs.sh` and fix anything it reports — the same validator runs at pre-commit and in CI, so drift left behind here becomes a build failure there.
-8. If the work created/updated a `TST-*` or `CHG-*` note, or transitions a requirement to `verified` / feature to `done`, run the independent review pass (`../skills/independent-review/SKILL.md`).
+8. If the work created/updated a `TST-*` or `CHG-*` note, or transitions a requirement to `implemented` / feature to `done`, run the independent review pass (`../skills/independent-review/SKILL.md`).
 
 ## Snapshot retention (active + recent)
 - Keep `../../SNAPSHOT.yaml` focused on active + recent items.

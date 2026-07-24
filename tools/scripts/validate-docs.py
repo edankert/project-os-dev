@@ -13,7 +13,7 @@ TRACEABILITY.md define by convention:
   5. Link-graph integrity: every ID referenced from snapshot relationship
      fields or note frontmatter resolves to a snapshot item or a note file.
   6. Verification invariant: no item may hold a terminal status
-     (task done, issue closed, requirement verified, feature done) unless
+     (task done, issue closed, requirement implemented, feature done) unless
      every linked TST-* is status: passing — or the note carries an explicit
      recorded waiver (frontmatter key: verification_waiver).
   7. Deferral invariants (STATUSES.md "Deferral and re-adoption"): deferred
@@ -21,12 +21,16 @@ TRACEABILITY.md define by convention:
      IDs; deferred items need a forward home (phase), deferred tasks need
      origin provenance and no parent, and deferred notes may not be pruned
      from the snapshot.
-  8. Requirement lifecycle (QUALITY.md; close-out "Requirement advancement"):
-     a requirement whose implementing features have all reached a terminal
+  8. Requirement lifecycle (QUALITY.md; close-out "Requirement advancement";
+     ADR-0007): a requirement whose implementing feature has reached a terminal
      status (done/cancelled/superseded) may not sit at draft/approved
      (REQ-STALE); features should not implement against a draft requirement
-     (REQ-PREMATURE); an implemented/verified requirement should carry one
-     ticked acceptance criterion per criterion of record (REQ-BOXES).
+     (REQ-PREMATURE); `implemented` is terminal and must carry one ticked-or-
+     reconciled acceptance criterion per criterion of record (REQ-BOXES);
+     `implements:` names at most one feature (REQ-OWNER); and a feature may not
+     be done while a requirement naming it has unresolved criteria
+     (FEATURE-REQ). The last two gates are forward-only — see
+     FEATURE_REQ_GATE_FROM.
 
 Exit codes: 0 = clean, 1 = violations found, 2 = usage/internal error.
 
@@ -62,7 +66,7 @@ ALLOWED_STATUS = {
     "issue": {"triage", "open", "in-progress", "blocked", "fixed", "closed", "reopened", "wont-fix", "deferred"},
     "feature": {"backlog", "planned", "in-progress", "in-review", "done", "deferred", "cancelled", "superseded"},
     "phase": {"planned", "active", "done", "deferred"},
-    "requirement": {"draft", "approved", "implemented", "verified", "retired", "deferred", "cancelled", "superseded"},
+    "requirement": {"draft", "approved", "implemented", "retired", "deferred", "cancelled", "superseded"},
     "risk": {"open", "mitigating", "monitoring", "closed"},
     "workflow": {"draft", "active", "deprecated"},
     "change": {"merged", "reverted"},
@@ -105,7 +109,7 @@ def load_allowed_status(root):
 TERMINAL = {
     "tasks": "done",
     "issues": "closed",
-    "requirements": "verified",
+    "requirements": "implemented",
     "features": "done",
 }
 
@@ -114,6 +118,31 @@ RELATIONSHIP_FIELDS = (
     "phases", "phase", "depends", "blocks", "mitigation_tasks", "workflows",
     "origin", "deferred", "implements", "supersedes", "superseded",
 )
+
+# ADR-0007 FEATURE-REQ gate cutover. A feature that closed before this date is
+# grandfathered: its unresolved requirement criteria are reported as a warning
+# (visible debt) rather than an error (blocking). Features touched on or after it
+# are held to the gate. Compared against the feature note's `updated:` date;
+# an absent or unparseable date is treated as grandfathered.
+FEATURE_REQ_GATE_FROM = "2026-07-25"
+
+def _after_gate_cutover(fm):
+    """True when a note was last touched on/after the ADR-0007 gate cutover.
+
+    Used to keep the FEATURE-REQ and terminal REQ-BOXES gates forward-only:
+    work that closed under the old rules stays a warning (visible debt), while
+    anything closed or edited afterwards is a build failure. A missing or
+    unparseable `updated:` is treated as grandfathered — the gate never fires
+    on a note it cannot date.
+    """
+    raw = (fm or {}).get("updated")
+    if raw is None:
+        return False
+    text = str(raw).strip().strip('"').strip("'")[:10]
+    if len(text) != 10 or text[4] != "-" or text[7] != "-":
+        return False
+    return text >= FEATURE_REQ_GATE_FROM
+
 
 # Statuses that resolve an item's place in a parent's scope / a requirement's delivery.
 # `deferred` is deliberately absent (STATUSES.md, "Deferral and re-adoption").
@@ -653,16 +682,54 @@ def validate(root, report):
         elif status == "draft" and any(s in ("in-progress", "in-review", "done") for s in known.values()):
             active = sorted(f for f, s in known.items() if s in ("in-progress", "in-review", "done"))
             report.warn("REQ-PREMATURE", "%s is still draft but %s is already being implemented; approve or amend the requirement first (feature-scaffold 'Requirement approval gate')" % (req_id, ", ".join(active)))
-        if status in ("implemented", "verified") and note_path is not None:
+        # -- ADR-0007: `implements:` names at most one feature
+        own_feats = sorted({f for f in extract_ids((fm or {}).get("implements")) if prefix_of(f) == "FEAT"})
+        if len(own_feats) > 1:
+            report.error("REQ-OWNER", "%s implements %d features (%s) but a requirement names at most one (ADR-0007); split the requirement, or pick the true owner and drop the rest" % (req_id, len(own_feats), ", ".join(own_feats)))
+
+        if status == "implemented" and note_path is not None:
             unticked, ticked = count_acceptance_boxes(note_path)
             criteria = entry.get("acceptance") or (fm or {}).get("acceptance") or []
             n_criteria = len(criteria) if isinstance(criteria, list) else 0
+            # Forward-only, as for FEATURE-REQ: a requirement that went terminal
+            # before the cutover is grandfathered to a warning (visible debt);
+            # one advanced or touched afterwards is a build failure.
+            emit = report.error if _after_gate_cutover(fm) else report.warn
             if unticked:
-                report.warn("REQ-BOXES", "%s is '%s' but %d acceptance criterion/criteria remain unticked (%s); tick with evidence or reconcile them" % (req_id, status, unticked, note_path.relative_to(root)))
+                emit("REQ-BOXES", "%s is '%s' (terminal) but %d acceptance criterion/criteria remain unticked (%s); tick with evidence or reconcile them" % (req_id, status, unticked, note_path.relative_to(root)))
             elif n_criteria and not (unticked + ticked):
-                report.warn("REQ-BOXES", "%s is '%s' with %d acceptance criteria but no verification record — its note has no ticked acceptance checkboxes (%s); add one box per criterion with an evidence pointer (SCHEMAS.md)" % (req_id, status, n_criteria, note_path.relative_to(root)))
+                emit("REQ-BOXES", "%s is '%s' (terminal) with %d acceptance criteria but no verification record — its note has no ticked acceptance checkboxes (%s); add one box per criterion with an evidence pointer (SCHEMAS.md)" % (req_id, status, n_criteria, note_path.relative_to(root)))
             elif n_criteria and (unticked + ticked) != n_criteria:
-                report.warn("REQ-BOXES", "%s is '%s' with %d criteria of record but %d acceptance checkbox(es) (%s); SCHEMAS.md requires one box per criterion, so the verification record is partial" % (req_id, status, n_criteria, unticked + ticked, note_path.relative_to(root)))
+                emit("REQ-BOXES", "%s is '%s' (terminal) with %d criteria of record but %d acceptance checkbox(es) (%s); SCHEMAS.md requires one box per criterion, so the verification record is partial" % (req_id, status, n_criteria, unticked + ticked, note_path.relative_to(root)))
+
+    # -- ADR-0007 FEATURE-REQ: a feature may not be `done` while a requirement
+    #    naming it still has an unresolved acceptance criterion. Forward-only.
+    DESCOPED = ("deferred", "cancelled", "superseded")
+    reqs_by_owner = {}   # FEAT id -> [(REQ id, note_path)]
+    for req_id in sorted(req_ids):
+        note_path, fm = note_index.get(req_id, (None, {}))
+        if note_path is None:
+            continue
+        if effective_status(req_id) in DESCOPED:
+            continue
+        for f in extract_ids((fm or {}).get("implements")):
+            if prefix_of(f) == "FEAT":
+                reqs_by_owner.setdefault(f, []).append((req_id, note_path))
+
+    for feat_id, owned in sorted(reqs_by_owner.items()):
+        if effective_status(feat_id) != "done":
+            continue
+        f_path, f_fm = note_index.get(feat_id, (None, {}))
+        unresolved = []
+        for req_id, req_path in owned:
+            unticked, ticked = count_acceptance_boxes(req_path)
+            if unticked:
+                unresolved.append("%s (%d unticked)" % (req_id, unticked))
+        if not unresolved:
+            continue
+        emit = report.error if _after_gate_cutover(f_fm) else report.warn
+        noun = "requirement it owns has" if len(unresolved) == 1 else "requirements it owns have"
+        emit("FEATURE-REQ", "%s is done but a %s unresolved acceptance criteria: %s; tick with evidence, reconcile, or descope the requirement before closing the feature (ADR-0007)" % (feat_id, noun, ", ".join(unresolved)))
 
     # -- deferred notes must stay in the snapshot (SNAPSHOT.md retention)
     for item_id, (path, fm) in sorted(note_index.items()):

@@ -16,7 +16,7 @@ A model reviewing its own output shares its blind spots: same-family generation 
 ## When to use
 - A change creates or updates any `TST-*` note (the author of a fix must not be the sole judge of the test that guards it).
 - A change carries a `CHG-*` note (behavior, paths, or contracts changed).
-- A close-out would transition a requirement to `verified` or a feature to `done`.
+- A close-out would transition a requirement to `implemented` or a feature to `done`.
 - Any time a `verification_waiver` is being recorded (the waiver itself deserves a second pair of eyes).
 
 ## Inputs

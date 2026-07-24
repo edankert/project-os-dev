@@ -17,9 +17,9 @@ acceptance:
   - "SNAPSHOT.yaml documents an optional team model identifying members and their tool adapters (descriptive only; ships commented out in the template)"
   - "Preflight rules do not include claim-checking steps"
   - "Recovery/handoff instructions work without agent-specific session metadata"
-implements: ["[[FEAT-0003-Team-Model]]", "[[FEAT-0004-Snapshot-Simplification]]"]
+implements: ["[[FEAT-0003-Team-Model]]"]
 verifies: []
-related: []
+related: ["[[FEAT-0004-Snapshot-Simplification]]"]
 tests: []
 ---
 
