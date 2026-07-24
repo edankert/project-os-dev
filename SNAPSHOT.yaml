@@ -27,7 +27,7 @@ docs_system:
 counters:
   ADR: 6
   CHG:
-    last_date: 20260721
+    last_date: 20260724
   FEAT: 12
   ISS: 4
   REL: 0
@@ -391,6 +391,10 @@ items:
   workflows: {}
 
   changes:
+    CHG-20260724-Verification-Record-Backfill:
+      title: "Requirement verification records made machine-readable — criteria of record in frontmatter, criteria as checkboxes, `tests:` key present"
+      status: merged
+      file: "docs/changes/CHG-20260724-Verification-Record-Backfill.md"
     CHG-20260721-Requirement-Lifecycle-Closure:
       file: docs/changes/CHG-20260721-Requirement-Lifecycle-Closure.md
       title: "Requirements advance on evidence: close-out step, approval gate, REQ-* validator checks, and a 12-requirement backfill"

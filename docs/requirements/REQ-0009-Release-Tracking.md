@@ -6,7 +6,7 @@ title: "Releases must be tracked as first-class notes with traceability"
 status: implemented
 owner: user:edwin
 created: 2026-03-08
-updated: 2026-07-21
+updated: 2026-07-24
 priority: medium
 acceptance:
   - REL-* notes capture version, tag, date, included features, changes, and verified tests
@@ -15,6 +15,7 @@ acceptance:
   - Release-verification skill creates REL-* notes as part of the gating workflow
 implements: ["[[FEAT-0006]]"]
 tags: [release-tracking]
+tests: []
 ---
 
 # Release tracking requirement

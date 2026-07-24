@@ -6,7 +6,7 @@ title: "Impact analysis must run as mandatory preflight for new requirements"
 status: implemented
 owner: user:edwin
 created: 2026-03-08
-updated: 2026-07-21
+updated: 2026-07-24
 priority: high
 implements: ["[[FEAT-0005]]"]
 acceptance:
@@ -15,6 +15,7 @@ acceptance:
   - "Impact analysis skill exists as a structured playbook; the mandatory STOP on unresolved conflict is stated by every call site (feature-scaffold, issue-intake, LIFECYCLE preflight)"
   - "LIFECYCLE.md includes impact analysis in preflight for new requirements"
 related: [ADR-0004]
+tests: []
 ---
 
 # Impact analysis must run as mandatory preflight for new requirements

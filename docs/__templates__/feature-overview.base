@@ -1,0 +1,76 @@
+formulas:
+  display_title: 'if(title, title, file.name)'
+filters:
+  and:
+    - file.ext == "md"
+    - not:
+        - file.inFolder("__templates__")
+        - file.inFolder(".trash")
+        - file.inFolder(".obsidian")
+    - or:
+        - type == "[[task]]"
+        - type == "[[requirement]]"
+        - type == "[[issue]]"
+        - type == "[[test]]"
+    - or:
+        - parent == "[[FEAT-0000-PLACEHOLDER]]"
+        - implements contains "[[FEAT-0000-PLACEHOLDER]]"
+        - features contains "[[FEAT-0000-PLACEHOLDER]]"
+        - related contains "[[FEAT-0000-PLACEHOLDER]]"
+properties:
+  file.name:
+    displayName: Note
+  formula.display_title:
+    displayName: Title
+  type:
+    displayName: Type
+  id:
+    displayName: ID
+  status:
+    displayName: Status
+  file.mtime:
+    displayName: Updated
+views:
+  - type: table
+    name: All
+    order:
+      - formula.display_title
+      - type
+      - status
+      - file.mtime
+    sort:
+      - property: type
+        direction: ASC
+      - property: status
+        direction: ASC
+  - type: table
+    name: Tasks
+    filters: 'type == "[[task]]"'
+    order:
+      - formula.display_title
+      - status
+      - file.mtime
+    sort:
+      - property: status
+        direction: ASC
+  - type: table
+    name: Requirements
+    filters: 'type == "[[requirement]]"'
+    order:
+      - formula.display_title
+      - status
+      - file.mtime
+  - type: table
+    name: Issues
+    filters: 'type == "[[issue]]"'
+    order:
+      - formula.display_title
+      - status
+      - file.mtime
+  - type: table
+    name: Tests
+    filters: 'type == "[[test]]"'
+    order:
+      - formula.display_title
+      - status
+      - file.mtime

@@ -6,7 +6,7 @@ title: "Verification gating must block status transitions when linked tests are 
 status: implemented
 owner: user:edwin
 created: 2026-03-08
-updated: 2026-07-21
+updated: 2026-07-24
 priority: high
 implements: ["[[FEAT-0005]]"]
 acceptance:
@@ -14,6 +14,7 @@ acceptance:
   - "Status-transition skill includes a verification gate before done/closed/verified transitions"
   - "Agent must STOP if any linked test is not passing"
 related: [ADR-0004]
+tests: []
 ---
 
 # Verification gating must block status transitions when linked tests are not passing

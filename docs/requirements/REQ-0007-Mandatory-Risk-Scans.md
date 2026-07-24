@@ -6,7 +6,7 @@ title: "Risk scans must be mandatory with explicit trigger checklist"
 status: implemented
 owner: user:edwin
 created: 2026-03-08
-updated: 2026-07-21
+updated: 2026-07-24
 priority: high
 implements: ["[[FEAT-0005]]"]
 acceptance:
@@ -14,6 +14,7 @@ acceptance:
   - "The trigger checklist is explicit and single-sourced in LIFECYCLE.md (mirrored in the risk-scan skill), referenced by each skill rather than duplicated"
   - "Agent must create RISK-* note if any trigger applies, or record 'No new risks identified'"
 related: [ADR-0004]
+tests: []
 ---
 
 # Risk scans must be mandatory with explicit trigger checklist
