@@ -87,9 +87,11 @@ ALLOWED_STATUS = {
     "adr": {"proposed", "accepted", "superseded"},
     # `decision` is an accepted alias for `adr` -- COLLECTION_TYPE has mapped
     # decisions to {"adr", "decision"} all along, but ALLOWED_STATUS never
-    # carried the alias, so a decision-typed note's status was validated against
-    # nothing. Found by the type-table check added for ISS-0014; one such note
-    # exists fleet-wide (your-health ADR-0006, `accepted`, legal either way).
+    # carried the alias. Found by the type-table check added for ISS-0014; one
+    # such note exists fleet-wide (your-health ADR-0006, `accepted`, legal either
+    # way). Not a dead gate, as ISS-0014 first said -- STATUS-VALUE picked one
+    # type out of an unordered set, so it fired by hash seed (6/12 measured).
+    # ISS-0015 replaced that pick with a union check.
     "decision": {"proposed", "accepted", "superseded"},
     "test": {"ready", "passing", "failing"},
     "release": {"draft", "released", "reverted"},
@@ -320,9 +322,9 @@ def validate_status_tables(report):
       REVIEW_SETTLED_STATUSES  collection -> statuses, via COLLECTION_TYPE
       (type tables)          COLLECTION_TYPE / TERMINAL_TYPES / METRIC_PREFIX_TYPE
                              hold note TYPES, asserted to exist in ALLOWED_STATUS
-      (completeness)         every module-level container holding a string, at any
-                             nesting depth and of any shape, is either registered
-                             above or named in _NON_STATUS_COLLECTIONS
+      (completeness)         every module-level tuple/list/set/frozenset/dict
+                             holding a string, at any nesting depth, is either
+                             registered above or named in _NON_STATUS_COLLECTIONS
 
     All three of the misses ISS-0011 records would have failed here.
 
@@ -405,18 +407,27 @@ def validate_status_tables(report):
         registered.add(id(table))
         registered.update(id(v) for v in table.values())
 
-    def _holds_strings(value, depth=0):
-        """True if value is a container with a string anywhere inside it."""
-        if depth > 4:
-            return False
+    def _holds_strings(value, seen=None):
+        """True if value is a container with a string anywhere inside it.
+
+        Unbounded, and cycle-safe by identity rather than by a depth cap. It
+        capped at depth 4 until ISS-0015 -- which is a defensible implementation
+        and an indefensible pair with a docstring promising "any nesting depth".
+        Given the choice between weakening the sentence and making it true, make
+        it true: a cap is an arbitrary number a future table can exceed, and the
+        only reason for one was cycles, which `seen` handles properly.
+        """
         if isinstance(value, str):
             return True
-        if isinstance(value, dict):
-            return any(_holds_strings(k, depth + 1) or _holds_strings(v, depth + 1)
-                       for k, v in value.items())
-        if isinstance(value, (tuple, list, set, frozenset)):
-            return any(_holds_strings(v, depth + 1) for v in value)
-        return False
+        if not isinstance(value, (tuple, list, set, frozenset, dict)):
+            return False
+        seen = set() if seen is None else seen
+        if id(value) in seen:
+            return False
+        seen.add(id(value))
+        items = ([x for kv in value.items() for x in kv] if isinstance(value, dict)
+                 else list(value))
+        return any(_holds_strings(v, seen) for v in items)
 
     for name, value in sorted(globals().items()):
         # Only the allow-list itself is exempt by identity. Skipping names by
@@ -1175,9 +1186,22 @@ def validate(root, report):
                     if snap_status and fm_status and str(snap_status) != str(fm_status):
                         report.error("ITEM-STATUS", "%s status drift: snapshot=%s note=%s (%s)" % (item_id, snap_status, fm_status, file_rel))
             status = str(entry.get("status", ""))
-            type_key = next(iter(expected_types), None)
-            if status and type_key in allowed_status and status not in allowed_status[type_key]:
-                report.error("STATUS-VALUE", "%s status '%s' not allowed for %s" % (item_id, status, type_key))
+            # A collection may map to several note types -- `decisions` accepts
+            # both `adr` and `decision`. Check the union: a status legal for any
+            # accepted type is legal. This was `next(iter(expected_types), None)`
+            # until ISS-0015, which picked ONE type out of an unordered set, so a
+            # bogus status on a decisions-collection item errored or passed by
+            # hash seed -- a per-run coin flip rather than a stable check. It
+            # reads correct today only because `adr` and `decision` happen to
+            # carry the same vocabulary; a repo customising one re-splits them.
+            known = [t for t in sorted(expected_types or ()) if t in allowed_status]
+            if status and known:
+                legal = set()
+                for t in known:
+                    legal |= allowed_status[t]
+                if status not in legal:
+                    report.error("STATUS-VALUE", "%s status '%s' not allowed for %s (allowed: %s)" % (
+                        item_id, status, "/".join(known), ", ".join(sorted(legal))))
 
             # -- link integrity
             for field in RELATIONSHIP_FIELDS:

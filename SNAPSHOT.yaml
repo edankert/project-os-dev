@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 17
-  ISS: 14
+  ISS: 15
   PHASE: 2
   REL: 0
   REQ: 24
@@ -543,6 +543,15 @@ items:
       owner: user:edwin
       phase: PHASE-0002
       related: [ADR-0008, FEAT-0013, REQ-0017]
+    ISS-0015:
+      file: docs/issues/ISS-0015-Walker-Depth-Cap-And-Decision-Alias-Nondeterminism.md
+      title: "The walker stops at depth 4 while the docstring and TST-0002 say 'any nesting depth'; and the decision-alias hole was a hash-seed coin flip, not 'validated against nothing' — STATUS-VALUE still picks its type nondeterministically"
+      status: fixed
+      severity: low
+      owner: user:edwin
+      phase: PHASE-999
+      note: "Filed from independent review of TST-0002/CHG-20260726 round four (changes-requested): every ISS-0014 fix verified on the merits — file structure clean, fleet identical, twelve branches fire, metrics parity independently confirmed — remaining findings are a two-sentence prose overclaim and a nondeterministic type pick in STATUS-VALUE"
+      related: [ISS-0011, ISS-0012, ISS-0013, ISS-0014, TST-0002]
     ISS-0014:
       file: docs/issues/ISS-0014-Validator-Tail-Duplicated-And-No-Inline-Literal-Claim.md
       title: "validate-docs.py ships its own second half twice: lines 1560-2560 duplicate 556-1556 verbatim, fleet-wide; the 'no inline status literal remains' claim is false; the walker's boundary prose still overclaims on dict, underscore names and nesting"

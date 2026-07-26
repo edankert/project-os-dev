@@ -80,7 +80,9 @@ That is a lesson about method, not about this bug. Editing a source file by stri
 
 **The type tables.** `COLLECTION_TYPE`, `TERMINAL_TYPES` and `METRIC_PREFIX_TYPE` hold note *types*, so `_check_values` does not apply, but a type renamed in one and not `ALLOWED_STATUS` fails just as quietly. Now asserted.
 
-That assertion found a live bug on its first run: **`decision` is an accepted note type — `COLLECTION_TYPE` has mapped decisions to `{"adr", "decision"}` all along — but `ALLOWED_STATUS` never carried it, so a `decision`-typed note's status was validated against nothing.** One such note exists fleet-wide (`your-health` ADR-0006, `accepted`, legal under either spelling). The alias now carries `adr`'s vocabulary.
+That assertion found a live bug on its first run: **`decision` is an accepted note type — `COLLECTION_TYPE` has mapped decisions to `{"adr", "decision"}` all along — but `ALLOWED_STATUS` never carried it.** One such note exists fleet-wide (`your-health` ADR-0006, `accepted`, legal under either spelling). The alias now carries `adr`'s vocabulary.
+
+**Correction ([[ISS-0015]]):** the sentence above originally read "so a decision-typed note's status was validated against nothing". That is wrong, and wrong in the direction that flatters the finding. `STATUS-VALUE` picked its type with `next(iter(expected_types), None)` over an unordered two-element set, so the check fired or stayed silent by hash seed — measured at 6 of 12 `PYTHONHASHSEED` values. A per-run coin flip, not a dead gate, and the coin flip is worse: it passes CI and fails locally and reads as flakiness. Fixed in ISS-0015 by checking the union of every accepted type's vocabulary.
 
 **The prefix-map row.** ISS-0013's table said "a metric prefix loses its type map — caught". True only for prefixes with a non-`None` filter; deleting `REL`, whose only metric counts everything, is silent. Row qualified.
 
