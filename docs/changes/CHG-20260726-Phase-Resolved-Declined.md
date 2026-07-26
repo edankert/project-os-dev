@@ -151,7 +151,25 @@ Measured across the ten repos immediately afterwards. All **warnings** — no re
 
 Six inversion branches were induced and reverted, three reproducing the three real misses verbatim; recorded on [[TST-0002]].
 
+## Independent review (2026-07-26, model:claude-fable-5)
+
+Authored by model:claude-opus-5 (commit trailer on 610eb16), reviewed by model:claude-fable-5 — same model family; this is harm reduction, not the cross-vendor independence QUALITY.md requires, and a different-family or human pass is still owed.
+
+**Verified:** the one-word `PHASE_RESOLVED` fix and the tightened `{fixed, declined}` row are present and identical in all 11 fleet files (10 repos + the cockpit bundle, which is byte-identical to its source); the only surviving `wont-fix` in any fleet validator is a doc comment; no issue-typed note anywhere in the fleet carries `cancelled`/`superseded`; all six inversion branches reproduce verbatim; `--self-check` needs no repo; the re-arm numbers (15 `PLAN-FOLLOWS`, 4 `REQ-PREMATURE`, warnings only) reproduce exactly; your-sudoku's declined-issues-on-closed-phase scenario now validates clean.
+
+**Why changes-requested:** the heading "STATUS-TABLE extended to every status table" is refuted by counterexample — `CLOSED_PHASE_STATUSES`, hoisted by this same commit, is walked by nothing: mutating it to a non-status leaves `--self-check` green and would silently disable `PHASE-CHILDREN` for done phases, the exact ISS-0011 failure mode. `DESCOPED` (FEATURE-REQ) also remains a local status tuple, and the `risks_open` metrics filter still carries the retired `mitigating`/`monitoring` values. Fix is one line (register `CLOSED_PHASE_STATUSES` in `FLAT_STATUS_TABLES` with `("phase",)`) plus either covering or explicitly descoping the others; details on [[TST-0002]].
+
+**Stale follow-up:** the your-sudoku note below ("146 lines behind", "plan notes fail the newer PLAN-ID check") no longer holds — its validator is now byte-identical to project-os's (synced in its commit 3ba52ec, 2026-07-26 22:45) and it validates OK, so that follow-up can be ticked or rewritten.
+
 ## Follow-ups
 
 - [ ] Consider amending [[ADR-0012]]'s consequence list to name `PHASE_RESOLVED`, so the record of which surfaces exist is accurate for the next rename.
 - [ ] `your-sudoku` should run `sync-project-os.sh`: it is 146 lines behind and its plan notes fail the newer `PLAN-ID` check, which the new validator surfaced when run against it.
+
+## Follow-up: ISS-0012
+
+Independent review of this change (2026-07-26, model:claude-fable-5) refuted its central claim. The guard did not cover every status table: `CLOSED_PHASE_STATUSES` — hoisted to module scope by this very change — was registered nowhere, so mutating it left `--self-check` green while `PHASE-CHILDREN` silently stopped firing. Two smaller gaps came with it (`DESCOPED` still a local, `risks_open` filtering on retired vocabulary).
+
+Fixed the same day as [[ISS-0012]], which also added a completeness assertion so the registry is checked against the module rather than against prose. Corrected coverage is recorded in [[TST-0002]]; the claim in this note's summary should be read as describing the state after that follow-up, not before it.
+
+The sequence is worth keeping visible: a change that fixed a missed-table bug shipped with a missed table of its own, and every mechanical check passed. That is the argument for adversarial review as a gate, not a formality.

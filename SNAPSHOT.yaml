@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 17
-  ISS: 11
+  ISS: 12
   PHASE: 2
   REL: 0
   REQ: 24
@@ -543,6 +543,15 @@ items:
       owner: user:edwin
       phase: PHASE-0002
       related: [ADR-0008, FEAT-0013, REQ-0017]
+    ISS-0012:
+      file: docs/issues/ISS-0012-Status-Table-Guard-Coverage-Gaps.md
+      title: "STATUS-TABLE does not cover every status collection: CLOSED_PHASE_STATUSES can drift green, DESCOPED is still a local, and risks_open carries retired vocabulary"
+      status: fixed
+      severity: medium
+      owner: user:edwin
+      phase: PHASE-999
+      note: "Filed from independent review of TST-0002/CHG-20260726 (changes-requested); one-line fix registers CLOSED_PHASE_STATUSES in FLAT_STATUS_TABLES"
+      related: [ISS-0011, ADR-0012, TST-0002]
     ISS-0011:
       file: docs/issues/ISS-0011-Phase-Resolved-Kept-Wont-Fix.md
       title: "ADR-0012's `wont-fix` -> `declined` rename missed three status tables in validate-docs.py: PHASE-CHILDREN refused declined issues, and REQ-PREMATURE and PLAN-FOLLOWS were silently dead"

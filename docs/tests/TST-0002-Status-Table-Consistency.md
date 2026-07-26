@@ -7,7 +7,7 @@ status: passing
 owner: user:edwin
 created: 2026-07-26
 updated: 2026-07-26
-source: ["ISS-0011"]
+source: ["ISS-0011", "ISS-0012"]
 scope: system
 kind: automated
 level: unit
@@ -17,12 +17,15 @@ last_run: "2026-07-26T21:28Z"
 exit_code: 0
 requirements: []
 features: []
-issues: [ISS-0011]
+issues: [ISS-0011, ISS-0012]
 tasks: []
 artifacts: []
 evidence: []
-adequacy: "Verified by inversion 2026-07-26: six failure branches induced and observed, three of them reproducing the three real ISS-0011 misses verbatim."
+adequacy: "Verified by inversion 2026-07-26: twelve failure branches induced and observed across two rounds — three reproducing the ISS-0011 misses verbatim, one reproducing ISS-0012's, and one confirming the completeness assertion fires on a newly-added unregistered tuple."
 related: [ADR-0012, ADR-0010, TST-0001]
+reviewed_by: ""
+review_date: ""
+review_verdict: ""
 ---
 
 # Status table consistency
@@ -54,8 +57,14 @@ Violations report as `ERROR [STATUS-TABLE]`.
 | `RESOLVED_STATUSES` | flat tuple | `task` and `feature` — both types it is applied to |
 | `FEATURE_ACTIVE_STATUSES` | flat tuple | `feature` |
 | `PLAN_FOLLOWS_FEATURE` | feature status → plan statuses | keys against `feature`, values against `plan` |
+| `CLOSED_PHASE_STATUSES` | flat tuple | `phase` |
+| `DESCOPED_STATUSES` | flat tuple | `requirement` |
+| `RISK_OPEN_STATUSES` | flat tuple | `risk` |
+| `TERMINAL` | collection → terminal status | each value against `TERMINAL_TYPES[collection]` |
 
-`RESOLVED_STATUSES` and `FEATURE_ACTIVE_STATUSES` are registered in `FLAT_STATUS_TABLES`, a name → (values, applicable types) map. Adding a status table means adding a row there, not remembering to hand-write another check — the failure mode this note exists to prevent is precisely "a table nobody thought to check".
+Flat tables are registered in `FLAT_STATUS_TABLES`, a name → (values, applicable types) map. Adding a status table means adding a row there rather than hand-writing another check.
+
+**And then a third assertion checks the registry itself.** `validate_status_tables` walks every module-level uppercase tuple of strings and requires each one to be either registered or named in `_NON_STATUS_TUPLES`. That is not belt-and-braces; it is the direct lesson of [[ISS-0012]], below. Registration is manual, so it can be forgotten, and a forgotten table reads exactly like a covered one.
 
 ## Design notes
 
@@ -97,8 +106,44 @@ Covering the other tables was not bookkeeping. Two of the three were **actively 
 
 Fixing them re-armed both checks. Measured across the ten repos immediately afterwards: **15 `PLAN-FOLLOWS` and 4 `REQ-PREMATURE`** warnings that had been suppressed — including plans still `active` under features closed months ago, and four requirements sitting at `draft` while their feature was mid-build. All warnings; no repo's error count changed.
 
+## What ISS-0012 taught, and why the coverage table above is not the whole answer
+
+The first version of this check shipped with a hole, and the hole was in a
+constant the same commit had just created.
+
+`CLOSED_PHASE_STATUSES` was hoisted to module scope by the ISS-0011 fix and then
+not registered in `FLAT_STATUS_TABLES`. Renaming `done` there and nowhere else
+left `--self-check` green while `PHASE-CHILDREN` silently stopped firing against
+done phases — the exact failure this note's title says it makes impossible,
+reintroduced by the fix for it. Two smaller cases came with it: `DESCOPED` was
+still a local inside `validate()` while this note claimed every collection was
+module-level, and the `risks_open` metric filtered on `{open, mitigating,
+monitoring}`, two thirds retired vocabulary, so it had been counting one status
+while reading as though it counted three.
+
+None of that was caught by any check. It was caught by an independent reviewer
+who tried to break the guard instead of reading its docstring, and the docstring
+was the problem: it asserted "covers every status collection in this file" and
+was wrong at the moment it was written.
+
+So the completeness assertion exists because **a guard cannot be trusted to
+describe its own coverage in prose**. The registry is now checked against the
+module rather than against the author's memory. It failed on `ID_PREFIXES` the
+first time it ran, which is right — `_NON_STATUS_TUPLES` is a record of
+decisions, and being forced to make one is the whole mechanism.
+
 ## Coverage boundary
 
 This guards the *validator's own* internal consistency. It does not verify that `ALLOWED_STATUS` matches `STATUSES.md` — `load_allowed_status()` overlays the repo's file at runtime, and the cockpit's `tests/test_status_vocabulary.py` covers the palette surfaces.
 
-It also cannot see a status literal that is not in a registered table. The defence there is structural rather than analytical: every status collection is now a module-level constant, registered in `FLAT_STATUS_TABLES` or checked explicitly, so evading this check means writing a fresh inline literal — which is what the comment on each constant warns against.
+It also cannot see a status literal written *inline*, inside a function, rather than as a module-level constant. That is the remaining gap and it is a real one — `DESCOPED` was exactly that shape until [[ISS-0012]], and the completeness assertion could not have found it, because a local is not in `globals()`. What the assertion covers is the next-most-likely mistake: a new module-level constant that nobody registered. An inline literal is caught by review, or not at all.
+
+## Independent review (2026-07-26, model:claude-fable-5)
+
+Authored by model:claude-opus-5 (per the commit trailer on 610eb16), reviewed by model:claude-fable-5 — same model family, so this pass is harm reduction, not the cross-vendor independence QUALITY.md asks for; a different-family or human pass is still owed.
+
+**What held up under attack:** all six inversion branches were re-induced independently on a scratch copy and every one failed with exactly the message and exit code this note claims, including the two-errors-one-per-type behaviour for `RESOLVED_STATUSES`; `--self-check` runs clean from a directory with no `SNAPSHOT.yaml` and no `docs/` (genuinely repo-independent); the fleet-wide re-arm numbers reproduce exactly (15 `PLAN-FOLLOWS`: project-os-cockpit 9 + your-health 6; 4 `REQ-PREMATURE`: one each in obsidian-supernote-sync, your-health, your-sudoku, your-trainer; all warnings, zero errors); no issue-typed note in any of the ten repos carries `cancelled` or `superseded`, so the issue-row tightening is safe; and the original regression scenario is confirmed live — your-sudoku's three `declined` issues naming the `done` PHASE-0008 validate clean.
+
+**Why changes-requested — the title claim is refuted by counterexample.** `CLOSED_PHASE_STATUSES` is a status collection (phase statuses), hoisted to module scope *by this very commit*, and `validate_status_tables()` does not walk it: it is not in `FLAT_STATUS_TABLES` and has no explicit check. Demonstrated: mutating it to `("completed", "superseded")` — `completed` is not a phase status — leaves `--self-check` green, and would silently kill `PHASE-CHILDREN` for done phases, which is the exact ISS-0011 failure mode this test says it makes impossible. One-line fix: register it in `FLAT_STATUS_TABLES` with `("phase",)`.
+
+**Secondary findings, same class:** (1) `DESCOPED = ("deferred", "cancelled", "superseded")` is still a *local* status tuple inside `validate()` (FEATURE-REQ, applied to requirement statuses), contradicting this note's "every status collection is now a module-level constant"; (2) the `TERMINAL` map (collection → terminal status) is module-level but unchecked; (3) the metrics filter `count("RISK", {"open", "mitigating", "monitoring"})` carries two values STATUSES.md explicitly retired ("written once and never") — a live stale-vocabulary literal surviving in the same file today, harmless only because dead values in a counting filter cannot match. Either cover these or narrow this note's title and coverage-boundary claim to the four registered tables.

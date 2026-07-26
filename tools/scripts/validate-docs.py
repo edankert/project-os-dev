@@ -119,7 +119,18 @@ PHASE_RESOLVED = {
     # own prose (found in independent review of CHG-20260726).
     "risk": {"closed"},
 }
+#: Phase statuses that close a phase, and so arm PHASE-CHILDREN against it.
+#:
+#: Hoisted by the ISS-0011 commit and then left out of FLAT_STATUS_TABLES --
+#: found in independent review of that commit (ISS-0012). Renaming `done` here
+#: and nowhere else left --self-check green while PHASE-CHILDREN silently
+#: stopped firing: the ISS-0011 failure mode, reintroduced by the fix for it.
 CLOSED_PHASE_STATUSES = ("done", "superseded")
+
+#: Requirement statuses meaning "no longer in scope", so FEATURE-REQ skips it.
+#: Was a local inside validate() until 2026-07-26 (ISS-0012); a local is a
+#: constant no table can register and no check can reach.
+DESCOPED_STATUSES = ("deferred", "cancelled", "superseded")
 
 #: Statuses that resolve an item's place in a parent's scope / a requirement's
 #: delivery. Applied to a feature's tasks (VERIFY) and to a requirement's
@@ -155,13 +166,50 @@ PLAN_FOLLOWS_FEATURE = {
     "superseded": {"superseded"},
 }
 
+#: Risk statuses counted as open (metrics.counts.risks_open).
+#:
+#: Was an inline {"open", "mitigating", "monitoring"} literal. Two of the three
+#: are vocabulary STATUSES.md records as retired, so the filter had been counting
+#: one status while reading as though it counted three -- harmless, since a dead
+#: value cannot match, and invisible for exactly that reason (ISS-0012).
+RISK_OPEN_STATUSES = ("open",)
+
+#: Snapshot collection -> the terminal status for that type. Keyed by collection
+#: name because that is how the snapshot names them; TERMINAL_TYPES maps each key
+#: to the note type its value must be legal for.
+TERMINAL = {
+    "tasks": "done",
+    "issues": "fixed",   # ADR-0008: `closed` merged into `fixed`; 3% follow-through fleet-wide
+    "requirements": "implemented",
+    "features": "done",
+}
+TERMINAL_TYPES = {
+    "tasks": "task",
+    "issues": "issue",
+    "requirements": "requirement",
+    "features": "feature",
+}
+
 #: Flat status collections, with the note types each is compared against.
 #: validate_status_tables walks this, so adding a status table means adding a row
 #: here rather than remembering to write another check by hand.
 FLAT_STATUS_TABLES = {
     "RESOLVED_STATUSES": (RESOLVED_STATUSES, ("task", "feature")),
     "FEATURE_ACTIVE_STATUSES": (FEATURE_ACTIVE_STATUSES, ("feature",)),
+    "CLOSED_PHASE_STATUSES": (CLOSED_PHASE_STATUSES, ("phase",)),
+    "DESCOPED_STATUSES": (DESCOPED_STATUSES, ("requirement",)),
+    "RISK_OPEN_STATUSES": (RISK_OPEN_STATUSES, ("risk",)),
 }
+
+
+#: Module-level string tuples that are deliberately NOT status collections.
+#: The completeness assertion in validate_status_tables walks every uppercase
+#: tuple of strings and demands each one be either registered or named here, so
+#: this list is a record of decisions rather than a suppression.
+_NON_STATUS_TUPLES = frozenset({
+    "ID_PREFIXES",           # note ID prefixes
+    "RELATIONSHIP_FIELDS",   # frontmatter field names
+})
 
 
 def _check_values(report, label, values, note_type):
@@ -206,8 +254,19 @@ def validate_status_tables(report):
       FLAT_STATUS_TABLES    flat tuples, each with the types it is applied to
       PLAN_FOLLOWS_FEATURE  a mapping BETWEEN two vocabularies: feature statuses
                             as keys, plan statuses as values, both checked
+      TERMINAL              collection -> terminal status, via TERMINAL_TYPES
 
     All three of the misses ISS-0011 records would have failed here.
+
+    ISS-0012 records the sequel, and it is the more instructive one. The first
+    version of this function walked FLAT_STATUS_TABLES, and CLOSED_PHASE_STATUSES
+    was hoisted to module scope by the very commit that added the guard -- and
+    then not registered in it. Renaming `done` there and nowhere else left
+    --self-check green while PHASE-CHILDREN silently stopped firing: the exact
+    failure this function claims to make impossible, reintroduced by the fix for
+    it, and found only by an independent reviewer who tried to break it rather
+    than reading the docstring. Registration is manual, so it can be forgotten;
+    the completeness assertion below is what makes forgetting loud.
     """
     for note_type, resolved in sorted(PHASE_RESOLVED.items()):
         _check_values(report, "PHASE_RESOLVED['%s']" % note_type, resolved, note_type)
@@ -221,6 +280,28 @@ def validate_status_tables(report):
     for expected in PLAN_FOLLOWS_FEATURE.values():
         plan_values.update(expected)
     _check_values(report, "PLAN_FOLLOWS_FEATURE values", plan_values, "plan")
+
+    for collection, status in sorted(TERMINAL.items()):
+        note_type = TERMINAL_TYPES.get(collection)
+        if note_type is None:
+            report.error("STATUS-TABLE", "TERMINAL names collection '%s', which has no entry in TERMINAL_TYPES, so its terminal status is checked against nothing" % collection)
+            continue
+        _check_values(report, "TERMINAL['%s']" % collection, (status,), note_type)
+
+    # Completeness. Registration in FLAT_STATUS_TABLES is a manual step, and
+    # ISS-0012 is what a missed one costs: a table guarded by nothing reads
+    # exactly like a table guarded by this function. So assert the registry
+    # covers every module-level status tuple rather than trusting the author to
+    # remember -- a new constant is loud on the first run, not at the next rename.
+    registered = {id(values) for values, _ in FLAT_STATUS_TABLES.values()}
+    for name, value in sorted(globals().items()):
+        if not name.isupper() or not isinstance(value, tuple):
+            continue
+        if not value or not all(isinstance(v, str) for v in value):
+            continue
+        if name in _NON_STATUS_TUPLES or id(value) in registered:
+            continue
+        report.error("STATUS-TABLE", "%s is a module-level tuple of strings that no status table registers; if it holds statuses, add it to FLAT_STATUS_TABLES, and if it does not, name it in _NON_STATUS_TUPLES -- an unregistered status tuple is what ISS-0012 was" % name)
 
 
 def is_sentinel_id(digits):
@@ -266,14 +347,6 @@ def load_allowed_status(root):
             current = None
     return allowed
 
-
-# collection -> (terminal status, human label)
-TERMINAL = {
-    "tasks": "done",
-    "issues": "fixed",   # ADR-0008: `closed` merged into `fixed`; 3% follow-through fleet-wide
-    "requirements": "implemented",
-    "features": "done",
-}
 
 RELATIONSHIP_FIELDS = (
     "parent", "features", "tasks", "issues", "requirements", "tests",
@@ -432,7 +505,7 @@ def compute_metric_counts(items, note_index):
         "issues_deferred": count("ISS", {"deferred"}),
         "requirements_total": count("REQ"),
         "requirements_implemented": count("REQ", {"implemented"}),
-        "risks_open": count("RISK", {"open", "mitigating", "monitoring"}),
+        "risks_open": count("RISK", set(RISK_OPEN_STATUSES)),
         "releases_total": count("REL"),
         "decisions_total": count("ADR"),
     }
@@ -1184,13 +1257,12 @@ def validate(root, report):
 
     # -- ADR-0007 FEATURE-REQ: a feature may not be `done` while a requirement
     #    naming it still has an unresolved acceptance criterion. Forward-only.
-    DESCOPED = ("deferred", "cancelled", "superseded")
     reqs_by_owner = {}   # FEAT id -> [(REQ id, note_path)]
     for req_id in sorted(req_ids):
         note_path, fm = note_index.get(req_id, (None, {}))
         if note_path is None:
             continue
-        if effective_status(req_id) in DESCOPED:
+        if effective_status(req_id) in DESCOPED_STATUSES:
             continue
         r_entry = reqs_coll.get(req_id) if isinstance(reqs_coll.get(req_id), dict) else {}
         owners = set(extract_ids(r_entry.get("implements"))) | set(extract_ids((fm or {}).get("implements")))
