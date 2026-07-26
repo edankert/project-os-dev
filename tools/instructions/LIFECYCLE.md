@@ -30,7 +30,7 @@ This documentation system is designed to be maintained by an LLM across the full
 When a prompt implies work (bugfix, feature, refactor, behavior change):
 1. **Classify** the prompt as one (or more) of: issue, feature, requirement, risk, chore/docs-only. Run the spec-ambiguity check from `../skills/issue-intake/SKILL.md` (step 1) before allocating IDs — ambiguity is upstream of documentation and cannot be fixed by tracking.
 2. **Orchestration check**:
-   - If Codex or another orchestration layer assigns a specific task, verify it exists in `../../SNAPSHOT.yaml` and that its status allows work (for example, `backlog`, `next`, or `doing`, not already `done`).
+   - If Codex or another orchestration layer assigns a specific task, verify it exists in `../../SNAPSHOT.yaml` and that its status allows work (for example, `backlog` or `doing`, not already `done`).
    - If working without an assigned item, select work based on `focus` and item statuses.
 3. **Update `../../SNAPSHOT.yaml` first**:
    - allocate IDs (increment `counters`)
@@ -65,8 +65,9 @@ Agents are REQUIRED to automatically keep the documentation system in sync with 
 - **No Orphaned Code:** Every functional code change must have a corresponding Task under `../../docs/features/<slug>/plan/tasks/`.
   - Functional code changes include: new features, bug fixes, refactors that alter behavior, API changes, and dependency updates.
   - Excluded: typo fixes, comment-only edits, formatting changes, and pure documentation updates (these may be tracked via `CHG-*` notes if significant).
-- **The Atomic Sync Rule:** The global `../../SNAPSHOT.yaml` and relevant Markdown notes MUST be updated in the same turn or immediately following the code implementation.
-- **Counter Integrity:** Always increment the relevant `counters` in `../../SNAPSHOT.yaml` when creating new IDs.
+- **Notes are the authored source of state** (ADR-0009). Write a status once, in the note. `tools/scripts/sync-snapshot.py` propagates it — plus `counters` and `metrics.counts` — into `../../SNAPSHOT.yaml` at pre-commit, and CI verifies it with `--check`. Do **not** hand-copy a status into the snapshot; that dual-write is what this replaced.
+- **Counter Integrity is automatic:** `counters` is the maximum observed ID, raised by the sync script. Allocating an ID means creating a note. (Counters only ever rise — an ID is allocated, not owned, so deleting a note never frees its number for reuse.)
+- **Membership is still yours:** which items the snapshot carries, and the `goal:`/`note:` prose on them, are curation the script deliberately leaves alone. `--report-unregistered` lists notes it can see but the snapshot does not.
 
 ## Execution (implementation phase)
 - Only start code changes once planning artifacts exist (issue/feature/tasks as appropriate).
@@ -74,7 +75,7 @@ Agents are REQUIRED to automatically keep the documentation system in sync with 
 
 ## Close-out (must happen after work)
 After completing a task/issue/feature:
-1. Update the Markdown note status (task `done`, issue `fixed` then `closed`, requirement `implemented`, feature `done`).
+1. Update the Markdown note status (task `done`, issue `fixed`, requirement `implemented`, feature `done`). `fixed` is the single terminal issue status since ADR-0008 — there is no second `closed` step.
 2. Update `../../SNAPSHOT.yaml` to reflect:
    - updated statuses
    - new/changed relationships (links)

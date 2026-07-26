@@ -8,11 +8,13 @@ owner: user:edwin
 created: 2026-07-17
 updated: 2026-07-18
 verification_waiver: "docs/tooling program; all five tasks done with mechanical verification recorded per task; cockpit implementation additionally guarded by TST-0016 (passing) and an approved independent review in project-os-cockpit"
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 goal: "Close the gaps found by the 2026-07-17 full review of project-os: internal consistency debt, underused native Claude Code machinery, missing verification observability in the cockpit, fleet-blind sync tooling, and unwired external tools"
 requirements: [REQ-0002, REQ-0006, REQ-0009]
 related: [ADR-0001, ADR-0002, ADR-0004]
 tasks: [TASK-0041, TASK-0042, TASK-0043, TASK-0044, TASK-0045]
+waiver_expires: 2026-10-23
+
 ---
 
 # Template Completeness Program

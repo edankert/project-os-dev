@@ -4,7 +4,7 @@ id: FEAT-0002
 aliases: ["FEAT-0002"]
 title: "Hook contract definitions and tool-specific implementations"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

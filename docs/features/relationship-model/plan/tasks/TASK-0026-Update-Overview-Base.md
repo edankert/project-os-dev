@@ -4,7 +4,7 @@ id: TASK-0026
 aliases: ["TASK-0026"]
 title: "Update feature-overview.base template"
 status: cancelled
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

@@ -3,7 +3,8 @@ type: "[[issue]]"
 id: ISS-0001
 aliases: ["ISS-0001"]
 title: "Use Cases article references deprecated orchestration patterns"
-status: closed
+status: fixed
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 severity: medium
 owner: user:edwin
 created: 2026-03-08

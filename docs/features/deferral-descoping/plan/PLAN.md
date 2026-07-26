@@ -1,5 +1,6 @@
 ---
 type: "[[plan]]"
+status: done
 parent: "[[FEAT-0011-Deferral-Descoping]]"
 implements: [REQ-0013]
 ---

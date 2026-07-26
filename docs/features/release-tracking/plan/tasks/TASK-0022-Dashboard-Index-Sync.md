@@ -4,6 +4,7 @@ id: TASK-0022
 aliases: ["TASK-0022"]
 title: "Create releases dashboard, base, update indexes, sync to downstream"
 status: done
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08

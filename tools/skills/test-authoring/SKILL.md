@@ -43,5 +43,5 @@ tags: [skills, tests]
      - once run, set `status: passing|failing` and record evidence paths/log excerpts
 4. Apply gating:
    - Do not mark the implementing task `done` until required tests are `passing`.
-   - Do not mark an issue `closed` until verifying tests are `passing` (use `fixed` for “implemented but not yet verified”).
+   - Do not mark an issue `fixed` until verifying tests are `passing`. `fixed` is the single terminal issue status (ADR-0008); there is no separate `closed` step.
    - Do not mark a requirement `implemented` (its terminal status) until every acceptance criterion is ticked-with-evidence or reconciled. Requirements have no `verified` status — a test note's own `passing` status is the verification record.

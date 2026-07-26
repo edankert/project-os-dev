@@ -2,7 +2,7 @@
 type: reference
 id: DESIGN
 aliases: ["DESIGN"]
-status: reference
+status: active
 owner: group:maintainers
 created: 2026-01-26
 updated: 2026-01-26

@@ -4,7 +4,7 @@ id: TASK-0031
 aliases: ["TASK-0031"]
 title: "Create Phases.base top-level dashboard"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

@@ -4,7 +4,7 @@ id: TASK-0037
 aliases: ["TASK-0037"]
 title: "Create CONTEXT.base for right sidebar dynamic context"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

@@ -4,7 +4,7 @@ id: TASK-0005
 aliases: ["TASK-0005"]
 title: "Implement Claude Code hook scripts and hooks.json"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

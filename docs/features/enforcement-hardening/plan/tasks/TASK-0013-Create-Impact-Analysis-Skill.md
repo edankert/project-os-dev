@@ -4,7 +4,7 @@ id: TASK-0013
 aliases: ["TASK-0013"]
 title: "Create impact-analysis skill"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

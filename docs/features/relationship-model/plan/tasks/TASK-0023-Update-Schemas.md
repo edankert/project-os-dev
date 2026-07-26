@@ -4,7 +4,7 @@ id: TASK-0023
 aliases: ["TASK-0023"]
 title: "Update SCHEMAS.md with new relationship fields"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

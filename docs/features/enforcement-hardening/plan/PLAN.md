@@ -1,5 +1,6 @@
 ---
 type: plan
+status: done
 parent: "[[FEAT-0005-Enforcement-Hardening]]"
 created: 2026-03-08
 updated: 2026-03-08

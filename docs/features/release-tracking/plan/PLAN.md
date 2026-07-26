@@ -1,5 +1,6 @@
 ---
 type: "[[plan]]"
+status: done
 parent: "[[FEAT-0006]]"
 created: 2026-03-08
 updated: 2026-03-08

@@ -4,7 +4,7 @@ id: REQ-0010
 aliases: ["REQ-0010"]
 title: "Named relationship fields with multi-parent support and Bases filterability"
 status: superseded
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

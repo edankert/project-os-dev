@@ -4,6 +4,7 @@ id: ISS-0004
 aliases: ["ISS-0004"]
 title: "Requirements freeze at draft/approved while their features ship: no lifecycle step ever advances them and acceptance criteria go stale"
 status: fixed
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 severity: high
 owner: user:edwin
 created: 2026-07-21

@@ -4,7 +4,7 @@ id: TASK-0024
 aliases: ["TASK-0024"]
 title: "Update note templates with new relationship fields"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

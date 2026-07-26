@@ -4,7 +4,7 @@ id: FEAT-0009
 aliases: ["FEAT-0009"]
 title: "Obsidian cockpit layout with NAV.base and CONTEXT.base"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

@@ -4,7 +4,7 @@ id: TASK-0043
 aliases: ["TASK-0043"]
 title: "Cockpit verification health: implement FEAT-0018 in project-os-cockpit"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-07-17
@@ -20,6 +20,8 @@ blocks: []
 related: []
 external: "../project-os-cockpit/docs/features/verification-health/FEAT-0018-Verification-Health-Surface.md"
 tests: []
+waiver_expires: 2026-10-23
+
 ---
 
 # Cockpit verification health

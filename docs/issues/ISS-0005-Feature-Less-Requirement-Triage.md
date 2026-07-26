@@ -4,6 +4,7 @@ id: ISS-0005
 aliases: ["ISS-0005"]
 title: "Feature-less requirement triage (ADR-0007 follow-up): 14 of 23 resolved mechanically; 9 are a real residue — 5 policies, 3 conventions, 1 unscheduled deliverable"
 status: open
+phase: "[[PHASE-999-Parking-Lot]]"
 severity: low
 owner: user:edwin
 created: 2026-07-24

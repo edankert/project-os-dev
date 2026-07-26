@@ -4,6 +4,7 @@ id: ISS-0003
 aliases: ["ISS-0003"]
 title: "Stale vendored hooks in project-os-dev: fragile focus parsing and wrong-repo gating already fixed upstream, plus an unfixed non-repo path case"
 status: open
+phase: "[[PHASE-999-Parking-Lot]]"
 severity: low
 owner: user:edwin
 created: 2026-07-21

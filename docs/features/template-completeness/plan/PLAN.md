@@ -1,5 +1,6 @@
 ---
 type: plan
+status: done
 parent: "[[FEAT-0010-Template-Completeness-Program]]"
 created: 2026-07-17
 updated: 2026-07-17

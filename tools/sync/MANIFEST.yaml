@@ -31,7 +31,10 @@ paths:
   "SECURITY.md": template
   "ROADMAP.md": merge
   "docs/reference/README.md": seed
-  ".github/workflows/validate-docs.yml": seed
+  # template-owned, not seed: this workflow carries enforcement the template owns,
+  # so a CI change made here must reach every repo. As `seed` it was copied once and
+  # never overwritten, meaning validator/CI changes stopped at the template (TASK-0072).
+  ".github/workflows/validate-docs.yml": template
   ".github/workflows/link-check.yml": seed
   ".prettierrc": seed
   ".markdownlint.jsonc": seed

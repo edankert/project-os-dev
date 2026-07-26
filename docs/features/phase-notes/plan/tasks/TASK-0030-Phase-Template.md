@@ -4,7 +4,7 @@ id: TASK-0030
 aliases: ["TASK-0030"]
 title: "Create phase note template and schema"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

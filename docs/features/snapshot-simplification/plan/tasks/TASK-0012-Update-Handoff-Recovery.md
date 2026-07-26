@@ -4,7 +4,7 @@ id: TASK-0012
 aliases: ["TASK-0012"]
 title: "Rewrite HANDOFF.md for orchestration-agnostic recovery"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

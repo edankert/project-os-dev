@@ -11,17 +11,17 @@ tags: [skills, backlog]
 # Skill: Backlog grooming
 
 ## When to use
-- The project has many `backlog` items and needs a clear `next` queue.
+- The project has many `backlog` items and needs a clear queue.
 - Tasks are too large or ambiguous.
 
 ## Inputs
 - Bases views and the underlying notes; use `../../../SNAPSHOT.yaml` for canonical agent state.
 
 ## Outputs
-- A prioritized `next` set and better-scoped tasks/issues.
+- A prioritized queue and better-scoped tasks/issues.
 
 ## Checklist
-1. Review tasks and identify candidates for `next`.
+1. Review tasks and identify what should be worked next. ADR-0008 removed the `next` status (8 writes in 5,890): ordering is expressed by `focus`, `depends:` and priority, not by a status word that has to be un-set later.
 2. **Parked-item review (mandatory):** list every `deferred` item (snapshot + notes). For each, decide explicitly: re-adopt (assign a parent, add to its scope list, status back to `backlog`/`open`/`draft` per `../status-transition/SKILL.md`, "Re-adoption"), cancel (`cancelled`/`wont-fix` if no longer wanted), or keep parked with a one-line rationale in the note. Parked items are never allowed to just age out.
 3. Split oversized tasks into smaller tasks with measurable DoD.
 4. Convert unknowns into `ISS-*` rather than embedding them in tasks.

@@ -1,71 +1,69 @@
 # Phase Registry
 
-This document is the **semantic source of truth** for the project's development phases. It maps phase numbers to specific technical and business milestones, enabling machine-filtering, automated progress tracking, and dashboard grouping.
+This document is the **semantic source of truth** for this project's development phases. It maps phase IDs to milestones, enabling machine-filtering, automated progress tracking, and dashboard grouping.
+
+Individual `PHASE-*` notes under `phases/` hold the detailed scope, exit criteria, and item links. This file is the overview.
 
 ## How Phases Work
 
-- **Property**: `phase` (Integer 1–N, optional)
+- **Property**: `phase` (a `[[PHASE-####]]` link)
 - **Location**: YAML frontmatter of features, tasks, requirements, and issues
 - **Purpose**: Groups related work into cohesive delivery milestones
+- **Active phase**: tracked as `focus.phase` in `../SNAPSHOT.yaml`
 
 ## Phase Definitions
 
-> **Instructions**: Replace the example phases below with your project's actual roadmap. Each phase should represent a coherent milestone with clear boundaries.
+| Phase | Name | Status | Scope |
+|-------|------|--------|-------|
+| [[PHASE-0001-Documentation-System-Foundations\|PHASE-0001]] | Documentation system foundations | `done` | Everything project-os was built out of: tool adapters, hook contracts, mandatory skill steps, the relationship and phase models, the Obsidian cockpit, deferral and requirement-lifecycle enforcement. FEAT-0001–FEAT-0012, REQ-0001–REQ-0015, ADR-0001–ADR-0007 |
+| [[PHASE-0002-State-Model-Simplification\|PHASE-0002]] | State model simplification | `active` | The first phase that removes structure. Collapse the status taxonomy, state the rules once, generate the snapshot, stamp test status by execution, end the permanent warning tier. FEAT-0013–FEAT-0017, REQ-0016–REQ-0024, ADR-0008–ADR-0011 |
+| [[PHASE-999-Parking-Lot\|PHASE-999]] | Parking lot — future and unplanned | `planned` | Forward home for deferred items and for tracked-but-unscheduled work. Never completes; items leave by adoption or cancellation |
 
-| Phase | Name | Description | Key Deliverables |
-|-------|------|-------------|------------------|
-| 1 | Foundation | Core infrastructure and stability | Database schema, authentication, base architecture |
-| 2 | Core Engine | Primary business logic | Domain models, core algorithms, API contracts |
-| 3 | Product | User-facing features | UI/UX, integrations, licensing |
-| 4 | Portability | Data exchange and interoperability | Import/export, external API support |
-| 5 | Intelligence | AI and automation features | LLM integration, smart features |
-| 6 | Launch | Production readiness | Store assets, deployment config, documentation |
+## Conventions
 
-## Usage
+### Numbering
 
-### In Frontmatter
+Real phases are allocated sequentially from `counters.PHASE` in `../SNAPSHOT.yaml` and use the four-digit form (`PHASE-0001`).
+
+`PHASE-999` is the **all-9s sentinel** for the parking lot. `validate-docs.py` exempts all-9s IDs from counter integrity (`if set(str(num)) == {"9"}`), which is why it is three digits and not `PHASE-0999` — a `0` in the number loses that exemption and would force `counters.PHASE` to 999, silently permitting any phase ID below that without counter discipline. The three-digit form is the one named in `../tools/instructions/STATUSES.md` and `../tools/skills/status-transition/SKILL.md`, so it is also what every other repo and skill already expects.
+
+### In frontmatter
 
 ```yaml
 ---
 type: "[[task]]"
-id: TASK-0042
-phase: 2
-status: doing
-parent: "[[FEAT-0015]]"
+id: TASK-0053
+status: backlog
+phase: "[[PHASE-0002-State-Model-Simplification]]"
 ---
 ```
 
-### Filtering by Phase
+### Filtering by phase
 
-Use the `phase` property in Obsidian bases or queries to:
-- Group items by delivery milestone
-- Track progress within a phase
-- Identify scope creep (items without phases)
+Use the `phase` property in Obsidian Bases or queries to group items by milestone, track progress within a phase, and identify items with no phase at all.
 
-### Phase Inheritance
+### Phase inheritance
 
-- **Features** define the phase for a body of work
-- **Tasks** inherit phase from their parent feature (or override explicitly)
-- **Requirements** and **Issues** can specify phase when relevant to milestone planning
+- **Features** define the phase for a body of work.
+- **Tasks** carry the phase of their parent feature explicitly (the link is written, not inferred, so Bases can filter on it).
+- **Requirements** and **issues** carry a phase when relevant to milestone planning.
 
-## Operational Rules for LLMs
+## Status lifecycle
 
-When executing work, the LLM must:
+`planned` → `active` → `done`, or `planned` → `deferred`. See `../tools/instructions/STATUSES.md`.
 
-1. **Verify phase alignment**: Check the `phase` property in the task/feature frontmatter before starting work.
-2. **Consult this registry**: Understand the broader context and boundaries of the current phase.
-3. **Prevent phase bleeding**: Do not introduce implementations from future phases prematurely.
-   - Example: Don't build Phase 4 export logic while working on a Phase 2 core engine task.
-4. **Flag scope concerns**: If a task requires future-phase dependencies, document it and discuss before proceeding.
+## Operational rules for LLMs
 
-## Phase Progression
+1. **Verify phase alignment**: check the item's `phase` against `focus.phase` before starting work.
+2. **Consult this registry** and the relevant `PHASE-*` note for the phase's boundaries.
+3. **Prevent phase bleeding**: do not introduce implementations from future phases prematurely.
+4. **Flag scope concerns**: if work requires future-phase dependencies, document it and discuss before proceeding.
 
-Phases are generally sequential but may overlap:
-- **Active phase**: Primary focus of current development
-- **Maintenance phases**: Earlier phases may receive bug fixes
-- **Blocked phases**: Future phases awaiting dependencies
+Full rules in `../tools/instructions/LIFECYCLE.md`, "Phase alignment".
 
-Track the current active phase in `SNAPSHOT.yaml` under `focus.phase`.
+## History
+
+Phases were introduced to this repo on 2026-07-25, after `PHASE-0001`'s work had already shipped. `PHASE-0001` is therefore a retroactive grouping — the name given to what was built before phases were tracked here — rather than a milestone that was planned and then executed. The machinery it uses was itself built in that phase ([[features/phase-notes/FEAT-0008-Phase-Notes|FEAT-0008]]).
 
 ---
 

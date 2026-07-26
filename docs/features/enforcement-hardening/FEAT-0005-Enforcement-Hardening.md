@@ -7,7 +7,7 @@ status: done
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 goal: "Harden project-os skill enforcement by making risk scans, verification gating, and impact analysis mandatory steps rather than conditional ones"
 related: [ADR-0004]
 ---

@@ -91,9 +91,9 @@ Then type-specific fields, for example:
 - `phases_total` / `phases_done`: all `PHASE-*`; done = status `done`.
 - `tasks_total` / `tasks_done`: all `TASK-*`; done = status `done`.
 - `tests_total` / `tests_passing` / `tests_failing`: all `TST-*`; by status `passing` / `failing`.
-- `issues_open`: `ISS-*` with status `open`, `in-progress`, `blocked`, or `reopened`; `issues_triage`: status `triage`.
+- `issues_open`: `ISS-*` with status `open`; `issues_triage`: status `triage`. The two are disjoint, and together they are the outstanding set — since ADR-0008 merged `closed` into `fixed`, `fixed` is terminal and correctly excluded. (Before the merge, `fixed` meant "implemented, not verified" and 313 issues fleet-wide sat in it counted by nothing; that limbo is what ISS-0008 reported, and removing the state resolved it rather than widening the metric.)
 - `tasks_deferred` / `issues_deferred`: `TASK-*` / `ISS-*` with status `deferred` (parked work stays visible; see `STATUSES.md`, "Deferral and re-adoption").
-- `risks_open`: `RISK-*` with status `open`, `mitigating`, or `monitoring`.
+- `risks_open`: `RISK-*` with status `open`. ADR-0008 removed `mitigating`/`monitoring`; mitigation progress lives in `mitigation_tasks:`, not in a status word.
 - `releases_total`: all `REL-*`; `decisions_total`: all `ADR-*`.
 
 ## Team model (optional)

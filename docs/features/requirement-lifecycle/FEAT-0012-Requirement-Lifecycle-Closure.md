@@ -11,12 +11,14 @@ verification_waiver: "docs/tooling change set; all three tasks done with mechani
 reviewed_by: model:claude-opus-4-8
 review_date: 2026-07-21
 review_verdict: approved
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 goal: "Close the feature→requirement gap: close-out advances requirements on evidence, scaffolding blocks implementing against draft requirements, the validator makes stale requirements a build failure (REQ-STALE) with unticked criteria and premature implementation surfaced as warnings, and the existing 12 requirements are backfilled"
 requirements: [REQ-0014]
 related: [ISS-0004, ADR-0006, REQ-0006]
 tasks: [TASK-0050, TASK-0051, TASK-0052]
 tests: []
+waiver_expires: 2026-10-23
+
 ---
 
 # Requirement lifecycle closure

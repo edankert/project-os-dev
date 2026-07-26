@@ -4,6 +4,7 @@ id: ISS-0002
 aliases: ["ISS-0002"]
 title: "Deferred items are treated as complete: parents close over them and parked work vanishes from every active surface"
 status: fixed
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 severity: high
 owner: user:edwin
 created: 2026-07-21

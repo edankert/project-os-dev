@@ -4,7 +4,7 @@ id: TASK-0039
 aliases: ["TASK-0039"]
 title: "Update DASHBOARD.md hub note for cockpit layout"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

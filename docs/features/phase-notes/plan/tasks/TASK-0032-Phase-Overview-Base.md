@@ -4,7 +4,7 @@ id: TASK-0032
 aliases: ["TASK-0032"]
 title: "Create phase-overview.base contextual dashboard template"
 status: cancelled
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

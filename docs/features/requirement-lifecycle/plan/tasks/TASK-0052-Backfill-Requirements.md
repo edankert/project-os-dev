@@ -4,7 +4,7 @@ id: TASK-0052
 aliases: ["TASK-0052"]
 title: "Backfill REQ-0001..0012: verify criteria against shipped state, reconcile superseded criteria, advance statuses"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-07-21
 updated: 2026-07-21
@@ -17,6 +17,8 @@ depends: [TASK-0050]
 blocks: []
 related: [ADR-0006, ISS-0004]
 tests: []
+waiver_expires: 2026-10-23
+
 ---
 
 # Backfill existing requirements

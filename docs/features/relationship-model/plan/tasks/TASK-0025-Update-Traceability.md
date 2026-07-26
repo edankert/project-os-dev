@@ -4,7 +4,7 @@ id: TASK-0025
 aliases: ["TASK-0025"]
 title: "Update TRACEABILITY.md link rules"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

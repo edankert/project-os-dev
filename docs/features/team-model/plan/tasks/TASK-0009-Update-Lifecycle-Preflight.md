@@ -4,7 +4,7 @@ id: TASK-0009
 aliases: ["TASK-0009"]
 title: "Update LIFECYCLE.md preflight to remove claim-checking, add orchestration-agnostic steps"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

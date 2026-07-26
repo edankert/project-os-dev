@@ -4,6 +4,7 @@ id: TASK-0021
 aliases: ["TASK-0021"]
 title: "Update release-verification skill to create/update REL-* notes"
 status: done
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08

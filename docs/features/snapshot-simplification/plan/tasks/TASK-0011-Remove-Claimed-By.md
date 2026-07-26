@@ -4,7 +4,7 @@ id: TASK-0011
 aliases: ["TASK-0011"]
 title: "Remove claimed_by/claim_started from item schema and instructions"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

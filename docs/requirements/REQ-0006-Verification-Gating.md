@@ -4,6 +4,7 @@ id: REQ-0006
 aliases: ["REQ-0006"]
 title: "Verification gating must block status transitions when linked tests are not passing"
 status: implemented
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-07-24

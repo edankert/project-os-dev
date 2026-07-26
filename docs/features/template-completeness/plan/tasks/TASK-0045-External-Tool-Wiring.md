@@ -4,7 +4,7 @@ id: TASK-0045
 aliases: ["TASK-0045"]
 title: "External tool wiring: prettier, markdownlint, yamllint, lychee, mutation tools"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-07-17
@@ -19,6 +19,8 @@ depends: [TASK-0041]
 blocks: []
 related: []
 tests: []
+waiver_expires: 2026-10-23
+
 ---
 
 # External tool wiring

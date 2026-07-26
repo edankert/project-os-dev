@@ -4,7 +4,7 @@ id: REQ-0005
 aliases: ["REQ-0005"]
 title: "project-os must delegate agent coordination to native tool orchestration"
 status: implemented
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

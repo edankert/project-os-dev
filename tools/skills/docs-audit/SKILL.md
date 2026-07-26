@@ -32,7 +32,7 @@ Documentation-as-database systems accumulate cross-document defects — stale re
 2. **Stale references**: prose (not just frontmatter) mentioning files, paths, IDs, commands, or flags that no longer exist. This is empirically the largest defect class in systems like this.
 3. **Cross-note contradiction**: two notes describing the same behavior differently (e.g. a `CHG-*` says a path moved, a `WF-*` still documents the old path; a feature note claims a capability its open `ISS-*` says is broken).
 4. **Schema/contract mismatch**: notes that reference each other's fields or artifacts inconsistently (a `TST-*` entrypoint that doesn't match the workflow it verifies; a `REQ-*` acceptance criterion no linked test actually checks).
-5. **Status semantics**: items whose status is technically allowed but semantically wrong (a `monitoring` risk whose trigger condition disappeared; a `passing` test whose entrypoint no longer exists).
+5. **Status semantics**: items whose status is technically allowed but semantically wrong (an `open` risk whose trigger condition disappeared; a `passing` test whose entrypoint no longer exists).
 6. **Instruction/template drift** (template repos): instruction files, templates, and `SCHEMAS.md` describing different shapes for the same note type.
 
 ## Checklist

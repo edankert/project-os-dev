@@ -89,7 +89,7 @@ Status: READY TO SHIP / BLOCKED (reasons)
 
 ### 8. After deployment
 Once the release is deployed/uploaded (release statuses follow `../../instructions/STATUSES.md`: `draft` → `staged` → `released`; `../release-verification/SKILL.md` owns the `staged` → `released` transition):
-1. Update `REL-*` status to `released` (via `staged` once verification completes).
+1. Update `REL-*` status to `released` once verification completes. (`staged` was removed by ADR-0008 — zero writes fleet-wide; `draft` already covers "prepared and verified, not yet live".)
 2. Clear `focus.release`.
 3. Remove Tier 3 acceptance tests.
 4. Tag the repo: `git tag -a v<version> -m "Release <version>"`.

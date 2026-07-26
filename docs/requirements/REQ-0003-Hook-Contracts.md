@@ -4,7 +4,7 @@ id: REQ-0003
 aliases: ["REQ-0003"]
 title: "Enforcement points must be defined as tool-agnostic contracts"
 status: implemented
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

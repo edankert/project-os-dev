@@ -1,5 +1,6 @@
 ---
 type: "[[plan]]"
+status: done
 parent: "[[FEAT-0012-Requirement-Lifecycle-Closure]]"
 implements: [REQ-0014]
 ---

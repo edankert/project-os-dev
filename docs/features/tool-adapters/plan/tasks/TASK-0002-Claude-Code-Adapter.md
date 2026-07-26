@@ -4,7 +4,7 @@ id: TASK-0002
 aliases: ["TASK-0002"]
 title: "Create Claude Code adapter with CLAUDE.md import strategy"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

@@ -4,7 +4,7 @@ id: TASK-0050
 aliases: ["TASK-0050"]
 title: "Requirement advancement in skills: close-out step, scaffold approval gate, canonical acceptance surface"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-07-21
 updated: 2026-07-21
@@ -17,6 +17,8 @@ depends: []
 blocks: [TASK-0051, TASK-0052]
 related: [ADR-0006]
 tests: []
+waiver_expires: 2026-10-23
+
 ---
 
 # Requirement advancement in skills

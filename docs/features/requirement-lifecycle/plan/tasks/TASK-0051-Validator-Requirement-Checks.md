@@ -4,7 +4,7 @@ id: TASK-0051
 aliases: ["TASK-0051"]
 title: "Validator: REQ-STALE, REQ-PREMATURE, REQ-BOXES checks"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-07-21
 updated: 2026-07-21
@@ -17,6 +17,8 @@ depends: [TASK-0050]
 blocks: []
 related: [ADR-0006, REQ-0014]
 tests: []
+waiver_expires: 2026-10-23
+
 ---
 
 # Validator requirement checks

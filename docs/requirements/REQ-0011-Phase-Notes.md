@@ -4,7 +4,7 @@ id: REQ-0011
 aliases: ["REQ-0011"]
 title: "Phases must be navigable first-class notes with contextual dashboards"
 status: implemented
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

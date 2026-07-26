@@ -4,7 +4,7 @@ id: TASK-0038
 aliases: ["TASK-0038"]
 title: "Remove feature-overview.base template and per-feature Overview.base generation"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

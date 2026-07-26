@@ -4,7 +4,7 @@ id: TASK-0040
 aliases: ["TASK-0040"]
 title: "Document Obsidian workspace setup for cockpit layout"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

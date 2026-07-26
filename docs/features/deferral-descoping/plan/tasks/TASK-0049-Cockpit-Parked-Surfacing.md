@@ -4,7 +4,7 @@ id: TASK-0049
 aliases: ["TASK-0049"]
 title: "Cockpit: surface deferred as parked (not archived) in status ordering"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-07-21
 updated: 2026-07-21
@@ -17,6 +17,8 @@ depends: []
 blocks: []
 related: [ADR-0005]
 tests: []
+waiver_expires: 2026-10-23
+
 ---
 
 # Cockpit parked surfacing

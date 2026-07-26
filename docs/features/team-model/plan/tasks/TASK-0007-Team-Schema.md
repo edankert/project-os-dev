@@ -4,7 +4,7 @@ id: TASK-0007
 aliases: ["TASK-0007"]
 title: "Define team schema for SNAPSHOT.yaml"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

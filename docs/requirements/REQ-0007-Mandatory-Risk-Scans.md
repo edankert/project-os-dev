@@ -4,6 +4,7 @@ id: REQ-0007
 aliases: ["REQ-0007"]
 title: "Risk scans must be mandatory with explicit trigger checklist"
 status: implemented
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-07-24

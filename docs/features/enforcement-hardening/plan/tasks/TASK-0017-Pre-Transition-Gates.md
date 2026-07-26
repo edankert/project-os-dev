@@ -4,7 +4,7 @@ id: TASK-0017
 aliases: ["TASK-0017"]
 title: "Add pre-transition gates to status-transition skill"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

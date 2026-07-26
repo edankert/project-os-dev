@@ -4,6 +4,7 @@ id: FEAT-0006
 aliases: ["FEAT-0006"]
 title: "First-class release tracking"
 status: done
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08

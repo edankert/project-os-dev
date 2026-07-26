@@ -4,6 +4,7 @@ id: REQ-0013
 aliases: ["REQ-0013"]
 title: "Deferred items must never satisfy parent completeness and must remain tracked with origin provenance and a forward home until re-adopted or cancelled"
 status: implemented
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-07-21
 updated: 2026-07-21

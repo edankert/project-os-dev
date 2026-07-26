@@ -4,7 +4,7 @@ id: TASK-0008
 aliases: ["TASK-0008"]
 title: "Update SNAPSHOT.yaml template with team model"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

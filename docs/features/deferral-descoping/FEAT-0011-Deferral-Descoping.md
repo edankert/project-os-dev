@@ -11,12 +11,14 @@ verification_waiver: "docs/tooling change set; all four tasks done with mechanic
 reviewed_by: model:claude-opus-4-8
 review_date: 2026-07-21
 review_verdict: approved
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 goal: "Stop deferred items from satisfying parent completeness: deferral becomes an explicit descoping operation (origin provenance + forward home), enforced by the validator and surfaced until re-adopted or cancelled"
 requirements: [REQ-0013]
 related: [ISS-0002, ADR-0005, REQ-0006]
 tasks: [TASK-0046, TASK-0047, TASK-0048, TASK-0049]
 tests: []
+waiver_expires: 2026-10-23
+
 ---
 
 # Deferral as descoping

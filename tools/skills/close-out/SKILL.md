@@ -30,6 +30,7 @@ tags: [skills, closeout]
    - issue `status: fixed/closed` if resolved
    - feature progress if milestones were reached; a feature may only go `done` when every task in its `tasks:` list is `done` or `cancelled` — a `deferred` ID in the list blocks the transition until descoped via `../status-transition/SKILL.md`, "Deferral procedure" (never flip a parked task to `done` or drop it silently)
    - phase `status: done` only when its exit criteria and linked work are complete
+   - **plan** `status` follows its feature: `active` while building, `done` when the feature closes, `superseded` if the delivery sequence was replaced. A plan left `active` under a shipped feature claims work is in flight that finished weeks ago (ISS-0010)
 3. **Requirement advancement (mandatory when closing a feature):**
    - List every requirement linked to the closing feature (`requirements:` on the feature, `implements:` on the requirement — note the direction: a requirement's `implements` names the feature that implements *it*, at most one per ADR-0007).
    - **This walk gates the close-out, it does not follow it.** A feature may not reach `done` while any requirement naming it has an unresolved criterion (validator FEATURE-REQ); the requirement's status flip below is the *consequence* of that walk, not a precondition for it.
@@ -39,11 +40,10 @@ tags: [skills, closeout]
    - Set the requirement to `implemented` once the feature named in its `implements:` is `done`. (`implements:` names at most one feature — ADR-0007.) A requirement naming no feature is not advanced by any feature's close-out.
    - If the implementing feature ends `cancelled` or `superseded` rather than `done`, the requirement is not implemented — supersede it (link the successor) or cancel it. Leaving it at `draft`/`approved` is a validator error (REQ-STALE), which treats every terminal feature status as resolved.
    - `implemented` is the terminal requirement status (ADR-0007); there is no `verified` step. Advancing to it requires every acceptance criterion ticked-with-evidence or reconciled — do not shortcut that.
-4. Update `../../../SNAPSHOT.yaml`:
-   - set the same statuses (including advanced requirements)
+4. `../../../SNAPSHOT.yaml` — **do not re-type the statuses.** `tools/scripts/sync-snapshot.py` propagates each item's status from its note, along with `counters` and `metrics.counts`, at pre-commit (ADR-0009). What still needs a decision:
+   - add entries for genuinely new items, and prune per `retention` — membership is curation, not derivation
    - update relationships if new tasks/issues/risks were created
-   - clear or move `focus` to the next task
-   - update `metrics`
+   - clear or move `focus` to the next task (`focus` is intent, and stays hand-authored)
 5. If user-facing behavior/paths/contracts changed:
    - create `../../../docs/changes/CHG-YYYYMMDD-Short-Description.md`
    - link it to `issues`/`features` in note + snapshot
@@ -55,7 +55,7 @@ tags: [skills, closeout]
    - Run `bash tools/scripts/validate-docs.sh` and fix every reported error before finishing — the same validator gates pre-commit and CI.
 8. **Independent review:**
    - If this close-out created/updated a `TST-*` or `CHG-*` note, or sets a requirement to `implemented` / feature to `done`, run `../independent-review/SKILL.md` before applying the terminal status.
-9. **Retention enforcement:**
+9. **Retention enforcement** (still manual — the sync script does not prune, because which completed work stays in active context is a judgement no count-based rule reproduced):
    - Apply `retention` settings from `../../../SNAPSHOT.yaml`.
    - Preserve notes under `../../../docs/`; prune only snapshot entries when policy says to keep the snapshot active/recent.
    - Update `metrics` after pruning.

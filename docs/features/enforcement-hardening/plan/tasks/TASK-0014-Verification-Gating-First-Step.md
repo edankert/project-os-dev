@@ -4,7 +4,7 @@ id: TASK-0014
 aliases: ["TASK-0014"]
 title: "Make verification gating first step in close-out"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

@@ -4,6 +4,7 @@ id: REQ-0009
 aliases: ["REQ-0009"]
 title: "Releases must be tracked as first-class notes with traceability"
 status: implemented
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-07-24

@@ -4,7 +4,7 @@ id: TASK-0027
 aliases: ["TASK-0027"]
 title: "Update top-level .base dashboards"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

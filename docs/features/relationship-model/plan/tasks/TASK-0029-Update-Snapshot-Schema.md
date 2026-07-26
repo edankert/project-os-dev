@@ -4,7 +4,7 @@ id: TASK-0029
 aliases: ["TASK-0029"]
 title: "Update SNAPSHOT.md schema and migrate existing entries"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

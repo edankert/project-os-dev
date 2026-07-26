@@ -27,4 +27,4 @@ tags: [skills, risk]
 3. Update `../../../SNAPSHOT.yaml`:
    - add tasks under `items.tasks`
    - link tasks from the risk (`related` and/or `mitigation_tasks` if you adopt it)
-4. Update the risk note to link the tasks and set status to `mitigating` if active.
+4. Update the risk note to link the mitigation tasks in `mitigation_tasks:`. The risk stays `open` until it is closed — ADR-0008 removed `mitigating`/`monitoring` (1 and 0 writes fleet-wide); progress is the tasks, not a status word.

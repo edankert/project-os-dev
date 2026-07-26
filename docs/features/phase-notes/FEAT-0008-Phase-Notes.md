@@ -4,7 +4,7 @@ id: FEAT-0008
 aliases: ["FEAT-0008"]
 title: "Phases as first-class note type"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

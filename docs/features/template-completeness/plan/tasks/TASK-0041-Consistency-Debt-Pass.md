@@ -4,7 +4,7 @@ id: TASK-0041
 aliases: ["TASK-0041"]
 title: "Consistency-debt pass in the project-os template"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-07-17
@@ -19,6 +19,8 @@ depends: []
 blocks: [TASK-0042]
 related: [REQ-0009]
 tests: []
+waiver_expires: 2026-10-23
+
 ---
 
 # Consistency-debt pass in the project-os template

@@ -4,7 +4,7 @@ id: FEAT-0003
 aliases: ["FEAT-0003"]
 title: "Team model replacing agent orchestration"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

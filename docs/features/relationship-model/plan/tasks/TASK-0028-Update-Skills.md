@@ -4,7 +4,7 @@ id: TASK-0028
 aliases: ["TASK-0028"]
 title: "Update skills that create or link notes"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

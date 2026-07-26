@@ -4,7 +4,7 @@ id: TASK-0035
 aliases: ["TASK-0035"]
 title: "Update skills to create and reference phase notes"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

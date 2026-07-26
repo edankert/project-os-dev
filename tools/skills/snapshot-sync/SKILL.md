@@ -14,38 +14,38 @@ tags: [skills, snapshot]
 - After any work that changes statuses/relationships.
 - When you suspect drift between `../../../SNAPSHOT.yaml` and the notes.
 
-## Inputs
-- `../../../SNAPSHOT.yaml`
-- The affected notes under `../../../docs/`
+## First: most of this is automatic now
 
-## Outputs
-- A consistent snapshot and notes (IDs, statuses, relationships aligned).
+`tools/scripts/sync-snapshot.py` syncs the **derived** snapshot fields from note frontmatter — each item's `status`, `counters`, and `metrics.counts`. It runs at pre-commit (writing, and re-staging the file) and in CI with `--check`. So a status authored in a note reaches the snapshot without anyone copying it (ADR-0009).
 
-## Checklist
-1. Run `bash tools/scripts/validate-docs.sh` first — it mechanically checks file existence, id/status/type agreement, counters, link resolution, and the verification invariant, so you only spend judgment on what it cannot decide. Then validate the remaining `../../../SNAPSHOT.yaml` invariants (see `../../instructions/SNAPSHOT.md`).
-2. For each item in the snapshot:
-   - ensure `items.<type>.<ID>.file` exists on disk
-   - ensure note frontmatter `id` matches `<ID>`
-   - ensure note frontmatter `status` matches snapshot `status`
-   - ensure note frontmatter `type` matches the expected type for its collection
-3. Check relationship consistency:
-   - phase `features`/`requirements`/`tasks`/`issues` ↔ item `phase`
-   - task `parent` ↔ feature/issue `tasks`
-   - issue ↔ feature links
-   - feature ↔ requirement links
-   - test ↔ requirement/feature/issue/task links
-   - risk ↔ mitigation task links
-4. Check verification status consistency:
-   - task `done` requires linked tests to be `passing`
-   - issue `closed` requires linked tests to be `passing`
-   - requirement `implemented` (terminal) requires all acceptance criteria ticked-with-evidence or reconciled
-   - feature `done` requires required tasks and tests to be complete
-5. Detect orphaned notes:
-   - scan `../../../docs/phases/`, `../../../docs/features/`, `../../../docs/issues/`, `../../../docs/requirements/`, `../../../docs/risks/`, and `../../../docs/tests/`
-   - flag notes with valid `id` frontmatter that are not represented in the snapshot and are not intentionally archived
-6. Apply retention policy:
-   - remove snapshot entries that policy excludes from active state
-   - preserve note files as the archive
-   - keep recent changes within `recent_changes_max`
-7. Verify `focus` still reflects reality (an item left in `focus` after its work finished is stale handoff state); clear or move it.
-8. Update `metrics` counts in the snapshot after reconciliation and pruning.
+```bash
+python3 tools/scripts/sync-snapshot.py            # sync derived fields
+python3 tools/scripts/sync-snapshot.py --check    # report drift, write nothing
+python3 tools/scripts/sync-snapshot.py --report-unregistered
+```
+
+**Run the script before doing anything by hand.** Hand-reconciling a status is now redundant work that the next commit would redo.
+
+## What the script deliberately does NOT do
+
+It is a *surgical updater*, not a generator. A snapshot is duplication **plus curation**, and the curated half has no home in frontmatter:
+
+- hand-written comments (`# Pruned: FEAT-0001..0006 (all done)`),
+- which items the snapshot carries at all (retention is a judgement),
+- editorial `goal:` / `note:` prose.
+
+A whole-file generator was built first and rejected on evidence: shadow-run against 10 repos it would have added 180 items, dropped 153, and destroyed ~80 comment lines. So membership, retention and prose stay yours.
+
+## Checklist — what is left for a human or agent
+
+1. Run the script. If it reports drift it has already fixed it; read what changed.
+2. `--report-unregistered` lists notes with no snapshot entry. Decide, per item, whether it belongs in active context — **this is the curation call the script refuses to make**. Add or prune deliberately.
+3. Reconcile anything the script cannot: notes that contradict *each other* (a task claiming a parent that does not list it back, two notes claiming one ID). That is semantic consistency — see `../docs-audit/SKILL.md`.
+4. Update `focus` if the active work changed. `focus` is intent, not state, and stays hand-authored.
+5. Run `bash tools/scripts/validate-docs.sh` and fix what it reports.
+
+## Gates that still apply
+
+- A feature may not be `done` while a task in its `tasks:` list is not scope-resolved (`done`/`cancelled`/`superseded` — never `deferred`).
+- An issue `fixed` (terminal since ADR-0008) requires linked tests to be `passing` and not stale.
+- See `../../instructions/STATUSES.md` for the vocabulary and `../../instructions/QUALITY.md` for the gates.

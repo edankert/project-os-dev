@@ -1,5 +1,5 @@
 version: 1
-updated: "2026-07-22T00:00Z"
+updated: "2026-07-25T12:00Z"
 
 template:
   replace_me: false
@@ -25,16 +25,17 @@ docs_system:
     - docs/PHASES.md
 
 counters:
-  ADR: 7
+  ADR: 12
   CHG:
     last_date: 20260724
-  FEAT: 12
-  ISS: 5
+  FEAT: 17
+  ISS: 10
+  PHASE: 2
   REL: 0
-  REQ: 15
-  RISK: 0
-  TASK: 52
-  TST: 0
+  REQ: 24
+  RISK: 2
+  TASK: 74
+  TST: 1
   WF: 3
 
 focus:
@@ -44,12 +45,36 @@ focus:
   phase: ""
 
 items:
+  phases:
+    PHASE-0001:
+      file: docs/phases/PHASE-0001-Documentation-System-Foundations.md
+      title: "Documentation system foundations"
+      status: done
+      order: 1
+      owner: user:edwin
+      goal: "Build the project-os documentation system: tool adapters, hook contracts, mandatory skill steps, the relationship and phase models, the Obsidian cockpit, and mechanical enforcement of deferral and requirement lifecycle"
+    PHASE-0002:
+      file: docs/phases/PHASE-0002-State-Model-Simplification.md
+      title: "State model simplification"
+      status: done
+      order: 2
+      owner: user:edwin
+      goal: "Contract the state model to what the fleet actually uses, and derive the rest: collapse the status taxonomy, state the rules once, generate the snapshot, stamp test status by execution, and end the permanent warning tier"
+    PHASE-999:
+      file: docs/phases/PHASE-999-Parking-Lot.md
+      title: "Parking lot — future and unplanned work"
+      status: planned
+      order: 999
+      owner: user:edwin
+      goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
+
   features:
     FEAT-0007:
       file: docs/features/relationship-model/FEAT-0007-Relationship-Model.md
       title: "Named relationship fields with child-to-parent linking"
       status: done
       owner: user:edwin
+      phase: PHASE-0001
       goal: "Relationship model for linking notes. NOTE: the semantic-named-field design (implements/fixes/affects/specifies/validates) was reverted in May 2026; the model in force is specified by REQ-0015"
       requirements: [REQ-0010, REQ-0015]
       tasks: [TASK-0023, TASK-0024, TASK-0025, TASK-0027, TASK-0028, TASK-0029]
@@ -58,6 +83,7 @@ items:
       title: "Phases as first-class note type"
       status: done
       owner: user:edwin
+      phase: PHASE-0001
       goal: "Promote phases from a single registry file to individual navigable notes with contextual dashboards"
       requirements: [REQ-0011]
       tasks: [TASK-0030, TASK-0031, TASK-0033, TASK-0034, TASK-0035]
@@ -67,6 +93,7 @@ items:
       title: "Obsidian cockpit layout with NAV.base and CONTEXT.base"
       status: done
       owner: user:edwin
+      phase: PHASE-0001
       goal: "Three-pane Obsidian layout: left sidebar for navigation (features, phases, issues), center editor, right sidebar for dynamic context (tasks, requirements, tests related to active note)"
       requirements: [REQ-0012]
       tasks: [TASK-0036, TASK-0037, TASK-0038, TASK-0039, TASK-0040]
@@ -76,6 +103,7 @@ items:
       title: "Template completeness program — consistency debt, native adapters, verification health, fleet sync, tool wiring"
       status: done
       owner: user:edwin
+      phase: PHASE-0001
       goal: "Close the gaps found by the 2026-07-17 full review: template consistency debt, underused native Claude Code machinery, cockpit verification observability, fleet-blind sync tooling, unwired external tools"
       requirements: [REQ-0002, REQ-0006, REQ-0009]
       tasks: [TASK-0041, TASK-0042, TASK-0043, TASK-0044, TASK-0045]
@@ -85,6 +113,7 @@ items:
       title: "Deferral as descoping — deferred items detach from parents and stay tracked"
       status: done
       owner: user:edwin
+      phase: PHASE-0001
       goal: "Stop deferred items from satisfying parent completeness: deferral becomes an explicit descoping operation (origin provenance + forward home), enforced by the validator and surfaced until re-adopted or cancelled"
       requirements: [REQ-0013]
       tasks: [TASK-0046, TASK-0047, TASK-0048, TASK-0049]
@@ -94,11 +123,62 @@ items:
       title: "Requirement lifecycle closure — requirements advance with their features instead of freezing at draft/approved"
       status: done
       owner: user:edwin
+      phase: PHASE-0001
       goal: "Close the feature→requirement gap: close-out advances requirements on evidence, scaffolding blocks implementing against draft requirements, the validator makes stale requirements a build failure (REQ-STALE) with unticked criteria and premature implementation surfaced as warnings, and the existing 12 requirements are backfilled"
       requirements: [REQ-0014]
       tasks: [TASK-0050, TASK-0051, TASK-0052]
       related: [ISS-0004, ADR-0006, REQ-0006]
-  # Pruned: FEAT-0001 through FEAT-0006 (all done). Notes preserved under docs/features/.
+    FEAT-0013:
+      file: docs/features/status-taxonomy-collapse/FEAT-0013-Status-Taxonomy-Collapse.md
+      title: "Status taxonomy collapse — delete unused states, one terminal status per work-item type, migrate the fleet"
+      status: done
+      owner: user:edwin
+      phase: PHASE-0002
+      goal: "Cut the status taxonomy from 64 declared values to the ~45 that are actually written, give each work-item type exactly one terminal status, move blocked-ness onto `depends:`, and migrate ~300 fleet notes off vocabulary that was never legal"
+      requirements: [REQ-0016, REQ-0017]
+      tasks: [TASK-0053, TASK-0054, TASK-0055, TASK-0056, TASK-0073]
+      related: [ADR-0008, ISS-0008, ISS-0009, RISK-0001]
+    FEAT-0014:
+      file: docs/features/state-contract/FEAT-0014-Single-State-Contract.md
+      title: "Single state contract — state and transition rules are normative in one file and referenced, never restated"
+      status: done
+      owner: user:edwin
+      phase: PHASE-0002
+      goal: "Collapse ~604 lines of state rules spread across five instruction files and three skills into one normative STATES.md that every other document links to, removing the duplication that let a corrected rule stay wrong in a fourth copy"
+      requirements: [REQ-0018]
+      tasks: [TASK-0057, TASK-0058, TASK-0059]
+      related: [ISS-0006, ADR-0007, ADR-0008]
+    FEAT-0015:
+      file: docs/features/derived-state/FEAT-0015-Derived-State.md
+      title: "Derived state — SNAPSHOT.yaml is generated from the notes, deferral bookkeeping is computed, and routine transitions advance on evidence"
+      status: done
+      owner: user:edwin
+      phase: PHASE-0002
+      goal: "Stop writing state twice. Generate items/counters/metrics from note frontmatter at pre-commit, derive deferral provenance rather than hand-maintaining it, and advance routine task transitions from focus and close-out instead of asking an agent to type them"
+      requirements: [REQ-0019, REQ-0020, REQ-0021]
+      tasks: [TASK-0060, TASK-0061, TASK-0062, TASK-0063, TASK-0064, TASK-0065, TASK-0072, TASK-0074]
+      related: [ADR-0009, ADR-0005, ADR-0003, RISK-0002]
+    FEAT-0016:
+      file: docs/features/executable-verification/FEAT-0016-Executable-Verification.md
+      title: "Executable verification — test status is stamped by running the test, manual checks expire, waivers get an end date"
+      status: done
+      owner: user:edwin
+      phase: PHASE-0002
+      goal: "Make the verification gate load-bearing: a TST-* note with a command has its status written by executing that command, manual tests carry a freshness date and go stale, and verification_waiver stops being open-ended"
+      requirements: [REQ-0022, REQ-0023]
+      tasks: [TASK-0066, TASK-0067, TASK-0068]
+      related: [ADR-0010, ADR-0004, REQ-0006]
+    FEAT-0017:
+      file: docs/features/enforcement-severity/FEAT-0017-Enforcement-Severity.md
+      title: "Enforcement severity — every validator rule is an error or is deleted; clear the fleet's ~600 warnings"
+      status: done
+      owner: user:edwin
+      phase: PHASE-0002
+      goal: "End the permanent warning tier: give every check a disposition (promote with a dated cutover, or delete), clear the ~600 findings the fleet is carrying, and resolve the ADR-0007 cutover that arms today over undismantled debt"
+      requirements: [REQ-0024]
+      tasks: [TASK-0069, TASK-0070, TASK-0071]
+      related: [ADR-0011, ADR-0007, ISS-0007]
+  # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
     TASK-0023:
@@ -253,13 +333,165 @@ items:
       status: done
       parent: FEAT-0012
       depends: [TASK-0050]
+    TASK-0053:
+      file: docs/features/status-taxonomy-collapse/plan/tasks/TASK-0053-Decide-Collapsed-Taxonomy.md
+      title: "Decide the collapsed taxonomy per type and rewrite STATUSES.md, templates and SCHEMAS.md"
+      status: done
+      parent: FEAT-0013
+      effort: M
+      blocks: [TASK-0054, TASK-0055, TASK-0056]
+    TASK-0054:
+      file: docs/features/status-taxonomy-collapse/plan/tasks/TASK-0054-Validator-Collapsed-Taxonomy.md
+      title: "Validator: collapsed ALLOWED_STATUS and a status check that reaches registered notes' frontmatter"
+      status: done
+      parent: FEAT-0013
+      effort: M
+      depends: [TASK-0053]
+    TASK-0055:
+      file: docs/features/status-taxonomy-collapse/plan/tasks/TASK-0055-Fleet-Vocabulary-Migration.md
+      title: "Migrate ~300 notes across 10 repos to the collapsed vocabulary, dry-run first, per-repo commits"
+      status: done
+      parent: FEAT-0013
+      effort: L
+      depends: [TASK-0053, TASK-0054]
+    TASK-0056:
+      file: docs/features/status-taxonomy-collapse/plan/tasks/TASK-0056-Metric-Definitions.md
+      title: "Redefine status-keyed metrics against the collapsed vocabulary; fix issues_open"
+      status: done
+      parent: FEAT-0013
+      effort: S
+      depends: [TASK-0053]
+    TASK-0057:
+      file: docs/features/state-contract/plan/tasks/TASK-0057-Author-States-Contract.md
+      title: "Author STATES.md — the single normative state contract (values, gates, and who writes each value)"
+      status: done
+      parent: FEAT-0014
+      effort: M
+      blocks: [TASK-0058]
+    TASK-0058:
+      file: docs/features/state-contract/plan/tasks/TASK-0058-Strip-Restatements.md
+      title: "Replace every state-rule restatement with a link across instructions and skills; fixes ISS-0006"
+      status: done
+      parent: FEAT-0014
+      effort: M
+      depends: [TASK-0057]
+      blocks: [TASK-0059]
+    TASK-0059:
+      file: docs/features/state-contract/plan/tasks/TASK-0059-Adapter-Regeneration.md
+      title: "Regenerate adapters and verify no tool-facing surface embeds a copy of the state rules"
+      status: done
+      parent: FEAT-0014
+      effort: S
+      depends: [TASK-0058]
+    TASK-0060:
+      file: docs/features/derived-state/plan/tasks/TASK-0060-Snapshot-Generator.md
+      title: "Build sync-snapshot.py — generate items, counters and metrics from note frontmatter"
+      status: done
+      parent: FEAT-0015
+      effort: L
+      blocks: [TASK-0061, TASK-0062, TASK-0063, TASK-0065]
+    TASK-0061:
+      file: docs/features/derived-state/plan/tasks/TASK-0061-Wire-Generation-Retire-Checks.md
+      title: "Wire generation into pre-commit and CI; delete ITEM-STATUS, COUNTER and METRICS"
+      status: done
+      parent: FEAT-0015
+      effort: M
+      depends: [TASK-0060]
+      blocks: [TASK-0065]
+    TASK-0062:
+      file: docs/features/derived-state/plan/tasks/TASK-0062-Derive-Deferral-Bookkeeping.md
+      title: "Derive deferral bookkeeping; retire three DEFER checks and keep DEFER-SCOPE an error"
+      status: cancelled
+      parent: FEAT-0015
+      effort: M
+      depends: [TASK-0060]
+    TASK-0063:
+      file: docs/features/derived-state/plan/tasks/TASK-0063-Retention-In-Generator.md
+      title: "Encode retention as generator policy; drop manual pruning from close-out"
+      status: cancelled
+      parent: FEAT-0015
+      effort: M
+      depends: [TASK-0060]
+    TASK-0064:
+      file: docs/features/derived-state/plan/tasks/TASK-0064-Evidence-Driven-Transitions.md
+      title: "Evidence-driven transitions: focus implies doing, close-out stamps done, forward-only and never gate-exempt"
+      status: done
+      parent: FEAT-0015
+      effort: M
+      depends: [TASK-0060]
+    TASK-0065:
+      file: docs/features/derived-state/plan/tasks/TASK-0065-Rewrite-Snapshot-Sync-Skill.md
+      title: "Rewrite the snapshot-sync skill against the generator; move semantic reconciliation to docs-audit"
+      status: done
+      parent: FEAT-0015
+      effort: S
+      depends: [TASK-0060, TASK-0061]
+    TASK-0066:
+      file: docs/features/executable-verification/plan/tasks/TASK-0066-Test-Command-Schema.md
+      title: "Add command, last_run, last_verified and waiver_expires to the test schema and templates"
+      status: done
+      parent: FEAT-0016
+      effort: S
+      blocks: [TASK-0067, TASK-0068]
+    TASK-0067:
+      file: docs/features/executable-verification/plan/tasks/TASK-0067-Test-Runner.md
+      title: "Build run-tests.py: stamp TST-* status from execution; make hand-edited status an error"
+      status: done
+      parent: FEAT-0016
+      effort: L
+      depends: [TASK-0066]
+    TASK-0068:
+      file: docs/features/executable-verification/plan/tasks/TASK-0068-Staleness-And-Waiver-Expiry.md
+      title: "Staleness finding for manual tests and expiry for verification waivers"
+      status: done
+      parent: FEAT-0016
+      effort: M
+      depends: [TASK-0066]
+    TASK-0069:
+      file: docs/features/enforcement-severity/plan/tasks/TASK-0069-Triage-Validator-Warnings.md
+      title: "Triage every validator warning code: promote with a dated cutover, or delete"
+      status: done
+      parent: FEAT-0017
+      effort: M
+      blocks: [TASK-0071]
+    TASK-0070:
+      file: docs/features/enforcement-severity/plan/tasks/TASK-0070-Fleet-Backfill-Before-Cutover.md
+      title: "Clear ~325 REQ-BOXES/FEATURE-REQ findings across the fleet, and resolve the live ADR-0007 cutover"
+      status: done
+      parent: FEAT-0017
+      effort: XL
+    TASK-0071:
+      file: docs/features/enforcement-severity/plan/tasks/TASK-0071-Independent-Review-Wiring.md
+      title: "Wire independent review into close-out so it runs, or narrow its scope to CHG-* notes"
+      status: done
+      parent: FEAT-0017
+      effort: M
+      depends: [TASK-0069]
+    TASK-0072:
+      file: docs/features/derived-state/plan/tasks/TASK-0072-Fleet-Rollout-Scripts-Hooks-CI.md
+      title: "Fleet rollout: propagate scripts, hooks and the CI workflow to 10 repos; close the MANIFEST seed gap"
+      status: done
+      parent: FEAT-0015
+      effort: M
+      depends: [TASK-0060, TASK-0061]
+    TASK-0073:
+      file: docs/features/status-taxonomy-collapse/plan/tasks/TASK-0073-Cockpit-Vocabulary-Alignment.md
+      title: "Cockpit: align the status vocabulary across eight surfaces; the delivered band empties"
+      status: done
+      parent: FEAT-0013
+      effort: M
+      depends: [TASK-0053]
+      external: "../project-os-cockpit/docs/issues/ISS-0025-Incoming-Taxonomy-Collapse.md"
+    TASK-0074:
+      file: docs/features/derived-state/plan/tasks/TASK-0074-Cockpit-Bundled-Validator.md
+      title: "Cockpit: the bundled validator copy must track every retired and re-severitied check"
+      status: done
+      parent: FEAT-0015
+      effort: M
+      depends: [TASK-0061]
+      external: "../project-os-cockpit/docs/issues/ISS-0026-Bundled-Validator-Drift.md"
 
   issues:
-    ISS-0005:
-      file: docs/issues/ISS-0005-Feature-Less-Requirement-Triage.md
-      title: "Feature-less requirement triage (ADR-0007 follow-up): 14 of 23 resolved mechanically; 9 are a real residue — 5 policies, 3 conventions, 1 unscheduled deliverable"
-      status: open
-      severity: low
     ISS-0002:
       file: docs/issues/ISS-0002-Deferred-Items-Satisfy-Parent-Completeness.md
       title: "Deferred items are treated as complete: parents close over them and parked work vanishes from every active surface"
@@ -273,6 +505,7 @@ items:
       status: open
       severity: low
       owner: user:edwin
+      phase: PHASE-999
     ISS-0004:
       file: docs/issues/ISS-0004-Requirements-Never-Advance.md
       title: "Requirements freeze at draft/approved while their features ship: no lifecycle step ever advances them and acceptance criteria go stale"
@@ -280,7 +513,53 @@ items:
       severity: high
       owner: user:edwin
       related: [FEAT-0012]
-  # Pruned: ISS-0001 (closed). Note preserved under docs/issues/.
+    ISS-0005:
+      file: docs/issues/ISS-0005-Feature-Less-Requirement-Triage.md
+      title: "Feature-less requirement triage (ADR-0007 follow-up): 14 of 23 resolved mechanically; 9 are a real residue — 5 policies, 3 conventions, 1 unscheduled deliverable"
+      status: open
+      severity: low
+      phase: PHASE-999
+    ISS-0006:
+      file: docs/issues/ISS-0006-Status-Transition-Test-Gates-Requirements.md
+      title: "status-transition/SKILL.md test-gates requirements, contradicting QUALITY.md and ADR-0007 — in all 10 fleet repos"
+      status: fixed
+      severity: medium
+      owner: user:edwin
+      phase: PHASE-0002
+      related: [ADR-0007, FEAT-0014, REQ-0018]
+    ISS-0007:
+      file: docs/issues/ISS-0007-Feature-Req-Cutover-Arms-With-Fleet-Debt.md
+      title: "FEATURE-REQ / REQ-BOXES cutover arms on 2026-07-25 with ~325 unresolved findings still in the fleet"
+      status: fixed
+      severity: high
+      owner: user:edwin
+      phase: PHASE-0002
+      related: [ADR-0007, ADR-0011, FEAT-0017, REQ-0024]
+    ISS-0008:
+      file: docs/issues/ISS-0008-Issues-Open-Metric-Excludes-Fixed.md
+      title: "metrics.issues_open excludes `fixed`, hiding 313 stalled issues across the fleet"
+      status: fixed
+      severity: medium
+      owner: user:edwin
+      phase: PHASE-0002
+      related: [ADR-0008, FEAT-0013, REQ-0017]
+    ISS-0010:
+      file: docs/issues/ISS-0010-Plans-Never-Advance.md
+      title: "Plan notes never advance: 31 plans sit at draft/active under a done feature, and 16 carry no status at all"
+      status: fixed
+      severity: medium
+      owner: user:edwin
+      phase: PHASE-999
+      related: [ADR-0006, REQ-0018]
+    ISS-0009:
+      file: docs/issues/ISS-0009-Fleet-Status-Vocabulary-Drift.md
+      title: "Fleet status vocabulary drift: ~370 writes outside the taxonomy, including 71 tasks at the illegal status `superseded`"
+      status: fixed
+      severity: medium
+      owner: user:edwin
+      phase: PHASE-0002
+      related: [ADR-0008, FEAT-0013, REQ-0016]
+  # Pruned: ISS-0001 (closed, PHASE-0001). Note preserved under docs/issues/.
 
   requirements:
     REQ-0001:
@@ -389,13 +668,114 @@ items:
       priority: high
       implements: [FEAT-0007]
       supersedes: [REQ-0010]
+    REQ-0016:
+      file: docs/requirements/REQ-0016-Declared-Statuses-Observed-In-Use.md
+      title: "Every declared status value must be one the fleet actually writes; unused values are deleted, not enforced harder"
+      status: implemented
+      owner: user:edwin
+      priority: high
+      phase: PHASE-0002
+      implements: [FEAT-0013]
+    REQ-0017:
+      file: docs/requirements/REQ-0017-One-Terminal-Status.md
+      title: "Each work-item type must have exactly one terminal status, and every status-keyed metric must count against it"
+      status: implemented
+      owner: user:edwin
+      priority: high
+      phase: PHASE-0002
+      implements: [FEAT-0013]
+    REQ-0018:
+      file: docs/requirements/REQ-0018-State-Rules-Stated-Once.md
+      title: "State and transition rules must be normative in exactly one file; every other document links rather than restates"
+      status: implemented
+      owner: user:edwin
+      priority: high
+      phase: PHASE-0002
+      implements: [FEAT-0014]
+    REQ-0019:
+      file: docs/requirements/REQ-0019-Snapshot-Generated.md
+      title: "Snapshot item state, counters, and metrics must be generated from note frontmatter, never hand-authored"
+      status: implemented
+      owner: user:edwin
+      priority: high
+      phase: PHASE-0002
+      implements: [FEAT-0015]
+    REQ-0020:
+      file: docs/requirements/REQ-0020-Deferral-Bookkeeping-Derived.md
+      title: "Deferral bookkeeping must be derived, while the ADR-0005 completeness invariant remains enforced unchanged"
+      status: implemented
+      owner: user:edwin
+      priority: medium
+      phase: PHASE-0002
+      implements: [FEAT-0015]
+    REQ-0021:
+      file: docs/requirements/REQ-0021-Transitions-Advance-On-Evidence.md
+      title: "Routine task transitions must advance from evidence — focus and close-out — rather than being typed by an agent"
+      status: implemented
+      owner: user:edwin
+      priority: medium
+      phase: PHASE-0002
+      implements: [FEAT-0015]
+    REQ-0022:
+      file: docs/requirements/REQ-0022-Test-Status-Stamped.md
+      title: "A test note's status must be written by executing the test, not asserted by the agent seeking the transition it gates"
+      status: implemented
+      owner: user:edwin
+      priority: high
+      phase: PHASE-0002
+      implements: [FEAT-0016]
+    REQ-0023:
+      file: docs/requirements/REQ-0023-Manual-Verification-Expires.md
+      title: "Manual verification and verification waivers must carry a date and expire; staleness is a finding, not a status"
+      status: implemented
+      owner: user:edwin
+      priority: medium
+      phase: PHASE-0002
+      implements: [FEAT-0016]
+    REQ-0024:
+      file: docs/requirements/REQ-0024-No-Permanent-Warnings.md
+      title: "No validator rule may remain permanently at warning severity; a warning must name a dated cutover or be deleted"
+      status: implemented
+      owner: user:edwin
+      priority: high
+      phase: PHASE-0002
+      implements: [FEAT-0017]
 
-  risks: {}
-  tests: {}
+  risks:
+    RISK-0001:
+      file: docs/risks/RISK-0001-Fleet-Status-Migration.md
+      title: "The fleet status migration rewrites ~300 notes across 10 repos; a bad mapping silently relabels delivered work"
+      status: closed
+      owner: user:edwin
+      likelihood: medium
+      impact: high
+      related: [FEAT-0013, TASK-0055, ISS-0009, ADR-0008]
+    RISK-0002:
+      file: docs/risks/RISK-0002-Snapshot-Generator-Single-Point-Of-Failure.md
+      title: "A generated SNAPSHOT.yaml makes the generator a single point of failure for agent context in all 10 repos at once"
+      status: closed
+      owner: user:edwin
+      likelihood: medium
+      impact: high
+      related: [FEAT-0015, TASK-0060, ADR-0009, REQ-0019]
+
+  tests:
+    TST-0001:
+      file: docs/tests/TST-0001-Docs-Validation-Gate.md
+      title: "Docs validation gate: the repo's own invariants hold"
+      status: passing
+      requirements: [REQ-0022]
+      tasks: [TASK-0067]
   releases: {}
   workflows: {}
 
   changes:
+    CHG-20260725-State-Model-Simplification:
+      file: docs/changes/CHG-20260725-State-Model-Simplification.md
+      title: "PHASE-0002 complete: taxonomy collapsed 64 to 53 and migrated across 10 repos; snapshot status derived from notes; test status stamped by execution; grandfather ledger replaces date-based gating"
+      status: merged
+      issues: [ISS-0006, ISS-0007, ISS-0008, ISS-0009]
+      features: [FEAT-0013, FEAT-0014, FEAT-0015, FEAT-0016, FEAT-0017]
     CHG-20260724-Verification-Record-Backfill:
       title: "Requirement verification records made machine-readable — criteria of record in frontmatter, criteria as checkboxes, `tests:` key present"
       status: merged
@@ -418,6 +798,34 @@ items:
       status: merged
 
   decisions:
+    ADR-0011:
+      file: docs/decisions/ADR-0011-No-Permanent-Warning-Tier.md
+      title: "Every validator rule is an error or is deleted — no permanent warning tier"
+      status: accepted
+      owner: user:edwin
+      decision: "Every check in validate-docs.py is either an error or is removed. `warn` survives only as a dated migration state whose cutover is encoded in the code and no more than 90 days out; a check with no cutover is promoted or deleted"
+      related: [ADR-0004, ADR-0007, ADR-0008, FEAT-0017]
+    ADR-0010:
+      file: docs/decisions/ADR-0010-Test-Status-Stamped-By-Execution.md
+      title: "Test status is stamped by execution, not asserted by an author"
+      status: accepted
+      owner: user:edwin
+      decision: "A TST-* note with a `command:` has its status written only by executing it; hand-editing is a validator error. Manual tests keep an author-written status but carry `last_verified:` and expire. `verification_waiver` gains an expiry date"
+      related: [ADR-0004, ADR-0007, REQ-0006, FEAT-0016]
+    ADR-0009:
+      file: docs/decisions/ADR-0009-Snapshot-Is-Generated.md
+      title: "SNAPSHOT.yaml is generated from the notes, not authored alongside them"
+      status: accepted
+      owner: user:edwin
+      decision: "Note frontmatter becomes the single authored source of item state; `items.*`, `counters` and `metrics` are generated at pre-commit and verified in CI. ITEM-STATUS, COUNTER and METRICS are deleted because the failure they detect becomes structurally impossible"
+      related: [ADR-0003, ADR-0005, ADR-0004, FEAT-0015]
+    ADR-0008:
+      file: docs/decisions/ADR-0008-States-Must-Earn-Their-Keep.md
+      title: "States must earn their keep: collapse the status taxonomy to observed usage, one terminal status per work-item type"
+      status: accepted
+      owner: user:edwin
+      decision: "Delete every status value with no observed use; give each work-item type exactly one terminal status (merging issue `closed` into `fixed`); model blocked-ness as `depends:` rather than a state; treat reopening as a transition to `open`. Whether `approved` survives is deliberately left to TASK-0053"
+      related: [ADR-0007, ADR-0006, ADR-0005, FEAT-0013]
     ADR-0007:
       file: docs/decisions/ADR-0007-Requirement-Terminality-And-Ownership.md
       title: "Requirement terminality is `implemented` (retire `verified`); a requirement implements at most one feature; features gate on their requirements' criteria"
@@ -470,19 +878,21 @@ items:
 
 metrics:
   counts:
-    features_total: 12
-    features_done: 12
-    tasks_total: 52
-    tasks_done: 50
-    tests_total: 0
-    tests_passing: 0
+    features_total: 17
+    features_done: 17
+    phases_total: 3
+    phases_done: 2
+    tasks_total: 74
+    tasks_done: 70
+    tests_total: 1
+    tests_passing: 1
     tests_failing: 0
     issues_open: 2
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0
-    requirements_total: 15
-    requirements_implemented: 14
+    requirements_total: 24
+    requirements_implemented: 23
     risks_open: 0
     releases_total: 0
-    decisions_total: 7
+    decisions_total: 12

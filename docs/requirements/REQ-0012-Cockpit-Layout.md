@@ -4,7 +4,7 @@ id: REQ-0012
 aliases: ["REQ-0012"]
 title: "Obsidian must provide a three-pane cockpit layout with navigation, editor, and dynamic context"
 status: implemented
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

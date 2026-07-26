@@ -4,7 +4,7 @@ id: TASK-0047
 aliases: ["TASK-0047"]
 title: "Deferral procedure in skills: status-transition branch, grooming re-adoption, close-out guard"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-07-21
 updated: 2026-07-21
@@ -17,6 +17,8 @@ depends: [TASK-0046]
 blocks: []
 related: [ADR-0005]
 tests: []
+waiver_expires: 2026-10-23
+
 ---
 
 # Deferral procedure in skills

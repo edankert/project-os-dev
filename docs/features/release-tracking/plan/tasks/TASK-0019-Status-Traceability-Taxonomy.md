@@ -4,6 +4,7 @@ id: TASK-0019
 aliases: ["TASK-0019"]
 title: "Add release status lifecycle, traceability rules, and taxonomy"
 status: done
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08

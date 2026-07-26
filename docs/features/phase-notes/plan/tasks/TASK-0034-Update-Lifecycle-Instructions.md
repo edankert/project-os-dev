@@ -4,7 +4,7 @@ id: TASK-0034
 aliases: ["TASK-0034"]
 title: "Update LIFECYCLE.md, SNAPSHOT.md, and phase alignment rules"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

@@ -2,7 +2,7 @@
 type: reference
 id: ARCH
 aliases: ["ARCH"]
-status: reference
+status: active
 owner: user:edwin
 created: 2026-03-08
 updated: 2026-03-08

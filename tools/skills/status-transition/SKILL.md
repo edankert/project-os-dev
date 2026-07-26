@@ -20,9 +20,10 @@ tags: [skills, statuses]
 - Note + snapshot updated consistently.
 
 ## Checklist
-1. Confirm the transition is allowed (see `../../instructions/STATUSES.md`).
+1. Confirm the transition is allowed. **`../../instructions/STATUSES.md` is normative** — allowed values, the gate on each terminal transition, and who writes the value. Do not rely on a restatement anywhere else; there are none by design (ISS-0006).
 2. **Pre-transition gates:**
-   - Verification gate: before transitioning a task to `done`, issue to `closed`, requirement to `implemented`, feature to `done`, or phase to `done`, verify linked `TST-*` notes are passing and every child in the scope list is scope-resolved (`done` or `cancelled` — never `deferred`; see `../../instructions/QUALITY.md`).
+   - Verification gate: before transitioning a task to `done`, an issue to `fixed`, or a feature to `done`, verify linked `TST-*` notes are passing and every child in the scope list is scope-resolved (`done`, `cancelled` or `superseded` — never `deferred`; see `../../instructions/QUALITY.md`).
+   - **Requirements are never test-gated** (ADR-0007). A requirement reaches `implemented` on its acceptance criteria alone; a linked test that is `failing` or `ready` does not block it. Phases carry no test gate either — no validator check implements one.
    - Feature gate: before transitioning a feature to `done`, verify every requirement naming it in `implements:` has all acceptance criteria ticked-with-evidence or reconciled, or is descoped (validator FEATURE-REQ).
    - Phase alignment gate: before transitioning a task to `doing`, check the task `phase` (or inherited parent feature phase) against `focus.phase` in `../../../SNAPSHOT.yaml`. If the task is ahead of the active phase, stop and request explicit user confirmation.
    - Deferral gate: transitioning to `deferred` is a **descoping operation**, not a plain status flip — run the deferral procedure below, all steps in the same turn.

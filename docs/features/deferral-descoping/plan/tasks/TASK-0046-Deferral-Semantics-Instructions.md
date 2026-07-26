@@ -4,7 +4,7 @@ id: TASK-0046
 aliases: ["TASK-0046"]
 title: "Define deferral-as-descoping semantics in instructions and schemas"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-07-21
 updated: 2026-07-21
@@ -17,6 +17,8 @@ depends: []
 blocks: [TASK-0047, TASK-0048]
 related: [ADR-0005]
 tests: []
+waiver_expires: 2026-10-23
+
 ---
 
 # Deferral semantics in instructions and schemas

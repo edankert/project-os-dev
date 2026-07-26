@@ -6,6 +6,20 @@
 # CI runs the same validator as the non-bypassable backstop.
 set -uo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
+
+# Derived snapshot fields are synced from note frontmatter BEFORE validation, so the
+# validator inspects what the commit will actually contain (ADR-0009). This is what
+# removes the dual-write: a status is authored once, in the note, and the snapshot
+# follows. Only `status`, `counters` and `metrics.counts` are touched -- curation,
+# comments and membership are left alone.
+SYNC="$ROOT/tools/scripts/sync-snapshot.py"
+if [[ -f "$SYNC" ]] && command -v python3 >/dev/null 2>&1; then
+  if python3 "$SYNC" --repo-root "$ROOT" --quiet 2>/dev/null | grep -q "updated"; then
+    git add "$ROOT/SNAPSHOT.yaml" 2>/dev/null || true
+    echo "pre-commit: SNAPSHOT.yaml derived fields synced from notes and re-staged." >&2
+  fi
+fi
+
 VALIDATOR="$ROOT/tools/scripts/validate-docs.sh"
 if [[ ! -x "$VALIDATOR" ]]; then
   echo "pre-commit: $VALIDATOR missing or not executable; refusing to silently skip docs validation." >&2

@@ -4,6 +4,7 @@ id: REQ-0014
 aliases: ["REQ-0014"]
 title: "Requirements must advance with their implementing features, with acceptance criteria reconciled against what actually shipped"
 status: implemented
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-07-21
 updated: 2026-07-21

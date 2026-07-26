@@ -4,7 +4,7 @@ id: FEAT-0007
 aliases: ["FEAT-0007"]
 title: "Named relationship fields with child-to-parent linking"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-04-05

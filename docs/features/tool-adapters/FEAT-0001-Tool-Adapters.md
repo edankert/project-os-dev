@@ -4,7 +4,7 @@ id: FEAT-0001
 aliases: ["FEAT-0001"]
 title: "Tool-specific adapter layer"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

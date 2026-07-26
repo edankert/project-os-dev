@@ -4,7 +4,7 @@ id: TASK-0006
 aliases: ["TASK-0006"]
 title: "Create adapter-sync skill for regenerating tool-specific files"
 status: done
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 platform:
 owner: user:edwin
 created: 2026-03-08

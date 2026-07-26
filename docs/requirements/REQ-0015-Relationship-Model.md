@@ -4,7 +4,7 @@ id: REQ-0015
 aliases: ["REQ-0015"]
 title: "Relationship model: scalar parent downward, implements upward, feature child lists as scope of record"
 status: implemented
-phase: []
+phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 owner: user:edwin
 created: 2026-07-21
 updated: 2026-07-21
