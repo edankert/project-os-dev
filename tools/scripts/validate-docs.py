@@ -33,6 +33,9 @@ TRACEABILITY.md define by convention:
   9. Phase closure (STATUSES.md `[[phase]]`): a phase that is done/superseded has
      no unresolved note naming it in `phase:` (PHASE-CHILDREN), and a done phase
      has every exit criterion ticked-with-evidence or reconciled (PHASE-BOXES).
+     The table of statuses that count as resolved is itself checked against the
+     allowed taxonomy, so a rename cannot land in one table and not the other
+     (STATUS-TABLE).
  10. Grandfathering: items already violating a gate when that gate was promoted
      to error are listed in tools/GRANDFATHERED.yaml and report as warnings.
      Everything else errors immediately — there is no date-based exemption.
@@ -84,7 +87,141 @@ ALLOWED_STATUS = {
     "adr": {"proposed", "accepted", "superseded"},
     "test": {"ready", "passing", "failing"},
     "release": {"draft", "released", "reverted"},
+    # `plan` is consumed by validate_plan_notes through load_allowed_status(). It
+    # belongs in the defaults like every other type: without it, a repo whose
+    # STATUSES.md lacks a `[[plan]]` section gets an empty allowed set and
+    # PLAN-STATE flags every plan it finds (STATUSES.md `[[plan]]`).
+    "plan": {"draft", "active", "done", "superseded"},
 }
+
+#: Statuses that resolve a child's place in its phase's scope (PHASE-CHILDREN).
+#:
+#: Module-level, and deliberately sitting next to ALLOWED_STATUS: this is the
+#: SECOND status table in this file, and that is what made ISS-0011 possible.
+#: ADR-0012 renamed the issue value `wont-fix` -> `declined` and its consequence
+#: list named ALLOWED_STATUS but not this table, so the gate went on resolving on
+#: a value no issue can hold while refusing the one it can. Nothing caught it:
+#: the table was a local inside the check function, reachable by no test, and all
+#: ten repos kept validating green. `validate_status_tables` below is the guard.
+#:
+#: `deferred` is unresolved on purpose (STATUSES.md, "Deferral and re-adoption"):
+#: parking an item does not close the phase that owns it. Re-home a deferred item
+#: to the phase that will carry it -- usually PHASE-999 -- and the gate is
+#: satisfied by the relationship rather than by the word.
+PHASE_RESOLVED = {
+    "task": {"done", "cancelled", "superseded"},
+    "issue": {"fixed", "declined"},
+    "requirement": {"implemented", "retired", "cancelled", "superseded"},
+    "feature": {"done", "cancelled", "superseded"},
+    # STATUSES.md says "a note naming it in `phase:`", so a risk parked on a
+    # closed phase counts too -- an open hazard is not resolved by the phase
+    # that raised it closing. Omitting risks made the gate narrower than its
+    # own prose (found in independent review of CHG-20260726).
+    "risk": {"closed"},
+}
+CLOSED_PHASE_STATUSES = ("done", "superseded")
+
+#: Statuses that resolve an item's place in a parent's scope / a requirement's
+#: delivery. Applied to a feature's tasks (VERIFY) and to a requirement's
+#: implementing features (REQ-STALE), so it must be legal for both types.
+#: `deferred` is deliberately absent (STATUSES.md, "Deferral and re-adoption").
+RESOLVED_STATUSES = ("done", "cancelled", "superseded")
+
+#: Feature statuses meaning "already being implemented" (REQ-PREMATURE).
+#:
+#: Was an inline ("in-progress", "in-review", "done") literal until 2026-07-26 --
+#: two thirds retired vocabulary after ADR-0012, so the warning could only ever
+#: fire on `done` and never on a feature actually mid-build, which is the case it
+#: exists to catch. The second instance of the miss recorded in ISS-0011.
+FEATURE_ACTIVE_STATUSES = ("doing", "review", "done")
+
+#: Feature status -> the plan statuses that track it (PLAN-FOLLOWS). Keys are
+#: feature statuses, values are plan statuses.
+#:
+#: `deferred` and `cancelled` are deliberately absent: a parked feature's plan may
+#: honestly stay `draft` or become `superseded`, and guessing between them would
+#: produce noise rather than signal.
+#:
+#: Keyed on `in-progress`/`in-review` until 2026-07-26, which meant `.get()`
+#: returned None for every actively-built feature and the check silently never
+#: fired -- the third instance of the ISS-0011 miss, and the one with the widest
+#: reach, since PLAN-FOLLOWS exists precisely to track a plan through the build.
+PLAN_FOLLOWS_FEATURE = {
+    "backlog": {"draft"},
+    "planned": {"draft"},
+    "doing": {"active"},
+    "review": {"active"},
+    "done": {"done"},
+    "superseded": {"superseded"},
+}
+
+#: Flat status collections, with the note types each is compared against.
+#: validate_status_tables walks this, so adding a status table means adding a row
+#: here rather than remembering to write another check by hand.
+FLAT_STATUS_TABLES = {
+    "RESOLVED_STATUSES": (RESOLVED_STATUSES, ("task", "feature")),
+    "FEATURE_ACTIVE_STATUSES": (FEATURE_ACTIVE_STATUSES, ("feature",)),
+}
+
+
+def _check_values(report, label, values, note_type):
+    """One STATUS-TABLE assertion: every value legal for note_type."""
+    allowed = ALLOWED_STATUS.get(note_type)
+    if allowed is None:
+        report.error("STATUS-TABLE", "%s is compared against note type '%s', which has no entry in ALLOWED_STATUS; one table knows a type the other does not" % (label, note_type))
+        return
+    unknown = sorted(set(values) - allowed)
+    if unknown:
+        phrasing = ("is not an allowed %s status" % note_type if len(unknown) == 1
+                    else "are not allowed %s statuses" % note_type)
+        report.error("STATUS-TABLE", "%s contains %s, which %s in ALLOWED_STATUS (%s); a value was renamed in one status table and not the other -- see ISS-0011" % (
+            label,
+            ", ".join("'%s'" % u for u in unknown),
+            phrasing,
+            ", ".join(sorted(allowed))))
+
+
+def validate_status_tables(report):
+    """STATUS-TABLE -- every value in PHASE_RESOLVED must be a real status.
+
+    The regression guard for ISS-0011. Two independent status tables ship in
+    this file, and a value renamed in one but not the other fails silently in
+    the worst possible way: the gate does not error, it simply stops recognising
+    the renamed status, and every repo keeps passing. A 41-value vocabulary
+    migration (ADR-0012) shipped green over exactly that.
+
+    Checked against the ALLOWED_STATUS *constant*, not `load_allowed_status`'s
+    per-repo STATUSES.md overlay. Both tables ship here, so their agreement is an
+    internal invariant of the validator -- a downstream repo customising its own
+    taxonomy must not be able to turn this red, and equally must not be able to
+    hide a genuine mismatch by widening its own allowed set.
+
+    Deliberately one-directional: every value in a table must be a real status,
+    but a status need not appear in any table. `deferred`, `open` and `triage`
+    are all legal and all correctly absent from PHASE_RESOLVED.
+
+    Covers every status collection in this file:
+
+      PHASE_RESOLVED        per-type -- each key's values checked against that type
+      FLAT_STATUS_TABLES    flat tuples, each with the types it is applied to
+      PLAN_FOLLOWS_FEATURE  a mapping BETWEEN two vocabularies: feature statuses
+                            as keys, plan statuses as values, both checked
+
+    All three of the misses ISS-0011 records would have failed here.
+    """
+    for note_type, resolved in sorted(PHASE_RESOLVED.items()):
+        _check_values(report, "PHASE_RESOLVED['%s']" % note_type, resolved, note_type)
+
+    for name, (values, note_types) in sorted(FLAT_STATUS_TABLES.items()):
+        for note_type in note_types:
+            _check_values(report, "%s (applied to %s notes)" % (name, note_type), values, note_type)
+
+    _check_values(report, "PLAN_FOLLOWS_FEATURE keys", PLAN_FOLLOWS_FEATURE.keys(), "feature")
+    plan_values = set()
+    for expected in PLAN_FOLLOWS_FEATURE.values():
+        plan_values.update(expected)
+    _check_values(report, "PLAN_FOLLOWS_FEATURE values", plan_values, "plan")
+
 
 def is_sentinel_id(digits):
     """True for all-9s sentinel IDs (PHASE-999, PHASE-0999, PHASE-9999).
@@ -247,9 +384,8 @@ def load_grandfathered(root):
     return out
 
 
-# Statuses that resolve an item's place in a parent's scope / a requirement's delivery.
-# `deferred` is deliberately absent (STATUSES.md, "Deferral and re-adoption").
-RESOLVED_STATUSES = ("done", "cancelled", "superseded")
+# RESOLVED_STATUSES moved up beside ALLOWED_STATUS and the other status tables,
+# where validate_status_tables can check it (ISS-0011).
 
 # metrics.counts definitions live in tools/instructions/SNAPSHOT.md ("Metrics")
 METRIC_PREFIXES = {"FEAT", "TASK", "ISS", "PHASE", "TST", "RISK", "REL", "ADR", "REQ"}
@@ -681,18 +817,11 @@ def validate_plan_notes(root, docs_dir, allowed_status, grandfathered, report):
     if not docs_dir.is_dir():
         return
 
-    # feature status -> the plan status that tracks it. `deferred` and
-    # `cancelled` are deliberately absent: a parked feature's plan may
-    # honestly stay `draft` or become `superseded`, and guessing between
-    # them would produce noise rather than signal.
-    follows = {
-        "backlog": {"draft"},
-        "planned": {"draft"},
-        "in-progress": {"active"},
-        "in-review": {"active"},
-        "done": {"done"},
-        "superseded": {"superseded"},
-    }
+    # Feature status -> plan status: PLAN_FOLLOWS_FEATURE, module-level and
+    # checked by validate_status_tables. It was a local keyed on the retired
+    # `in-progress`/`in-review` (ISS-0011), which silently disabled PLAN-FOLLOWS
+    # for every actively-built feature.
+    follows = PLAN_FOLLOWS_FEATURE
 
     allowed = allowed_status.get("plan") or set()
     for path in sorted(docs_dir.rglob("*.md")):
@@ -782,6 +911,10 @@ def validate_plan_notes(root, docs_dir, allowed_status, grandfathered, report):
 
 
 def validate(root, report):
+    # Self-check first: it needs no repo state, and a validator whose own status
+    # tables disagree cannot be trusted to report on anything else.
+    validate_status_tables(report)
+
     snap_path = root / "SNAPSHOT.yaml"
     if not snap_path.is_file():
         report.error("SNAP-MISSING", "SNAPSHOT.yaml not found at repo root")
@@ -1018,8 +1151,8 @@ def validate(root, report):
         all_resolved = bool(known) and all(s in RESOLVED_STATUSES for s in known.values())
         if status in ("draft", "approved") and all_resolved:
             report.error("REQ-STALE", "%s is '%s' but every implementing feature (%s) has reached a terminal status; advance it per close-out 'Requirement advancement' (tick criteria with evidence, reconcile departures, set implemented) or supersede it" % (req_id, status, ", ".join("%s=%s" % (f, known[f]) for f in sorted(known))))
-        elif status == "draft" and any(s in ("in-progress", "in-review", "done") for s in known.values()):
-            active = sorted(f for f, s in known.items() if s in ("in-progress", "in-review", "done"))
+        elif status == "draft" and any(s in FEATURE_ACTIVE_STATUSES for s in known.values()):
+            active = sorted(f for f, s in known.items() if s in FEATURE_ACTIVE_STATUSES)
             report.warn("REQ-PREMATURE", "%s is still draft but %s is already being implemented; approve or amend the requirement first (feature-scaffold 'Requirement approval gate')" % (req_id, ", ".join(active)))
         # -- ADR-0007: `implements:` names at most one feature
         own_feats = sorted({
@@ -1094,18 +1227,11 @@ def validate(root, report):
     #    parking an item does not close the phase that owns it. Re-home a deferred item
     #    to the phase that will carry it — usually PHASE-999 — and the gate is satisfied
     #    by the relationship rather than by the word.
-    PHASE_RESOLVED = {
-        "task": {"done", "cancelled", "superseded"},
-        "issue": {"fixed", "wont-fix", "cancelled", "superseded"},
-        "requirement": {"implemented", "retired", "cancelled", "superseded"},
-        "feature": {"done", "cancelled", "superseded"},
-        # STATUSES.md says "a note naming it in `phase:`", so a risk parked on a
-        # closed phase counts too — an open hazard is not resolved by the phase
-        # that raised it closing. Omitting risks made the gate narrower than its
-        # own prose (found in independent review of CHG-20260726).
-        "risk": {"closed"},
-    }
-    CLOSED_PHASE_STATUSES = ("done", "superseded")
+    #
+    #    PHASE_RESOLVED and CLOSED_PHASE_STATUSES are module-level constants, checked
+    #    against ALLOWED_STATUS by validate_status_tables (STATUS-TABLE). They used to
+    #    be locals here, which is precisely why ISS-0011 went unnoticed: no test could
+    #    reach them.
 
     children_by_phase = {}   # PHASE id -> [(child id, child status)]
     for child_id, (_c_path, c_fm) in note_index.items():
@@ -1250,7 +1376,29 @@ def main(argv=None):
     ap.add_argument("--repo-root", default=None, help="Repo root (default: nearest ancestor with SNAPSHOT.yaml)")
     ap.add_argument("--quiet", action="store_true", help="Suppress warnings and the success line")
     ap.add_argument("--fix-metrics", action="store_true", help="Rewrite metrics.counts to the computed counts before validating")
+    ap.add_argument("--self-check", action="store_true", help="Run only the validator's internal consistency checks (STATUS-TABLE) and exit; needs no repo")
     args = ap.parse_args(argv)
+
+    # Internal-consistency only: no SNAPSHOT.yaml, no docs/, no repo at all.
+    #
+    # This is what TST-0002 executes, and the separation is deliberate. Pointing
+    # that note at the full validator deadlocked: its `command:` reported every
+    # repo error, so the moment run-tests stamped it `failing` the VERIFY gate on
+    # the issue linking it became one more error, and no subsequent run could
+    # ever return 0. A test that gates on its own result cannot converge. Scope
+    # each test note to the invariant it actually names -- TST-0001 already owns
+    # "the whole repo validates".
+    if args.self_check:
+        report = Report()
+        validate_status_tables(report)
+        for line in report.errors:
+            print(line)
+        if report.errors:
+            print("validate-docs: FAIL (%d error%s)" % (len(report.errors), "s" if len(report.errors) != 1 else ""))
+            return 1
+        if not args.quiet:
+            print("validate-docs: self-check OK (status tables consistent)")
+        return 0
 
     if args.repo_root:
         root = Path(args.repo_root).resolve()

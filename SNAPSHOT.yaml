@@ -27,15 +27,15 @@ docs_system:
 counters:
   ADR: 12
   CHG:
-    last_date: 20260724
+    last_date: 20260726
   FEAT: 17
-  ISS: 10
+  ISS: 11
   PHASE: 2
   REL: 0
   REQ: 24
   RISK: 2
   TASK: 74
-  TST: 1
+  TST: 2
   WF: 3
 
 focus:
@@ -543,6 +543,14 @@ items:
       owner: user:edwin
       phase: PHASE-0002
       related: [ADR-0008, FEAT-0013, REQ-0017]
+    ISS-0011:
+      file: docs/issues/ISS-0011-Phase-Resolved-Kept-Wont-Fix.md
+      title: "ADR-0012's `wont-fix` -> `declined` rename missed three status tables in validate-docs.py: PHASE-CHILDREN refused declined issues, and REQ-PREMATURE and PLAN-FOLLOWS were silently dead"
+      status: fixed
+      severity: medium
+      owner: user:edwin
+      phase: PHASE-999
+      related: [ADR-0012, ADR-0008, ISS-0009]
     ISS-0010:
       file: docs/issues/ISS-0010-Plans-Never-Advance.md
       title: "Plan notes never advance: 31 plans sit at draft/active under a done feature, and 16 carry no status at all"
@@ -766,10 +774,23 @@ items:
       status: passing
       requirements: [REQ-0022]
       tasks: [TASK-0067]
+    TST-0002:
+      file: docs/tests/TST-0002-Status-Table-Consistency.md
+      title: "Status table consistency: no status table in the validator can drift from the allowed taxonomy"
+      status: passing
+      issues: [ISS-0011]
+      tests: [TST-0002]
   releases: {}
   workflows: {}
 
   changes:
+    CHG-20260726-Phase-Resolved-Declined:
+      file: docs/changes/CHG-20260726-Phase-Resolved-Declined.md
+      title: "ADR-0012's rename completed in all three status tables it missed — PHASE_RESOLVED fixed fleet-wide, REQ-PREMATURE and PLAN-FOLLOWS un-deadened, and STATUS-TABLE added so it cannot recur"
+      status: merged
+      issues: [ISS-0011]
+      tests: [TST-0002]
+      features: []
     CHG-20260725-State-Model-Simplification:
       file: docs/changes/CHG-20260725-State-Model-Simplification.md
       title: "PHASE-0002 complete: taxonomy collapsed 64 to 53 and migrated across 10 repos; snapshot status derived from notes; test status stamped by execution; grandfather ledger replaces date-based gating"
@@ -884,8 +905,8 @@ metrics:
     phases_done: 2
     tasks_total: 74
     tasks_done: 70
-    tests_total: 1
-    tests_passing: 1
+    tests_total: 2
+    tests_passing: 2
     tests_failing: 0
     issues_open: 2
     issues_triage: 0

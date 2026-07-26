@@ -6,14 +6,14 @@ title: "Docs validation gate: the repo's own invariants hold"
 status: passing
 owner: user:edwin
 created: 2026-07-25
-updated: 2026-07-25
+updated: 2026-07-26
 source: []
 scope: system
 kind: automated
 level: system
 entrypoint: "tools/scripts/validate-docs.sh"
 command: "bash tools/scripts/validate-docs.sh --quiet"
-last_run: "2026-07-25T17:55Z"
+last_run: "2026-07-26T21:28Z"
 exit_code: 0
 requirements: [REQ-0022]
 features: []
