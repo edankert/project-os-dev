@@ -72,7 +72,7 @@ The cockpit's bundled copy is a verbatim bundle, not a fork, enforced by `tests/
 
 - **No repo was force-synced.** Each got the surgical change; see the note on `your-sudoku` below.
 - **The cockpit's `ALLOWED_STATUS`** still carries the full legacy vocabulary. ADR-0012 sanctions that explicitly: "Downstream tools may keep them for tolerance; that is their decision, not this one."
-- **No repo was force-synced.** Each got the surgical one-line change. `your-sudoku` in particular is 146 lines behind upstream (it predates the `PLAN-STATE` / `PLAN-ID` checks) — a real sync is owed there, but rolling it into a one-word fix would have hidden it.
+- **No repo was force-synced at the time.** Each got the surgical one-line change; `your-sudoku` was then 146 lines behind upstream (predating the `PLAN-STATE` / `PLAN-ID` checks), and rolling a real sync into a one-word fix would have hidden it. That sync was done separately the same day — see the follow-up below.
 
 ## Documentation Coverage (All Types Considered)
 
@@ -159,12 +159,20 @@ Authored by model:claude-opus-5 (commit trailer on 610eb16), reviewed by model:c
 
 **Why changes-requested:** the heading "STATUS-TABLE extended to every status table" is refuted by counterexample — `CLOSED_PHASE_STATUSES`, hoisted by this same commit, is walked by nothing: mutating it to a non-status leaves `--self-check` green and would silently disable `PHASE-CHILDREN` for done phases, the exact ISS-0011 failure mode. `DESCOPED` (FEATURE-REQ) also remains a local status tuple, and the `risks_open` metrics filter still carries the retired `mitigating`/`monitoring` values. Fix is one line (register `CLOSED_PHASE_STATUSES` in `FLAT_STATUS_TABLES` with `("phase",)`) plus either covering or explicitly descoping the others; details on [[TST-0002]].
 
-**Stale follow-up:** the your-sudoku note below ("146 lines behind", "plan notes fail the newer PLAN-ID check") no longer holds — its validator is now byte-identical to project-os's (synced in its commit 3ba52ec, 2026-07-26 22:45) and it validates OK, so that follow-up can be ticked or rewritten.
+**Stale follow-up (round one, now resolved):** the your-sudoku note below asserted present-tense that the repo was 146 lines behind with plan notes failing `PLAN-ID`. That stopped being true in its commit `3ba52ec`. Ticked and rewritten in round three — it survived round two's rewrite, three lines below the review section that flagged it, which is its own small lesson about editing around a finding rather than acting on it.
+
+## Independent re-review (2026-07-26, model:claude-fable-5, round two, commit 12a7c70)
+
+Authored by model:claude-opus-5 (commit trailer on 12a7c70), reviewed by model:claude-fable-5 — same model family; this remains harm reduction, not the cross-vendor independence QUALITY.md requires, and a different-family or human pass is still owed.
+
+**Verified:** every [[ISS-0012]] Next Action is done as evidenced — `CLOSED_PHASE_STATUSES`, `DESCOPED_STATUSES` (the local is gone), and `RISK_OPEN_STATUSES` registered in `FLAT_STATUS_TABLES`; `TERMINAL` covered via `TERMINAL_TYPES`; all six inversion branches re-induced independently and each fails with the claimed message and exit 1; the completeness assertion fires on a newly-added unregistered tuple and on a registered tuple rebound after registration; all 11 fleet files byte-identical (`cmp`, including `src/project_os_cockpit/validate_docs_bundled.py`); `validate-docs.sh` OK in all ten repos.
+
+**Why changes-requested again:** three residuals, filed as [[ISS-0013]], all cheap. The completeness assertion sees only `tuple`s, so a module-level `set`/`frozenset`/`list`/`dict` of statuses evades it while [[TST-0002]] says it covers "a new module-level constant that nobody registered" (refuted by demonstration); the validator docstring retains the "covers every status collection in this file" phrase that ISS-0012's own post-mortem branded, and it remains refutable via the inline `("passing", "failing")` and `("draft", "approved")` tuples plus the surviving inline metric-set literals; and this note's your-sudoku follow-up checkbox — flagged as stale in the round-one section directly above — still asserts, present-tense, two claims that are now false. The shipped code is sound for everything that exists in the file today; the request is to make the boundary prose exact (or widen the walker to match it) and to stop this note carrying a false present-tense claim.
 
 ## Follow-ups
 
 - [ ] Consider amending [[ADR-0012]]'s consequence list to name `PHASE_RESOLVED`, so the record of which surfaces exist is accurate for the next rename.
-- [ ] `your-sudoku` should run `sync-project-os.sh`: it is 146 lines behind and its plan notes fail the newer `PLAN-ID` check, which the new validator surfaced when run against it.
+- [x] `your-sudoku` should run `sync-project-os.sh` — done 2026-07-26 (its commit `3ba52ec`): validator now byte-identical to project-os's, and the one plan note carrying an ID was migrated by `tools/scripts/migrate-plan-ids.py`. Repo validates with 0 errors.
 
 ## Follow-up: ISS-0012
 
@@ -173,3 +181,11 @@ Independent review of this change (2026-07-26, model:claude-fable-5) refuted its
 Fixed the same day as [[ISS-0012]], which also added a completeness assertion so the registry is checked against the module rather than against prose. Corrected coverage is recorded in [[TST-0002]]; the claim in this note's summary should be read as describing the state after that follow-up, not before it.
 
 The sequence is worth keeping visible: a change that fixed a missed-table bug shipped with a missed table of its own, and every mechanical check passed. That is the argument for adversarial review as a gate, not a formality.
+
+## Follow-up: ISS-0013 (round three)
+
+Round two of review accepted every round-one fix and then broke the new guard: the completeness assertion shipped checking only `tuple`, and only names passing `.isupper()`, so a module-level `set` of statuses walked straight past the thing whose whole job is catching unregistered status collections.
+
+Three rounds, three versions of the same mistake — a coverage claim written wider than the code. ISS-0011 was a rename that missed a table. ISS-0012 was the fix for ISS-0011 missing a table it had just created. ISS-0013 was the guard against ISS-0012 missing a *type* of table. Each shipped green.
+
+Fixed in [[ISS-0013]]: the walker takes tuple/list/set/frozenset and ignores case; the last two inline literals and the eight remaining inline metric filters are hoisted and registered; and the docstring now names its boundary exactly — module scope — because the imprecise version has been wrong twice.

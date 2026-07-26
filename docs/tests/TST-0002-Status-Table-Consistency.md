@@ -7,7 +7,7 @@ status: passing
 owner: user:edwin
 created: 2026-07-26
 updated: 2026-07-26
-source: ["ISS-0011", "ISS-0012"]
+source: ["ISS-0011", "ISS-0012", "ISS-0013"]
 scope: system
 kind: automated
 level: unit
@@ -17,11 +17,11 @@ last_run: "2026-07-26T21:28Z"
 exit_code: 0
 requirements: []
 features: []
-issues: [ISS-0011, ISS-0012]
+issues: [ISS-0011, ISS-0012, ISS-0013]
 tasks: []
 artifacts: []
 evidence: []
-adequacy: "Verified by inversion 2026-07-26: twelve failure branches induced and observed across two rounds — three reproducing the ISS-0011 misses verbatim, one reproducing ISS-0012's, and one confirming the completeness assertion fires on a newly-added unregistered tuple."
+adequacy: "Verified by inversion across three rounds, 2026-07-26: 21 failure branches induced and observed — three reproducing the ISS-0011 misses verbatim, one ISS-0012's, one ISS-0013's, and five confirming the completeness assertion fires on tuple, list, set, frozenset and comprehension-built collections regardless of name case. The metrics rewrite was separately shown behaviour-preserving: identical counts on all 18 metrics across all 11 fleet repos."
 related: [ADR-0012, ADR-0010, TST-0001]
 reviewed_by: ""
 review_date: ""
@@ -61,6 +61,9 @@ Violations report as `ERROR [STATUS-TABLE]`.
 | `DESCOPED_STATUSES` | flat tuple | `requirement` |
 | `RISK_OPEN_STATUSES` | flat tuple | `risk` |
 | `TERMINAL` | collection → terminal status | each value against `TERMINAL_TYPES[collection]` |
+| `TEST_RUNNER_STATUSES` | flat tuple | `test` |
+| `REQ_UNADVANCED_STATUSES` | flat tuple | `requirement` |
+| `METRIC_STATUS_FILTERS` | metric → (prefix, statuses) | each against `METRIC_PREFIX_TYPE[prefix]` |
 
 Flat tables are registered in `FLAT_STATUS_TABLES`, a name → (values, applicable types) map. Adding a status table means adding a row there rather than hand-writing another check.
 
@@ -106,6 +109,18 @@ Covering the other tables was not bookkeeping. Two of the three were **actively 
 
 Fixing them re-armed both checks. Measured across the ten repos immediately afterwards: **15 `PLAN-FOLLOWS` and 4 `REQ-PREMATURE`** warnings that had been suppressed — including plans still `active` under features closed months ago, and four requirements sitting at `draft` while their feature was mid-build. All warnings; no repo's error count changed.
 
+## Three rounds of the same mistake
+
+Worth stating before the detail, because the pattern is the finding:
+
+| | The miss | Shipped green? |
+|---|---|---|
+| [[ISS-0011]] | ADR-0012's rename missed three status tables | yes, across a 41-value fleet migration |
+| [[ISS-0012]] | the *fix for ISS-0011* missed a table it had just created | yes |
+| [[ISS-0013]] | the *guard against ISS-0012* missed a table **type** | yes |
+
+Each time, a coverage claim was written wider than the code, and each time every mechanical check passed. All three were found by an independent reviewer attacking the guard rather than reading it. That is the argument for adversarial review as a gate: the checks cannot audit their own reach, and prose describing their reach is exactly the artifact that keeps being wrong.
+
 ## What ISS-0012 taught, and why the coverage table above is not the whole answer
 
 The first version of this check shipped with a hole, and the hole was in a
@@ -136,7 +151,11 @@ decisions, and being forced to make one is the whole mechanism.
 
 This guards the *validator's own* internal consistency. It does not verify that `ALLOWED_STATUS` matches `STATUSES.md` — `load_allowed_status()` overlays the repo's file at runtime, and the cockpit's `tests/test_status_vocabulary.py` covers the palette surfaces.
 
-It also cannot see a status literal written *inline*, inside a function, rather than as a module-level constant. That is the remaining gap and it is a real one — `DESCOPED` was exactly that shape until [[ISS-0012]], and the completeness assertion could not have found it, because a local is not in `globals()`. What the assertion covers is the next-most-likely mistake: a new module-level constant that nobody registered. An inline literal is caught by review, or not at all.
+It cannot see a status literal written **inside a function**. A local is not in `globals()`, so no amount of walking finds it — `DESCOPED` was exactly that shape until [[ISS-0012]], and `TEST_RUNNER_STATUSES` and `REQ_UNADVANCED_STATUSES` until [[ISS-0013]]. As of ISS-0013 no inline status literal remains in the file, but nothing stops the next one; that case is caught by review or not at all.
+
+At module scope the assertion is type-agnostic and case-agnostic: tuple, list, set and frozenset are all walked, whatever the name looks like. It checked only `tuple` and only `.isupper()` names until ISS-0013, which is how a module-level `set` of statuses evaded the guard against unregistered status collections.
+
+This boundary is stated this precisely because the imprecise version has been wrong twice. See below.
 
 ## Independent review (2026-07-26, model:claude-fable-5)
 
@@ -147,3 +166,11 @@ Authored by model:claude-opus-5 (per the commit trailer on 610eb16), reviewed by
 **Why changes-requested — the title claim is refuted by counterexample.** `CLOSED_PHASE_STATUSES` is a status collection (phase statuses), hoisted to module scope *by this very commit*, and `validate_status_tables()` does not walk it: it is not in `FLAT_STATUS_TABLES` and has no explicit check. Demonstrated: mutating it to `("completed", "superseded")` — `completed` is not a phase status — leaves `--self-check` green, and would silently kill `PHASE-CHILDREN` for done phases, which is the exact ISS-0011 failure mode this test says it makes impossible. One-line fix: register it in `FLAT_STATUS_TABLES` with `("phase",)`.
 
 **Secondary findings, same class:** (1) `DESCOPED = ("deferred", "cancelled", "superseded")` is still a *local* status tuple inside `validate()` (FEATURE-REQ, applied to requirement statuses), contradicting this note's "every status collection is now a module-level constant"; (2) the `TERMINAL` map (collection → terminal status) is module-level but unchecked; (3) the metrics filter `count("RISK", {"open", "mitigating", "monitoring"})` carries two values STATUSES.md explicitly retired ("written once and never") — a live stale-vocabulary literal surviving in the same file today, harmless only because dead values in a counting filter cannot match. Either cover these or narrow this note's title and coverage-boundary claim to the four registered tables.
+
+## Independent re-review (2026-07-26, model:claude-fable-5, round two, commit 12a7c70)
+
+Authored by model:claude-opus-5 (commit trailer on 12a7c70), reviewed by model:claude-fable-5 — same model family, so this remains harm reduction, not the cross-vendor independence QUALITY.md asks for; a different-family or human pass is still owed.
+
+**Every round-one finding is verified fixed.** All six ISS-0012 inversion branches were independently re-induced on a scratch copy and each fails with exactly the message and exit code [[ISS-0012]]'s Resolution table claims — including the ISS-0012 repro verbatim (`CLOSED_PHASE_STATUSES` → `completed`), the `TERMINAL_TYPES` missing-key branch, and the new-unregistered-tuple branch. `_NON_STATUS_TUPLES` is correctly scoped (both entries genuinely non-status; `RELATIONSHIP_FIELDS`'s `deferred`/`superseded` are field names). No existing module-level container evades the guard — verified by AST scan of every module-level assignment (`COLLECTION_TYPE`, `PROMOTIONS`, `METRIC_PREFIXES` hold no status values). A registered tuple rebound after registration is caught (the `id()`-based registry is conservative in the right direction), as is a comprehension-built tuple. All 11 fleet validators are byte-identical (`cmp`, including the cockpit bundle) and all ten repos validate OK.
+
+**Why changes-requested again — narrower, and the same shape one level up.** (1) The completeness assertion walks only `tuple`s: a module-level `set`, `frozenset`, `list`, or `dict` of statuses evades it — demonstrated, `NEW_SET_STATUSES = {"bogus", "done"}` leaves `--self-check` green — which refutes this note's "What the assertion covers is the next-most-likely mistake: a new module-level constant that nobody registered" and the singular "That is the remaining gap". (2) The validator docstring still opens with "Covers every status collection in this file" — the exact phrase [[ISS-0012]]'s post-mortem records as "wrong at the moment it was written" — and by that issue's own standard it is still refutable: inline `("passing", "failing")` (TEST-FIELDS) and `("draft", "approved")` (REQ-STALE) drift silently (demonstrated), and `compute_metric_counts` retains nine inline single-status set literals, siblings of the exact `risks_open` literal ISS-0012 hoisted; this note's Procedure section echoes the phrase. (3) The CHG's stale your-sudoku follow-up, flagged in round one in the section directly above it, was left unaddressed in the same rewrite. Findings and the two-line fixes are filed as [[ISS-0013]]; the guard itself is sound for everything that exists in the file today.

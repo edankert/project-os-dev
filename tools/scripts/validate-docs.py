@@ -166,13 +166,50 @@ PLAN_FOLLOWS_FEATURE = {
     "superseded": {"superseded"},
 }
 
-#: Risk statuses counted as open (metrics.counts.risks_open).
+#: Test statuses that only the runner may write (TEST-FIELDS, ADR-0010).
+#: Inline until ISS-0013 -- the second round of review found it, which is the
+#: point: an inline literal is invisible to the guard by construction.
+TEST_RUNNER_STATUSES = ("passing", "failing")
+
+#: Requirement statuses meaning "not yet advanced to terminal" (REQ-STALE).
+#: Inline until ISS-0013, same reason.
+REQ_UNADVANCED_STATUSES = ("draft", "approved")
+
+#: Prefix -> note type, for the metric filters below. Separate from
+#: COLLECTION_TYPE, which is keyed by snapshot collection rather than ID prefix.
+METRIC_PREFIX_TYPE = {
+    "FEAT": "feature", "TASK": "task", "ISS": "issue", "PHASE": "phase",
+    "TST": "test", "RISK": "risk", "REQ": "requirement", "REL": "release",
+}
+
+#: metric name -> (ID prefix, statuses counted). `None` means "count them all".
 #:
-#: Was an inline {"open", "mitigating", "monitoring"} literal. Two of the three
-#: are vocabulary STATUSES.md records as retired, so the filter had been counting
-#: one status while reading as though it counted three -- harmless, since a dead
-#: value cannot match, and invisible for exactly that reason (ISS-0012).
-RISK_OPEN_STATUSES = ("open",)
+#: These were nine inline set literals inside compute_metric_counts, one of which
+#: (risks_open, then {"open", "mitigating", "monitoring"}) carried two retired
+#: values and had been counting one status while reading as though it counted
+#: three. ISS-0012 hoisted that one; ISS-0013's review pointed out its eight
+#: siblings were still inline, which is the same bug waiting for the next rename.
+#: As a table they are checked like everything else.
+METRIC_STATUS_FILTERS = {
+    "features_total": ("FEAT", None),
+    "features_done": ("FEAT", ("done",)),
+    "phases_total": ("PHASE", None),
+    "phases_done": ("PHASE", ("done",)),
+    "tasks_total": ("TASK", None),
+    "tasks_done": ("TASK", ("done",)),
+    "tasks_deferred": ("TASK", ("deferred",)),
+    "tests_total": ("TST", None),
+    "tests_passing": ("TST", ("passing",)),
+    "tests_failing": ("TST", ("failing",)),
+    "issues_open": ("ISS", ("open",)),
+    "issues_triage": ("ISS", ("triage",)),
+    "issues_deferred": ("ISS", ("deferred",)),
+    "requirements_total": ("REQ", None),
+    "requirements_implemented": ("REQ", ("implemented",)),
+    "risks_open": ("RISK", ("open",)),
+    "releases_total": ("REL", None),
+    "decisions_total": ("ADR", None),
+}
 
 #: Snapshot collection -> the terminal status for that type. Keyed by collection
 #: name because that is how the snapshot names them; TERMINAL_TYPES maps each key
@@ -198,17 +235,24 @@ FLAT_STATUS_TABLES = {
     "FEATURE_ACTIVE_STATUSES": (FEATURE_ACTIVE_STATUSES, ("feature",)),
     "CLOSED_PHASE_STATUSES": (CLOSED_PHASE_STATUSES, ("phase",)),
     "DESCOPED_STATUSES": (DESCOPED_STATUSES, ("requirement",)),
-    "RISK_OPEN_STATUSES": (RISK_OPEN_STATUSES, ("risk",)),
+    "TEST_RUNNER_STATUSES": (TEST_RUNNER_STATUSES, ("test",)),
+    "REQ_UNADVANCED_STATUSES": (REQ_UNADVANCED_STATUSES, ("requirement",)),
 }
 
 
-#: Module-level string tuples that are deliberately NOT status collections.
-#: The completeness assertion in validate_status_tables walks every uppercase
-#: tuple of strings and demands each one be either registered or named here, so
-#: this list is a record of decisions rather than a suppression.
-_NON_STATUS_TUPLES = frozenset({
+#: Module-level string collections that are deliberately NOT status collections.
+#: The completeness assertion walks every tuple/list/set/frozenset of strings at
+#: module scope and demands each be either registered or named here, so this is a
+#: record of decisions rather than a suppression.
+#:
+#: It checked only `tuple`, and only names passing `.isupper()`, until ISS-0013 --
+#: a module-level `set` of statuses evaded it entirely, which made the guard's
+#: own coverage claim false in the same way ISS-0012 did. Type and case are not
+#: what makes something a status table.
+_NON_STATUS_COLLECTIONS = frozenset({
     "ID_PREFIXES",           # note ID prefixes
     "RELATIONSHIP_FIELDS",   # frontmatter field names
+    "METRIC_PREFIXES",       # ID prefixes counted in metrics
 })
 
 
@@ -248,13 +292,17 @@ def validate_status_tables(report):
     but a status need not appear in any table. `deferred`, `open` and `triage`
     are all legal and all correctly absent from PHASE_RESOLVED.
 
-    Covers every status collection in this file:
+    Covers every status collection at MODULE SCOPE. That qualifier is load-bearing
+    and was absent twice; see below.
 
-      PHASE_RESOLVED        per-type -- each key's values checked against that type
-      FLAT_STATUS_TABLES    flat tuples, each with the types it is applied to
-      PLAN_FOLLOWS_FEATURE  a mapping BETWEEN two vocabularies: feature statuses
-                            as keys, plan statuses as values, both checked
-      TERMINAL              collection -> terminal status, via TERMINAL_TYPES
+      PHASE_RESOLVED         per-type -- each key's values checked against that type
+      FLAT_STATUS_TABLES     flat collections, each with the types it applies to
+      PLAN_FOLLOWS_FEATURE   a mapping BETWEEN two vocabularies: feature statuses
+                             as keys, plan statuses as values, both checked
+      TERMINAL               collection -> terminal status, via TERMINAL_TYPES
+      METRIC_STATUS_FILTERS  metric -> (prefix, statuses), via METRIC_PREFIX_TYPE
+      (completeness)         every module-level string collection is either
+                             registered above or named in _NON_STATUS_COLLECTIONS
 
     All three of the misses ISS-0011 records would have failed here.
 
@@ -281,6 +329,15 @@ def validate_status_tables(report):
         plan_values.update(expected)
     _check_values(report, "PLAN_FOLLOWS_FEATURE values", plan_values, "plan")
 
+    for metric, (prefix, allowed) in sorted(METRIC_STATUS_FILTERS.items()):
+        if allowed is None:
+            continue
+        note_type = METRIC_PREFIX_TYPE.get(prefix)
+        if note_type is None:
+            report.error("STATUS-TABLE", "METRIC_STATUS_FILTERS['%s'] counts prefix '%s', which has no entry in METRIC_PREFIX_TYPE, so its statuses are checked against nothing" % (metric, prefix))
+            continue
+        _check_values(report, "METRIC_STATUS_FILTERS['%s']" % metric, allowed, note_type)
+
     for collection, status in sorted(TERMINAL.items()):
         note_type = TERMINAL_TYPES.get(collection)
         if note_type is None:
@@ -294,14 +351,21 @@ def validate_status_tables(report):
     # covers every module-level status tuple rather than trusting the author to
     # remember -- a new constant is loud on the first run, not at the next rename.
     registered = {id(values) for values, _ in FLAT_STATUS_TABLES.values()}
+    registered.update(id(v) for v in PHASE_RESOLVED.values())
+    registered.add(id(PHASE_RESOLVED))
+    registered.add(id(PLAN_FOLLOWS_FEATURE))
+    registered.add(id(TERMINAL))
+    registered.add(id(METRIC_STATUS_FILTERS))
     for name, value in sorted(globals().items()):
-        if not name.isupper() or not isinstance(value, tuple):
+        if name.startswith("_") or name in _NON_STATUS_COLLECTIONS:
+            continue
+        if not isinstance(value, (tuple, list, set, frozenset)):
             continue
         if not value or not all(isinstance(v, str) for v in value):
             continue
-        if name in _NON_STATUS_TUPLES or id(value) in registered:
+        if id(value) in registered:
             continue
-        report.error("STATUS-TABLE", "%s is a module-level tuple of strings that no status table registers; if it holds statuses, add it to FLAT_STATUS_TABLES, and if it does not, name it in _NON_STATUS_TUPLES -- an unregistered status tuple is what ISS-0012 was" % name)
+        report.error("STATUS-TABLE", "%s is a module-level collection of strings that no status table registers; if it holds statuses, add it to FLAT_STATUS_TABLES, and if it does not, name it in _NON_STATUS_COLLECTIONS -- an unregistered status collection is what ISS-0012 was" % name)
 
 
 def is_sentinel_id(digits):
@@ -486,29 +550,1011 @@ def compute_metric_counts(items, note_index):
         return len(vals) if allowed is None else sum(1 for s in vals if s in allowed)
 
     return {
-        "features_total": count("FEAT"),
-        "features_done": count("FEAT", {"done"}),
-        "phases_total": count("PHASE"),
-        "phases_done": count("PHASE", {"done"}),
-        "tasks_total": count("TASK"),
-        "tasks_done": count("TASK", {"done"}),
-        "tests_total": count("TST"),
-        "tests_passing": count("TST", {"passing"}),
-        "tests_failing": count("TST", {"failing"}),
-        # ADR-0008: `fixed` is terminal, so it is correctly excluded here. Before the
-        # merge, `fixed` meant "implemented, not verified" and 313 fleet-wide issues
-        # sat in it counted by nothing (ISS-0008) — resolved by removing the limbo
-        # state, not by widening the metric.
-        "issues_open": count("ISS", {"open"}),
-        "issues_triage": count("ISS", {"triage"}),
-        "tasks_deferred": count("TASK", {"deferred"}),
-        "issues_deferred": count("ISS", {"deferred"}),
-        "requirements_total": count("REQ"),
-        "requirements_implemented": count("REQ", {"implemented"}),
-        "risks_open": count("RISK", set(RISK_OPEN_STATUSES)),
-        "releases_total": count("REL"),
-        "decisions_total": count("ADR"),
+        name: count(prefix, None if allowed is None else set(allowed))
+        for name, (prefix, allowed) in METRIC_STATUS_FILTERS.items()
     }
+def fix_metrics(root):
+    """Rewrite metrics.counts values in SNAPSHOT.yaml to the computed counts, preserving formatting."""
+    snap_path = root / "SNAPSHOT.yaml"
+    text = snap_path.read_text(encoding="utf-8")
+    snap = load_yaml(text)
+    if not isinstance(snap, dict):
+        return []
+    computed = compute_metric_counts(snap.get("items") or {}, build_note_index(root / "docs")[0])
+    lines = text.splitlines(keepends=True)
+    changes = []
+    in_metrics = in_counts = False
+    counts_indent = 0
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if re.match(r"^metrics:\s*(#.*)?$", line):
+            in_metrics = True
+            continue
+        if in_metrics and re.match(r"^\S", line):
+            break  # next top-level key
+        if not stripped or stripped.startswith("#"):
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        if in_metrics and re.match(r"^\s+counts:\s*(#.*)?$", line):
+            in_counts, counts_indent = True, indent
+            continue
+        if in_counts:
+            if indent <= counts_indent:
+                in_counts = False
+                continue
+            m = re.match(r"^(\s*)([\w-]+):\s*(-?\d+)\s*(#.*)?$", line)
+            if m and m.group(2) in computed and int(m.group(3)) != computed[m.group(2)]:
+                trailing = (" " + m.group(4)) if m.group(4) else ""
+                lines[i] = "%s%s: %d%s\n" % (m.group(1), m.group(2), computed[m.group(2)], trailing)
+                changes.append("%s: %s -> %d" % (m.group(2), m.group(3), computed[m.group(2)]))
+    if changes:
+        snap_path.write_text("".join(lines), encoding="utf-8")
+    return changes
+
+
+# ---------------------------------------------------------------- YAML subset
+def _strip_comment(line):
+    out, quote = [], None
+    for ch in line:
+        if quote:
+            out.append(ch)
+            if ch == quote:
+                quote = None
+        elif ch in "\"'":
+            quote = ch
+            out.append(ch)
+        elif ch == "#":
+            break
+        else:
+            out.append(ch)
+    return "".join(out).rstrip()
+
+
+def _scalar(tok):
+    tok = tok.strip()
+    if len(tok) >= 2 and tok[0] == tok[-1] and tok[0] in "\"'":
+        return tok[1:-1]
+    if tok in ("true", "True"):
+        return True
+    if tok in ("false", "False"):
+        return False
+    if tok in ("", "~", "null"):
+        return ""
+    return tok
+
+
+def _inline_list(tok):
+    inner = tok.strip()[1:-1].strip()
+    if not inner:
+        return []
+    return [_scalar(p) for p in re.split(r",(?![^\[]*\])", inner)]
+
+
+def parse_yaml_subset(text):
+    """Parse the constrained YAML subset used by SNAPSHOT.yaml and frontmatter."""
+    root, stack = {}, [(-1, {})]
+    stack[0] = (-1, root)
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        raw = _strip_comment(lines[i])
+        i += 1
+        if not raw.strip():
+            continue
+        indent = len(raw) - len(raw.lstrip(" "))
+        line = raw.strip()
+        while stack and indent <= stack[-1][0]:
+            stack.pop()
+        parent = stack[-1][1] if stack else root
+        if line.startswith("- "):
+            if not isinstance(parent, list):
+                continue  # tolerate; fallback parser is best-effort on lists-of-maps
+            parent.append(_scalar(line[2:]))
+            continue
+        m = re.match(r"^([^:]+):\s*(.*)$", line)
+        if not m:
+            continue
+        key, val = _scalar(m.group(1)), m.group(2).strip()
+        if not isinstance(parent, dict):
+            continue
+        if val == "":
+            # look ahead: dash list or nested mapping
+            child = None
+            for j in range(i, len(lines)):
+                nxt = _strip_comment(lines[j])
+                if not nxt.strip():
+                    continue
+                nind = len(nxt) - len(nxt.lstrip(" "))
+                if nind <= indent:
+                    break
+                child = [] if nxt.strip().startswith("- ") else {}
+                break
+            if child is None:
+                parent[key] = ""
+            else:
+                parent[key] = child
+                stack.append((indent, child))
+        elif val.startswith("["):
+            parent[key] = _inline_list(val)
+        else:
+            parent[key] = _scalar(val)
+    return root
+
+
+def load_yaml(text):
+    try:
+        import yaml  # type: ignore
+        return yaml.safe_load(text)
+    except Exception:
+        return parse_yaml_subset(text)
+
+
+def parse_frontmatter(path):
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return None
+    if not text.startswith("---"):
+        return None
+    end = text.find("\n---", 3)
+    if end == -1:
+        return None
+    return load_yaml(text[4:end]) or {}
+
+
+# ------------------------------------------------------------------ helpers
+def extract_ids(value):
+    """Pull canonical IDs out of scalars, wikilinks, or lists thereof."""
+    found = []
+    if value is None:
+        return found
+    items = value if isinstance(value, list) else [value]
+    for it in items:
+        if not isinstance(it, str):
+            continue
+        for m in ID_RE.finditer(it):
+            found.append("%s-%s" % (m.group(1), m.group(2)))
+    return found
+
+
+def note_type(fm):
+    t = fm.get("type", "") if isinstance(fm, dict) else ""
+    if isinstance(t, str):
+        return t.strip().strip("\"'").strip("[]").lower()
+    return ""
+
+
+def has_value(v):
+    """True when a frontmatter/snapshot field holds real content (not None/''/[])."""
+    if v is None:
+        return False
+    if isinstance(v, list):
+        return any(str(x).strip() for x in v)
+    return bool(str(v).strip())
+
+
+UNCHECKED_RE = re.compile(r"^\s*[-*+]\s*\[\s\]")
+CHECKED_RE = re.compile(r"^\s*[-*+]\s*\[[xX]\]")
+#: A criterion reconciled rather than delivered — cut, descoped, or shipped in a
+#: reduced form. Counts as a verification record (something was decided and written
+#: down), which is why PHASE-BOXES must not report an all-`[~]` phase as having
+#: "no exit criteria": that phase recorded every criterion, it just delivered none.
+RECONCILED_RE = re.compile(r"^\s*[-*+]\s*\[~\]")
+FENCE_RE = re.compile(r"^\s*(```|~~~)")
+
+
+def count_acceptance_boxes(path, heading=r"Acceptance\b", require_heading=False, with_reconciled=False):
+    """Count (unticked, ticked) criteria in a note's criteria section.
+
+    `heading` selects the section: requirements use "Acceptance Criteria", phases
+    use "Exit Criteria" (PHASE-BOXES). Neither counts `- [~]`, which both note
+    types use for a criterion that was reconciled or cut rather than delivered.
+
+    Fenced code blocks are skipped entirely: a `# comment` inside a fence must not be
+    read as a heading that ends the section, and a `- [ ]` inside one is not a criterion.
+    Falls back to the whole body when the note has no matching heading, unless
+    `require_heading` — phase notes carry unrelated checklists in other sections, so
+    PHASE-BOXES must not read a planning checklist as an exit criterion.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return (0, 0)
+    if text.startswith("---"):
+        end = text.find("\n---", 3)
+        if end != -1:
+            text = text[end + 4:]
+    section, seen_section, in_fence, body = [], False, False, []
+    for line in text.splitlines():
+        if FENCE_RE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        body.append(line)
+        if re.match(r"^#{1,6}\s", line):
+            if re.match(r"^#{1,6}\s+%s" % heading, line, re.IGNORECASE):
+                seen_section, section = True, []
+                continue
+            if seen_section:
+                break  # next heading ends the section
+        if seen_section:
+            section.append(line)
+    if require_heading and not seen_section:
+        return (0, 0, 0) if with_reconciled else (0, 0)
+    scan = section if seen_section else body
+    counts = (sum(1 for l in scan if UNCHECKED_RE.match(l)),
+              sum(1 for l in scan if CHECKED_RE.match(l)))
+    if with_reconciled:
+        return counts + (sum(1 for l in scan if RECONCILED_RE.match(l)),)
+    return counts
+
+
+class Report:
+    def __init__(self):
+        self.errors = []
+        self.warnings = []
+
+    def error(self, code, msg):
+        self.errors.append("ERROR [%s] %s" % (code, msg))
+
+    def warn(self, code, msg):
+        self.warnings.append("WARN  [%s] %s" % (code, msg))
+
+
+# ------------------------------------------------------------------ checks
+#: Set by validate() so validate_plan_notes can resolve a plan's parent
+#: feature without a second walk of docs/.
+NOTE_INDEX_FOR_PLANS = {}
+
+
+def build_note_index(docs_dir):
+    """Map ID -> (path, frontmatter) for every note in docs/ with an ID.
+
+    Also returns claimants: ID -> [paths], every file declaring that ID. The
+    index keeps only the first claimant (setdefault), which is why a second
+    note reusing an ID used to be invisible to every check downstream — see
+    NOTE-DUP-ID.
+    """
+    index = {}
+    claimants = {}
+    if not docs_dir.is_dir():
+        return index, claimants
+    for path in sorted(docs_dir.rglob("*.md")):
+        if "__templates__" in path.parts or "__bases__" in path.parts:
+            continue
+        fm = parse_frontmatter(path)
+        ids = set()
+        if isinstance(fm, dict) and isinstance(fm.get("id"), str):
+            ids.update(extract_ids(fm["id"]))
+        m = ID_RE.match(path.name)
+        if m:
+            ids.add("%s-%s" % (m.group(1), m.group(2)))
+        for i in ids:
+            index.setdefault(i, (path, fm if isinstance(fm, dict) else {}))
+        # Claiming an ID means *being* that note, which is stricter than the
+        # index's substring matching: composite IDs legitimately embed another
+        # note's ID (a plan is `PLAN-FEAT-0006`, a change may be
+        # `CHG-20260525-FEAT-0009-Chrome-Polish`) and must not count as rival
+        # claims on FEAT-0006/FEAT-0009.
+        fm_id = str((fm or {}).get("id", "") or "").strip().strip("\"'")
+        claimed = set()
+        if fm_id in ids:
+            claimed.add(fm_id)
+        if m:
+            claimed.add("%s-%s" % (m.group(1), m.group(2)))
+        for i in claimed:
+            claimants.setdefault(i, [])
+            if path not in claimants[i]:
+                claimants[i].append(path)
+    return index, claimants
+
+
+def validate_unregistered_notes(root, items, note_index, claimants, allowed_status, report):
+    """Duplicate-ID detection, plus a frontmatter status check over every note.
+
+    Snapshot retention is deliberately active-and-recent: completed work is
+    pruned from SNAPSHOT.yaml and the note becomes the archive. Every other
+    check here resolves an item's status *through* the snapshot, so a note that
+    is not registered is never inspected at all — drift accumulates in it
+    unseen. Being unregistered is normal and is NOT reported; what is reported
+    is the drift that used to hide there.
+    """
+    registered = set()
+    for coll in items.values():
+        if isinstance(coll, dict):
+            registered.update(coll.keys())
+
+    for the_id in sorted(claimants):
+        paths = claimants[the_id]
+        if len(paths) > 1:
+            rels = ", ".join(p.relative_to(root).as_posix() for p in paths)
+            report.error(
+                "NOTE-DUP-ID",
+                "%s is declared by %d notes (%s); IDs must be unique — bare-ID links and lookups "
+                "resolve to whichever is indexed first, so the others are silently unreachable"
+                % (the_id, len(paths), rels),
+            )
+
+    # Every note's *frontmatter* status is checked, registered or not.
+    #
+    # This used to skip anything in SNAPSHOT.yaml, on the stated grounds that
+    # registered notes were "covered by STATUS-VALUE / ITEM-STATUS against the
+    # snapshot entry". They were not: STATUS-VALUE reads the *snapshot's* status,
+    # so a registered note whose frontmatter held an illegal value passed
+    # whenever its snapshot entry held a legal one, and ITEM-STATUS only fires
+    # when the two differ in a way the comparison catches. The reported count was
+    # a floor, not a census (ISS-0009).
+    for the_id, (path, fm) in sorted(note_index.items()):
+        nt = note_type(fm)
+        status = str((fm or {}).get("status", "") or "").strip()
+        if not status or nt not in allowed_status:
+            continue
+        if status not in allowed_status[nt]:
+            where = "" if the_id in registered else "; the note is not in SNAPSHOT.yaml, so no snapshot-driven check covers it"
+            report.error(
+                "NOTE-STATUS",
+                "%s status '%s' not allowed for %s (%s)%s" % (
+                    the_id, status, nt, path.relative_to(root).as_posix(), where),
+            )
+
+
+def validate_plan_notes(root, docs_dir, allowed_status, grandfathered, report):
+    """PLAN-STATE / PLAN-ID — the plan checks STATUSES.md already promises.
+
+    Plans are the one note type found by ``type:`` rather than by ID. They
+    deliberately carry no ``id:``: ``PLAN-FEAT-0012`` *contains*
+    ``FEAT-0012``, so ``extract_ids`` would let the plan squat its own
+    feature's entry in the note index and answer lookups meant for the
+    feature. STATUSES.md states that exemption and names this check as what
+    covers plans instead — but the check was never written, so the exemption
+    silently meant *no* check reached them: ``note_index`` is keyed by ID, and
+    the per-note status walk skips a missing status outright. The measurable
+    result, before this landed: 19 of 33 plans in project-os-cockpit carried
+    no status at all, and three carried the forbidden ID, with the build
+    green throughout.
+
+    Three rules, in the order they matter:
+
+    * **PLAN-ID** — a plan must not declare ``id:``. Error immediately: the
+      population is tiny (three notes fleet-wide when this shipped, all
+      fixed in the same change), and the failure mode it prevents is a
+      silently wrong lookup rather than untidy metadata.
+    * **PLAN-STATE** — a plan must carry a status drawn from its allowed
+      set. Dated promotion (ADR-0011 clause 2) because the existing debt is
+      real and clause 3 forbids promoting over it.
+    * **PLAN-FOLLOWS** — a plan's status should track its parent feature's,
+      which is what STATUSES.md means by "follows its parent feature ...
+      advanced at close-out". Always a warning: the mapping is a convention
+      with legitimate exceptions (a superseded delivery sequence under a live
+      feature is the obvious one), and close-out is what reconciles it.
+    """
+    if not docs_dir.is_dir():
+        return
+
+    # Feature status -> plan status: PLAN_FOLLOWS_FEATURE, module-level and
+    # checked by validate_status_tables. It was a local keyed on the retired
+    # `in-progress`/`in-review` (ISS-0011), which silently disabled PLAN-FOLLOWS
+    # for every actively-built feature.
+    follows = PLAN_FOLLOWS_FEATURE
+
+    allowed = allowed_status.get("plan") or set()
+    for path in sorted(docs_dir.rglob("*.md")):
+        if "__templates__" in path.parts or "__bases__" in path.parts:
+            continue
+        fm = parse_frontmatter(path)
+        if not isinstance(fm, dict) or note_type(fm) != "plan":
+            continue
+        rel = path.relative_to(root).as_posix()
+        label = rel
+
+        declared_id = str(fm.get("id", "") or "").strip().strip("\"'")
+        if declared_id:
+            report.error(
+                "PLAN-ID",
+                "%s declares id: %s — plans must not carry an ID. "
+                "`extract_ids` reads %s out of it, so the plan can claim its "
+                "own feature's entry in the note index and answer lookups "
+                "meant for the feature (tools/instructions/STATUSES.md, "
+                "`[[plan]]`). Remove `id:` and `aliases:`; plans are found by "
+                "type." % (label, declared_id, declared_id.split("-", 1)[-1]),
+            )
+
+        status = str(fm.get("status", "") or "").strip()
+        emit = promotion_emit(report, "PLAN-STATE", grandfathered, rel)
+        if not status:
+            emit(
+                "PLAN-STATE",
+                "%s has no status — plans take one of %s and it is advanced at "
+                "close-out (STATUSES.md, `[[plan]]`). Nothing else validates a "
+                "plan's status: they are exempt from the ID-keyed checks."
+                % (label, ", ".join(sorted(allowed)) or "the plan vocabulary"),
+            )
+            continue
+        if allowed and status not in allowed:
+            emit(
+                "PLAN-STATE",
+                "%s status '%s' not allowed for plan (allowed: %s)"
+                % (label, status, ", ".join(sorted(allowed))),
+            )
+            continue
+
+        # Does it track the feature it implements?
+        parent_ids = set()
+        for key in ("implements", "parent"):
+            parent_ids.update(extract_ids(fm.get(key)))
+        for parent_id in sorted(parent_ids):
+            entry = NOTE_INDEX_FOR_PLANS.get(parent_id)
+            if not entry:
+                continue
+            parent_fm = entry[1]
+            if note_type(parent_fm) != "feature":
+                continue
+            parent_status = str(parent_fm.get("status", "") or "").strip()
+            expected = follows.get(parent_status)
+            if expected and status not in expected:
+                report.warn(
+                    "PLAN-FOLLOWS",
+                    "%s is '%s' but %s is '%s' — a plan's status follows its "
+                    "feature (expected %s). Close-out advances it; amend the "
+                    "plan or the feature if the divergence is deliberate."
+                    % (label, status, parent_id, parent_status,
+                       " or ".join(sorted(expected))),
+                )
+            break
+
+    # A PLAN.md that never became a note. It is not a contract violation —
+    # plans are found by `type:`, so an untyped file simply is not one — but
+    # it is the other half of why plans drift: 19 such files sat under
+    # feature `plan/` directories in project-os-cockpit, invisible to every
+    # check here and to every cockpit surface, while reading exactly like
+    # the 14 that were notes. Warn so the choice is deliberate.
+    for path in sorted(docs_dir.rglob("PLAN.md")):
+        if "__templates__" in path.parts or "__bases__" in path.parts:
+            continue
+        fm = parse_frontmatter(path)
+        if isinstance(fm, dict) and note_type(fm) == "plan":
+            continue
+        report.warn(
+            "PLAN-UNTYPED",
+            "%s has no `type: \"[[plan]]\"` frontmatter, so it is not a plan "
+            "note: no status check reaches it, it cannot be linked by ID, and "
+            "it never appears in the cockpit. Add plan frontmatter (see "
+            "docs/__templates__/plan.md) or rename the file if it is prose."
+            % path.relative_to(root).as_posix(),
+        )
+
+
+def validate(root, report):
+    # Self-check first: it needs no repo state, and a validator whose own status
+    # tables disagree cannot be trusted to report on anything else.
+    validate_status_tables(report)
+
+    snap_path = root / "SNAPSHOT.yaml"
+    if not snap_path.is_file():
+        report.error("SNAP-MISSING", "SNAPSHOT.yaml not found at repo root")
+        return
+    try:
+        snap = load_yaml(snap_path.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001
+        report.error("SNAP-PARSE", "SNAPSHOT.yaml failed to parse: %s" % exc)
+        return
+    if not isinstance(snap, dict):
+        report.error("SNAP-PARSE", "SNAPSHOT.yaml did not parse to a mapping")
+        return
+
+    for key in ("version", "updated", "counters", "focus", "items"):
+        if key not in snap:
+            report.error("SNAP-KEYS", "SNAPSHOT.yaml missing required top-level key: %s" % key)
+
+    items = snap.get("items") or {}
+    counters = snap.get("counters") or {}
+    docs_dir = root / "docs"
+    note_index, note_claimants = build_note_index(docs_dir)
+    allowed_status = load_allowed_status(root)
+    grandfathered = load_grandfathered(root)
+    verification_cfg = snap.get("verification") if isinstance(snap.get("verification"), dict) else {}
+    try:
+        staleness_days = int(verification_cfg.get("staleness_days", DEFAULT_STALENESS_DAYS))
+    except (TypeError, ValueError):
+        staleness_days = DEFAULT_STALENESS_DAYS
+
+    def emit_for(gate, item_id):
+        """report.warn when `item_id` was already violating `gate` at promotion, else report.error."""
+        if item_id in grandfathered.get(gate, ()):
+            return report.warn
+        return report.error
+    validate_unregistered_notes(root, items, note_index, note_claimants, allowed_status, report)
+    NOTE_INDEX_FOR_PLANS.clear()
+    NOTE_INDEX_FOR_PLANS.update(note_index)
+    validate_plan_notes(root, docs_dir, allowed_status, grandfathered, report)
+
+    def resolves(ref_id):
+        for coll in items.values():
+            if isinstance(coll, dict) and ref_id in coll:
+                return True
+        return ref_id in note_index
+
+    # -- per-item checks
+    all_snapshot_ids = []
+    path_alias_items = []
+    for coll_name, coll in (items.items() if isinstance(items, dict) else []):
+        if not isinstance(coll, dict):
+            continue
+        expected_types = COLLECTION_TYPE.get(coll_name, set())
+        for item_id, entry in coll.items():
+            if not isinstance(entry, dict):
+                report.error("ITEM-SHAPE", "%s.%s is not a mapping" % (coll_name, item_id))
+                continue
+            all_snapshot_ids.append(item_id)
+            # SNAPSHOT.md specifies `file`; accept `path` as a legacy alias used by some downstream repos.
+            file_rel = entry.get("file") or entry.get("path") or ""
+            if not entry.get("file") and entry.get("path"):
+                path_alias_items.append(item_id)
+            fm = {}
+            if not file_rel:
+                report.error("ITEM-FILE", "%s has no file path in snapshot" % item_id)
+            else:
+                note_path = root / file_rel
+                if not note_path.is_file():
+                    report.error("ITEM-FILE", "%s file does not exist: %s" % (item_id, file_rel))
+                else:
+                    fm = parse_frontmatter(note_path) or {}
+                    fm_id_raw = str(fm.get("id", "") or "").strip()
+                    fm_ids = extract_ids(fm.get("id", ""))
+                    if fm_id_raw != item_id and fm_ids and item_id not in fm_ids:
+                        report.error("ITEM-ID", "%s note frontmatter id is %s (%s)" % (item_id, fm.get("id"), file_rel))
+                    nt = note_type(fm)
+                    if expected_types and nt and nt not in expected_types:
+                        report.error("ITEM-TYPE", "%s note type '%s' not in %s (%s)" % (item_id, nt, sorted(expected_types), file_rel))
+                    snap_status = entry.get("status", "")
+                    fm_status = fm.get("status", "")
+                    if snap_status and fm_status and str(snap_status) != str(fm_status):
+                        report.error("ITEM-STATUS", "%s status drift: snapshot=%s note=%s (%s)" % (item_id, snap_status, fm_status, file_rel))
+            status = str(entry.get("status", ""))
+            type_key = next(iter(expected_types), None)
+            if status and type_key in allowed_status and status not in allowed_status[type_key]:
+                report.error("STATUS-VALUE", "%s status '%s' not allowed for %s" % (item_id, status, type_key))
+
+            # -- link integrity
+            for field in RELATIONSHIP_FIELDS:
+                for ref in extract_ids(entry.get(field)):
+                    if not resolves(ref):
+                        report.error("LINK", "%s.%s references %s which resolves to no snapshot item or note" % (item_id, field, ref))
+
+            # -- verification invariant
+            terminal = TERMINAL.get(coll_name)
+            # ADR-0007: requirements are gated on their acceptance criteria
+            # (REQ-BOXES), never on linked tests. `verified` was retired
+            # precisely because requirement-level test-gating was the wrong
+            # instrument; re-applying it here — and only to requirements that
+            # happen to link a test — would reintroduce it through the back
+            # door and perversely punish linking one at all. Test status stays
+            # informational for requirements; VERIFY still gates tasks, issues
+            # and features, where linked tests are the agreed instrument.
+            if coll_name == "requirements":
+                terminal = None
+            if terminal and status == terminal:
+                waiver = str(fm.get("verification_waiver", "") or entry.get("verification_waiver", "")).strip()
+                linked_tests = set(extract_ids(entry.get("tests"))) | set(extract_ids(fm.get("tests")))
+                if waiver:
+                    expires_raw = fm.get("waiver_expires") or entry.get("waiver_expires")
+                    expires = _parse_date(expires_raw)
+                    if not has_value(expires_raw):
+                        emit_for("WAIVER", item_id)(
+                            "WAIVER",
+                            "%s is %s under a waiver with no waiver_expires:; an open-ended waiver is a rule "
+                            "deletion written in the passive voice (ADR-0010)" % (item_id, terminal))
+                    elif expires is None:
+                        emit_for("WAIVER", item_id)(
+                            "WAIVER", "%s waiver_expires is not a YYYY-MM-DD date: %r" % (item_id, expires_raw))
+                    elif expires < _today():
+                        emit_for("WAIVER", item_id)(
+                            "WAIVER", "%s is %s under a waiver that expired %s; renew it with a reason or "
+                            "satisfy the gate" % (item_id, terminal, expires))
+                    else:
+                        report.warn("VERIFY-WAIVED", "%s is %s under recorded waiver (expires %s): %s"
+                                    % (item_id, terminal, expires, waiver))
+                else:
+                    for tst in sorted(linked_tests):
+                        tst_status = ""
+                        tests_coll = items.get("tests") or {}
+                        if tst in tests_coll and isinstance(tests_coll[tst], dict):
+                            tst_status = str(tests_coll[tst].get("status", ""))
+                        elif tst in note_index:
+                            tst_status = str((note_index[tst][1] or {}).get("status", ""))
+                        else:
+                            emit_for("VERIFY", item_id)("VERIFY", "%s is %s but linked test %s was not found" % (item_id, terminal, tst))
+                            continue
+                        if tst_status != "passing":
+                            emit_for("VERIFY", item_id)("VERIFY", "%s is %s but linked test %s is '%s', not passing" % (item_id, terminal, tst, tst_status))
+                        elif tst in note_index and is_stale(note_index[tst][1], staleness_days):
+                            # REQ-0023: verification that was true a year ago is not
+                            # evidence about today's system.
+                            emit_for("VERIFY", item_id)(
+                                "VERIFY", "%s is %s but linked manual test %s is passing yet stale (last_verified over %d days ago)"
+                                % (item_id, terminal, tst, staleness_days))
+                    if coll_name == "features":
+                        for task_ref in extract_ids(entry.get("tasks")):
+                            t_entry = (items.get("tasks") or {}).get(task_ref)
+                            t_status = str(t_entry.get("status", "")) if isinstance(t_entry, dict) else str((note_index.get(task_ref, (None, {}))[1] or {}).get("status", ""))
+                            if t_status and t_status not in RESOLVED_STATUSES:
+                                emit_for("VERIFY", item_id)("VERIFY", "%s is done but task %s is '%s', not scope-resolved (%s)" % (item_id, task_ref, t_status, "/".join(RESOLVED_STATUSES)))
+
+            # -- deferral invariants (STATUSES.md "Deferral and re-adoption")
+            if coll_name == "features":
+                for task_ref in extract_ids(entry.get("tasks")):
+                    t_entry = (items.get("tasks") or {}).get(task_ref)
+                    t_status = str(t_entry.get("status", "")) if isinstance(t_entry, dict) else str((note_index.get(task_ref, (None, {}))[1] or {}).get("status", ""))
+                    if t_status == "deferred":
+                        report.error("DEFER-SCOPE", "%s lists deferred task %s in tasks: (its scope); descope it into deferred: per the deferral procedure (tools/skills/status-transition/SKILL.md)" % (item_id, task_ref))
+            # a blank snapshot status must not mask a deferred note
+            eff_status = status or str(fm.get("status", "") or "")
+            if eff_status == "deferred" and coll_name in ("tasks", "issues", "requirements", "features"):
+                if not (has_value(entry.get("phase")) or has_value(fm.get("phase"))):
+                    report.error("DEFER-HOME", "%s is deferred without a forward home: set phase to a future phase or the PHASE-999 parking lot" % item_id)
+                if coll_name == "tasks":
+                    if not (has_value(entry.get("origin")) or has_value(fm.get("origin"))):
+                        report.error("DEFER-ORIGIN", "%s is deferred without origin provenance (the former parent)" % item_id)
+                    if has_value(entry.get("parent")) or has_value(fm.get("parent")):
+                        report.error("DEFER-PARENT", "%s is deferred but still has a parent; descoping clears parent (origin + phase replace it while parked)" % item_id)
+
+    # -- test verification fields (ADR-0010; REQ-0022 / REQ-0023)
+    for the_id, (path, fm) in sorted(note_index.items()):
+        if note_type(fm) != "test":
+            continue
+        rel = path.relative_to(root).as_posix()
+        command = str((fm or {}).get("command", "") or "").strip()
+        status = str((fm or {}).get("status", "") or "").strip()
+        if command:
+            # An executable test's status is the runner's output, so it must carry
+            # the run that produced it. A stamped status with no `last_run` means
+            # somebody typed it -- the exact thing ADR-0010 removes.
+            if status in TEST_RUNNER_STATUSES and not has_value((fm or {}).get("last_run")):
+                emit_for("TEST-FIELDS", the_id)(
+                    "TEST-FIELDS",
+                    "%s declares a command: and is '%s' but has no last_run:; an executable test's status is "
+                    "written by tools/scripts/run-tests.py, never by hand (ADR-0010) (%s)" % (the_id, status, rel))
+        else:
+            if not has_value((fm or {}).get("last_verified")):
+                emit_for("TEST-FIELDS", the_id)(
+                    "TEST-FIELDS",
+                    "%s is a manual test with no last_verified:; record when the procedure was last performed, "
+                    "or give it a command: so it can be executed (%s)" % (the_id, rel))
+            elif is_stale(fm, staleness_days):
+                report.warn(
+                    "TEST-STALE",
+                    "%s was last verified %s, over %d days ago; it no longer satisfies the verification gate (%s)"
+                    % (the_id, str((fm or {}).get("last_verified")).strip('"'), staleness_days, rel))
+
+    # -- requirement lifecycle (QUALITY.md; close-out "Requirement advancement")
+    def effective_status(the_id):
+        for coll in (items.values() if isinstance(items, dict) else []):
+            if isinstance(coll, dict) and isinstance(coll.get(the_id), dict):
+                snap_status = str(coll[the_id].get("status", "") or "")
+                if snap_status:
+                    return snap_status
+        if the_id in note_index:
+            return str((note_index[the_id][1] or {}).get("status", "") or "")
+        return ""
+
+    def prefix_of(the_id):
+        m = ID_RE.match(the_id)
+        return m.group(1) if m else ""
+
+    reqs_coll = items.get("requirements") if isinstance(items.get("requirements"), dict) else {}
+    req_ids = {k for k in reqs_coll if prefix_of(k) == "REQ"}
+    req_ids.update(nid for nid, (_p, nfm) in note_index.items() if note_type(nfm) == "requirement")
+
+    feature_reqs = {}  # FEAT id -> set of REQ ids it claims to implement
+    for fid, fentry in (items.get("features") or {}).items():
+        if isinstance(fentry, dict):
+            feature_reqs.setdefault(fid, set()).update(extract_ids(fentry.get("requirements")))
+    for nid, (_p, nfm) in note_index.items():
+        if note_type(nfm) == "feature":
+            feature_reqs.setdefault(nid, set()).update(extract_ids((nfm or {}).get("requirements")))
+
+    for req_id in sorted(req_ids):
+        entry = reqs_coll.get(req_id) if isinstance(reqs_coll.get(req_id), dict) else {}
+        note_path, fm = note_index.get(req_id, (None, {}))
+        status = effective_status(req_id)
+        # implementing features: the requirement's own `implements:` plus any feature claiming it
+        feats = {f for f in set(extract_ids(entry.get("implements"))) | set(extract_ids((fm or {}).get("implements"))) if prefix_of(f) == "FEAT"}
+        feats.update(fid for fid, reqs in feature_reqs.items() if req_id in reqs and prefix_of(fid) == "FEAT")
+        feat_status = {f: effective_status(f) for f in feats}
+        known = {f: s for f, s in feat_status.items() if s}
+        all_resolved = bool(known) and all(s in RESOLVED_STATUSES for s in known.values())
+        if status in REQ_UNADVANCED_STATUSES and all_resolved:
+            report.error("REQ-STALE", "%s is '%s' but every implementing feature (%s) has reached a terminal status; advance it per close-out 'Requirement advancement' (tick criteria with evidence, reconcile departures, set implemented) or supersede it" % (req_id, status, ", ".join("%s=%s" % (f, known[f]) for f in sorted(known))))
+        elif status == "draft" and any(s in FEATURE_ACTIVE_STATUSES for s in known.values()):
+            active = sorted(f for f, s in known.items() if s in FEATURE_ACTIVE_STATUSES)
+            report.warn("REQ-PREMATURE", "%s is still draft but %s is already being implemented; approve or amend the requirement first (feature-scaffold 'Requirement approval gate')" % (req_id, ", ".join(active)))
+        # -- ADR-0007: `implements:` names at most one feature
+        own_feats = sorted({
+            f for f in (extract_ids(entry.get("implements")) + extract_ids((fm or {}).get("implements")))
+            if prefix_of(f) == "FEAT"
+        })
+        if len(own_feats) > 1:
+            report.error("REQ-OWNER", "%s implements %d features (%s) but a requirement names at most one (ADR-0007); split the requirement, or pick the true owner and drop the rest" % (req_id, len(own_feats), ", ".join(own_feats)))
+
+        if status == "implemented" and note_path is not None:
+            # `reconciled` (`- [~]`) counts toward the verification record and toward
+            # box/criterion parity: STATUSES.md defines the gate as "ticked-with-evidence
+            # OR reconciled", so a requirement that honestly reconciles a criterion it did
+            # not deliver must not then be reported as missing a box for it.
+            unticked, ticked, reconciled = count_acceptance_boxes(note_path, with_reconciled=True)
+            ticked += reconciled
+            criteria = entry.get("acceptance") or (fm or {}).get("acceptance") or []
+            n_criteria = len(criteria) if isinstance(criteria, list) else 0
+            # Forward-only, as for FEATURE-REQ: a requirement that went terminal
+            # before the cutover is grandfathered to a warning (visible debt);
+            # one advanced or touched afterwards is a build failure.
+            emit = emit_for("REQ-BOXES", req_id)
+            if unticked:
+                emit("REQ-BOXES", "%s is '%s' (terminal) but %d acceptance criterion/criteria remain unticked (%s); tick with evidence or reconcile them" % (req_id, status, unticked, note_path.relative_to(root)))
+            elif n_criteria and not (unticked + ticked):
+                emit("REQ-BOXES", "%s is '%s' (terminal) with %d acceptance criteria but no verification record — its note has no ticked acceptance checkboxes (%s); add one box per criterion with an evidence pointer (SCHEMAS.md)" % (req_id, status, n_criteria, note_path.relative_to(root)))
+            elif n_criteria and (unticked + ticked) != n_criteria:
+                emit("REQ-BOXES", "%s is '%s' (terminal) with %d criteria of record but %d acceptance checkbox(es) (%s); SCHEMAS.md requires one box per criterion, so the verification record is partial" % (req_id, status, n_criteria, unticked + ticked, note_path.relative_to(root)))
+
+    # -- ADR-0007 FEATURE-REQ: a feature may not be `done` while a requirement
+    #    naming it still has an unresolved acceptance criterion. Forward-only.
+    reqs_by_owner = {}   # FEAT id -> [(REQ id, note_path)]
+    for req_id in sorted(req_ids):
+        note_path, fm = note_index.get(req_id, (None, {}))
+        if note_path is None:
+            continue
+        if effective_status(req_id) in DESCOPED_STATUSES:
+            continue
+        r_entry = reqs_coll.get(req_id) if isinstance(reqs_coll.get(req_id), dict) else {}
+        owners = set(extract_ids(r_entry.get("implements"))) | set(extract_ids((fm or {}).get("implements")))
+        for f in sorted(owners):
+            if prefix_of(f) == "FEAT":
+                reqs_by_owner.setdefault(f, []).append((req_id, note_path))
+
+    for feat_id, owned in sorted(reqs_by_owner.items()):
+        if effective_status(feat_id) != "done":
+            continue
+        f_path, f_fm = note_index.get(feat_id, (None, {}))
+        unresolved = []
+        for req_id, req_path in owned:
+            unticked, ticked = count_acceptance_boxes(req_path)
+            if unticked:
+                unresolved.append("%s (%d unticked)" % (req_id, unticked))
+        if not unresolved:
+            continue
+        emit = emit_for("FEATURE-REQ", feat_id)
+        noun = ("a requirement it owns has" if len(unresolved) == 1
+                else "requirements it owns have")
+        emit("FEATURE-REQ", "%s is done but %s unresolved acceptance criteria: %s; tick with evidence, reconcile, or descope the requirement before closing the feature (ADR-0007)" % (feat_id, noun, ", ".join(unresolved)))
+
+    # -- ISS-0357 PHASE-CHILDREN / PHASE-BOXES: a closed phase must have closed
+    #    its children and recorded evidence for its exit criteria.
+    #
+    #    Both gates read the *children* — every note whose `phase:` names the phase —
+    #    rather than the phase's own `features:` list. The drift these were written for
+    #    was entirely in children left pointing at a phase after their owning feature
+    #    had moved on (six PHASE-011 notes whose features had migrated to PHASE-015);
+    #    a features-list check sees nothing wrong in that shape.
+    #
+    #    `deferred` is unresolved on purpose (STATUSES.md, "Deferral and re-adoption"):
+    #    parking an item does not close the phase that owns it. Re-home a deferred item
+    #    to the phase that will carry it — usually PHASE-999 — and the gate is satisfied
+    #    by the relationship rather than by the word.
+    #
+    #    PHASE_RESOLVED and CLOSED_PHASE_STATUSES are module-level constants, checked
+    #    against ALLOWED_STATUS by validate_status_tables (STATUS-TABLE). They used to
+    #    be locals here, which is precisely why ISS-0011 went unnoticed: no test could
+    #    reach them.
+
+    children_by_phase = {}   # PHASE id -> [(child id, child status)]
+    for child_id, (_c_path, c_fm) in note_index.items():
+        ctype = note_type(c_fm)
+        if ctype not in PHASE_RESOLVED:
+            continue
+        for ph_id in extract_ids((c_fm or {}).get("phase")):
+            if prefix_of(ph_id) == "PHASE":
+                children_by_phase.setdefault(ph_id, []).append((child_id, ctype))
+
+    for ph_id, (ph_path, ph_fm) in sorted(note_index.items()):
+        if note_type(ph_fm) != "phase":
+            continue
+        ph_status = effective_status(ph_id)
+        if ph_status not in CLOSED_PHASE_STATUSES:
+            continue
+        open_children = sorted(
+            "%s (%s)" % (cid, effective_status(cid) or "?")
+            for cid, ctype in children_by_phase.get(ph_id, [])
+            if effective_status(cid) not in PHASE_RESOLVED[ctype]
+        )
+        if open_children:
+            emit = emit_for("PHASE-CHILDREN", ph_id)
+            emit("PHASE-CHILDREN", "%s is '%s' but %d item(s) still name it as their phase without a resolved status: %s; resolve them, or re-home each to the phase that now owns its work (%s)" % (
+                ph_id, ph_status, len(open_children), ", ".join(open_children), ph_path.relative_to(root)))
+
+        if ph_status != "done":
+            continue   # a superseded phase's criteria moved to its successor
+        unticked, ticked, reconciled = count_acceptance_boxes(
+            ph_path, heading=r"Exit\b", require_heading=True, with_reconciled=True)
+        emit = emit_for("PHASE-BOXES", ph_id)
+        if unticked:
+            emit("PHASE-BOXES", "%s is done but %d exit criterion/criteria remain unticked (%s); tick each with an evidence pointer, or mark it `- [~]` with the reason it was cut" % (
+                ph_id, unticked, ph_path.relative_to(root)))
+        elif not (ticked or reconciled):
+            # Without this, `require_heading` makes the gate vacuous exactly where it
+            # matters most: a done phase with no Exit section — or one whose heading
+            # was renamed — scored (0, 0) and passed silently. "No criteria recorded"
+            # is the same missing-evidence failure as "criteria left unticked".
+            #
+            # `reconciled` is counted here so an all-`[~]` phase is not reported as
+            # having no criteria: it recorded every one of them and delivered none,
+            # which is a different (and honestly documented) state.
+            emit("PHASE-BOXES", "%s is done but records no exit criteria (%s); add an `## Exit Criteria` section with one checkbox per criterion, each ticked with an evidence pointer or marked `- [~]` with the reason it was cut" % (
+                ph_id, ph_path.relative_to(root)))
+
+    # -- deferred notes must stay in the snapshot (SNAPSHOT.md retention)
+    for item_id, (path, fm) in sorted(note_index.items()):
+        if str((fm or {}).get("status", "") or "") != "deferred":
+            continue
+        if not ID_RE.match(item_id) or ID_RE.match(item_id).group(1) not in ("TASK", "ISS", "REQ", "FEAT", "PHASE"):
+            continue
+        in_snapshot = any(isinstance(c, dict) and item_id in c for c in items.values()) if isinstance(items, dict) else False
+        if not in_snapshot:
+            report.error("DEFER-RETENTION", "%s is deferred but missing from SNAPSHOT.yaml; deferred items are active and never pruned (%s)" % (item_id, path.relative_to(root)))
+
+    # -- counter integrity (snapshot IDs and note IDs)
+    if path_alias_items:
+        report.warn("PATH-ALIAS", "%d item(s) use legacy `path:` instead of `file:` (e.g. %s); prefer `file:` per SNAPSHOT.md" % (len(path_alias_items), path_alias_items[0]))
+
+    def check_counter(the_id, origin):
+        m = ID_RE.match(the_id)
+        if not m:
+            return
+        prefix, digits = m.group(1), m.group(2)
+        num = int(digits)
+        if is_sentinel_id(digits):
+            return  # PHASE-999 / PHASE-0999 parking lot
+        limit = counters.get(prefix)
+        if isinstance(limit, str) and limit.isdigit():
+            limit = int(limit)
+        if isinstance(limit, int) and num > limit:
+            report.error("COUNTER", "%s (%s) exceeds counters.%s = %s in SNAPSHOT.yaml" % (the_id, origin, prefix, limit))
+
+    for sid in all_snapshot_ids:
+        check_counter(sid, "snapshot")
+    for nid in sorted(note_index):
+        check_counter(nid, str(note_index[nid][0].relative_to(root)))
+
+    # -- metrics counts (computed vs recorded; SNAPSHOT.md "Metrics")
+    metrics = snap.get("metrics") or {}
+    counts = metrics.get("counts") if isinstance(metrics, dict) else None
+    if isinstance(counts, dict):
+        computed = compute_metric_counts(items, note_index)
+        for key in sorted(counts):
+            if key not in computed:
+                continue
+            val = counts[key]
+            try:
+                recorded = int(val)
+            except (TypeError, ValueError):
+                report.error("METRICS", "metrics.counts.%s is not an integer: %r" % (key, val))
+                continue
+            if recorded != computed[key]:
+                report.error("METRICS", "metrics.counts.%s is %d but computed %d (run validate-docs.sh --fix-metrics)" % (key, recorded, computed[key]))
+
+    # -- independent-review fields (QUALITY.md "Independent review (different-model)")
+    for coll_name, settled in (("tests", {"passing"}), ("changes", {"merged"})):
+        coll = items.get(coll_name) or {}
+        if not isinstance(coll, dict):
+            continue
+        for item_id, entry in coll.items():
+            if not isinstance(entry, dict):
+                continue
+            status = str(entry.get("status", ""))
+            if status not in settled:
+                continue
+            file_rel = entry.get("file") or entry.get("path") or ""
+            fm = parse_frontmatter(root / file_rel) or {} if file_rel and (root / file_rel).is_file() else {}
+            verdict = str(fm.get("review_verdict", "") or entry.get("review_verdict", "") or "").strip()
+            if verdict == "changes-requested":
+                report.error("REVIEW", "%s is '%s' but review_verdict is changes-requested" % (item_id, status))
+            elif not verdict:
+                promotion_emit(report, "REVIEW", grandfathered, item_id)(
+                    "REVIEW",
+                    "%s is '%s' without independent review (reviewed_by/review_verdict); see QUALITY.md "
+                    "— becomes an error on %s (ADR-0011)" % (item_id, status, PROMOTIONS["REVIEW"]))
+
+    # -- focus resolution
+    focus = snap.get("focus") or {}
+    if isinstance(focus, dict):
+        for key in ("feature", "task", "issue", "phase"):
+            for ref in extract_ids(focus.get(key, "")):
+                if not resolves(ref):
+                    report.error("FOCUS", "focus.%s = %s resolves to no snapshot item or note" % (key, ref))
+
+    # -- note frontmatter link integrity for notes referenced by the snapshot
+    for item_id, (path, fm) in sorted(note_index.items()):
+        if not fm:
+            continue
+        in_snapshot = any(isinstance(c, dict) and item_id in c for c in items.values()) if isinstance(items, dict) else False
+        if not in_snapshot:
+            continue  # archived notes may reference pruned history; docs-audit covers them
+        for field in RELATIONSHIP_FIELDS:
+            for ref in extract_ids(fm.get(field)):
+                if not resolves(ref):
+                    report.error("LINK", "%s frontmatter %s references %s which resolves to no snapshot item or note (%s)" % (item_id, field, ref, path.relative_to(root)))
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description="Validate project-os SNAPSHOT.yaml <-> docs/ consistency.")
+    ap.add_argument("--repo-root", default=None, help="Repo root (default: nearest ancestor with SNAPSHOT.yaml)")
+    ap.add_argument("--quiet", action="store_true", help="Suppress warnings and the success line")
+    ap.add_argument("--fix-metrics", action="store_true", help="Rewrite metrics.counts to the computed counts before validating")
+    ap.add_argument("--self-check", action="store_true", help="Run only the validator's internal consistency checks (STATUS-TABLE) and exit; needs no repo")
+    args = ap.parse_args(argv)
+
+    # Internal-consistency only: no SNAPSHOT.yaml, no docs/, no repo at all.
+    #
+    # This is what TST-0002 executes, and the separation is deliberate. Pointing
+    # that note at the full validator deadlocked: its `command:` reported every
+    # repo error, so the moment run-tests stamped it `failing` the VERIFY gate on
+    # the issue linking it became one more error, and no subsequent run could
+    # ever return 0. A test that gates on its own result cannot converge. Scope
+    # each test note to the invariant it actually names -- TST-0001 already owns
+    # "the whole repo validates".
+    if args.self_check:
+        report = Report()
+        validate_status_tables(report)
+        for line in report.errors:
+            print(line)
+        if report.errors:
+            print("validate-docs: FAIL (%d error%s)" % (len(report.errors), "s" if len(report.errors) != 1 else ""))
+            return 1
+        if not args.quiet:
+            print("validate-docs: self-check OK (status tables consistent)")
+        return 0
+
+    if args.repo_root:
+        root = Path(args.repo_root).resolve()
+    else:
+        root = Path.cwd().resolve()
+        while root != root.parent and not (root / "SNAPSHOT.yaml").is_file():
+            root = root.parent
+    if not (root / "SNAPSHOT.yaml").is_file():
+        print("validate-docs: no SNAPSHOT.yaml found from %s upward" % Path.cwd(), file=sys.stderr)
+        return 2
+
+    if args.fix_metrics:
+        try:
+            for change in fix_metrics(root):
+                print("validate-docs: fixed metrics.counts.%s" % change)
+        except Exception as exc:  # noqa: BLE001
+            print("validate-docs: --fix-metrics failed: %s" % exc, file=sys.stderr)
+            return 2
+
+    report = Report()
+    try:
+        validate(root, report)
+    except Exception as exc:  # noqa: BLE001
+        print("validate-docs: internal error: %s" % exc, file=sys.stderr)
+        return 2
+
+    for line in report.errors:
+        print(line)
+    if not args.quiet:
+        for line in report.warnings:
+            print(line)
+    if report.errors:
+        print("validate-docs: FAIL (%d error%s)" % (len(report.errors), "s" if len(report.errors) != 1 else ""))
+        return 1
+    if not args.quiet:
+        print("validate-docs: OK (%s)" % root)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
 
 
 def fix_metrics(root):
@@ -1168,7 +2214,7 @@ def validate(root, report):
             # An executable test's status is the runner's output, so it must carry
             # the run that produced it. A stamped status with no `last_run` means
             # somebody typed it -- the exact thing ADR-0010 removes.
-            if status in ("passing", "failing") and not has_value((fm or {}).get("last_run")):
+            if status in TEST_RUNNER_STATUSES and not has_value((fm or {}).get("last_run")):
                 emit_for("TEST-FIELDS", the_id)(
                     "TEST-FIELDS",
                     "%s declares a command: and is '%s' but has no last_run:; an executable test's status is "
@@ -1222,7 +2268,7 @@ def validate(root, report):
         feat_status = {f: effective_status(f) for f in feats}
         known = {f: s for f, s in feat_status.items() if s}
         all_resolved = bool(known) and all(s in RESOLVED_STATUSES for s in known.values())
-        if status in ("draft", "approved") and all_resolved:
+        if status in REQ_UNADVANCED_STATUSES and all_resolved:
             report.error("REQ-STALE", "%s is '%s' but every implementing feature (%s) has reached a terminal status; advance it per close-out 'Requirement advancement' (tick criteria with evidence, reconcile departures, set implemented) or supersede it" % (req_id, status, ", ".join("%s=%s" % (f, known[f]) for f in sorted(known))))
         elif status == "draft" and any(s in FEATURE_ACTIVE_STATUSES for s in known.values()):
             active = sorted(f for f, s in known.items() if s in FEATURE_ACTIVE_STATUSES)
