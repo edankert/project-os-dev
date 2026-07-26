@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 17
-  ISS: 13
+  ISS: 14
   PHASE: 2
   REL: 0
   REQ: 24
@@ -543,6 +543,15 @@ items:
       owner: user:edwin
       phase: PHASE-0002
       related: [ADR-0008, FEAT-0013, REQ-0017]
+    ISS-0014:
+      file: docs/issues/ISS-0014-Validator-Tail-Duplicated-And-No-Inline-Literal-Claim.md
+      title: "validate-docs.py ships its own second half twice: lines 1560-2560 duplicate 556-1556 verbatim, fleet-wide; the 'no inline status literal remains' claim is false; the walker's boundary prose still overclaims on dict, underscore names and nesting"
+      status: fixed
+      severity: medium
+      owner: user:edwin
+      phase: PHASE-999
+      note: "Filed from independent review of TST-0002/CHG-20260726 round three (changes-requested): ISS-0013's fixes all verified on the merits, but the fix commit doubled the validator's second half and shipped the duplicate byte-identical to all 12 fleet files"
+      related: [ISS-0011, ISS-0012, ISS-0013, ADR-0012, TST-0002]
     ISS-0013:
       file: docs/issues/ISS-0013-Completeness-Assertion-Boundary-Overclaims.md
       title: "Completeness assertion sees only tuples, its prose says 'constant'; the 'covers every status collection in this file' docstring phrase survives ISS-0012's own post-mortem; a round-one finding (stale your-sudoku follow-up) left unaddressed"

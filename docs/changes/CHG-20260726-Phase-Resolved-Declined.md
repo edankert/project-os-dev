@@ -169,6 +169,14 @@ Authored by model:claude-opus-5 (commit trailer on 12a7c70), reviewed by model:c
 
 **Why changes-requested again:** three residuals, filed as [[ISS-0013]], all cheap. The completeness assertion sees only `tuple`s, so a module-level `set`/`frozenset`/`list`/`dict` of statuses evades it while [[TST-0002]] says it covers "a new module-level constant that nobody registered" (refuted by demonstration); the validator docstring retains the "covers every status collection in this file" phrase that ISS-0012's own post-mortem branded, and it remains refutable via the inline `("passing", "failing")` and `("draft", "approved")` tuples plus the surviving inline metric-set literals; and this note's your-sudoku follow-up checkbox — flagged as stale in the round-one section directly above — still asserts, present-tense, two claims that are now false. The shipped code is sound for everything that exists in the file today; the request is to make the boundary prose exact (or widen the walker to match it) and to stop this note carrying a false present-tense claim.
 
+## Independent re-review (2026-07-26, model:claude-fable-5, round three, commit 4943af3)
+
+Authored by model:claude-opus-5 (commit trailer on 4943af3), reviewed by model:claude-fable-5 — same model family; this remains harm reduction, not the cross-vendor independence QUALITY.md requires, and a different-family or human pass is still owed.
+
+**Verified:** every [[ISS-0013]] Next Action is done on the merits — all nine inversion branches re-induced independently and caught (the set-shaped repro verbatim, frozenset, list, lowercase name, comprehension-built tuple, both hoisted-literal drifts, metric-filter drift, and the prefix-map removal for prefixes carrying real filters); the metrics rewrite independently shown behaviour-preserving (old `compute_metric_counts` at 12a7c70 vs new, run against all 11 repos: all 18 metrics identical; key order changed but both consumers are order-insensitive; corrupt → `ERROR [METRICS]` → `--fix-metrics` → clean exercised end-to-end); all 12 fleet files byte-identical including the cockpit bundle; all 11 repos validate 0, `--self-check` 0, `sync-snapshot --check` 0; cockpit vocabulary suite 24/24; the your-sudoku checkbox tick below is legitimate.
+
+**Why changes-requested a third time — filed as [[ISS-0014]]:** (1) the ISS-0013 fix commit **doubled the validator's second half** — `validate-docs.py` went 1514 → 2560 lines, lines 1560–2560 a verbatim duplicate of 556–1556 appended after the `if __name__` block, dead as a script and identical on import, shipped byte-identical to all 12 fleet files and mentioned in no note; (2) the bolded claim **"no inline status literal remains in the file" is false** — `(("tests", {"passing"}), ("changes", {"merged"}))` sits inline in `validate()` (line 1446) plus at least eight single-status comparisons; (3) the walker's boundary prose is still a shade wider than the code — a module-level **dict** of statuses, an **underscore-prefixed** name, a **nested** tuple and an **empty** collection all evade `--self-check` (demonstrated), against a docstring saying "every module-level string collection" and a TST-0002 sentence saying "type-agnostic … whatever the name looks like". The substance of the fix is real; the requested change is to un-double the file and, for the fourth time, make the coverage sentence exactly as wide as the code.
+
 ## Follow-ups
 
 - [ ] Consider amending [[ADR-0012]]'s consequence list to name `PHASE_RESOLVED`, so the record of which surfaces exist is accurate for the next rename.
@@ -189,3 +197,13 @@ Round two of review accepted every round-one fix and then broke the new guard: t
 Three rounds, three versions of the same mistake — a coverage claim written wider than the code. ISS-0011 was a rename that missed a table. ISS-0012 was the fix for ISS-0011 missing a table it had just created. ISS-0013 was the guard against ISS-0012 missing a *type* of table. Each shipped green.
 
 Fixed in [[ISS-0013]]: the walker takes tuple/list/set/frozenset and ignores case; the last two inline literals and the eight remaining inline metric filters are hoisted and registered; and the docstring now names its boundary exactly — module scope — because the imprecise version has been wrong twice.
+
+## Follow-up: ISS-0014 (round four)
+
+Round three found something rounds one and two had not: **the ISS-0013 commit silently doubled the validator.** Lines 1560–2560 were a byte-for-byte duplicate of 556–1556, appended after `sys.exit(main())` — inert when run as a script, so the validator, the self-check, the cockpit suite and eleven repos all passed over it, and it propagated to all twelve fleet files.
+
+The cause was ad-hoc string surgery on the source during the metrics rewrite. `ast.parse` confirmed the result was valid Python, which a doubled file is. That is the lesson worth keeping: a syntax check is not a structure check.
+
+Round three also refuted ISS-0013's "no inline status literal remains" (one was left inside `validate()`, now hoisted as `REVIEW_SETTLED_STATUSES`) and defeated the widened walker three more ways — a module-level `dict`, an underscore-prefixed name, a nested container. All closed, and the type tables are now asserted too, which immediately found that the live `decision` note type had no `ALLOWED_STATUS` entry.
+
+Four rounds, four versions of one mistake: a coverage claim written wider than the code, agreed with by every mechanical check, caught only by a reviewer attacking the guard. Recorded in [[ISS-0014]].

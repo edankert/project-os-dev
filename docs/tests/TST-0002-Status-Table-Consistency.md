@@ -7,7 +7,7 @@ status: passing
 owner: user:edwin
 created: 2026-07-26
 updated: 2026-07-26
-source: ["ISS-0011", "ISS-0012", "ISS-0013"]
+source: ["ISS-0011", "ISS-0012", "ISS-0013", "ISS-0014"]
 scope: system
 kind: automated
 level: unit
@@ -17,11 +17,11 @@ last_run: "2026-07-26T21:28Z"
 exit_code: 0
 requirements: []
 features: []
-issues: [ISS-0011, ISS-0012, ISS-0013]
+issues: [ISS-0011, ISS-0012, ISS-0013, ISS-0014]
 tasks: []
 artifacts: []
 evidence: []
-adequacy: "Verified by inversion across three rounds, 2026-07-26: 21 failure branches induced and observed — three reproducing the ISS-0011 misses verbatim, one ISS-0012's, one ISS-0013's, and five confirming the completeness assertion fires on tuple, list, set, frozenset and comprehension-built collections regardless of name case. The metrics rewrite was separately shown behaviour-preserving: identical counts on all 18 metrics across all 11 fleet repos."
+adequacy: "Verified by inversion across four rounds, 2026-07-26: 12 branches in the final suite, all caught — one reproducing each of ISS-0011/0012/0013/0014 verbatim, six covering the collection shapes and name forms that previously evaded (dict, set, frozenset, list, nested, underscore- and lowercase-named), and three covering note-type renames in the type tables. The metrics rewrite was separately shown behaviour-preserving: all 18 keys, identical values, all 11 fleet repos, old code against new."
 related: [ADR-0012, ADR-0010, TST-0001]
 reviewed_by: ""
 review_date: ""
@@ -64,6 +64,8 @@ Violations report as `ERROR [STATUS-TABLE]`.
 | `TEST_RUNNER_STATUSES` | flat tuple | `test` |
 | `REQ_UNADVANCED_STATUSES` | flat tuple | `requirement` |
 | `METRIC_STATUS_FILTERS` | metric → (prefix, statuses) | each against `METRIC_PREFIX_TYPE[prefix]` |
+| `REVIEW_SETTLED_STATUSES` | collection → statuses | each against `COLLECTION_TYPE[collection]` |
+| `COLLECTION_TYPE`, `TERMINAL_TYPES`, `METRIC_PREFIX_TYPE` | hold note **types**, not statuses | every type must exist in `ALLOWED_STATUS` |
 
 Flat tables are registered in `FLAT_STATUS_TABLES`, a name → (values, applicable types) map. Adding a status table means adding a row there rather than hand-writing another check.
 
@@ -118,6 +120,7 @@ Worth stating before the detail, because the pattern is the finding:
 | [[ISS-0011]] | ADR-0012's rename missed three status tables | yes, across a 41-value fleet migration |
 | [[ISS-0012]] | the *fix for ISS-0011* missed a table it had just created | yes |
 | [[ISS-0013]] | the *guard against ISS-0012* missed a table **type** | yes |
+| [[ISS-0014]] | the widened guard missed `dict` — the shape of `PHASE_RESOLVED` itself — and the commit silently doubled the file | yes |
 
 Each time, a coverage claim was written wider than the code, and each time every mechanical check passed. All three were found by an independent reviewer attacking the guard rather than reading it. That is the argument for adversarial review as a gate: the checks cannot audit their own reach, and prose describing their reach is exactly the artifact that keeps being wrong.
 
@@ -153,9 +156,13 @@ This guards the *validator's own* internal consistency. It does not verify that 
 
 It cannot see a status literal written **inside a function**. A local is not in `globals()`, so no amount of walking finds it — `DESCOPED` was exactly that shape until [[ISS-0012]], and `TEST_RUNNER_STATUSES` and `REQ_UNADVANCED_STATUSES` until [[ISS-0013]]. As of ISS-0013 no inline status literal remains in the file, but nothing stops the next one; that case is caught by review or not at all.
 
-At module scope the assertion is type-agnostic and case-agnostic: tuple, list, set and frozenset are all walked, whatever the name looks like. It checked only `tuple` and only `.isupper()` names until ISS-0013, which is how a module-level `set` of statuses evaded the guard against unregistered status collections.
+At module scope the walk is shape-agnostic and name-agnostic: it recurses into tuple, list, set, frozenset and **dict**, to any nesting depth, under any name including underscore-prefixed ones, and exempts only `_NON_STATUS_COLLECTIONS` itself by identity. Getting there took four rounds — it checked only `tuple` and only `.isupper()` names until [[ISS-0013]], and still skipped `dict` and `_`-names until [[ISS-0014]], which mattered because `PHASE_RESOLVED`, the file's most-used table, is a dict.
 
-This boundary is stated this precisely because the imprecise version has been wrong twice. See below.
+The type tables are asserted separately: `COLLECTION_TYPE`, `TERMINAL_TYPES` and `METRIC_PREFIX_TYPE` hold note types rather than statuses, and a type renamed in one but not `ALLOWED_STATUS` fails just as silently. That assertion found a live bug on its first run — `decision`, an accepted alias `COLLECTION_TYPE` had always known, was missing from `ALLOWED_STATUS`, so decision-typed notes were validated against nothing.
+
+**Out of scope, exactly:** anything inside a function body. A local is not in `globals()`. No multi-value inline status collection remains in the file as of ISS-0014 (AST-verified), but single-status comparisons like `status == "done"` are ordinary code, are not collections, and are not covered.
+
+This boundary is stated this precisely because the imprecise version has now been wrong three times. See below.
 
 ## Independent review (2026-07-26, model:claude-fable-5)
 
@@ -174,3 +181,11 @@ Authored by model:claude-opus-5 (commit trailer on 12a7c70), reviewed by model:c
 **Every round-one finding is verified fixed.** All six ISS-0012 inversion branches were independently re-induced on a scratch copy and each fails with exactly the message and exit code [[ISS-0012]]'s Resolution table claims — including the ISS-0012 repro verbatim (`CLOSED_PHASE_STATUSES` → `completed`), the `TERMINAL_TYPES` missing-key branch, and the new-unregistered-tuple branch. `_NON_STATUS_TUPLES` is correctly scoped (both entries genuinely non-status; `RELATIONSHIP_FIELDS`'s `deferred`/`superseded` are field names). No existing module-level container evades the guard — verified by AST scan of every module-level assignment (`COLLECTION_TYPE`, `PROMOTIONS`, `METRIC_PREFIXES` hold no status values). A registered tuple rebound after registration is caught (the `id()`-based registry is conservative in the right direction), as is a comprehension-built tuple. All 11 fleet validators are byte-identical (`cmp`, including the cockpit bundle) and all ten repos validate OK.
 
 **Why changes-requested again — narrower, and the same shape one level up.** (1) The completeness assertion walks only `tuple`s: a module-level `set`, `frozenset`, `list`, or `dict` of statuses evades it — demonstrated, `NEW_SET_STATUSES = {"bogus", "done"}` leaves `--self-check` green — which refutes this note's "What the assertion covers is the next-most-likely mistake: a new module-level constant that nobody registered" and the singular "That is the remaining gap". (2) The validator docstring still opens with "Covers every status collection in this file" — the exact phrase [[ISS-0012]]'s post-mortem records as "wrong at the moment it was written" — and by that issue's own standard it is still refutable: inline `("passing", "failing")` (TEST-FIELDS) and `("draft", "approved")` (REQ-STALE) drift silently (demonstrated), and `compute_metric_counts` retains nine inline single-status set literals, siblings of the exact `risks_open` literal ISS-0012 hoisted; this note's Procedure section echoes the phrase. (3) The CHG's stale your-sudoku follow-up, flagged in round one in the section directly above it, was left unaddressed in the same rewrite. Findings and the two-line fixes are filed as [[ISS-0013]]; the guard itself is sound for everything that exists in the file today.
+
+## Independent re-review (2026-07-26, model:claude-fable-5, round three, commit 4943af3)
+
+Authored by model:claude-opus-5 (commit trailer on 4943af3), reviewed by model:claude-fable-5 — same model family, so this remains harm reduction, not the cross-vendor independence QUALITY.md asks for; a different-family or human pass is still owed.
+
+**Every ISS-0013 fix is verified on the merits.** All nine claimed inversion branches were independently re-induced on scratch copies and caught with exit 1: the ISS-0013 repro verbatim (`NEW_SET_STATUSES = {"bogus", "done"}`), module-level frozenset and list, a lowercase-named tuple, a comprehension-built tuple, drift in both hoisted literals (`TEST_RUNNER_STATUSES` → `verified`, `REQ_UNADVANCED_STATUSES` → `pending`), a drifted metric filter (`risks_open` regaining `mitigating`), and a prefix losing its `METRIC_PREFIX_TYPE` entry (caught when the prefix carries real filters — deleting `REL`, whose only metric is `(REL, None)`, is silent, so that Resolution row holds only for the non-`None` case). In-place mutation of a registered set is caught too — registry and value check share the object. The metrics rewrite was verified behaviour-preserving *independently of the author's claim*: old `compute_metric_counts` (12a7c70) and new were both imported and run against all 11 fleet repos — all 18 metrics identical everywhere; key insertion order changed (`tasks_deferred`/`issues_deferred` moved) but both consumers are order-insensitive (the METRICS check iterates the snapshot's keys, `fix_metrics` rewrites in file order), and the full cycle corrupt → `ERROR [METRICS]` → `--fix-metrics` → exit 0 was exercised end-to-end on a scratch copy of this repo. All 12 fleet files are byte-identical (`cmp`; 11 repos + the cockpit bundle), all 11 repos validate 0 errors, `--self-check` 0, `sync-snapshot --check` 0, and the cockpit's vocabulary suite passes 24/24. The stale your-sudoku checkbox tick is legitimate (its `3ba52ec`/`f4728a6` exist; validator byte-identical; repo validates clean).
+
+**Why changes-requested a third time — filed as [[ISS-0014]].** (1) **The fix commit doubled the file.** `validate-docs.py` went 1514 → 2560 lines: lines 1560–2560 are a verbatim duplicate of lines 556–1556 (`fix_metrics` through `if __name__ == "__main__"`), appended after the real entry point — dead as a script, identical redefinitions on import, shipped byte-identical to all 12 fleet files, and mentioned nowhere. Every mechanical check passes over it because it cannot change behaviour *yet*; it is a divergence trap and it falsifies the implied "this is what the file contains" of every note describing it. (2) **"No inline status literal remains in the file" is false** — line 1446's `(("tests", {"passing"}), ("changes", {"merged"}))` is an inline pair of status collections inside `validate()`, and at least eight single-status comparisons remain (`"passing"`, `"deferred"` ×3, `"draft"`, `"implemented"`, `"done"` ×2); this note's coverage boundary repeats the false sentence. (3) **The boundary prose is still a shade wider than the code — the fourth iteration of exactly the pattern this note documents.** Demonstrated, each leaving `--self-check` green: a module-level *dict* of statuses (`PHASE_RESOLVED`'s own shape), an underscore-prefixed name (structurally necessary — the walker must skip `_` so `_NON_STATUS_COLLECTIONS` does not flag itself — but undocumented), a nested tuple-of-tuples, and an empty collection. So the answer to "is the boundary prose now accurate?" is: the docstring's MODULE SCOPE qualifier fixed the axis rounds one and two were fought over, but "type-agnostic … whatever the name looks like" in this note is refuted twice in one sentence, and the docstring's "every module-level string collection" still overclaims on dict and `_` names. The fixes are small; the requested change is, once again, to make the sentence exactly as wide as the code — and to un-double the file.
