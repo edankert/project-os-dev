@@ -39,6 +39,7 @@ Reusable playbooks for an LLM (or other agents) to keep this documentation syste
 - Close-out: `close-out/SKILL.md`
 - Workflow authoring: `workflow-authoring/SKILL.md`
 - ADR authoring: `adr-authoring/SKILL.md`
+- Design authoring: `design-authoring/SKILL.md`
 - Backlog grooming: `backlog-grooming/SKILL.md`
 - Risk mitigation planning: `risk-mitigation-planning/SKILL.md`
 - Project init: `project-init/SKILL.md`
