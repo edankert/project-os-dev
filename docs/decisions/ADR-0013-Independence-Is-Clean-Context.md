@@ -51,6 +51,7 @@ Both arms got a byte-identical prompt with no hint — no mention of duplication
 | **clean-context Opus** | **same family, same pin** | **found — rated `high`** | **5** |
 | gpt-5-codex, read-only sandbox | different family | missed | 3 |
 | gpt-5.6-terra, write access | different family | incomplete (usage cap) | — |
+| Antigravity `agy` (Google), full tools | different family | found — rated `high` | 4 |
 
 Clean-context Opus found the defect the premise says it could not, rated it the only `high` in the whole experiment, and characterised it *better than the baseline had*: it identified that importers bind the second copy while script runs use the first, so `sync-snapshot.py` and the cockpit's bundled copy execute different code from the CLI, and an edit to the first copy is invisible to every importer. The baseline had called the tail "inert". Verified independently.
 
@@ -67,7 +68,11 @@ Per the same decision, all phase-routed agents move to Opus. Routing by pin was 
 ## What this does not claim
 
 - **n=1 per arm.** One run each cannot separate model capability from sampling. The result is strong because of *which* defect was caught, not how many.
-- **The different-family arm was handicapped and never got a fair run.** Its first pass ran in a read-only sandbox and attacked by injecting globals rather than mutating files; its second hit a usage cap mid-review with `reasoning effort: none`. This ADR does not claim different-family review is worthless — it claims the fleet's rule cannot rest on an untested premise that its one direct test contradicted.
+- **A different family does fine — once it can run things.** This section originally recorded that the different-family arm had been handicapped (read-only sandbox, then a usage cap at `reasoning effort: none`) and cautioned against reading the result as evidence against cross-family review. That caution was justified and is now resolved: a fourth arm, Google's Antigravity CLI with full tool access, **found the doubling and rated it `high`**, plus three further real findings. Amended 2026-07-27, same day.
+
+  The discriminator turns out to be **tool access, not family**. All three arms with a working shell found the defect; the one confined to a read-only sandbox did not. That strengthens this ADR's conclusion — family is not the gate — and removes the reading it never intended, that a different family is worse.
+
+  It also promotes an assumption to a finding: **a reviewer needs a shell.** The runner was built on that premise from the start (five same-family rounds found real defects only because the reviewer executed), and the sandboxed arm is the controlled case that demonstrates it.
 - **This is not a licence for self-review.** A session reviewing its own work remains forbidden and is the thing the rule was always most right about. What changed is the boundary: session and context, not vendor.
 - **A human pass remains the strongest option** and is still explicitly allowed.
 

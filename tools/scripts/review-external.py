@@ -74,6 +74,22 @@ RUNNERS = {
     # display without a TTY: 80ms of CPU over 20 minutes, no child processes,
     # no output, and an exit code that never comes. Nothing in the output says
     # "waiting" -- the failure looks exactly like a slow review.
+    # Antigravity (`agy`), Google's replacement for the now-ineligible Gemini
+    # CLI. Verified to have genuine file access -- asked for the 5th line of an
+    # unguessable file, it returned the right answer rather than bluffing.
+    #
+    # SLOW. That read took 849 seconds. Budget hours, not minutes, and keep
+    # --print-timeout above the runner's own timeout or the two collide (a
+    # 360s outer limit against agy's 5m default killed a run that was working).
+    #
+    # `--effort high` is deliberate: the one Codex run that reached this stage
+    # ran at `reasoning effort: none`, which made its result uninformative.
+    # `--dangerously-skip-permissions` is the approval-prompt fix; the reviewer
+    # works in a throwaway worktree.
+    "agy": ["agy", "-p", "{prompt}", "--model", "gemini-3.1-pro-high",
+            "--effort", "high", "--dangerously-skip-permissions",
+            "--print-timeout", "120m"],
+
     "codex":  ["codex", "exec", "--sandbox", "workspace-write",
                "-c", 'approval_policy="never"', "{prompt}"],
     # Gemini CLI 0.30.0 is installed but REFUSES individual accounts as of

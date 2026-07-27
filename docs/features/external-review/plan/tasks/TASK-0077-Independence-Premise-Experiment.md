@@ -72,6 +72,7 @@ Task: find something all five rounds missed, on a corpus where all five findings
 | **clean-context Opus** | **same family, same pin** | **found — the run's only `high`** | **5** |
 | gpt-5-codex, read-only sandbox | different family | missed | 3 |
 | gpt-5.6-terra, write access | different family | incomplete — usage cap | — |
+| **Antigravity (`agy`), full tools** | **different family** | **found — rated `high`** | **4** |
 
 Clean-context Opus, on the pre-fix tree, with a prompt verified to leak nothing about duplication, line counts or structure, found the doubled file **and described it more accurately than the baseline had**: importers bind the second copy while script runs use the first, so `sync-snapshot.py` and the cockpit bundle execute different code from the CLI, and an edit to the first copy is invisible to every importer. The baseline had called the tail "inert". Confirmed independently by `inspect.getsourcelines`.
 
@@ -79,11 +80,31 @@ Adopted as [[ADR-0013]]. `QUALITY.md` now gates on clean context rather than mod
 
 Four further defects came out of the HEAD arm of the same experiment and are fixed in [[ISS-0016]] — including the sharpest of the whole ISS-0011..0016 sequence: the completeness registry was keyed on `id()`, and CPython deduplicates equal tuple constants, so an unregistered status table whose literal matched a registered one was invisible to the guard built to catch exactly that.
 
+## The fourth arm changes the conclusion
+
+Antigravity's `agy` CLI (Google) finally gave the different-family arm a fair run: real tool access, `--effort high`, the same unleaked prompt, the same doubled tree. **It found the doubling and rated it `high`**, with a repro that matches the one confirmed independently — `inspect.getsourcelines(vd.validate)[1]` returns 2032, the second copy. It also found the dict evasion, the surviving inline literals, and nested-collection evasion: four findings, three of them matching what other arms found separately.
+
+So the discriminator is **tool access, not family**:
+
+| | Full tools | Found the doubling |
+|---|---|---|
+| Fable (same family, diff pin) | yes | yes |
+| clean-context Opus (same family, same pin) | yes | yes |
+| Antigravity/Gemini (different family) | yes | yes |
+| gpt-5-codex (different family) | **no — read-only sandbox** | **no** |
+
+Three of four arms with a working shell caught it. The one without did not. The sandbox confound flagged when that result came in was the whole explanation, and this removes the uncomfortable reading that a different family is *worse* at this.
+
+[[ADR-0013]]'s conclusion is unchanged and better supported: family is not the gate. What the ADR could not say before is now sayable — a different family did fine, once it could actually run things. The requirement that matters is the one the runner was built around: **a reviewer needs a shell.**
+
+**Caveat on this arm.** `agy` was invoked with `--model gemini-3.1-pro-high`, and the reviewer self-reported `model:gemini-3.6-flash`. Either the flag did not take, `agy` routes internally, or the self-report is unreliable. So this arm measures "a Google model with full tools", not specifically the selected Pro tier — and if anything that understates the result, since a Flash-class model found what a sandboxed frontier model missed. Do not cite this row as a Pro result.
+
 ## Two runner bugs, both silent hangs
 
 Worth recording because `project-os-bench` reuses this adapter, where a hung candidate is indistinguishable from one that produced nothing:
 
 - `codex exec --sandbox workspace-write` blocks on an approval prompt it cannot display without a TTY. No `--ask-for-approval` flag exists; `-c approval_policy="never"` is the fix.
+- A third, found later: the runner's own timeout must exceed the CLI's internal one. A 360s outer limit against `agy`'s 5m default killed a run that was working. `agy` is also extremely slow — 849 seconds for a single file read — so reviews need hours, not minutes.
 - The runner never closed stdin. `codex exec` appends piped stdin to the prompt, so an inherited pipe that never reaches EOF blocks it **before any network call**. `stdin=subprocess.DEVNULL`, applied to every runner.
 
 Both presented as ~60ms of CPU over many minutes with no output and no exit — indistinguishable from a slow review unless you check CPU time. Found only because Edwin asked twice whether anything was actually happening.
@@ -105,6 +126,8 @@ That framing was right about the rule as it stood and wrong about where the expe
 The anticipated asymmetry held, in the first direction: Arm A found something real, so the premise is weakened and the review economics change. Clean-context subagents already exist and cost nothing extra; a second vendor is neither free nor, on this evidence, better.
 
 ## What the different-family arm deserves
+
+*Written before the Antigravity run, and superseded by it — kept because the caution was right and the conclusion it guarded against would have been wrong.*
 
 It never got a fair run, and this note should not be read as evidence against cross-family review.
 
