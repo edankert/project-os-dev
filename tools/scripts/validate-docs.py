@@ -1056,8 +1056,15 @@ def validate_design_notes(root, docs_dir, report):
         rel = note_path.relative_to(root)
         asset = str(fm.get("asset", "") or "").strip()
         the_id = str(fm.get("id", "") or "").strip() or rel.name
+        status = str(fm.get("status", "") or "").strip().lower()
         if not asset:
-            report.error("DESIGN-ASSET", "%s declares no asset:; a design note without a rendered artifact has nothing to review (%s)" % (the_id, rel))
+            # `draft` is exempt, and the check's own wording is why: "nothing to
+            # review" is only true once something is offered for review. A design
+            # note is often written before its artifact exists -- this note's
+            # first real use was exactly that -- and forcing an empty placeholder
+            # file to satisfy a check is how a gate teaches people to fake it.
+            if status != "draft":
+                report.error("DESIGN-ASSET", "%s is '%s' and declares no asset:; a design offered for review needs a rendered artifact (draft is exempt) (%s)" % (the_id, status or "unset", rel))
             continue
         target = (note_path.parent / asset).resolve()
         if not target.is_file():
