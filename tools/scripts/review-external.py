@@ -76,7 +76,16 @@ RUNNERS = {
     # "waiting" -- the failure looks exactly like a slow review.
     "codex":  ["codex", "exec", "--sandbox", "workspace-write",
                "-c", 'approval_policy="never"', "{prompt}"],
-    "gemini": ["gemini", "-p", "{prompt}"],
+    # Gemini CLI 0.30.0 is installed but REFUSES individual accounts as of
+    # 2026-07-27: "IneligibleTierError: This client is no longer supported for
+    # Gemini Code Assist for individuals ... migrate to the Antigravity suite".
+    # Google's replacement, Antigravity, ships an `agentapi` client under
+    # ~/.gemini/antigravity-cli/bin/ -- but it is a client for a language
+    # server the Antigravity IDE hosts, and errors with
+    # "ANTIGRAVITY_LS_ADDRESS is not set" unless that IDE is running. There is
+    # no headless Google entry point on this machine. Kept so the flag exists
+    # if that changes; expect an auth failure today.
+    "gemini": ["gemini", "-p", "{prompt}", "--approval-mode", "yolo"],
     # Claude entries exist for two legitimate uses and one illegitimate one.
     #
     #  Legitimate: (a) smoke-testing this runner end to end without a new
