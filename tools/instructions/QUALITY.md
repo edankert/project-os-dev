@@ -44,8 +44,10 @@ These rules define what “done” means for work tracked in this documentation 
 
 - If a terminal status must be set without passing tests (docs-only chore, config-only change), record an explicit `verification_waiver: <reason>` in the note frontmatter. The waiver is a logged artifact (the validator reports it as a warning); silent skips are a build failure.
 
-## Independent review (different-model)
-- Any change that creates or updates a `TST-*` or `CHG-*` note, and any transition to requirement `implemented` or feature `done`, requires an independent review pass per `../skills/independent-review/SKILL.md` — a different model family or a human, never a second pass by the authoring model.
+## Independent review (clean-context)
+- Any change that creates or updates a `TST-*` or `CHG-*` note, and any transition to requirement `implemented` or feature `done`, requires an independent review pass per `../skills/independent-review/SKILL.md` — a **clean context**: a session that starts from the notes and the diff alone, never the author's reasoning trace, and is never the session that authored the work. A human pass also satisfies this and remains the strongest option.
+- Model family is **not** the gate (ADR-0013). It was, until an experiment tested the premise: a clean-context session of the *same model as the author* caught the defect the family rule predicted only a different family could catch, and characterised it better than the different-pin reviewer had. The mechanism that makes a reviewer independent is not having been present while the work was rationalised.
+- Self-review remains forbidden and is the part the old rule was most right about. The boundary is session and context, not vendor.
 - Record the outcome in the reviewed note frontmatter (`reviewed_by`, `review_date`, `review_verdict`).
 
 ## Verification expectations (generic)

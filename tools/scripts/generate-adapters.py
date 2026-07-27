@@ -37,18 +37,28 @@ CURSOR_RULES = [
 ]
 
 # Model routing (HC-008). The lifecycle phases that most reward capability —
-# planning and adversarial review — get the strongest pins. Full model IDs, not
+# planning and adversarial review — get the strongest pin. Full model IDs, not
 # aliases, so `reviewed_by` stays deterministic across releases.
 #
-# These pins do NOT satisfy the independence rule. QUALITY.md ("Independent
-# review") and independent-review/SKILL.md require a different model *family* or
-# a human, and Claude Code subagents can only pin Claude models. Pinning the
-# reviewer away from the likely authoring model reduces same-model self-review,
-# which is worth having, but a cross-vendor or human pass is still required
-# before a review counts as independent. Do not let the pin difference be
-# mistaken for the guarantee.
-PLANNER_MODEL = "claude-fable-5"
-REVIEWER_MODEL = "claude-fable-5"
+# Both are Opus as of ADR-0013, and deliberately the same as the likely
+# authoring model. The pins used to differ as a proxy for independence; that
+# proxy is retired. Independence is now a clean context and a separate session
+# (QUALITY.md, "Independent review (clean-context)"), which subagents provide by
+# construction — they start from the notes and the diff, never the author's
+# reasoning trace.
+#
+# The change is evidence-backed. Tested against the one case in the fleet with a
+# known answer, a clean-context session of the SAME model as the author caught
+# the defect the old family rule predicted only a different family could catch,
+# rated it the run's only high-severity finding, and described it more
+# accurately than the different-pin reviewer had. See project-os-dev ADR-0013
+# and TASK-0077.
+#
+# `reviewed_by` still records the model. That is provenance, not a compliance
+# token: a later reader needs to know who reviewed, and a future finding about a
+# specific model's blind spots needs the data.
+PLANNER_MODEL = "claude-opus-5"
+REVIEWER_MODEL = "claude-opus-5"
 
 PLANNER_AGENT = """---
 name: planner
@@ -78,7 +88,9 @@ You are the project-os independent reviewer. Your review counts only if you genu
 1. Read `tools/skills/independent-review/SKILL.md` in full and follow it exactly.
 2. Read the notes under review (TST-*/CHG-*/REQ-*/FEAT-*) and the code or docs they claim to cover; attempt to refute each claim (does the test fail when the fix is broken? does the change note match what actually changed?).
 3. Record the outcome in each reviewed note's frontmatter: `reviewed_by: model:%(model)s`, `review_date: <today>`, `review_verdict: approved` or `changes-requested` (with your findings in the note body).
-4. Independence caveat: you are a Claude-family model, and QUALITY.md requires a different model *family* or a human. Your pin differs from the model the implementation loop is expected to run, which reduces same-model self-review — but it does NOT make this pass independent. If the work under review was authored by any Claude-family session (it usually was), say so explicitly in your report and recommend a cross-vendor review (a different model family via an external tool, or a human) per QUALITY.md — record such reviews manually. Never present same-family review as fully independent, and never let a differing model pin stand in for that disclosure. If the work was authored by this same model, escalate: that is self-review and your verdict cannot settle it.
+4. What makes this pass independent is your **context**, not your model (ADR-0013): you start from the notes and the diff and have never seen the author's reasoning. Protect that. Do not ask the author what they meant, and do not reconstruct their intent charitably — if the change cannot be justified from the notes alone, that is a finding about the documentation, which is the point of the handoff surface.
+5. You are very likely the same model that wrote the work. That is expected and is not a defect in this pass; a shared model correlates *capability*, a shared context correlates *commitment*, and it is the second that review exists to break. What you must not be is the same *session*: if you find yourself with any memory of authoring this, stop and say so — that is self-review and your verdict cannot settle it.
+6. State plainly in your report what was independent (fresh context, separate session) and what was not (same model family, recorded in `reviewed_by`). A reader should be able to judge the independence rather than infer it.
 """ % {"model": REVIEWER_MODEL}
 
 

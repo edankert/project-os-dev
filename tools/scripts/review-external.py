@@ -55,7 +55,27 @@ import tempfile
 #: candidate adapter, and a benchmark with one model measures nothing.
 RUNNERS = {
     "kimi":   ["kimi", "-p", "{prompt}"],
-    "codex":  ["codex", "exec", "{prompt}"],
+    # `--sandbox workspace-write` matters and was learned the hard way: the
+    # default read-only sandbox left Codex unable to mutate the file it was
+    # reviewing, so it attacked by injecting globals instead. That still found
+    # real defects, but it is not the same attack surface a Claude Code
+    # subagent gets, and comparing the two without it measures the sandbox.
+    # The reviewer works in a throwaway worktree; write access there is the
+    # point.
+    # Two flags, both learned by watching a run do nothing for 20 minutes.
+    #
+    # `--sandbox workspace-write`: the default read-only sandbox left Codex
+    # unable to mutate the file it was reviewing, so it attacked by injecting
+    # globals instead. Real findings, but not the attack surface a Claude Code
+    # subagent gets -- comparing them without this measures the sandbox.
+    #
+    # `approval_policy="never"`: workspace-write alone HANGS. `codex exec` has
+    # no --ask-for-approval flag, so it blocks on an approval prompt it cannot
+    # display without a TTY: 80ms of CPU over 20 minutes, no child processes,
+    # no output, and an exit code that never comes. Nothing in the output says
+    # "waiting" -- the failure looks exactly like a slow review.
+    "codex":  ["codex", "exec", "--sandbox", "workspace-write",
+               "-c", 'approval_policy="never"', "{prompt}"],
     "gemini": ["gemini", "-p", "{prompt}"],
     # Claude entries exist for two legitimate uses and one illegitimate one.
     #
@@ -293,8 +313,16 @@ def main() -> int:
         print("running %s (timeout %ds) ..." % (argv[0], args.timeout),
               file=sys.stderr)
         try:
+            # stdin=DEVNULL is load-bearing, not tidiness. `codex exec`
+            # documents "if stdin is piped and a prompt is also provided, stdin
+            # is appended as a <stdin> block" -- so with an inherited pipe that
+            # never reaches EOF it blocks FOREVER, before any network call.
+            # Observed: 60ms of CPU over 5 minutes, zero TCP connections, no
+            # output, no exit. Indistinguishable from a slow review unless you
+            # go looking at CPU time. Every agent CLI here reads stdin the same
+            # way, so this belongs on the call, not on one runner's argv.
             r = subprocess.run(argv, cwd=wt, capture_output=True, text=True,
-                               timeout=args.timeout,
+                               timeout=args.timeout, stdin=subprocess.DEVNULL,
                                env={**os.environ, "NO_COLOR": "1"})
         except subprocess.TimeoutExpired:
             print("error: reviewer timed out after %ds" % args.timeout,
