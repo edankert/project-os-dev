@@ -198,6 +198,10 @@ REQ_UNADVANCED_STATUSES = ("draft", "approved")
 METRIC_PREFIX_TYPE = {
     "FEAT": "feature", "TASK": "task", "ISS": "issue", "PHASE": "phase",
     "TST": "test", "RISK": "risk", "REQ": "requirement", "REL": "release",
+    # `ADR` was absent until ISS-0016 and nothing noticed, because
+    # `decisions_total` is a total (`allowed is None`) and the check `continue`d
+    # before reaching the prefix. Every total metric was unguarded the same way.
+    "ADR": "adr",
 }
 
 #: metric name -> (ID prefix, statuses counted). `None` means "count them all".
@@ -258,6 +262,15 @@ FLAT_STATUS_TABLES = {
 }
 
 
+#: Tables checked explicitly above rather than through FLAT_STATUS_TABLES.
+#: Named, not identified: see the completeness assertion for why id() is unsafe.
+_CHECKED_TABLE_NAMES = frozenset({
+    "ALLOWED_STATUS", "PHASE_RESOLVED", "PLAN_FOLLOWS_FEATURE", "TERMINAL",
+    "TERMINAL_TYPES", "METRIC_STATUS_FILTERS", "METRIC_PREFIX_TYPE",
+    "COLLECTION_TYPE", "REVIEW_SETTLED_STATUSES", "FLAT_STATUS_TABLES",
+    "PROMOTIONS", "METRIC_PREFIXES",
+})
+
 #: Module-level string collections that are deliberately NOT status collections.
 #: The completeness assertion walks every tuple/list/set/frozenset of strings at
 #: module scope and demands each be either registered or named here, so this is a
@@ -270,7 +283,11 @@ FLAT_STATUS_TABLES = {
 _NON_STATUS_COLLECTIONS = frozenset({
     "ID_PREFIXES",           # note ID prefixes
     "RELATIONSHIP_FIELDS",   # frontmatter field names
-    "METRIC_PREFIXES",       # ID prefixes counted in metrics
+    # The registry's own bookkeeping. Named rather than exempted by identity:
+    # after ISS-0016 the walk is name-keyed, and an identity exemption is
+    # exactly the mechanism that made an unregistered table invisible.
+    "_CHECKED_TABLE_NAMES",
+    "_NON_STATUS_COLLECTIONS",
 })
 
 
@@ -359,13 +376,32 @@ def validate_status_tables(report):
         for note_type in sorted(note_types):
             _check_values(report, "REVIEW_SETTLED_STATUSES['%s']" % collection, settled, note_type)
 
+    # METRIC_PREFIXES decides which IDs are counted at all. It was exempted by
+    # name and checked against nothing, so renaming a prefix there left every
+    # metric using it permanently reading 0 -- with the METRICS check agreeing,
+    # because it compares the snapshot against the same broken computation
+    # (ISS-0016).
+    declared = {prefix for prefix, _ in METRIC_STATUS_FILTERS.values()}
+    missing = sorted(declared - set(METRIC_PREFIXES))
+    if missing:
+        report.error("STATUS-TABLE", "METRIC_STATUS_FILTERS counts prefix(es) %s that METRIC_PREFIXES does not collect, so those metrics silently read 0" % ", ".join("'%s'" % m for m in missing))
+    unused = sorted(set(METRIC_PREFIXES) - declared)
+    if unused:
+        report.error("STATUS-TABLE", "METRIC_PREFIXES collects prefix(es) %s that no metric uses; one table knows an ID prefix the other does not" % ", ".join("'%s'" % u for u in unused))
+
     for metric, (prefix, allowed) in sorted(METRIC_STATUS_FILTERS.items()):
-        if allowed is None:
-            continue
+        # The prefix is checked for EVERY metric, including totals. Skipping
+        # totals was ISS-0016: a mistyped prefix makes `by_prefix.get(prefix,
+        # [])` return [], so the metric silently reads 0 rather than erroring --
+        # and "no decisions recorded" is a plausible-looking number, which is
+        # what makes it worse than a crash. Seven of the eighteen metrics are
+        # totals and all seven were unguarded.
         note_type = METRIC_PREFIX_TYPE.get(prefix)
         if note_type is None:
-            report.error("STATUS-TABLE", "METRIC_STATUS_FILTERS['%s'] counts prefix '%s', which has no entry in METRIC_PREFIX_TYPE, so its statuses are checked against nothing" % (metric, prefix))
+            report.error("STATUS-TABLE", "METRIC_STATUS_FILTERS['%s'] counts prefix '%s', which has no entry in METRIC_PREFIX_TYPE; a mistyped prefix silently counts zero rather than failing" % (metric, prefix))
             continue
+        if allowed is None:
+            continue   # a total: the prefix is the whole contract
         _check_values(report, "METRIC_STATUS_FILTERS['%s']" % metric, allowed, note_type)
 
     for collection, status in sorted(TERMINAL.items()):
@@ -379,6 +415,16 @@ def validate_status_tables(report):
     # statuses, so _check_values does not apply -- but a type renamed here and not
     # in ALLOWED_STATUS fails exactly as quietly, and the completeness walk below
     # cannot tell a table of types from a table of statuses. Assert them.
+    # `decision` is an alias of `adr` (COLLECTION_TYPE maps decisions to both).
+    # ISS-0015 made STATUS-VALUE check the UNION of a collection's types, which
+    # is correct -- and which means a value legal for only one of the pair
+    # becomes legal for both. Nothing asserted the rows stay equal, so widening
+    # `decision` silently widened `adr` too (ISS-0016).
+    for a, b in (("adr", "decision"),):
+        if ALLOWED_STATUS.get(a) != ALLOWED_STATUS.get(b):
+            report.error("STATUS-TABLE", "ALLOWED_STATUS['%s'] and ALLOWED_STATUS['%s'] are aliases but differ (%s); STATUS-VALUE checks their union, so a value legal for one becomes legal for both" % (
+                a, b, " vs ".join(", ".join(sorted(ALLOWED_STATUS.get(k) or ())) for k in (a, b))))
+
     for label, types in (("COLLECTION_TYPE", {t for ts in COLLECTION_TYPE.values() for t in ts}),
                          ("TERMINAL_TYPES", set(TERMINAL_TYPES.values())),
                          ("METRIC_PREFIX_TYPE", set(METRIC_PREFIX_TYPE.values()))):
@@ -397,15 +443,17 @@ def validate_status_tables(report):
     # `tuple` until ISS-0013 (a module-level `set` evaded it) and only non-dict
     # containers until ISS-0014 -- while PHASE_RESOLVED, the file's most-used
     # table, is a dict. Anything holding strings, nested to any depth, counts.
-    registered = {id(values) for values, _ in FLAT_STATUS_TABLES.values()}
-    registered.update(id(v) for v in PHASE_RESOLVED.values())
-    registered.update(id(v) for v in PLAN_FOLLOWS_FEATURE.values())
-    for table in (PHASE_RESOLVED, PLAN_FOLLOWS_FEATURE, TERMINAL, TERMINAL_TYPES,
-                  METRIC_STATUS_FILTERS, ALLOWED_STATUS, PROMOTIONS,
-                  COLLECTION_TYPE, METRIC_PREFIX_TYPE, FLAT_STATUS_TABLES,
-                  REVIEW_SETTLED_STATUSES):
-        registered.add(id(table))
-        registered.update(id(v) for v in table.values())
+    # Keyed on NAME, not id(). Identity looked natural and was wrong: CPython
+    # deduplicates equal tuple constants in a code object, so two module-level
+    # tables with the same literal are the SAME OBJECT. Status tables routinely
+    # share values -- ("done", "superseded") appears in several -- so a new
+    # unregistered table would silently inherit a registered one's identity and
+    # pass. Demonstrated in ISS-0016: adding ISSUE_ARCHIVED_STATUSES =
+    # ("done", "superseded") and RISK_STALE_STATUSES = ("draft", "approved"),
+    # both illegal for the types they name and registered nowhere, left
+    # --self-check green. A name cannot be interned into another name.
+    registered = set(FLAT_STATUS_TABLES)
+    registered.update(_CHECKED_TABLE_NAMES)
 
     def _holds_strings(value, seen=None):
         """True if value is a container with a string anywhere inside it.
@@ -433,11 +481,11 @@ def validate_status_tables(report):
         # Only the allow-list itself is exempt by identity. Skipping names by
         # shape -- a leading underscore, a lowercase letter -- is how a status
         # collection hides, which is the whole lesson of ISS-0013.
-        if value is _NON_STATUS_COLLECTIONS or name in _NON_STATUS_COLLECTIONS:
+        if name in _NON_STATUS_COLLECTIONS or name in registered:
             continue
         if isinstance(value, str) or not isinstance(value, (tuple, list, set, frozenset, dict)):
             continue
-        if id(value) in registered or not _holds_strings(value):
+        if not _holds_strings(value):
             continue
         report.error("STATUS-TABLE", "%s is a module-level collection holding strings that no status table registers; if any of them are statuses, register it, and if none are, name it in _NON_STATUS_COLLECTIONS -- an unregistered status collection is what ISS-0012 and ISS-0013 both were" % name)
 

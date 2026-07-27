@@ -57,7 +57,27 @@ RUNNERS = {
     "kimi":   ["kimi", "-p", "{prompt}"],
     "codex":  ["codex", "exec", "{prompt}"],
     "gemini": ["gemini", "-p", "{prompt}"],
+    # Claude entries exist for two legitimate uses and one illegitimate one.
+    #
+    #  Legitimate: (a) smoke-testing this runner end to end without a new
+    #  dependency, and (b) MEASURING the premise QUALITY.md rests on -- that a
+    #  fresh session of the authoring model is not independent because it
+    #  reproduces the same blind spots. That premise has never been tested in
+    #  this fleet, and it is testable: give clean-context Opus the identical
+    #  prompt a different-family reviewer gets, and compare.
+    #
+    #  Illegitimate: recording the result as an independent review when the
+    #  author was also Claude. Same family is same family however clean the
+    #  context; a measurement of the rule is not an exemption from it.
+    "claude-opus":  ["claude", "-p", "--model", "opus",
+                     "--dangerously-skip-permissions", "{prompt}"],
+    "claude-fable": ["claude", "-p", "--model", "claude-fable-5",
+                     "--dangerously-skip-permissions", "{prompt}"],
 }
+
+#: Runners whose verdict must never be recorded as an independent review,
+#: because they share a family with the fleet's authoring model.
+SAME_FAMILY_AS_AUTHOR = frozenset({"claude-opus", "claude-fable"})
 
 VERDICT_SCHEMA = """{
   "verdict": "approved" | "changes-requested",
@@ -130,10 +150,16 @@ def extract_json(raw: str):
 
 def build_prompt(worktree, notes, diff, task_text, skill_text):
     parts = [
+        # Deliberately says nothing about which model the reviewer is, or how
+        # it relates to the author. Every runner must receive a byte-identical
+        # prompt or a cross-model comparison measures the prompt instead of the
+        # models -- and telling a Claude reviewer it is "a different family"
+        # would also be false.
         "You are performing an INDEPENDENT REVIEW for the project-os "
-        "documentation system. You were selected because you are a different "
-        "model family from the author, which is the entire point: same-family "
-        "review reproduces the author's blind spots.",
+        "documentation system. You are reviewing work you did not write, with "
+        "no access to its author's reasoning -- only the notes and the diff. "
+        "If the change cannot be justified from those alone, that is itself a "
+        "finding.",
         "",
         "## Your working copy",
         "",
@@ -259,6 +285,11 @@ def main() -> int:
                   file=sys.stderr)
             return 3
 
+        if args.model in SAME_FAMILY_AS_AUTHOR:
+            print("NOTE: %s shares a family with the fleet's authoring model. "
+                  "Useful for smoke-testing this runner and for measuring the "
+                  "independence premise itself; NOT admissible as the "
+                  "QUALITY.md independent review." % args.model, file=sys.stderr)
         print("running %s (timeout %ds) ..." % (argv[0], args.timeout),
               file=sys.stderr)
         try:

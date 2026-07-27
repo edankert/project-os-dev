@@ -29,12 +29,12 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 18
-  ISS: 15
+  ISS: 16
   PHASE: 2
   REL: 0
   REQ: 24
   RISK: 2
-  TASK: 76
+  TASK: 77
   TST: 2
   WF: 3
 
@@ -189,6 +189,13 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0077:
+      file: "docs/features/external-review/plan/tasks/TASK-0077-Independence-Premise-Experiment.md"
+      title: "Test the independence premise: clean-context Opus vs a different family, identical prompt"
+      status: doing
+      phase: "[[PHASE-999]]"
+      parent: FEAT-0018
+      note: "QUALITY.md's different-family rule has been asserted and never tested. Two arms, byte-identical prompt, against the one case with a known answer (four Fable rounds, four real defects)."
     TASK-0075:
       file: "docs/features/external-review/plan/tasks/TASK-0075-Prototype-The-Runner.md"
       title: "Prototype the external review runner"
@@ -513,6 +520,13 @@ items:
       external: "../project-os-cockpit/docs/issues/ISS-0026-Bundled-Validator-Drift.md"
 
   issues:
+    ISS-0016:
+      file: "docs/issues/ISS-0016-Registry-Keyed-On-Identity-And-Unchecked-Metric-Prefixes.md"
+      title: "Completeness registry keyed on id() (defeated by CPython constant dedup); total metrics skipped their prefix check"
+      status: fixed
+      severity: medium
+      phase: "[[PHASE-999]]"
+      note: "Found by TASK-0077's two-arm experiment. Clean-context Opus 3 findings, gpt-5-codex 1, one run each."
     ISS-0002:
       file: docs/issues/ISS-0002-Deferred-Items-Satisfy-Parent-Completeness.md
       title: "Deferred items are treated as complete: parents close over them and parked work vanishes from every active surface"
@@ -960,7 +974,7 @@ metrics:
     features_done: 17
     phases_total: 3
     phases_done: 2
-    tasks_total: 76
+    tasks_total: 77
     tasks_done: 71
     tests_total: 2
     tests_passing: 2
