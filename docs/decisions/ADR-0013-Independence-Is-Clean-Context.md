@@ -11,7 +11,7 @@ source: ["experiment:TASK-0077", "user decision 2026-07-27"]
 decision: "Replace QUALITY.md's different-model-family requirement with a clean-context requirement. An independent review is a session that (a) starts from a fresh context — the notes and the diff, never the author's reasoning trace — and (b) is not the same session that authored the work. Model family is no longer the gate. All phase-routed agents move to Opus; the separation that does the work is context, not pin."
 context: "The family rule was asserted, never tested, and produced a standing unmet obligation: every review this fleet has recorded disclosed itself as same-family harm reduction. TASK-0077 tested it directly against the one case in the fleet with a known answer, and the premise failed on its own strongest prediction."
 alternatives:
-  - "Keep the family rule and satisfy it with a second vendor. Rejected on evidence, not cost: the different-family arm found less than the same-family clean-context arm, and missed the one defect the rule's premise predicts only a different family could catch. Cost was a secondary factor — the free tier exhausted mid-experiment — but a rule that bought coverage would have been worth paying for."
+  - "Keep the family rule and satisfy it with a second vendor. Rejected because the rule asserts something the evidence does not support: a different family is not *required*. With full tool access a different family performed comparably (Antigravity/Gemini found the same defect, rated it the same severity), and so did a clean-context session of the author's own model. A second vendor is a fine reviewer and a bad gate — it is not what makes a review independent, and requiring it made the gate unsatisfiable for months. (An earlier draft of this line said the different-family arm 'found less and missed the defect'. That was true only of the sandboxed arm and is corrected here.)"
   - "Keep the family rule as an aspiration and continue disclosing it as unmet. Rejected: a rule nothing satisfies is not a standard, it is a ritual disclaimer. Four months of review notes each carrying 'a cross-vendor pass is still owed' is evidence the rule was unusable, not that the fleet was negligent."
   - "Require both — clean context AND a different family. Rejected: it keeps an unsatisfiable condition attached to a satisfiable one, so the gate stays permanently open and the clean-context requirement inherits the family rule's unenforceability."
   - "Require a different model *pin* within the family (the previous de-facto arrangement: Fable reviews Opus). Rejected as the gate: the experiment's best-performing reviewer was the same pin as the author with a clean context, and its advantage over the different pin was substantial. Pin difference is not forbidden — it is simply not what is being asserted."
@@ -49,9 +49,11 @@ Both arms got a byte-identical prompt with no hint — no mention of duplication
 |---|---|---|---|
 | Fable, round 3 (baseline) | same family, different pin | found | 3 |
 | **clean-context Opus** | **same family, same pin** | **found — rated `high`** | **5** |
-| gpt-5-codex, read-only sandbox | different family | missed | 3 |
+| gpt-5-codex, **read-only sandbox** | different family | **missed** | 3 |
 | gpt-5.6-terra, write access | different family | incomplete (usage cap) | — |
 | Antigravity `agy` (Google), full tools | different family | found — rated `high` | 4 |
+
+The read-only row is the one that explains the table. Every arm with a working shell found the defect; the only arm that missed it was the only arm that could not run anything. **Tool access, not family, is the discriminator.**
 
 Clean-context Opus found the defect the premise says it could not, rated it the only `high` in the whole experiment, and characterised it *better than the baseline had*: it identified that importers bind the second copy while script runs use the first, so `sync-snapshot.py` and the cockpit's bundled copy execute different code from the CLI, and an edit to the first copy is invisible to every importer. The baseline had called the tail "inert". Verified independently.
 
