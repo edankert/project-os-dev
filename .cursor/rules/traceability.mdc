@@ -39,3 +39,11 @@ This documentation system relies on explicit link graphs so agents can follow re
 ## Import provenance
 - When deriving items from existing sources, record origin in note frontmatter `source` and/or Evidence sections.
 - See `IMPORTING.md` for recommended conventions.
+
+## `[[design]]` links
+
+- A design **implements** the features or phases it specifies: `implements: ["[[FEAT-...]]", "[[PHASE-...]]"]`.
+- Those notes point back with `design: ["[[DES-...]]"]`. Both directions are written, as everywhere else in this system — a link that only exists one way is invisible from the side that needs it.
+- `asset:` names the rendered artifact beside the note. `DESIGN-ASSET` reports a note whose asset does not resolve; `DESIGN-ORPHAN` reports an artifact no note claims.
+- Revisions are **commits against the asset**, not new notes. A design that spawns a note per revision is being used as a changelog, and the reason for each revision belongs in the commit message where it survives the tool.
+- Supersession is design-to-design: `supersedes:` / `superseded_by:`. A design does not become `superseded` when the code ships — that is `implemented`. It becomes superseded when a newer design replaces it.

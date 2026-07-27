@@ -68,6 +68,7 @@ COLLECTION_OF = {
     "requirement": "requirements", "phase": "phases", "risk": "risks",
     "test": "tests", "workflow": "workflows", "change": "changes",
     "adr": "decisions", "decision": "decisions", "release": "releases",
+    "design": "designs",
 }
 
 _ITEM_RE = re.compile(r"^(\s+)([A-Z]+-[\w-]+):\s*(\{.*\})?\s*$")

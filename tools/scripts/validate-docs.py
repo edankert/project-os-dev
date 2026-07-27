@@ -52,7 +52,8 @@ import re
 import sys
 from pathlib import Path
 
-ID_PREFIXES = ("ADR", "FEAT", "ISS", "PHASE", "REQ", "RISK", "REL", "TASK", "TST", "WF")
+ID_PREFIXES = ("ADR", "DES", "FEAT", "ISS", "PHASE", "REQ", "RISK", "REL",
+               "TASK", "TST", "WF")
 ID_RE = re.compile(r"\b(%s)-(\d{2,})\b" % "|".join(ID_PREFIXES))
 
 COLLECTION_TYPE = {
@@ -66,6 +67,7 @@ COLLECTION_TYPE = {
     "workflows": {"workflow"},
     "changes": {"change"},
     "decisions": {"adr", "decision"},
+    "designs": {"design"},
     "releases": {"release"},
 }
 
@@ -85,6 +87,14 @@ ALLOWED_STATUS = {
     "workflow": {"draft", "active", "deprecated"},
     "change": {"merged", "reverted"},
     "adr": {"proposed", "accepted", "superseded"},
+    # A design is proposed, accepted, built, and eventually replaced by its own
+    # next revision. Every value here already existed in the vocabulary --
+    # `draft` from requirement/workflow/plan, `proposed`/`accepted` from adr,
+    # `implemented` from requirement, `superseded`/`cancelled` from most types.
+    # ADR-0008 collapsed 64 values to 53; a new type is not a reason to reopen
+    # that, and this one adds none.
+    "design": {"draft", "proposed", "accepted", "implemented", "superseded",
+               "cancelled"},
     # `decision` is an accepted alias for `adr` -- COLLECTION_TYPE has mapped
     # decisions to {"adr", "decision"} all along, but ALLOWED_STATUS never
     # carried the alias. Found by the type-table check added for ISS-0014; one
@@ -1021,6 +1031,45 @@ def validate_unregistered_notes(root, items, note_index, claimants, allowed_stat
             )
 
 
+def validate_design_notes(root, docs_dir, report):
+    """DESIGN-ASSET — a design must point at an artifact that exists.
+
+    A design note is a claim about a rendered surface, and the render is the
+    artifact named by ``asset:``. A note whose asset is missing, or an artifact
+    no note claims, is the design equivalent of a dangling link: nothing errors
+    today, the design surface renders an empty pane tomorrow, and the reason is
+    a typo committed weeks earlier.
+
+    Both directions are checked. The orphan direction matters as much as the
+    missing one: an unclaimed 139KB artifact sitting in ``docs/designs/`` is
+    either a design nobody wrote a note for, or a leftover from a rename.
+    """
+    designs_dir = docs_dir / "designs"
+    if not designs_dir.is_dir():
+        return
+
+    claimed = set()
+    for note_path in sorted(designs_dir.rglob("*.md")):
+        fm = parse_frontmatter(note_path) or {}
+        if note_type(fm) != "design":
+            continue
+        rel = note_path.relative_to(root)
+        asset = str(fm.get("asset", "") or "").strip()
+        the_id = str(fm.get("id", "") or "").strip() or rel.name
+        if not asset:
+            report.error("DESIGN-ASSET", "%s declares no asset:; a design note without a rendered artifact has nothing to review (%s)" % (the_id, rel))
+            continue
+        target = (note_path.parent / asset).resolve()
+        if not target.is_file():
+            report.error("DESIGN-ASSET", "%s asset: '%s' does not resolve to a file beside the note (%s)" % (the_id, asset, rel))
+            continue
+        claimed.add(target)
+
+    for artifact in sorted(designs_dir.rglob("*.html")):
+        if artifact.resolve() not in claimed:
+            report.warn("DESIGN-ORPHAN", "%s is not claimed by any design note's asset:; it is either an unwritten design or a leftover from a rename" % artifact.relative_to(root))
+
+
 def validate_plan_notes(root, docs_dir, allowed_status, grandfathered, report):
     """PLAN-STATE / PLAN-ID — the plan checks STATUSES.md already promises.
 
@@ -1189,6 +1238,7 @@ def validate(root, report):
     validate_unregistered_notes(root, items, note_index, note_claimants, allowed_status, report)
     NOTE_INDEX_FOR_PLANS.clear()
     NOTE_INDEX_FOR_PLANS.update(note_index)
+    validate_design_notes(root, docs_dir, report)
     validate_plan_notes(root, docs_dir, allowed_status, grandfathered, report)
 
     def resolves(ref_id):

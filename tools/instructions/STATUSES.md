@@ -120,6 +120,17 @@ Terminal-status semantics: `done`/`closed`/`cancelled`/`declined` **resolve** an
   - `accepted` → `superseded`
 - A decision that is not taken is **deleted or superseded**, not marked `rejected` — `rejected` was never written once across the fleet, and a rejected proposal that is worth keeping is worth recording as the alternative it lost to (ADRs already carry `alternatives:`).
 
+## `[[design]]`
+- Allowed: `draft`, `proposed`, `accepted`, `implemented`, `superseded`, `cancelled`
+- Typical transitions:
+  - `draft` → `proposed` (offered for review)
+  - `proposed` → `accepted` → `implemented`
+  - `proposed` → `cancelled` (abandoned without a replacement)
+  - any → `superseded` (a later design replaces it; link it with `superseded_by:`)
+- **Every value here already existed in the vocabulary.** This type adds no status values: `draft` from `[[requirement]]`/`[[workflow]]`/`[[plan]]`, `proposed` and `accepted` from `[[adr]]`, `implemented` from `[[requirement]]`, `superseded` and `cancelled` from most types. ADR-0008 collapsed this vocabulary from 64 values to 53 after measuring that several had never been written once; a new type is not a reason to reopen that.
+- A design is not an ADR. An ADR records *what was decided and why*; a design records *what a surface should look like*, carries a rendered `asset:`, and is superseded by its own next revision rather than by a competing argument. Revisions are commits against the asset, not new notes — a design note that spawns a note per revision is being used as a changelog.
+- `implemented` is terminal-but-alive: the design still describes the built surface, which is what makes design/implementation parity checkable. Use `superseded` when a newer design takes over, not when the code ships.
+
 ## `[[test]]`
 - Allowed: `ready`, `passing`, `failing`
 - Typical transitions:

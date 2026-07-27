@@ -28,22 +28,22 @@ counters:
   ADR: 13
   CHG:
     last_date: 20260726
-  FEAT: 18
+  FEAT: 19
   ISS: 16
   PHASE: 2
   REL: 0
   REQ: 24
   RISK: 2
-  TASK: 77
+  TASK: 79
   TST: 2
   WF: 3
 
 focus:
-  task: "TASK-0075"
-  issue: ""
-  feature: "FEAT-0018"
+  task: "TASK-0078"
+  feature: "FEAT-0019"
   phase: "PHASE-999"
-  note: "2026-07-27 external independent review (FEAT-0018). QUALITY.md wants a different model family; every review recorded so far is Claude-on-Claude. Prototyping the runner (TASK-0075), then the ISS-0011..0015 calibration run (TASK-0076) — the one case with a known answer."
+  issue: ""
+  note: "2026-07-27 adding the DES-* design note type upstream before the cockpit builds on it — FEAT-0042 was scoped on the reference convention to avoid this, so doing it after would mean migrating twice. Zero new status values."
 
 items:
   phases:
@@ -70,6 +70,13 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0019:
+      file: "docs/features/design-notes/FEAT-0019-Design-Note-Type.md"
+      title: "A first-class design note type (DES-*)"
+      status: done
+      phase: "[[PHASE-999]]"
+      tasks: [TASK-0078, TASK-0079]
+      note: "reference models durable non-lifecycle material; a design is proposed, accepted, built and superseded. Zero new status values — the lifecycle uses values already in the vocabulary."
     FEAT-0018:
       file: "docs/features/external-review/FEAT-0018-External-Independent-Review.md"
       title: "External independent review — run the QUALITY.md gate on a non-Claude model"
@@ -189,6 +196,19 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0078:
+      file: "docs/features/design-notes/plan/tasks/TASK-0078-Design-Type-Upstream.md"
+      title: "Add the design type upstream: taxonomy, statuses, template, validator, sync"
+      status: done
+      phase: "[[PHASE-999]]"
+      parent: FEAT-0019
+      note: "First real exercise of the ISS-0016 STATUS-TABLE guard: confirm it fires on a deliberately incomplete edit before trusting it."
+    TASK-0079:
+      file: "docs/features/design-notes/plan/tasks/TASK-0079-Propagate-And-Migrate.md"
+      title: "Propagate the design type to the fleet and migrate REF-0001"
+      status: done
+      phase: "[[PHASE-999]]"
+      parent: FEAT-0019
     TASK-0077:
       file: "docs/features/external-review/plan/tasks/TASK-0077-Independence-Premise-Experiment.md"
       title: "Test the independence premise: clean-context Opus vs a different family, identical prompt"
@@ -970,12 +990,12 @@ items:
 
 metrics:
   counts:
-    features_total: 18
-    features_done: 17
+    features_total: 19
+    features_done: 18
     phases_total: 3
     phases_done: 2
-    tasks_total: 77
-    tasks_done: 72
+    tasks_total: 79
+    tasks_done: 74
     tests_total: 2
     tests_passing: 2
     tests_failing: 0
