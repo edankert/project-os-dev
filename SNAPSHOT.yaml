@@ -28,21 +28,22 @@ counters:
   ADR: 12
   CHG:
     last_date: 20260726
-  FEAT: 17
+  FEAT: 18
   ISS: 15
   PHASE: 2
   REL: 0
   REQ: 24
   RISK: 2
-  TASK: 74
+  TASK: 76
   TST: 2
   WF: 3
 
 focus:
-  task: ""
+  task: "TASK-0075"
   issue: ""
-  feature: ""
-  phase: ""
+  feature: "FEAT-0018"
+  phase: "PHASE-999"
+  note: "2026-07-27 external independent review (FEAT-0018). QUALITY.md wants a different model family; every review recorded so far is Claude-on-Claude. Prototyping the runner (TASK-0075), then the ISS-0011..0015 calibration run (TASK-0076) — the one case with a known answer."
 
 items:
   phases:
@@ -69,6 +70,13 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0018:
+      file: "docs/features/external-review/FEAT-0018-External-Independent-Review.md"
+      title: "External independent review — run the QUALITY.md gate on a non-Claude model"
+      status: doing
+      phase: "[[PHASE-999]]"
+      tasks: [TASK-0075, TASK-0076]
+      note: "Every review recorded across the fleet is Claude-on-Claude; the different-family gate has never actually been satisfied. Runner prototyped (TASK-0075); the ISS-0011..0015 calibration is the test of whether it is worth promoting."
     FEAT-0007:
       file: docs/features/relationship-model/FEAT-0007-Relationship-Model.md
       title: "Named relationship fields with child-to-parent linking"
@@ -181,6 +189,19 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0075:
+      file: "docs/features/external-review/plan/tasks/TASK-0075-Prototype-The-Runner.md"
+      title: "Prototype the external review runner"
+      status: done
+      phase: "[[PHASE-999]]"
+      parent: FEAT-0018
+    TASK-0076:
+      file: "docs/features/external-review/plan/tasks/TASK-0076-Calibration-Run.md"
+      title: "Calibration run: point a non-Claude reviewer at ISS-0011..ISS-0015"
+      status: backlog
+      phase: "[[PHASE-999]]"
+      parent: FEAT-0018
+      note: "Blocked on the user installing + authenticating the CLI. The only fleet case with a known answer — five same-family rounds already hardened the target."
     TASK-0023:
       file: docs/features/relationship-model/plan/tasks/TASK-0023-Update-Schemas.md
       title: "Update SCHEMAS.md with new relationship fields"
@@ -935,12 +956,12 @@ items:
 
 metrics:
   counts:
-    features_total: 17
+    features_total: 18
     features_done: 17
     phases_total: 3
     phases_done: 2
-    tasks_total: 74
-    tasks_done: 70
+    tasks_total: 76
+    tasks_done: 71
     tests_total: 2
     tests_passing: 2
     tests_failing: 0
