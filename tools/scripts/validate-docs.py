@@ -1031,6 +1031,52 @@ def validate_unregistered_notes(root, items, note_index, claimants, allowed_stat
             )
 
 
+#: Placeholder markers the templates ship. A brief still carrying one has been
+#: adopted and then abandoned, which is a different (and more actionable) state
+#: than a project that never adopted the convention at all.
+_BRIEF_PLACEHOLDER_RE = re.compile(r"REPLACE[ _-]?ME", re.IGNORECASE)
+
+
+def validate_brief(root, report):
+    """BRIEF-PLACEHOLDER — the project says what it is, or says nothing.
+
+    ``LLM_BRIEF.md`` ships in every project-os repo describing itself as "the
+    machine-oriented project brief". Measured across the fleet on 2026-07-28:
+    **10 of 11 repos still carried ``Name: REPLACE ME``**, including the
+    template itself and a repo with 43 features. The single exception had been
+    created the previous day.
+
+    That file was not failing because nobody needed it. It was failing because
+    nothing ever showed it and nothing ever checked it — this validator
+    reported dangling links, drifted statuses and unresolved assets, and never
+    once noticed that eleven projects had not said what they are.
+
+    A **warning, deliberately**. Erroring would turn ten of eleven repos red
+    the moment it landed, and a gate that fails the whole fleet on day one
+    teaches people to disable the gate. It escalates when the fleet is filled
+    in — the dated-promotion shape ADR-0011 uses.
+
+    A missing brief is **silent**: not every repo adopts the convention, and
+    demanding one from a project that never had it is noise rather than a
+    finding.
+    """
+    brief = root / "LLM_BRIEF.md"
+    if not brief.is_file():
+        return
+    try:
+        text = brief.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return
+    hits = _BRIEF_PLACEHOLDER_RE.findall(text)
+    if hits:
+        report.warn(
+            "BRIEF-PLACEHOLDER",
+            "LLM_BRIEF.md still carries %d template placeholder(s); the brief "
+            "is what an agent reads to learn what this project IS, and an "
+            "unfilled one teaches it nothing (LLM_BRIEF.md)" % len(hits),
+        )
+
+
 def validate_design_notes(root, docs_dir, report):
     """DESIGN-ASSET — a design must point at an artifact that exists.
 
@@ -1245,6 +1291,7 @@ def validate(root, report):
     validate_unregistered_notes(root, items, note_index, note_claimants, allowed_status, report)
     NOTE_INDEX_FOR_PLANS.clear()
     NOTE_INDEX_FOR_PLANS.update(note_index)
+    validate_brief(root, report)
     validate_design_notes(root, docs_dir, report)
     validate_plan_notes(root, docs_dir, allowed_status, grandfathered, report)
 
