@@ -17,6 +17,8 @@ from __future__ import annotations
 import atexit
 import collections
 import datetime as _dt
+import base64
+import binascii
 import json
 import re
 import logging
@@ -39,6 +41,7 @@ from .status_diff import StatusTracker
 from .agent_hooks import MAX_BODY_BYTES as _AGENT_HOOK_MAX_BYTES
 from .events import ControlEvent, EventBus, FileEvent
 from .index import Index
+from . import inbox as inbox_mod
 from .review import ReviewStore
 from .terminal import TERMINAL_BASE_PATH, TerminalProcess
 from .validation import ValidationRunner
@@ -646,6 +649,14 @@ def _make_handler(
                 self._serve_design_verdict()
                 return
 
+            if path == "/api/inbox/store":
+                self._serve_inbox_store()
+                return
+
+            if path == "/api/inbox/discard":
+                self._serve_inbox_discard()
+                return
+
             if path == "/api/design/offer-review":
                 self._serve_design_offer_review()
                 return
@@ -849,6 +860,18 @@ def _make_handler(
             # A project's OWN stylesheets, for its design artifacts
             # (TASK-0230). The allow-list is whatever the design notes
             # declare — see `_serve_project_stylesheet`.
+            if path == "/api/inbox":
+                self._respond_json({
+                    "schema_version": cockpit.SCHEMA_VERSION,
+                    "items": inbox_mod.list_items(project_root),
+                })
+                return
+
+            if path.startswith("/_inbox/"):
+                self._serve_inbox_item(
+                    urllib.parse.unquote(path[len("/_inbox/"):]))
+                return
+
             if path.startswith("/_project/"):
                 self._serve_project_stylesheet(
                     urllib.parse.unquote(path[len("/_project/"):]))
@@ -1243,12 +1266,20 @@ def _make_handler(
             host = (self.client_address[0] if self.client_address else "") or ""
             return host in _LOOPBACK_HOSTS
 
-        def _read_json_body(self) -> dict[str, Any] | None:
+        def _read_json_body(self, max_bytes: int | None = None) -> dict[str, Any] | None:
+            """The request body as JSON, or ``None`` (already responded).
+
+            ``max_bytes`` overrides the default 2 MB cap. The inbox needs it:
+            a Retina screenshot is routinely over 2 MB and base64 inflates it by
+            a third, so the shared cap would have refused ordinary items while
+            `inbox.MAX_ITEM_BYTES` advertised 25 MB — a limit that could never
+            be reached, which is worse than a small limit honestly stated.
+            """
             try:
                 length = int(self.headers.get("Content-Length") or 0)
             except ValueError:
                 length = 0
-            if length > _AGENT_HOOK_MAX_BYTES:
+            if length > (max_bytes or _AGENT_HOOK_MAX_BYTES):
                 self._respond_json({"ok": False, "error": "body too large"},
                                    status=HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
                 return None
@@ -2395,6 +2426,114 @@ def _make_handler(
             self.send_header("Content-Length", str(len(data)))
             self.send_header("Cache-Control", "no-cache")
             _send_stylesheet_cors(self, target.name)
+            self.end_headers()
+            self.wfile.write(data)
+
+        def _serve_inbox_store(self) -> None:
+            """``POST /api/inbox/store`` — stage one dropped or pasted item.
+
+            **The first endpoint here that writes a file the caller supplies.**
+            Everything else writes notes through `note_writes`, which is a
+            field allow-list on files that already exist; a binary write to a
+            new path is a different risk, so the guards come first and are
+            tested to ISS-0056's three clauses.
+
+            The caller's filename is treated as hostile — it arrives from a
+            drag-and-drop or a clipboard paste. `inbox.safe_name` keeps only a
+            sanitised stem and an allow-listed suffix, and containment is
+            re-checked at the write rather than trusted from the filter.
+            """
+            if not self._require_loopback():
+                return
+            # Base64 inflates by ~4/3; the decoded size is checked below.
+            body = self._read_json_body(
+                max_bytes=inbox_mod.MAX_ITEM_BYTES * 4 // 3 + 4096)
+            if body is None:
+                return
+            raw_name = str(body.get("name", "") or "")
+            data_b64 = str(body.get("data", "") or "")
+            if not data_b64:
+                self._respond_json({"ok": False, "error": "data is required"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            name = inbox_mod.safe_name(raw_name)
+            if name is None:
+                self._respond_json(
+                    {"ok": False,
+                     "error": "%r is not a storable name — the inbox takes "
+                              "evidence, and its suffix must be one of: %s"
+                              % (raw_name[:80],
+                                 ", ".join(sorted(inbox_mod.ALLOWED_SUFFIXES)))},
+                    status=HTTPStatus.BAD_REQUEST)
+                return
+            try:
+                data = base64.b64decode(data_b64, validate=True)
+            except (ValueError, binascii.Error):
+                self._respond_json({"ok": False, "error": "data is not base64"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            if len(data) > inbox_mod.MAX_ITEM_BYTES:
+                self._respond_json(
+                    {"ok": False, "error": "item is %d bytes; the limit is %d"
+                                           % (len(data), inbox_mod.MAX_ITEM_BYTES)},
+                    status=HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+                return
+
+            directory = inbox_mod.inbox_dir(project_root)
+            directory.mkdir(parents=True, exist_ok=True)
+            target = inbox_mod.unique_path(directory, name)
+            # Belt to the filter's braces: a resolved path that is not inside
+            # the inbox never gets written, whatever the name did.
+            try:
+                target.resolve().relative_to(directory.resolve())
+            except ValueError:
+                self._respond_forbidden("inbox path escapes the inbox")
+                return
+            target.write_bytes(data)
+            self._respond_json({
+                "ok": True, "name": target.name, "bytes": len(data),
+                "rel": "inbox/%s" % target.name,
+            })
+
+        def _serve_inbox_discard(self) -> None:
+            """``POST /api/inbox/discard`` — remove one item.
+
+            Discarding is a *good* outcome: an inbox whose items can only
+            accumulate is an archive, which is the thing the triage skill
+            exists to prevent.
+            """
+            if not self._require_loopback():
+                return
+            body = self._read_json_body()
+            if body is None:
+                return
+            target = inbox_mod.resolve_item(project_root, str(body.get("name", "") or ""))
+            if target is None:
+                self._respond_json({"ok": False, "error": "unknown inbox item"},
+                                   status=HTTPStatus.NOT_FOUND)
+                return
+            target.unlink()
+            self._respond_json({"ok": True,
+                                "remaining": len(inbox_mod.list_items(project_root))})
+
+        def _serve_inbox_item(self, name: str) -> None:
+            """``GET /_inbox/<name>`` — one item, for preview.
+
+            Read-only and containment-checked. No CORS: nothing sandboxed
+            reads this, and adding a header nothing needs is how a route
+            widens by accident.
+            """
+            target = inbox_mod.resolve_item(project_root, name)
+            if target is None:
+                self._respond_not_found(self.path)
+                return
+            ctype, _ = mimetypes.guess_type(target.name)
+            data = target.read_bytes()
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", ctype or "application/octet-stream")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Cache-Control", "no-store")
             self.end_headers()
             self.wfile.write(data)
 
