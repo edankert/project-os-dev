@@ -37,6 +37,7 @@ from pathlib import Path
 from typing import Any
 
 from . import statuses
+from . import token_sources
 from .index import Index, NoteRecord
 
 _CHG_DATE_RE = re.compile(r"^CHG-(\d{4})(\d{2})(\d{2})")
@@ -524,7 +525,12 @@ def _design_stylesheets(fm: dict) -> list[str]:
     out: list[str] = []
     for item in raw if isinstance(raw, list) else []:
         rel = str(item or "").strip().lstrip("/")
-        if not rel or not rel.lower().endswith(".css"):
+        # `.css`, or a source file whose colour declarations are synthesised
+        # into CSS at read time (ISS-0059). Three fleet apps are native and
+        # declare their palette in Kotlin or Swift; without this they have no
+        # readable design system at all.
+        if not rel or not (rel.lower().endswith(".css")
+                           or token_sources.supports(rel)):
             continue
         if ".." in rel.split("/") or "\\" in rel:
             continue

@@ -2426,7 +2426,8 @@ def _make_handler(
             if not rel or ".." in rel.split("/"):
                 self._respond_forbidden("project path traversal blocked")
                 return
-            if not rel.lower().endswith(".css"):
+            synthesise = cockpit.token_sources.supports(rel)
+            if not rel.lower().endswith(".css") and not synthesise:
                 self._respond_not_found(self.path)
                 return
             if rel not in cockpit.project_stylesheet_allowlist(index):
@@ -2445,7 +2446,16 @@ def _make_handler(
             if not target.is_file():
                 self._respond_not_found(self.path)
                 return
-            data = target.read_bytes()
+            if synthesise:
+                # Parsed on every request, so the answer cannot be older than
+                # the file. Only extracted `--name: value` pairs are emitted —
+                # the source itself never leaves the machine, which is why this
+                # is safer than serving it (ISS-0059).
+                data = cockpit.token_sources.synthesise_css(
+                    target.read_text(encoding="utf-8", errors="replace"),
+                    rel).encode("utf-8")
+            else:
+                data = target.read_bytes()
             self.send_response(HTTPStatus.OK)
             self.send_header("Content-Type", "text/css; charset=utf-8")
             self.send_header("Content-Length", str(len(data)))
@@ -2453,7 +2463,15 @@ def _make_handler(
             # A design frame is sandboxed with an OPAQUE origin, so it cannot
             # read `cssRules` from a linked sheet and must fetch the text and
             # re-inject it (ISS-0043). Without this header that fetch fails.
-            _send_stylesheet_cors(self, target.name)
+            #
+            # Sent unconditionally, because THIS ROUTE ALWAYS EMITS CSS. The
+            # shared helper keys off the filename, which is right for the
+            # static routes and wrong here: a synthesised response is named
+            # `Color.kt` and is `text/css`, so the helper stayed silent and the
+            # frame's fetch failed with everything else working. Found by
+            # rendering in the sandbox — curl could not see it, because curl
+            # has an origin.
+            self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(data)
 
