@@ -23,6 +23,7 @@ import logging
 import mimetypes
 import os
 import queue
+import subprocess
 import threading
 import time
 import urllib.parse
@@ -31,13 +32,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, Iterable
 
-from . import cockpit, renderer, templates, terminal_proxy
+from . import agents, cockpit, note_writes, renderer, templates, terminal_proxy
 from .agent_actions import load_actions
 from .agent_hooks import AgentSessionTracker
 from .status_diff import StatusTracker
 from .agent_hooks import MAX_BODY_BYTES as _AGENT_HOOK_MAX_BYTES
 from .events import ControlEvent, EventBus, FileEvent
 from .index import Index
+from .review import ReviewStore
 from .terminal import TERMINAL_BASE_PATH, TerminalProcess
 from .validation import ValidationRunner
 from .watcher import Watcher
@@ -80,6 +82,11 @@ INDEX_TYPE_PLURALS: dict[str, str] = {
 log = logging.getLogger("project_os_cockpit.server")
 
 STATIC_DIR: Path = Path(__file__).resolve().parent / "static"
+
+#: Files the shell-assets route will serve (TASK-0227). An allow-list rather
+#: than a directory share: the design surface needs the stylesheet, and
+#: nothing about that is a reason to expose the bundle or its source maps.
+SHELL_ASSET_FILES: frozenset[str] = frozenset({"renderer.css"})
 
 # Tabs whose last_seen heartbeat is older than this are pruned from the
 # state snapshot. The cockpit JS sends a heartbeat every 15 s
@@ -363,12 +370,19 @@ class _NoDNSThreadingHTTPServer(ThreadingHTTPServer):
 class DocsServer:
     """Wraps a ``ThreadingHTTPServer`` bound to a docs root."""
 
-    def __init__(self, *, docs_root: Path, bind: str, port: int) -> None:
+    def __init__(
+        self, *, docs_root: Path, bind: str, port: int,
+        shell_assets: Path | None = None,
+    ) -> None:
         self.docs_root = docs_root.resolve(strict=True)
         if not self.docs_root.is_dir():
             raise NotADirectoryError(f"docs root is not a directory: {self.docs_root}")
         self.bind = bind
         self.port = port
+        # Where the desktop shell's built stylesheet lives (TASK-0227).
+        # `None` in mode-1, which has no Electron build at all — so this is
+        # an optional capability, never a dependency.
+        self.shell_assets = shell_assets.resolve() if shell_assets else None
         self.bus: EventBus = EventBus()
         self.index: Index = Index.build(self.docs_root)
         # Index subscribes for invalidation; the SSE channel (TASK-0006) and
@@ -448,6 +462,7 @@ class DocsServer:
             agent_tracker=self.agent_tracker,
             validation_runner=self.validation,
             status_tracker=self.status_tracker,
+            shell_assets=self.shell_assets,
         )
         self.watcher.start()
         # SNAPSHOT.yaml sits above the docs root — the validation runner
@@ -562,6 +577,7 @@ def _make_handler(
     agent_tracker: AgentSessionTracker | None = None,
     validation_runner: ValidationRunner | None = None,
     status_tracker: "StatusTracker | None" = None,
+    shell_assets: Path | None = None,
 ) -> type[BaseHTTPRequestHandler]:
     """Build a request handler class with the per-server collaborators baked in."""
     project_root = docs_root.parent.resolve()
@@ -580,6 +596,14 @@ def _make_handler(
     # Stats payload cache (TASK-0128): scope key → (index generation,
     # payload). Invalidation is generation comparison, nothing to evict.
     _stats_cache: dict[str, tuple[int, dict]] = {}
+    # Commits payload cache (TASK-0199): single slot keyed on
+    # (HEAD, index generation, limit) — a new commit or a note edit
+    # invalidates it, so SSE refetches don't re-shell out to git.
+    _commits_cache: dict[str, tuple[tuple[str, int, int], dict]] = {}
+    # Review desk queue (FEAT-0041). Durable across sidecar restarts —
+    # a proposal can wait days — and deliberately separate from note
+    # state: pending-ness is runtime, verdicts live in the notes.
+    review_store = ReviewStore(project_root)
     # Lazy-instantiated; ttyd doesn't actually spawn until the first
     # /api/terminal request (the JS client only fetches when the user
     # opens the bottom panel). cockpit_url is propagated into the
@@ -618,6 +642,22 @@ def _make_handler(
             if path == "/api/cockpit/tab-state":
                 self._serve_cockpit_tab_state()
                 return
+            if path == "/api/design/verdict":
+                self._serve_design_verdict()
+                return
+
+            if path == "/api/design/offer-review":
+                self._serve_design_offer_review()
+                return
+
+            if path == "/api/design/comment":
+                self._serve_design_comment()
+                return
+
+            if path == "/api/design/capture":
+                self._serve_design_capture()
+                return
+
             if path == "/api/notes/check-toggle":
                 self._serve_check_toggle()
                 return
@@ -629,6 +669,21 @@ def _make_handler(
                 return
             if path == "/api/cockpit/dispatch":
                 self._serve_cockpit_dispatch()
+                return
+            if path == "/api/cockpit/review-request":
+                self._serve_review_request()
+                return
+            if path == "/api/cockpit/review-resolve":
+                self._serve_review_resolve()
+                return
+            if path == "/api/notes/review":
+                self._serve_note_review()
+                return
+            if path == "/api/notes/decide":
+                self._serve_note_decide()
+                return
+            if path == "/api/notes/test-run":
+                self._serve_test_run()
                 return
             # Unknown POST. Drain the request body before responding so
             # HTTP/1.1 keep-alive framing stays intact: an undrained body
@@ -703,12 +758,64 @@ def _make_handler(
                 self._serve_cockpit_stats(parsed.query)
                 return
 
+            if path == "/api/cockpit/review-queue":
+                self._respond_json(
+                    cockpit.review_queue_payload(index, review_store)
+                )
+                return
+
+            if path == "/api/cockpit/scope-tests":
+                params = urllib.parse.parse_qs(parsed.query)
+                self._respond_json(cockpit.scope_tests_payload(
+                    index, (params.get("id") or [""])[0],
+                ))
+                return
+
+            if path.startswith("/api/cockpit/review/"):
+                self._serve_review_detail(path[len("/api/cockpit/review/"):])
+                return
+
+            if path == "/api/cockpit/commits":
+                self._serve_cockpit_commits(parsed.query)
+                return
+
             if path == "/api/cockpit/sessions":
                 self._serve_cockpit_sessions()
                 return
 
             if path == "/api/cockpit/actions":
                 self._serve_cockpit_actions()
+                return
+
+            if path == "/api/cockpit/agents":
+                self._serve_cockpit_agents()
+                return
+
+            if path == "/api/cockpit/brief":
+                self._respond_json(cockpit.brief_payload(docs_root.parent))
+                return
+
+            if path == "/api/cockpit/designs":
+                self._serve_cockpit_designs()
+                return
+
+            if path.startswith("/api/cockpit/design-comments/"):
+                self._respond_json(cockpit.design_comments_payload(
+                    docs_root, index,
+                    urllib.parse.unquote(path[len("/api/cockpit/design-comments/"):])))
+                return
+
+            if path.startswith("/api/cockpit/design-revisions/"):
+                self._serve_design_revisions(
+                    path[len("/api/cockpit/design-revisions/"):])
+                return
+
+            if path.startswith("/design-asset-at/"):
+                self._serve_design_asset_at(path[len("/design-asset-at/"):])
+                return
+
+            if path.startswith("/design-asset/"):
+                self._serve_design_asset(path[len("/design-asset/"):])
                 return
 
             if path == "/api/cockpit/dispatch-requests":
@@ -729,6 +836,22 @@ def _make_handler(
 
             if path.startswith("/_static/"):
                 self._serve_static(path[len("/_static/"):])
+                return
+
+            # The desktop shell's stylesheet, for design artifacts that want
+            # to show real widgets (TASK-0227). Served from where the build
+            # already puts it — never copied into the package, because a
+            # second copy of a stylesheet is the ISS-0023 failure again.
+            if path.startswith("/_shell/"):
+                self._serve_shell_asset(path[len("/_shell/"):])
+                return
+
+            # A project's OWN stylesheets, for its design artifacts
+            # (TASK-0230). The allow-list is whatever the design notes
+            # declare — see `_serve_project_stylesheet`.
+            if path.startswith("/_project/"):
+                self._serve_project_stylesheet(
+                    urllib.parse.unquote(path[len("/_project/"):]))
                 return
 
             if path == "/index" or path == "/index/":
@@ -831,6 +954,31 @@ def _make_handler(
                 )
                 return
             _stats_cache[cache_key] = (generation, payload)
+            self._respond_json(payload)
+
+        def _serve_cockpit_commits(self, query_string: str = "") -> None:
+            """``GET /api/cockpit/commits[?limit=N]`` — recent commits with
+            the doc items each one touched (TASK-0199).
+
+            ``limit`` is the only caller-supplied value and is clamped to an
+            int inside :func:`cockpit.commits_payload`; the git subprocess
+            itself runs with a fixed argv. Cached on (HEAD, index
+            generation, limit) so SSE-driven refetches don't re-shell.
+            """
+            params = urllib.parse.parse_qs(query_string)
+            raw_limit = (params.get("limit") or [""])[0]
+            try:
+                limit = int(raw_limit)
+            except (TypeError, ValueError):
+                limit = cockpit.COMMITS_DEFAULT_LIMIT
+            head = _git_head(project_root)
+            cache_key = (head, index.generation, limit)
+            cached = _commits_cache.get("k")
+            if cached is not None and cached[0] == cache_key:
+                self._respond_json(cached[1])
+                return
+            payload = cockpit.commits_payload(project_root, index, limit=limit)
+            _commits_cache["k"] = (cache_key, payload)
             self._respond_json(payload)
 
         def _serve_cockpit_context(self, query_string: str) -> None:
@@ -1083,6 +1231,297 @@ def _make_handler(
                 bus.publish(ControlEvent("cockpit:dispatch-request", rec))
             self._respond_json({"ok": True, "recorded": rec})
 
+        # ---- review desk (FEAT-0041) ----
+
+        def _is_loopback(self) -> bool:
+            """Mutation endpoints are Mac-local only.
+
+            The render server binds 0.0.0.0 so a tablet on the Wi-Fi can
+            *read* the notes; writing them is not part of that bargain.
+            Same split the terminal endpoint draws (RISK-0001).
+            """
+            host = (self.client_address[0] if self.client_address else "") or ""
+            return host in _LOOPBACK_HOSTS
+
+        def _read_json_body(self) -> dict[str, Any] | None:
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = 0
+            if length > _AGENT_HOOK_MAX_BYTES:
+                self._respond_json({"ok": False, "error": "body too large"},
+                                   status=HTTPStatus.REQUEST_ENTITY_TOO_LARGE)
+                return None
+            raw = self.rfile.read(length) if length else b""
+            try:
+                body = json.loads(raw.decode("utf-8")) if raw else {}
+            except (ValueError, UnicodeDecodeError):
+                self._respond_json({"ok": False, "error": "invalid JSON"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return None
+            return body if isinstance(body, dict) else {}
+
+        def _require_loopback(self) -> bool:
+            if self._is_loopback():
+                return True
+            self._respond_json(
+                {"ok": False, "error": "mutations are loopback-only"},
+                status=HTTPStatus.FORBIDDEN,
+            )
+            return False
+
+        def _serve_review_detail(self, request_id: str) -> None:
+            """``GET /api/cockpit/review/<request-id|NOTE-ID>`` — one
+            queue entry expanded: the proposal set with its items, or the
+            note behind a decide/run row."""
+            request_id = request_id.strip().strip("/")
+            request = review_store.get(request_id)
+            if request is not None:
+                items = []
+                for note_id in request.get("items") or []:
+                    path = index.by_id(note_id)
+                    record = index.get(path) if path else None
+                    items.append(
+                        cockpit._slim_note(record) if record else {"id": note_id}
+                    )
+                payload = {
+                    "schema_version": cockpit.SCHEMA_VERSION,
+                    "kind": request.get("kind"),
+                    "request": request,
+                    "items": items,
+                }
+                # Has the design moved since the reviewer was asked? Computed
+                # on open rather than in the queue payload: it costs a git call
+                # and only matters once you are looking at the thing (TASK-0229).
+                subject = str(request.get("subject") or "").strip().upper()
+                asked_at = str(request.get("at_revision") or "")
+                if subject and index.by_id(subject) is None:
+                    # The subject was deleted or renamed after being offered.
+                    # The renderer reads this to offer the one action that can
+                    # honestly be taken — clearing the request — instead of
+                    # three buttons that all 404 (ISS-0056).
+                    request = dict(request)
+                    request["subject_missing"] = True
+                    payload["request"] = request
+                if subject:
+                    # OUTSIDE the revision branch. Computing it only when a
+                    # revision was captured meant a row with a subject and no
+                    # `at_revision` — the shape every pre-fix offer wrote —
+                    # still dispatched to the plan-verdict path, leaving
+                    # ISS-0056 unfixed for exactly the rows finding 5 was
+                    # about (round 2).
+                    subject_path = index.by_id(subject)
+                    subject_rec = index.get(subject_path) if subject_path else None
+                    payload["subject_type"] = (
+                        (subject_rec.note_type or "").lower() if subject_rec else "")
+                if subject and asked_at:
+                    revs = cockpit.design_revisions_payload(
+                        docs_root.parent, index, subject)
+                    head = ""
+                    for rev in revs.get("revisions") or []:
+                        head = str(rev.get("sha") or "")
+                        break
+                    payload["at_revision"] = asked_at
+                    payload["head_revision"] = head
+                    payload["revision_moved"] = bool(head and head != asked_at)
+                    payload["dirty"] = bool(revs.get("dirty"))
+                self._respond_json(payload)
+                return
+            # Fall back to a note id (a proposed ADR / ready test row).
+            path = index.by_id(request_id)
+            record = index.get(path) if path else None
+            if record is None:
+                self._respond_json({"ok": False, "error": "unknown review target"},
+                                   status=HTTPStatus.NOT_FOUND)
+                return
+            payload: dict[str, Any] = {
+                "schema_version": cockpit.SCHEMA_VERSION,
+                "kind": "note",
+                "note": cockpit._slim_note(record),
+            }
+            if (record.note_type or "").lower() == "test":
+                payload["steps"] = cockpit.manual_test_steps(record.body)
+                payload["mtime"] = record.path.stat().st_mtime
+                fm = record.frontmatter
+                payload["last_run"] = str(fm.get("last_run") or "")
+                payload["verifies"] = [
+                    str(v) for v in (fm.get("features") or fm.get("verifies") or [])
+                ]
+            self._respond_json(payload)
+
+        def _serve_review_request(self) -> None:
+            """``POST /api/cockpit/review-request`` — file a review or
+            question request (the agent side of the desk).
+
+            Loopback-only like the other mutations: it writes
+            `.cockpit/review-requests.json`, records ledger entries and
+            fires SSE, so a LAN reader on the 0.0.0.0 render port must
+            not reach it (independent review, 2026-07-26).
+            """
+            if not self._require_loopback():
+                return
+            body = self._read_json_body()
+            if body is None:
+                return
+            kind = str(body.get("kind") or "review")
+            if kind not in ("review", "question"):
+                self._respond_json({"ok": False, "error": f"unknown kind: {kind}"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            items = body.get("items")
+            record = review_store.add(
+                kind,
+                items=[str(i) for i in items] if isinstance(items, list) else [],
+                title=str(body.get("title") or ""),
+                body=str(body.get("body") or ""),
+                session_id=body.get("session_id"),
+                prompt=body.get("prompt"),
+                agent=body.get("agent"),
+            )
+            # Provenance: the ledger keeps the prompt→session→request
+            # chain the proposal view shows (FEAT-0025 + FEAT-0019).
+            for note_id in record.get("items") or []:
+                tracker.record_dispatch(note_id, verb=f"review:{kind}")
+            bus.publish(ControlEvent("cockpit:review-request", record))
+            self._respond_json({"ok": True, "request": record})
+
+        def _serve_review_resolve(self) -> None:
+            """``POST /api/cockpit/review-resolve`` — close a queue entry
+            with an outcome (recorded for ADR-0007's measurement)."""
+            if not self._require_loopback():
+                return
+            body = self._read_json_body()
+            if body is None:
+                return
+            request_id = str(body.get("request_id") or "")
+            outcome = str(body.get("outcome") or "")
+            try:
+                resolved = review_store.resolve(
+                    request_id, outcome, note=str(body.get("note") or ""),
+                )
+            except ValueError as exc:
+                self._respond_json({"ok": False, "error": str(exc)},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            if resolved is None:
+                self._respond_json({"ok": False, "error": "unknown request"},
+                                   status=HTTPStatus.NOT_FOUND)
+                return
+            bus.publish(ControlEvent("cockpit:review-request", resolved))
+            self._respond_json({"ok": True, "request": resolved})
+
+        def _serve_note_review(self) -> None:
+            """``POST /api/notes/review`` — stamp the independent-review
+            fields (and optionally a guarded status) on one note."""
+            if not self._require_loopback():
+                return
+            body = self._read_json_body()
+            if body is None:
+                return
+            # Field allow-list: the caller may not name any other key.
+            extra = set(body) - note_writes.REVIEW_REQUEST_KEYS
+            if extra:
+                self._respond_json(
+                    {"ok": False,
+                     "error": f"unsupported fields: {sorted(extra)}"},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            try:
+                result = note_writes.stamp_review(
+                    index,
+                    str(body.get("id") or ""),
+                    reviewer=str(body.get("reviewer") or ""),
+                    verdict=str(body.get("verdict") or ""),
+                    status=(str(body["status"]) if body.get("status") else None),
+                    mtime=(float(body["mtime"]) if body.get("mtime") is not None else None),
+                )
+            except note_writes.WriteError as exc:
+                self._respond_json({"ok": False, "error": exc.message},
+                                   status=HTTPStatus(exc.status))
+                return
+            except (TypeError, ValueError) as exc:
+                self._respond_json({"ok": False, "error": str(exc)},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            self._respond_json({"ok": True, "result": result})
+
+        def _serve_note_decide(self) -> None:
+            """``POST /api/notes/decide`` — advance or decline one queued
+            note (a proposed ADR, a draft requirement).
+
+            Separate from ``/api/notes/review`` because the two do
+            different things: review records a verdict on a set and leaves
+            the notes put; this performs the lifecycle move the note is
+            queued for, guarded by that type's own vocabulary.
+            """
+            if not self._require_loopback():
+                return
+            body = self._read_json_body()
+            if body is None:
+                return
+            extra = set(body) - note_writes.DECIDE_REQUEST_KEYS
+            if extra:
+                self._respond_json(
+                    {"ok": False, "error": f"unsupported fields: {sorted(extra)}"},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            try:
+                result = note_writes.stamp_decision(
+                    index,
+                    str(body.get("id") or ""),
+                    reviewer=str(body.get("reviewer") or ""),
+                    accept=bool(body.get("accept")),
+                    mtime=(float(body["mtime"]) if body.get("mtime") is not None else None),
+                )
+            except note_writes.WriteError as exc:
+                self._respond_json({"ok": False, "error": exc.message},
+                                   status=HTTPStatus(exc.status))
+                return
+            except (TypeError, ValueError) as exc:
+                self._respond_json({"ok": False, "error": str(exc)},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            self._respond_json({"ok": True, "result": result})
+
+        def _serve_test_run(self) -> None:
+            """``POST /api/notes/test-run`` — record a manual test run."""
+            if not self._require_loopback():
+                return
+            body = self._read_json_body()
+            if body is None:
+                return
+            extra = set(body) - note_writes.TEST_RUN_REQUEST_KEYS
+            if extra:
+                self._respond_json(
+                    {"ok": False,
+                     "error": f"unsupported fields: {sorted(extra)}"},
+                    status=HTTPStatus.BAD_REQUEST,
+                )
+                return
+            steps = body.get("steps")
+            try:
+                result = note_writes.stamp_test_run(
+                    index,
+                    str(body.get("id") or ""),
+                    outcome=str(body.get("outcome") or ""),
+                    steps=[s for s in steps if isinstance(s, dict)]
+                    if isinstance(steps, list) else [],
+                    runner=str(body.get("runner") or ""),
+                    mtime=(float(body["mtime"]) if body.get("mtime") is not None else None),
+                    aborted=bool(body.get("aborted")),
+                )
+            except note_writes.WriteError as exc:
+                self._respond_json({"ok": False, "error": exc.message},
+                                   status=HTTPStatus(exc.status))
+                return
+            except (TypeError, ValueError) as exc:
+                self._respond_json({"ok": False, "error": str(exc)},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            self._respond_json({"ok": True, "result": result})
+
         def _serve_dispatch_requests(self) -> None:
             """``GET /api/cockpit/dispatch-requests`` — hand queued CLI
             requests to the desktop shell exactly once (TASK-0136)."""
@@ -1099,6 +1538,416 @@ def _make_handler(
             self._respond_json({
                 "schema_version": cockpit.SCHEMA_VERSION,
                 "actions": load_actions(project_root),
+            })
+
+        def _serve_design_verdict(self) -> None:
+            """``POST /api/design/verdict`` — record a design review verdict.
+
+            **The revision is required.** A verdict given to v3 says nothing
+            about v6, and a surface that lost that distinction would let an
+            old approval launder a new design — the one way a design review is
+            worse than no review at all. So the caller must name the revision
+            it judged, and it must be one the artifact's history actually has.
+
+            The machine records; it never decides. `accept` comes from the
+            human, and an accepted design becomes `accepted`, not
+            `implemented` — the latter is what the code shipping means and only
+            the parity check can honestly claim it.
+            """
+            if not self._require_loopback():
+                return
+            body = self._read_json_body()
+            if body is None:
+                return
+            design_id = str(body.get("id", "") or "").strip()
+            verdict = str(body.get("verdict", "") or "").strip()
+            revision = str(body.get("revision", "") or "").strip()
+            reviewer = str(body.get("reviewer", "") or "").strip()
+            accept = body.get("accept")
+            if not (design_id and verdict and revision and reviewer):
+                self._respond_json(
+                    {"ok": False, "error": "id, verdict, revision and reviewer "
+                                           "are all required — a verdict with no "
+                                           "revision would launder a later design"},
+                    status=HTTPStatus.BAD_REQUEST)
+                return
+
+            known = {r["sha"] for r in cockpit.design_revisions_payload(
+                docs_root.parent, index, design_id)["revisions"]}
+            if revision not in known:
+                self._respond_json(
+                    {"ok": False,
+                     "error": "revision %r is not in this design's history; a "
+                              "verdict must name a revision that exists" % revision,
+                     "revisions": sorted(known)},
+                    status=HTTPStatus.BAD_REQUEST)
+                return
+            try:
+                result = note_writes.stamp_design_verdict(
+                    index, design_id, reviewer=reviewer, verdict=verdict,
+                    revision=revision,
+                    accept=None if accept is None else bool(accept),
+                    mtime=body.get("mtime"))
+            except note_writes.WriteError as exc:
+                self._respond_json({"ok": False, "error": str(exc)},
+                                   status=getattr(exc, "status", 409))
+                return
+            self._respond_json(result)
+
+        def _serve_design_offer_review(self) -> None:
+            """``POST /api/design/offer-review`` — put a design in front of a
+            human without changing its status (TASK-0229).
+
+            The desk had two entry paths and designs were wired to only one:
+            status intake at `proposed`. No design in this repo has ever been
+            `proposed` — DES-0001 was created at `implemented`, DES-0002 went
+            `draft` → `implemented` — so the review path TASK-0218 built had
+            never been entered by a real design, and the only way in was to
+            change a status to something untrue.
+
+            This is the ledger route FEAT/TASK sets already use (ADR-0007:
+            pending-ness is runtime state, not note state). No new status, no
+            frontmatter written here — the verdict still goes through
+            `note_writes` when a human reaches one.
+
+            **The current revision is recorded on the request.** A review is of
+            a revision, not of "the design": TASK-0218 already requires
+            `design_revision` on accept and validates it against real history.
+            Without the same on the request, a reviewer can accept something
+            other than what they were shown.
+            """
+            if not self._require_loopback():
+                return
+            body = self._read_json_body()
+            if body is None:
+                return
+            design_id = str(body.get("id", "") or "").strip().upper()
+            note = str(body.get("note", "") or "").strip()
+            if not design_id:
+                self._respond_json({"ok": False, "error": "id is required"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+
+            record = next((d for d in cockpit.designs_payload(index)["designs"]
+                           if d["id"].upper() == design_id), None)
+            if record is None:
+                self._respond_json({"ok": False, "error": "unknown design"},
+                                   status=HTTPStatus.NOT_FOUND)
+                return
+
+            # Idempotent: a human asked to look at one thing should see one
+            # row, however many times the button is pressed.
+            existing = review_store.open_for_subject(design_id)
+            if existing is not None:
+                self._respond_json({"ok": True, "already_open": True,
+                                    "request": existing})
+                return
+
+            revisions = cockpit.design_revisions_payload(
+                docs_root.parent, index, design_id)
+            head = ""
+            for rev in revisions.get("revisions") or []:
+                head = str(rev.get("sha") or "")
+                break
+
+            # Refused, not offered-without-one. A request with no revision
+            # produces a 200 indistinguishable from a good one, and every
+            # staleness field then silently disappears — which was DES-0002's
+            # own situation until its `asset` was filled in (ISS-0056).
+            # `/api/design/verdict` already refuses this case; so does this.
+            if not head:
+                self._respond_json(
+                    {"ok": False,
+                     "error": "%s has no committed revision to review — commit "
+                              "the artifact first, or a reviewer would be "
+                              "judging something with no name" % design_id},
+                    status=HTTPStatus.CONFLICT)
+                return
+
+            request = review_store.add(
+                "review",
+                items=[design_id],
+                subject=design_id,
+                at_revision=head,
+                title="Design review: %s" % (record.get("title") or design_id),
+                body=note,
+            )
+            # The surface renders the WORKING COPY, so a design offered dirty
+            # was reviewed against something `at_revision` does not name.
+            # Recorded at offer time because that is the moment it is true;
+            # `dirty` computed at open is a different question.
+            if revisions.get("dirty"):
+                request = dict(request)
+                request["dirty_at_offer"] = True
+                review_store.annotate(request["request_id"], dirty_at_offer=True)
+            self._respond_json({"ok": True, "request": request})
+
+        def _serve_design_comment(self) -> None:
+            """``POST /api/design/comment`` — one region-anchored comment.
+
+            Written as Markdown into the design note's ``## Review`` section,
+            never held as runtime state: REQ-0023's "readable without the tool"
+            clause exists because a link to a hosted artifact already showed
+            what the alternative costs.
+
+            The region must be one the **artifact** declares, or empty for the
+            document-level lane. Accepting an arbitrary string would let a
+            comment anchor to nothing and silently never render.
+            """
+            if not self._require_loopback():
+                return
+            body = self._read_json_body()
+            if body is None:
+                return
+            design_id = str(body.get("id", "") or "").strip()
+            region = str(body.get("region", "") or "").strip()
+            text = str(body.get("text", "") or "").strip()
+            author = str(body.get("author", "") or "").strip()
+            if not design_id or not text:
+                self._respond_json({"ok": False, "error": "id and text are required"},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+
+            payload = cockpit.design_comments_payload(docs_root, index, design_id)
+            if region and region not in payload["regions"]:
+                self._respond_json(
+                    {"ok": False,
+                     "error": "unknown region %r — a comment anchored to a region "
+                              "the artifact does not declare would never render"
+                              % region,
+                     "regions": payload["regions"]},
+                    status=HTTPStatus.BAD_REQUEST)
+                return
+
+            record = next((d for d in cockpit.designs_payload(index)["designs"]
+                           if d["id"] == design_id), None)
+            if record is None:
+                self._respond_json({"ok": False, "error": "unknown design"},
+                                   status=HTTPStatus.NOT_FOUND)
+                return
+            note_abs = (docs_root.resolve() / record["rel"]).resolve()
+            try:
+                note_abs.relative_to(docs_root.resolve())
+            except ValueError:
+                self._respond_forbidden("note outside docs root")
+                return
+            try:
+                fm_lines, body_md = note_writes._split_frontmatter(
+                    note_abs.read_text(encoding="utf-8"))
+                new_body = note_writes.append_design_comment(
+                    body_md, region=region, date=_dt.date.today().isoformat(),
+                    author=author, text=text)
+                note_abs.write_text(
+                    "---\n" + "\n".join(fm_lines) + "\n---\n" + new_body,
+                    encoding="utf-8")
+            except note_writes.WriteError as exc:
+                self._respond_json({"ok": False, "error": str(exc)},
+                                   status=HTTPStatus.CONFLICT)
+                return
+            except OSError as exc:
+                self._respond_json({"ok": False, "error": str(exc)},
+                                   status=HTTPStatus.INTERNAL_SERVER_ERROR)
+                return
+            self._respond_json({"ok": True, "id": design_id, "region": region})
+
+        def _serve_design_capture(self) -> None:
+            """``POST /api/design/capture`` — commit one artifact with a reason.
+
+            The gap this closes is the whole point of PHASE-009. TASK-0216
+            renders an artifact's git history; **nothing was depositing it**.
+            An agent iterating against the live surface edits the working copy
+            six times and commits once — which is exactly what happened to
+            DES-0001, the loss this phase exists to prevent. Every exit
+            criterion could have gone green while the next design session lost
+            five revisions again.
+
+            Three rules, each of which a naive version gets wrong:
+
+            * **One artifact per commit.** Committing the asset alongside other
+              files buries the reason in an unrelated message, and the message
+              is the only readable record — two regenerated HTML files diff as
+              a wall of noise.
+            * **A reason is required.** A capture without one produces history
+              that says a revision happened and not why, which is the state
+              this feature exists to escape.
+            * **The note's revision log is written in the same commit.** A log
+              that can drift from git is worse than no log.
+            """
+            if not self._require_loopback():
+                return
+            body = self._read_json_body()
+            if body is None:
+                return
+            design_id = str(body.get("id", "") or "").strip()
+            reason = str(body.get("reason", "") or "").strip()
+            if not design_id or not reason:
+                self._respond_json(
+                    {"ok": False, "error": "id and reason are both required; a "
+                                           "revision without a reason is the state "
+                                           "this exists to escape"},
+                    status=HTTPStatus.BAD_REQUEST)
+                return
+
+            record = next(
+                (d for d in cockpit.designs_payload(index)["designs"]
+                 if d["id"] == design_id), None)
+            if record is None or not record["asset"]:
+                self._respond_json({"ok": False, "error": "unknown design or no asset"},
+                                   status=HTTPStatus.NOT_FOUND)
+                return
+
+            root = docs_root.resolve()
+            asset_abs = (root / record["asset"]).resolve()
+            note_abs = (root / record["rel"]).resolve()
+            for target in (asset_abs, note_abs):
+                try:
+                    target.relative_to(root)
+                except ValueError:
+                    self._respond_forbidden("design path outside docs root")
+                    return
+            if not asset_abs.is_file():
+                self._respond_json({"ok": False, "error": "asset missing"},
+                                   status=HTTPStatus.NOT_FOUND)
+                return
+
+            repo = root.parent
+            try:
+                dirty = subprocess.run(
+                    ["git", "-C", str(repo), "status", "--porcelain", "--",
+                     str(asset_abs)],
+                    capture_output=True, text=True, timeout=10, check=True).stdout
+            except (subprocess.SubprocessError, OSError) as exc:
+                self._respond_json({"ok": False, "error": "git unavailable: %s" % exc},
+                                   status=HTTPStatus.SERVICE_UNAVAILABLE)
+                return
+            if not dirty.strip():
+                self._respond_json(
+                    {"ok": False, "error": "no change to capture — the artifact "
+                                           "matches its last committed revision"},
+                    status=HTTPStatus.CONFLICT)
+                return
+
+            today = _dt.date.today().isoformat()
+            try:
+                text = note_abs.read_text(encoding="utf-8")
+                fm_lines, body_md = note_writes._split_frontmatter(text)
+                new_body = note_writes.append_revision_log(
+                    body_md, date=today, reason=reason)
+                note_abs.write_text(
+                    "---\n" + "\n".join(fm_lines) + "\n---\n" + new_body,
+                    encoding="utf-8")
+                subprocess.run(
+                    ["git", "-C", str(repo), "add", "--", str(asset_abs), str(note_abs)],
+                    capture_output=True, text=True, timeout=10, check=True)
+                subprocess.run(
+                    ["git", "-C", str(repo), "commit", "-m",
+                     "design(%s): %s" % (design_id, reason)],
+                    capture_output=True, text=True, timeout=20, check=True)
+                sha = subprocess.run(
+                    ["git", "-C", str(repo), "rev-parse", "HEAD"],
+                    capture_output=True, text=True, timeout=10, check=True).stdout.strip()
+            except (subprocess.SubprocessError, OSError) as exc:
+                self._respond_json({"ok": False, "error": "capture failed: %s" % exc},
+                                   status=HTTPStatus.INTERNAL_SERVER_ERROR)
+                return
+
+            self._respond_json({"ok": True, "id": design_id, "sha": sha[:7],
+                                "date": today, "reason": reason})
+
+        def _serve_cockpit_designs(self) -> None:
+            """``GET /api/cockpit/designs`` — the design register
+            (FEAT-0042 / TASK-0214). Membership by `type: "[[design]]"`,
+            never by path."""
+            self._respond_json(cockpit.designs_payload(index))
+
+        def _serve_design_revisions(self, design_id: str) -> None:
+            """``GET /api/cockpit/design-revisions/<DES-id>`` (TASK-0216)."""
+            self._respond_json(cockpit.design_revisions_payload(
+                docs_root.parent, index, urllib.parse.unquote(design_id)))
+
+        def _serve_design_asset_at(self, rest: str) -> None:
+            """``GET /design-asset-at/<DES-id>/<sha>`` — the artifact as it was.
+
+            Same register gating as the live asset route: only a design the
+            register knows, and only its own asset. `git show` rather than a
+            checkout, so reading history never touches the working copy.
+            """
+            parts = urllib.parse.unquote(rest).strip("/").split("/")
+            if len(parts) != 2:
+                self._respond_not_found(rest)
+                return
+            design_id, sha = parts
+            body = cockpit.design_asset_at(
+                docs_root.parent, index, design_id, sha)
+            if body is None:
+                self._respond_not_found(rest)
+                return
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def _serve_design_asset(self, rel: str) -> None:
+            """``GET /design-asset/<rel>`` — a design artifact, read-only.
+
+            Deliberately separate from ``/api/render``: that endpoint renders
+            Markdown to the cockpit's own HTML, while this serves an artifact
+            *verbatim* for framing. Two rules, both load-bearing:
+
+            * The path must resolve inside ``docs/`` and must be claimed by a
+              design note's ``asset:``. Serving any file under docs/ by path
+              would turn a render surface into a file browser.
+            * Response carries no cookies and the endpoint is GET-only, so a
+              script inside a framed artifact gains nothing by calling it.
+            """
+            rel = urllib.parse.unquote(rel).lstrip("/")
+            claimed = {
+                d["asset"] for d in cockpit.designs_payload(index)["designs"]
+                if d["asset"]
+            }
+            if rel not in claimed:
+                self._respond_not_found(rel)
+                return
+            root = docs_root.resolve()
+            target = (root / rel).resolve()
+            try:
+                target.relative_to(root)
+            except ValueError:
+                self._respond_forbidden("design asset outside docs root")
+                return
+            if not target.is_file():
+                self._respond_not_found(rel)
+                return
+            ctype, _ = mimetypes.guess_type(str(target))
+            # `guess_type` returns "text/html" with no charset, so a document
+            # without its own <meta charset> was decoded as latin-1 and
+            # rendered mojibake — while `_serve_design_asset_at` hard-codes
+            # utf-8, so the SAME bytes rendered correctly from history and
+            # incorrectly live. Revision-compare was comparing two encodings
+            # (ISS-0050). Text is utf-8 here; binary assets are untouched.
+            if ctype and ctype.startswith("text/"):
+                ctype = ctype + "; charset=utf-8"
+            body = target.read_bytes()
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", ctype or "application/octet-stream")
+            self.send_header("Content-Length", str(len(body)))
+            # An artifact is authored content. Deny it a same-origin foothold.
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(body)
+
+        def _serve_cockpit_agents(self) -> None:
+            """``GET /api/cockpit/agents`` — the dispatchable-agent registry
+            (ISS-0032). Served rather than restated: before this, the set
+            ``claude | codex`` lived in nine places and a third agent's
+            queued work was discarded on restart."""
+            self._respond_json({
+                "schema_version": cockpit.SCHEMA_VERSION,
+                **agents.agents_payload(),
             })
 
         def _serve_cockpit_sessions(self) -> None:
@@ -1193,7 +2042,13 @@ def _make_handler(
                 )
                 return
             rel_path = raw_path.strip().lstrip("/")
-            if rel_path.startswith("docs/"):
+            # Whether the caller SAID `docs/` is information, and the first
+            # version of the root-file branch below threw it away before
+            # testing the allowlist — so `docs/README.md`, an explicit and
+            # unambiguous request for a real note, was answered with the
+            # project-root README. Keep the disambiguator.
+            explicit_docs = rel_path.startswith("docs/")
+            if explicit_docs:
                 rel_path = rel_path[len("docs/"):]
             if not rel_path or any(part == ".." for part in rel_path.split("/")):
                 self._respond_json(
@@ -1201,13 +2056,36 @@ def _make_handler(
                     status=HTTPStatus.FORBIDDEN,
                 )
                 return
+            # An allowlisted top-level project file (README, ROADMAP,
+            # SECURITY, LLM_BRIEF) lives one level ABOVE docs_root, so the
+            # docs resolution alone rejects it as escaping the root. The
+            # Library has emitted `/<file>` urls for these since FEAT-0010
+            # and this endpoint never served them — clicking one was a dead
+            # click, and ISS-0033 is the identity band walking into the same
+            # hole.
+            #
+            # **docs_root wins, and it is tried first.** The first version of
+            # this tried the root allowlist first and shadowed the repo's own
+            # `docs/README.md` (ISS-0036). Ordering it this way means the root
+            # file is reachable only when docs has no file by that name, which
+            # is the true state of affairs for `LLM_BRIEF.md` and is what makes
+            # the branch safe rather than merely narrow.
             target = (docs_root / rel_path).resolve()
-            if not _is_under(target, docs_root):
-                self._respond_json(
-                    {"ok": False, "error": "resolved path escapes docs root"},
-                    status=HTTPStatus.FORBIDDEN,
-                )
-                return
+            if not (_is_under(target, docs_root) and target.is_file()):
+                root_file = None
+                if (project_root is not None and not explicit_docs
+                        and rel_path in cockpit.PROJECT_SUPPORT_ROOT_FILES):
+                    candidate = (project_root / rel_path).resolve()
+                    if _is_under(candidate, project_root) and candidate.is_file():
+                        root_file = candidate
+                if root_file is not None:
+                    target = root_file
+                elif not _is_under(target, docs_root):
+                    self._respond_json(
+                        {"ok": False, "error": "resolved path escapes docs root"},
+                        status=HTTPStatus.FORBIDDEN,
+                    )
+                    return
             if not target.is_file() or target.suffix.lower() != ".md":
                 self._respond_json(
                     {"ok": False, "error": f"not a markdown file: {rel_path}"},
@@ -1516,6 +2394,109 @@ def _make_handler(
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(data)))
             self.send_header("Cache-Control", "no-cache")
+            _send_stylesheet_cors(self, target.name)
+            self.end_headers()
+            self.wfile.write(data)
+
+        def _serve_project_stylesheet(self, rel: str) -> None:
+            """A stylesheet a design note declares, served from the project root.
+
+            Every downstream project's CSS lives ABOVE the docs root —
+            `public/css/style.css`, `obsidian-plugin/styles.css` — so a design
+            artifact could not read its own project's tokens and a downstream
+            design system could only ever be a hand-typed table. That table is
+            what DES-0002 stopped claiming was checked.
+
+            **The allow-list is the corpus.** `project_stylesheet_allowlist`
+            gathers `stylesheets:` from every design note, so widening it means
+            declaring a path in a note that a human reviews — not editing a
+            constant here, which would drift from the notes it describes, and
+            not sharing a directory, which would publish the project.
+
+            Read-only and CSS-only. The render server binds 0.0.0.0; these are
+            stylesheets the app already serves to anyone who loads it. The
+            narrowing is what stops this becoming a general file read.
+            """
+            # A fast path, not the guard. Containment below refuses the same
+            # inputs — mutating this check out leaves every test green because
+            # `relative_to` catches them anyway. Kept because it makes the
+            # refusal reason accurate, and said plainly because a check that
+            # cannot fire, under a comment implying it protects something, is
+            # the defect this codebase keeps finding (ISS-0024, ISS-0056).
+            if not rel or ".." in rel.split("/"):
+                self._respond_forbidden("project path traversal blocked")
+                return
+            if not rel.lower().endswith(".css"):
+                self._respond_not_found(self.path)
+                return
+            if rel not in cockpit.project_stylesheet_allowlist(index):
+                # Undeclared. Not "missing" — a real stylesheet elsewhere in
+                # the project reaches exactly this branch.
+                self._respond_not_found(self.path)
+                return
+            target = (project_root / rel).resolve()
+            try:
+                target.relative_to(project_root)
+            except ValueError:
+                # Catches a declared path that symlinks out of the tree; the
+                # allow-list check above cannot see through a link.
+                self._respond_forbidden("project path escapes project root")
+                return
+            if not target.is_file():
+                self._respond_not_found(self.path)
+                return
+            data = target.read_bytes()
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", "text/css; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-cache")
+            # A design frame is sandboxed with an OPAQUE origin, so it cannot
+            # read `cssRules` from a linked sheet and must fetch the text and
+            # re-inject it (ISS-0043). Without this header that fetch fails.
+            _send_stylesheet_cors(self, target.name)
+            self.end_headers()
+            self.wfile.write(data)
+
+        def _serve_shell_asset(self, rel: str) -> None:
+            """A file from the desktop shell's built renderer directory.
+
+            Absent in mode-1 (no Electron build), so a 404 here is a normal
+            state rather than a fault — and a page that depends on it must
+            say so rather than render unstyled markup that reads as a design
+            regression.
+
+            The guards are `_serve_static`'s, deliberately reused rather than
+            re-derived: this route must not become the one place traversal
+            checking was rewritten slightly differently.
+            """
+            if shell_assets is None:
+                self._respond_not_found(self.path)
+                return
+            if not rel or ".." in rel.split("/"):
+                self._respond_forbidden("shell path traversal blocked")
+                return
+            # An allow-list, not a directory share. The design surface needs
+            # the stylesheet; nothing about this route is a reason to expose
+            # the bundle, the source maps, or anything else the build emits.
+            if rel not in SHELL_ASSET_FILES:
+                self._respond_not_found(self.path)
+                return
+            target = (shell_assets / rel).resolve()
+            try:
+                target.relative_to(shell_assets)
+            except ValueError:
+                self._respond_forbidden("shell path escapes assets dir")
+                return
+            if not target.is_file():
+                self._respond_not_found(self.path)
+                return
+            data = target.read_bytes()
+            ctype, _ = mimetypes.guess_type(target.name)
+            self.send_response(HTTPStatus.OK)
+            self.send_header("Content-Type", ctype or "application/octet-stream")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-cache")
+            _send_stylesheet_cors(self, target.name)
             self.end_headers()
             self.wfile.write(data)
 
@@ -1740,6 +2721,29 @@ def _make_handler(
             log.info("%s - %s", self.address_string(), format % args)
 
     return Handler
+
+
+def _send_stylesheet_cors(handler: BaseHTTPRequestHandler, filename: str) -> None:
+    """Allow a stylesheet to be fetched from an opaque origin (ISS-0043).
+
+    The design frame is sandboxed ``allow-scripts`` and deliberately NOT
+    ``allow-same-origin`` — granting both would let the frame remove its own
+    sandbox. The cost is that the frame has an *opaque* origin, so every
+    stylesheet it loads from this very server is a cross-origin read: the CSSOM
+    refuses ``cssRules``, and an artifact that enumerates design tokens sees
+    nothing at all.
+
+    Letting the artifact fetch the stylesheet TEXT and inject it as an inline
+    sheet restores enumeration without weakening the sandbox — inline sheets
+    belong to the frame's own document and carry no origin question.
+
+    **CSS only.** These are the application's own stylesheets, already public to
+    anyone who can reach the render port; nothing here reads user data. The
+    narrowing to ``.css`` is so this does not quietly become blanket CORS on
+    every static file the package ships.
+    """
+    if filename.lower().endswith(".css"):
+        handler.send_header("Access-Control-Allow-Origin", "*")
 
 
 def _is_under(candidate: Path, root: Path) -> bool:
@@ -1989,6 +2993,34 @@ def _feature_count_by_phase(idx) -> dict[str, int]:
         if m:
             counts[m.group(0)] = counts.get(m.group(0), 0) + 1
     return counts
+
+
+#: Peer addresses treated as Mac-local for the desk's mutation endpoints.
+#: Named so a test can assert the set rather than parse the predicate.
+_LOOPBACK_HOSTS: frozenset[str] = frozenset({
+    "127.0.0.1", "::1", "::ffff:127.0.0.1",
+})
+
+
+def _git_head(project_root: Path) -> str:
+    """Current HEAD sha, read from the filesystem (no subprocess).
+
+    Used only as a cache key for ``/api/cockpit/commits``; an unreadable or
+    non-git workspace returns "" and simply caches on index generation.
+    """
+    git_dir = project_root / ".git"
+    try:
+        if git_dir.is_file():  # worktree: ".git" is a pointer file
+            pointer = git_dir.read_text(encoding="utf-8").strip()
+            if pointer.startswith("gitdir:"):
+                git_dir = Path(pointer[len("gitdir:"):].strip())
+        head = (git_dir / "HEAD").read_text(encoding="utf-8").strip()
+        if head.startswith("ref:"):
+            ref = head[len("ref:"):].strip()
+            return (git_dir / ref).read_text(encoding="utf-8").strip()
+        return head
+    except OSError:
+        return ""
 
 
 def _read_snapshot(docs_root: Path) -> dict | None:

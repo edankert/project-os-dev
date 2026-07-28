@@ -18,6 +18,8 @@ from typing import Sequence
 from . import __version__
 from .server import DocsServer
 
+log = logging.getLogger(__name__)
+
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -53,6 +55,16 @@ def _build_parser() -> argparse.ArgumentParser:
         "desktop shell, which loads the server URL itself. Currently a "
         "no-op (the server does not auto-launch a browser) but reserved "
         "for forward compatibility.",
+    )
+    parser.add_argument(
+        "--shell-assets",
+        type=Path,
+        default=None,
+        help="Directory holding the desktop shell's built renderer assets "
+        "(desktop/dist/renderer). Passed by the Electron shell so design "
+        "artifacts can link the stylesheet that styles the app's own "
+        "widgets. Omitted when running standalone, where the route simply "
+        "404s.",
     )
     parser.add_argument(
         "-v",
@@ -94,10 +106,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     if not docs_root.is_dir():
         parser.error(f"docs root is not a directory: {docs_root}")
 
+    shell_assets = args.shell_assets
+    if shell_assets is not None and not shell_assets.is_dir():
+        # A bad path is worth saying out loud rather than silently 404ing
+        # every asset later — but not worth refusing to start over, since
+        # the capability is optional.
+        log.warning("shell assets dir does not exist, ignoring: %s", shell_assets)
+        shell_assets = None
+
     server = DocsServer(
         docs_root=docs_root,
         bind=args.bind,
         port=args.port,
+        shell_assets=shell_assets,
     )
     server.run()
     return 0

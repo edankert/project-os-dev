@@ -670,6 +670,9 @@ _LINK_BEARING_FRONTMATTER_FIELDS: frozenset[str] = frozenset({
     "causes", "cause", "mitigates", "mitigated_by",
     # citations / sources
     "references", "source", "sources", "reverts",
+    # design input — dossiers, mockups, research wrapped as reference
+    # notes and linked from the feature/phase they shaped (TASK-0212).
+    "design",
 })
 
 

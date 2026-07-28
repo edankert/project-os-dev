@@ -1262,13 +1262,13 @@ details:not([open]) > summary .group-chevron {
 .group-icon[data-status="active"],
 .group-icon[data-status="approved"],
 .group-icon[data-status="accepted"],
-.group-icon[data-status="ready"],
 .group-icon[data-status="doing"],
 .group-icon[data-status="in-progress"],
-.group-icon[data-status="in-review"],
+.group-icon[data-status="review"],
 .group-icon[data-status="next"],
 .group-icon[data-status="mitigating"] { color: var(--status-active); }
 
+.group-icon[data-status="ready"],
 .group-icon[data-status="planned"],
 .group-icon[data-status="backlog"],
 .group-icon[data-status="todo"],
@@ -1278,8 +1278,6 @@ details:not([open]) > summary .group-chevron {
 .group-icon[data-status="proposed"],
 .group-icon[data-status="triage"]     { color: var(--status-pending); }
 
-.group-icon[data-status="staged"],
-.group-icon[data-status="monitoring"] { color: var(--status-delivered); }
 
 .group-icon[data-status="done"],
 .group-icon[data-status="merged"],
@@ -1303,7 +1301,7 @@ details:not([open]) > summary .group-chevron {
 .group-icon[data-status="retired"],
 .group-icon[data-status="cancelled"],
 .group-icon[data-status="superseded"],
-.group-icon[data-status="wont-fix"],
+.group-icon[data-status="declined"],
 .group-icon[data-status="reverted"],
 .group-icon[data-status="rolled-back"],
 .group-icon[data-status="deprecated"] { color: var(--status-archived); }

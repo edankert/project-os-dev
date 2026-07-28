@@ -19,6 +19,8 @@ Subcommands are intentionally minimal in v1 (``focus`` only); ``pin``,
 from __future__ import annotations
 
 import argparse
+
+from . import agents
 import json
 import os
 import sys
@@ -379,7 +381,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     p_dispatch.add_argument("id", help="note ID, e.g. TASK-0115")
     p_dispatch.add_argument("--verb", help="registry verb key (default: the type's default verb)")
-    p_dispatch.add_argument("--agent", choices=["claude", "codex"], help="agent preference")
+    # Choices come from the registry (ISS-0032), not a second hardcoded list.
+    p_dispatch.add_argument("--agent", choices=list(agents.AGENT_IDS),
+                            help="agent preference")
     p_dispatch.set_defaults(func=cmd_dispatch)
 
     args = parser.parse_args(argv)

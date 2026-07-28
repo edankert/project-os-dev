@@ -60,7 +60,7 @@
     closed: 1,
     // Done — negative (terminal without success)
     obsolete: 1, retired: 1, cancelled: 1, superseded: 1,
-    "wont-fix": 1, reverted: 1, "rolled-back": 1, deprecated: 1,
+    "declined": 1, reverted: 1, deprecated: 1,
   };
 
   // ------------------------------------------------------------------ state

@@ -101,8 +101,22 @@ DEFAULT_ACTIONS: dict[str, list[dict[str, Any]]] = {
     ],
     "feature": [
         {
+            # Review desk (FEAT-0041 / TASK-0208): ask a human to look at
+            # the plan before it is built. The reply comes back through
+            # the same dispatch queue as any other verb, so the desk adds
+            # a destination rather than a mechanism.
+            "key": "request-review", "label": "Request review",
+            "when": ["backlog", "planned"],
+            "prompt": (
+                "File a review request for {id} and its planning artifacts: "
+                "POST the set to /api/cockpit/review-request with "
+                "kind=review so it lands in the ~review queue, then stop "
+                "and wait for the verdict. Do not start implementation."
+            ),
+        },
+        {
             "key": "break-down", "label": "Break down", "default": True,
-            "when": ["backlog", "planned", "in-progress"],
+            "when": ["backlog", "planned"],
             "prompt": (
                 "Break down {id} into tasks per "
                 "tools/skills/task-breakdown/SKILL.md. Read docs/{rel} "
@@ -112,7 +126,7 @@ DEFAULT_ACTIONS: dict[str, list[dict[str, Any]]] = {
         },
         {
             "key": "implement-next", "label": "Implement next task",
-            "when": ["planned", "in-progress", "in-review"],
+            "when": ["planned", "review"],
             "prompt": (
                 "Advance {id}: read docs/{rel}, pick the highest-priority "
                 f"open task under it, and {_LIFECYCLE}."
@@ -120,7 +134,7 @@ DEFAULT_ACTIONS: dict[str, list[dict[str, Any]]] = {
         },
         {
             "key": "refine", "label": "Refine scope",
-            "when": ["backlog", "planned", "in-progress"],
+            "when": ["backlog", "planned"],
             "prompt": (
                 "Refine the scope of {id} in docs/{rel}: sharpen the "
                 "goal, scope boundaries, and acceptance criteria. Do not "
@@ -129,7 +143,7 @@ DEFAULT_ACTIONS: dict[str, list[dict[str, Any]]] = {
         },
         {
             "key": "close-out", "label": "Close out",
-            "when": ["in-progress", "in-review"],
+            "when": ["review"],
             "prompt": (
                 "Close out {id} per tools/skills/close-out/SKILL.md: "
                 "check every task and linked test of docs/{rel}, then "
@@ -139,7 +153,39 @@ DEFAULT_ACTIONS: dict[str, list[dict[str, Any]]] = {
     ],
     "requirement": [
         {
-            "key": "implement", "label": "Implement", "default": True,
+            # The 120-REQ-BOXES workflow. Default at `implemented` because a
+            # terminal requirement with unresolved criteria is the single most
+            # common actionable state in the fleet (ISS-0028).
+            "key": "reconcile", "label": "Reconcile criteria", "default": True,
+            "when": ["implemented", "approved"],
+            "prompt": (
+                "Reconcile the acceptance criteria of {id}: read docs/{rel} "
+                "and walk them one by one against the shipped system. Tick "
+                "each satisfied criterion with an evidence pointer (repo "
+                "path, path:line, command, or note ID). Where the delivered "
+                "work deliberately departed from a criterion, amend, narrow "
+                "or supersede it with recorded rationale in an "
+                "'## Amendments' section — never tick it to fit "
+                "(tools/skills/close-out/SKILL.md, 'Requirement "
+                "advancement'; ADR-0006). Do not change the requirement's "
+                "status as a way of clearing the criteria."
+            ),
+        },
+        {
+            # Parity with `feature`: without this a requirement can never reach
+            # the review desk the left pane's `review` mode renders.
+            "key": "request-review", "label": "Request review",
+            "when": ["draft", "approved", "implemented"],
+            "prompt": (
+                "File a review request for {id} and its acceptance criteria: "
+                "POST the set to /api/cockpit/review-request with kind=review "
+                "so it lands in the ~review queue, then stop and wait for the "
+                "verdict. Do not implement or change any status."
+            ),
+        },
+        {
+            "key": "implement", "label": "Implement",
+            "when": ["draft", "approved"],
             "prompt": (
                 "Implement {id}: read docs/{rel} — the acceptance "
                 f"criteria are the contract — and {_LIFECYCLE}."
@@ -147,6 +193,7 @@ DEFAULT_ACTIONS: dict[str, list[dict[str, Any]]] = {
         },
         {
             "key": "refine", "label": "Refine acceptance",
+            "when": ["draft", "approved"],
             "prompt": (
                 "Refine {id}: read docs/{rel} and sharpen its acceptance "
                 "criteria until they are individually testable. Run "
@@ -155,11 +202,20 @@ DEFAULT_ACTIONS: dict[str, list[dict[str, Any]]] = {
             ),
         },
         {
-            "key": "verify", "label": "Verify",
+            # Rewritten for ADR-0007: requirements are gated on their criteria,
+            # NEVER on linked tests. The previous prompt told the agent to run
+            # TST notes and set the status from them, which is the requirement-
+            # level test gate that ADR retired and the validator exempts.
+            "key": "verify", "label": "Check against reality",
+            "when": ["implemented"],
             "prompt": (
-                "Verify {id}: read docs/{rel}, ensure TST notes exist "
-                "covering each acceptance criterion, run them, and "
-                "update the requirement's status accordingly."
+                "Check {id} against the shipped system: read docs/{rel} and "
+                "confirm each ticked acceptance criterion is still true and "
+                "its evidence pointer still resolves. Report any criterion "
+                "that has silently stopped holding. Requirements are gated on "
+                "criteria alone, never on linked test status (ADR-0007) — a "
+                "linked TST note is evidence for a criterion, not a gate on "
+                "the requirement. Do not change status; report."
             ),
         },
     ],

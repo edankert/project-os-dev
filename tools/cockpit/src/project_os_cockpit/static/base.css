@@ -24,7 +24,6 @@
      canonical in src/project_os_cockpit/statuses.py. */
   --status-active:    hsl(140 32% 38%);   /* active / approved / accepted / ready / doing / in-progress / in-review / next / mitigating */
   --status-pending:   hsl(220 14% 48%);   /* planned / backlog / todo / open / pending / draft / proposed / triage */
-  --status-delivered: hsl(42 46% 34%);    /* shipped, not signed off: staged / monitoring */
   --status-done:      hsl(160 28% 38%);   /* done positive: done / merged / fixed / resolved / fulfilled / met / complete / verified / passing / published / released / closed */
   --status-archived:  hsl(0 0% 48%);      /* done negative: obsolete / retired / cancelled / superseded / wont-fix / reverted / rolled-back / deprecated */
   --status-blocked:   hsl(5 48% 46%);     /* blocked / failing / reopened */
@@ -70,7 +69,6 @@
 
   --status-active:    hsl(140 32% 60%);
   --status-pending:   hsl(220 14% 65%);
-  --status-delivered: hsl(42 46% 60%);
   --status-done:      hsl(160 28% 60%);
   --status-archived:  hsl(0 0% 58%);
   --status-blocked:   hsl(5 50% 65%);
@@ -352,15 +350,17 @@ details.metadata-strip > summary:hover {
   vertical-align: middle;
   color: var(--status-default);
   text-transform: lowercase;
+  /* A status is one token: `in-review` must never wrap to `in-` / `review`. */
+  white-space: nowrap;
 }
 /* Active bucket */
 .status-chip[data-status="active"]      { color: var(--status-active); }
 .status-chip[data-status="approved"]    { color: var(--status-active); }
 .status-chip[data-status="accepted"]    { color: var(--status-active); }
-.status-chip[data-status="ready"]       { color: var(--status-active); }
+.status-chip[data-status="ready"]       { color: var(--status-pending); }
 .status-chip[data-status="doing"]       { color: var(--status-active); }
 .status-chip[data-status="in-progress"] { color: var(--status-active); }
-.status-chip[data-status="in-review"]   { color: var(--status-active); }
+.status-chip[data-status="review"]   { color: var(--status-active); }
 .status-chip[data-status="next"]        { color: var(--status-active); }
 .status-chip[data-status="mitigating"]  { color: var(--status-active); }
 /* Pending bucket */
@@ -372,10 +372,8 @@ details.metadata-strip > summary:hover {
 .status-chip[data-status="draft"]       { color: var(--status-pending); }
 .status-chip[data-status="proposed"]    { color: var(--status-pending); }
 .status-chip[data-status="triage"]      { color: var(--status-pending); }
-/* Delivered — shipped, not yet signed off (non-terminal, ISS-0023) */
-.status-chip[data-status="staged"]      { color: var(--status-delivered); }
-.status-chip[data-status="monitoring"]  { color: var(--status-delivered); }
-/* Done — positive */
+/* Done — positive. (The Delivered band that briefly sat here was
+   retired by ADR-0006 once ADR-0008 deleted its last two members.) */
 .status-chip[data-status="done"]        { color: var(--status-done); }
 .status-chip[data-status="merged"]      { color: var(--status-done); }
 .status-chip[data-status="fixed"]       { color: var(--status-done); }
@@ -394,7 +392,7 @@ details.metadata-strip > summary:hover {
 .status-chip[data-status="retired"]     { color: var(--status-archived); }
 .status-chip[data-status="cancelled"]   { color: var(--status-archived); }
 .status-chip[data-status="superseded"]  { color: var(--status-archived); }
-.status-chip[data-status="wont-fix"]    { color: var(--status-archived); }
+.status-chip[data-status="declined"]    { color: var(--status-archived); }
 .status-chip[data-status="reverted"]    { color: var(--status-archived); }
 .status-chip[data-status="rolled-back"] { color: var(--status-archived); }
 .status-chip[data-status="deprecated"]  { color: var(--status-archived); }
