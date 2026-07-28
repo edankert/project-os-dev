@@ -26,6 +26,18 @@ This documentation system is designed to be maintained by an LLM across the full
 ## Statuses
 - Allowed statuses and transitions are defined in `STATUSES.md`.
 
+## The inbox — external material, before it is documentation
+
+`inbox/` at the repo root is **staging**: a place to drop a screenshot, an export, a page of notes, anything that has arrived but has not been decided about. It is **gitignored**, because an item is either filed — at which point the *filed* artefact is what gets committed — or discarded.
+
+Its success condition is **being empty**. Anything sitting there is an unmade decision, not an archive.
+
+- Triage it with `../skills/inbox-triage/SKILL.md`: read every item, decide, act, **remove it**.
+- A non-empty inbox is itself the trigger; no one has to ask.
+- An item is **not a record**. It is unreviewed external material until you decide otherwise, and a fresh clone sees an empty inbox.
+
+Deliberately *not* under `docs/`: that directory is the curated record, walked by the validator and read as the truth. Untriaged material does not belong in it.
+
 ## Preflight (must happen before code changes)
 When a prompt implies work (bugfix, feature, refactor, behavior change):
 1. **Classify** the prompt as one (or more) of: issue, feature, requirement, risk, chore/docs-only. Run the spec-ambiguity check from `../skills/issue-intake/SKILL.md` (step 1) before allocating IDs — ambiguity is upstream of documentation and cannot be fixed by tracking.

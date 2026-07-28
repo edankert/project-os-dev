@@ -40,6 +40,7 @@ These files contain detailed rules. Read them when performing the related operat
 - Independent review: tools/skills/independent-review/SKILL.md
 - Docs audit: tools/skills/docs-audit/SKILL.md
 - Ad-hoc intake: tools/skills/ad-hoc-intake/SKILL.md
+- Inbox triage: tools/skills/inbox-triage/SKILL.md
 - Workflow authoring: tools/skills/workflow-authoring/SKILL.md
 - Backlog grooming: tools/skills/backlog-grooming/SKILL.md
 - Risk mitigation: tools/skills/risk-mitigation-planning/SKILL.md

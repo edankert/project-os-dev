@@ -1,3 +1,9 @@
 
 # Cockpit runtime state (sidecar port/url) — regenerated per launch
 .cockpit/
+
+# Project inbox — external material staged for triage (LIFECYCLE.md).
+# Gitignored because an item is either filed (and the FILED artefact is what
+# gets committed) or discarded. Committing staging would preserve exactly the
+# thing triage exists to resolve.
+inbox/
