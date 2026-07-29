@@ -25,11 +25,11 @@ docs_system:
     - docs/PHASES.md
 
 counters:
-  ADR: 15
+  ADR: 17
   CHG:
     last_date: 20260726
   FEAT: 20
-  ISS: 16
+  ISS: 21
   PHASE: 2
   REL: 0
   REQ: 24
@@ -43,7 +43,7 @@ focus:
   feature: "FEAT-0019"
   phase: "PHASE-999"
   issue: ""
-  note: "2026-07-27 adding the DES-* design note type upstream before the cockpit builds on it — FEAT-0042 was scoped on the reference convention to avoid this, so doing it after would mean migrating twice. Zero new status values."
+  note: "2026-07-29 nothing in flight; two intakes filed, nothing planned. Comparable-systems review -> ISS-0017, ISS-0018, ADR-0016. Quality-without-reading intake -> ADR-0017, ISS-0019, ISS-0020, ISS-0021 (four findings recorded as non-goals in ADR-0017). Highest-value item is ISS-0019: VERIFY never checked the empty case, 52 registered items closed terminal with neither test nor waiver. Two ADRs await a decision — ADR-0016 (fast path) and ADR-0017 (derivation principle); ADR-0017 classifies ISS-0017 and ISS-0019, so accepting it first makes the rest cheaper to triage. ISS-0021 depends on ISS-0019 landing."
 
 items:
   phases:
@@ -547,6 +547,43 @@ items:
       external: "../project-os-cockpit/docs/issues/ISS-0026-Bundled-Validator-Drift.md"
 
   issues:
+    ISS-0021:
+      file: "docs/issues/ISS-0021-Verification-Waivers-Have-No-Budget.md"
+      title: "Verification waivers expire individually but nothing bounds how many are outstanding; all 15 in this repo expire 2026-10-23"
+      status: open
+      severity: low
+      phase: "[[PHASE-999]]"
+      note: "Intake finding 8, narrowed — the expiry half was stale (waiver_expires errors since TASK-0068). Blocked behind ISS-0019 by sequencing: capping the visible exit while the silent one is open is a regression."
+      depends: [ISS-0019]
+    ISS-0020:
+      file: "docs/issues/ISS-0020-Nothing-Requires-A-Test-To-Be-Executable.md"
+      title: "Nothing requires a TST-* to carry a command:, and no metric distinguishes executable from manual tests"
+      status: open
+      severity: medium
+      phase: "[[PHASE-999]]"
+      note: "Intake finding 2, scoped to the derived metric only. Requiring command: is deliberately out of scope — ADR-0010 rejected fake automation and ADR-0017 clause 2 says label the unexecutable, don't outlaw it."
+    ISS-0019:
+      file: "docs/issues/ISS-0019-Verify-Is-Blind-To-Tests-That-Were-Never-Linked.md"
+      title: "VERIFY iterates only over tests that exist, so terminal items with zero linked tests and no waiver pass silently — 52 registered items in this repo"
+      status: open
+      severity: high
+      phase: "[[PHASE-999]]"
+      note: "Intake finding 7, upgraded from conceptual to mechanical on verification. Contradicts QUALITY.md's 'silent skips are a build failure'; REQ-0006's wording sanctions the bug. Needs the 52-item backfill before any cutover (ISS-0007 precedent)."
+      blocks: [ISS-0021]
+    ISS-0018:
+      file: "docs/issues/ISS-0018-Traceability-Stops-At-The-Docs-Boundary.md"
+      title: "The link graph stops at the docs boundary: no requirement names the code that implements it, so `implemented` is asserted rather than covered"
+      status: open
+      severity: medium
+      phase: "[[PHASE-999]]"
+      note: "Filed from the 2026-07-29 comparable-systems review. Prior art is OpenFastTrace/StrictDoc. Filed because the hole is structural, not because the fix is obviously correct — coverage tags tax source files and policy requirements have no implementing code."
+    ISS-0017:
+      file: "docs/issues/ISS-0017-Review-Verdicts-Never-Expire.md"
+      title: "A review verdict never expires: reviewed_by/review_date survive any later edit to the note they approved"
+      status: open
+      severity: medium
+      phase: "[[PHASE-999]]"
+      note: "Filed from the 2026-07-29 comparable-systems review. Doorstop's item fingerprints and suspect links. Probably the review-surface case of ADR-0014's revision rather than a separate mechanism."
     ISS-0016:
       file: "docs/issues/ISS-0016-Registry-Keyed-On-Identity-And-Unchecked-Metric-Prefixes.md"
       title: "Completeness registry keyed on id() (defeated by CPython constant dedup); total metrics skipped their prefix check"
@@ -917,6 +954,20 @@ items:
       status: merged
 
   decisions:
+    ADR-0017:
+      file: docs/decisions/ADR-0017-Claims-About-Working-Software-Are-Derived.md
+      title: "A claim about whether the software works is derived from execution where possible, labelled and dated where not, and never written by the party seeking the transition it gates"
+      status: accepted
+      owner: user:edwin
+      decision: "State as one rule what ADR-0009, ADR-0010 and ADR-0014 each implement for one field. Three clauses; clause 3 is the invariant. Bounded to the running-system layer, with gate manifests, observability, pre-commitment reversibility and code contracts recorded as deliberate non-goals"
+      related: [ADR-0009, ADR-0010, ADR-0014, ADR-0016, ISS-0017]
+    ADR-0016:
+      file: docs/decisions/ADR-0016-Ceremony-Proportionate-To-The-Change.md
+      title: "Ceremony is proportionate to the change: a declared fast path, or the rule that every change is documented stops being followed"
+      status: proposed
+      owner: user:edwin
+      decision: "Two paths through the lifecycle, selected by blast radius rather than effort. Small changes get an ISS-*, the fix and the validator; contract/path/fleet/requirement changes keep the full path. The selector is written down once and linked, never restated"
+      related: [ADR-0004, ADR-0008, ADR-0011, ADR-0014]
     ADR-0015:
       file: docs/decisions/ADR-0015-Intent-Layer-Not-A-Git-Host.md
       title: "If project-os is ever hosted, it is an intent layer over git — never a git host, never an agent runtime"
@@ -1020,7 +1071,7 @@ metrics:
     tests_total: 2
     tests_passing: 2
     tests_failing: 0
-    issues_open: 2
+    issues_open: 7
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0
@@ -1028,4 +1079,4 @@ metrics:
     requirements_implemented: 23
     risks_open: 0
     releases_total: 0
-    decisions_total: 15
+    decisions_total: 17
