@@ -6,14 +6,14 @@ title: "Status table consistency: no status table in the validator can drift fro
 status: passing
 owner: user:edwin
 created: 2026-07-26
-updated: 2026-07-26
+updated: 2026-07-28
 source: ["ISS-0011", "ISS-0012", "ISS-0013", "ISS-0014", "ISS-0015"]
 scope: system
 kind: automated
 level: unit
 entrypoint: "tools/scripts/validate-docs.py"
 command: "python3 tools/scripts/validate-docs.py --self-check"
-last_run: "2026-07-26T21:28Z"
+last_run: "2026-07-28T17:11Z"
 exit_code: 0
 requirements: []
 features: []

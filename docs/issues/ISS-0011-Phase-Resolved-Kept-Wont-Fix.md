@@ -104,7 +104,7 @@ Measured across the ten repos immediately after the fix — all **warnings**, no
 
 | Check | Warnings | Where |
 |---|---|---|
-| `PLAN-FOLLOWS` | 15 | project-os-cockpit 9, your-health 6 — plans still `active`/`draft` under features closed months ago |
+| `PLAN-FOLLOWS` | 15 | project-os-cockpit 9, your-health 6 — plans still `active`/`draft` under features closed months ago. **All 15 cleared 2026-07-28**: advanced to `done` after checking each for evidence of supersession (none found). See those repos' `CHG-20260728-Plan-Statuses-Under-Closed-Features`. |
 | `REQ-PREMATURE` | 4 | obsidian-supernote-sync, your-health, your-sudoku, your-trainer — requirements at `draft` while their feature is mid-build |
 
 `plan` was also added to the `ALLOWED_STATUS` constant. It was consumed by `validate_plan_notes` via `load_allowed_status()` but absent from the defaults, so a repo whose `STATUSES.md` lacked a `[[plan]]` section would get an empty allowed set and flag every plan it found.

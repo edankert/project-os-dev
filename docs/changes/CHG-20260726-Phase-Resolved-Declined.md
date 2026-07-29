@@ -146,7 +146,7 @@ Measured across the ten repos immediately afterwards. All **warnings** — no re
 
 | Check | Warnings | Where |
 |---|---|---|
-| `PLAN-FOLLOWS` | 15 | project-os-cockpit 9, your-health 6 — plans still `active`/`draft` under features closed months ago |
+| `PLAN-FOLLOWS` | 15 | project-os-cockpit 9, your-health 6 — plans still `active`/`draft` under features closed months ago. **All 15 cleared 2026-07-28** (see those repos' `CHG-20260728-Plan-Statuses-Under-Closed-Features`). |
 | `REQ-PREMATURE` | 4 | obsidian-supernote-sync, your-health, your-sudoku, your-trainer — requirements at `draft` while their feature is mid-build |
 
 Six inversion branches were induced and reverted, three reproducing the three real misses verbatim; recorded on [[TST-0002]].
