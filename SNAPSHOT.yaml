@@ -25,10 +25,10 @@ docs_system:
     - docs/PHASES.md
 
 counters:
-  ADR: 13
+  ADR: 15
   CHG:
     last_date: 20260726
-  FEAT: 19
+  FEAT: 20
   ISS: 16
   PHASE: 2
   REL: 0
@@ -70,6 +70,13 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0020:
+      file: "docs/features/typed-evidence/FEAT-0020-Typed-Evidence.md"
+      title: "Typed evidence on every ticked claim"
+      status: backlog
+      phase: "[[PHASE-999]]"
+      tasks: []
+      goal: "Make every ticked box a machine-readable claim with a strength and a revision — implements ADR-0014. Not yet planned: four open questions in the note, blast radius being the load-bearing one."
     FEAT-0019:
       file: "docs/features/design-notes/FEAT-0019-Design-Note-Type.md"
       title: "A first-class design note type (DES-*)"
@@ -910,6 +917,20 @@ items:
       status: merged
 
   decisions:
+    ADR-0015:
+      file: docs/decisions/ADR-0015-Intent-Layer-Not-A-Git-Host.md
+      title: "If project-os is ever hosted, it is an intent layer over git — never a git host, never an agent runtime"
+      status: proposed
+      owner: user:edwin
+      decision: "Park the hosted product. If ever built: git stays the object store and is written as an output; the git host and runner are pluggable adapters; agents run on the user's machine with the user's keys"
+      related: [ADR-0014, ADR-0009]
+    ADR-0014:
+      file: docs/decisions/ADR-0014-Evidence-Is-Typed-And-Checkable.md
+      title: "Evidence is typed and checkable, and the requirement is not confined to requirements"
+      status: proposed
+      owner: user:edwin
+      decision: "A ticked box on any note type is a claim carrying a typed evidence token and a revision; the vocabulary is closed (test/mutation/runtime/human/asserted) and REQ-BOXES generalises to every type. Measured: requirements carry evidence on 60.3% of ticked boxes, everything else on 3.7%"
+      related: [ADR-0006, ADR-0010, ADR-0008, REQ-0006]
     ADR-0011:
       file: docs/decisions/ADR-0011-No-Permanent-Warning-Tier.md
       title: "Every validator rule is an error or is deleted — no permanent warning tier"
@@ -990,7 +1011,7 @@ items:
 
 metrics:
   counts:
-    features_total: 19
+    features_total: 20
     features_done: 18
     phases_total: 3
     phases_done: 2
@@ -1007,4 +1028,4 @@ metrics:
     requirements_implemented: 23
     risks_open: 0
     releases_total: 0
-    decisions_total: 13
+    decisions_total: 15
