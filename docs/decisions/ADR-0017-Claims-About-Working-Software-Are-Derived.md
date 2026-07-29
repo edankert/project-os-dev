@@ -2,25 +2,29 @@
 type: "[[adr]]"
 id: ADR-0017
 aliases: ["ADR-0017"]
-title: "A claim about whether the software works is derived from execution where execution is possible, labelled and dated where it is not, and in neither case written by the party seeking the transition it gates"
+title: "A claim about whether the software works is derived from execution where execution is possible, labelled and dated where it is not, and in neither case trusted on the unmarked word of the party seeking the transition it gates"
 status: accepted
 owner: user:edwin
 created: 2026-07-29
 updated: 2026-07-29
+reviewed_by: model:claude-opus-5[1m]
+review_date: 2026-07-29
+review_verdict: changes-requested
+review_note: "Round-two clean-context independent review, superseding round one's verdict (fresh session, notes + diff only; not the author's session and not the round-one reviewer's; same model family, recorded per ADR-0013). Round one's five findings on [[ISS-0022-ADR-0017-Ratifies-A-Proposed-ADR-And-Clause-3-Has-No-Scope|ISS-0022]] are resolved in the text and re-verified against the tree; `status: accepted` stands on the owner's re-affirmation of the amended clause 3. Still changes-requested on the new material: the frontmatter's three-question test still asks whether the party seeking the transition *can write* the field, which the amended clause 3 abandoned — so it fails `waiver_expires` and `last_verified:`, which the body calls compliant, and misses the gate-reads-nothing case it newly names; and two notes still quote the superseded clause-3 wording. Findings on [[ISS-0023-Three-Question-Test-Contradicts-The-Amended-Clause-3|ISS-0023]]."
 source: ["intake 2026-07-29: articles repo, quality-without-reading thesis, finding 1"]
-decision: "State as one normative rule what ADR-0009, ADR-0010 and ADR-0014 each implement for one field: a claim about whether the software works must be derived from execution wherever execution is possible; where it is not possible the claim must be labelled as unexecuted, dated, and expire; and in neither case may it be written by the party seeking the transition it gates. The rule is the test applied to every future state field, and it is deliberately bounded to the running-system layer"
-context: "ADR-0009 derived snapshot state from notes. ADR-0010 gave test status to the runner. ADR-0014 types evidence and gives it a revision. Three decisions, one rule, stated nowhere — so each new state field is argued from scratch and the generalisation is rediscovered each time. ADR-0009 line 50 already notices the habit: `--fix-metrics` 'is this ADR in miniature, applied to one field: nobody defends hand-authored metrics, they just had not yet generalised the argument'"
+decision: "State as one normative rule what ADR-0009 and ADR-0010 implement and ADR-0014 (still proposed) extends: a claim about whether the software works must be derived from execution wherever execution is possible; where it is not possible the claim must be labelled as unexecuted, dated, and expire; and in neither case may a gate trust the unmarked word of the party seeking the transition — clause 1 takes the pen away from that party, clause 2 makes what that party writes visible and perishable. The rule's subject is any recorded value a gate reads. It is the test applied to every future state field, and it is deliberately bounded to the running-system layer"
+context: "ADR-0009 derived snapshot state from notes. ADR-0010 gave test status to the runner. ADR-0014 (proposed) would type evidence and give it a revision. Two decisions in force and one proposal, one rule, stated nowhere — so each new state field is argued from scratch and the generalisation is rediscovered each time. ADR-0009 line 50 already notices the habit: `--fix-metrics` 'is this ADR in miniature, applied to one field: nobody defends hand-authored metrics, they just had not yet generalised the argument'"
 alternatives:
   - "Adopt the intake's stronger phrasing — 'any claim about whether the software works must be derived from execution, never asserted by an agent' — rejected: it outlaws manual tests, which ADR-0010 deliberately preserved with `last_verified:`, and outlaws the `human:` and `asserted:` evidence tokens, which ADR-0014 deliberately made legal and visible. A rule the system's two strongest decisions both violate is not the rule those decisions were following"
   - "Leave it implicit and argue each field on its merits — rejected: this is the current state, and it costs a full ADR per field while producing no test for the next one. It is also how ISS-0017 stayed invisible: a review verdict is the same claim shape, and nobody noticed because the shape had no name"
-  - "State it in QUALITY.md as a normative section rather than an ADR — rejected on placement only, not substance: QUALITY.md states gates, and this is the reasoning that generates gates. The ADR states the rule; QUALITY.md and STATUSES.md link to it, per REQ-0018"
+  - "State it in QUALITY.md as a normative section rather than an ADR — rejected on placement only, not substance: QUALITY.md states gates, and this is the reasoning that generates gates. The ADR states the rule; QUALITY.md and STATUSES.md are to link to it rather than restate it (REQ-0018) — that wiring does not exist yet and is tracked on ISS-0022"
   - "Extend the rule to the whole seven-layer thesis (gates, observability, contracts, reversibility) — rejected: see the recorded non-goals. Those layers may deserve modelling, but they are not instances of this rule and bundling them would make an unfalsifiable principle out of a checkable one"
 consequences:
   - "Every future state field gets a three-question test — can this be executed? if not, is it labelled and dated? and can the party seeking the transition write it? — rather than an ADR-length argument"
-  - "The rule immediately classifies open work: ISS-0017 (review verdicts) and ISS-0020 (VERIFY blind to absent tests) are both instances, and neither was recognised as one before the rule had a name"
-  - "It also classifies what is already correct, which is most of the system. This ADR ratifies ADR-0009, ADR-0010 and ADR-0014 rather than changing them; no existing behaviour moves"
+  - "The rule immediately classifies open work: ISS-0017 (review verdicts) and ISS-0019 (VERIFY blind to absent tests) are both clause-3 instances, filed in the same batch that named the rule"
+  - "It also classifies what is already correct, which is most of the system. This ADR ratifies ADR-0009 and ADR-0010 rather than changing them, and anticipates ADR-0014, which remains proposed and is decided on its own merits; no existing behaviour moves"
   - "Bounding the rule to the running-system layer means recording four real gaps as deliberate non-goals. They are named below so they are not silently dropped and not silently adopted"
-related: [ADR-0009, ADR-0010, ADR-0014, ADR-0016, ISS-0017]
+related: [ADR-0009, ADR-0010, ADR-0014, ADR-0016, ISS-0017, ISS-0019, ISS-0020, ISS-0021, ISS-0022, ISS-0023]
 supersedes: ""
 superseded: ""
 ---
@@ -29,11 +33,11 @@ superseded: ""
 
 ## Context
 
-Three decisions in this repo implement the same rule for one field each:
+Two accepted decisions in this repo implement the same rule for one field each, and a third — still proposed — extends it:
 
 - [[ADR-0009-Snapshot-Is-Generated|ADR-0009]] — item state, counters and metrics are generated from note frontmatter, because writing them twice is how they disagree.
 - [[ADR-0010-Test-Status-Stamped-By-Execution|ADR-0010]] — a `TST-*` with a `command:` has its status written by the runner from the exit code, because *"the agent seeking the transition"* must not also grade the proof.
-- [[ADR-0014-Evidence-Is-Typed-And-Checkable|ADR-0014]] — a ticked box carries a typed evidence token and a revision, because *"verified over real HTTP"* and *"I believe this works"* are the same string to every tool in the system.
+- [[ADR-0014-Evidence-Is-Typed-And-Checkable|ADR-0014]] (**proposed**; FEAT-0020 is unplanned backlog) — would have every ticked box carry a typed evidence token and a revision, because *"verified over real HTTP"* and *"I believe this works"* are the same string to every tool in the system. Nothing carries a token yet; this ADR states the principle ADR-0014 applies, and does not pre-empt that decision.
 
 The rule they share is stated nowhere. `ADR-0009` gets closest, and notices the pattern without naming it:
 
@@ -47,9 +51,11 @@ The cost of leaving it implicit is not aesthetic. It is that each new state fiel
 
 1. **derived from execution wherever execution is possible** — the runner writes it, the generator computes it, the tool observes it;
 2. **labelled as unexecuted, dated, and expiring where execution is not possible** — a manual check, a human judgement, an assertion;
-3. **never written by the party seeking the transition it gates**, in either case.
+3. **and in neither case trusted on the unmarked word of the party seeking the transition it gates** — clause 1 takes the pen away from that party; clause 2 makes what that party writes visible and perishable, so a reader and a gate can weigh it as the assertion it is.
 
-Clause 3 is the load-bearing one. Clauses 1 and 2 describe two mechanisms; clause 3 is the invariant both exist to protect, and it is the one that catches new cases. `--fix-metrics`, `run-tests.py`, `waiver_expires`, ADR-0014's revision and ISS-0017's fingerprint are all clause 3 with different plumbing.
+The rule's **subject** is any recorded value a gate reads: a test status, a review verdict, an evidence token, a waiver. The gated status itself — a task's `done`, an issue's `fixed` — is bookkeeping over that evidence, and is legitimately written by the closing agent (`STATUSES.md`'s "who writes" column) precisely *because* the gate reads the evidence rather than the word. Which is also why a gate that reads nothing is a clause-3 violation: an item closing with no test and no waiver ([[ISS-0019-Verify-Is-Blind-To-Tests-That-Were-Never-Linked|ISS-0019]]) satisfies the gate on unmarked word alone.
+
+Clause 3 is the load-bearing one; clauses 1 and 2 are its two enforcement modes. In force today: `run-tests.py`, `sync-snapshot.py` and `--fix-metrics` under clause 1; `last_verified:` and `waiver_expires` under clause 2 — both written by the closing agent, compliant because labelled and expiring, not because independently authored. Proposed extensions of the same invariant: ADR-0014's evidence revision and the review fingerprint ISS-0017 asks for; neither is built.
 
 ### Why not the stronger version
 
@@ -66,9 +72,9 @@ The intake assessed project-os against a seven-layer model of quality-without-re
 | Layer | Verified state | Why a non-goal |
 |---|---|---|
 | **Gate manifest** — what linters, scanners, audits, coverage thresholds and performance budgets the project's *code* runs | `docs/workflows/` holds three `WF-*` notes: derive, template sync, recovery. All are project-os operations. Nothing describes a consuming project's code gates | The gate configuration is real quality policy, but it is *executable already* — CI enforces it whether or not a note describes it. A note would be a second copy of a truth that cannot drift silently, which is the duplication ADR-0009 exists to remove. Revisit if a consuming repo's gates are found to have silently weakened |
-| **Observability** — SLOs, operational requirements, post-release verification | No SLO/SLI/telemetry/alerting/canary/feature-flag/error-budget vocabulary anywhere. `monitoring` appears once, at `STATUSES.md:106`, as a *rejected* risk status | The rejection reason is the argument: `monitoring` was written **"never … across 5,890 fleet status writes."** ADR-0008 settled that declared values must be values the fleet writes. Adding a vocabulary with zero observed demand inverts that rule. Revisit when a fleet repo actually runs a service with an SLO |
+| **Observability** — SLOs, operational requirements, post-release verification | No SLO/SLI/telemetry/alerting/canary/feature-flag/error-budget vocabulary anywhere. In the status taxonomy, `monitoring` appears only as a *rejected* risk status (`STATUSES.md:106`); its other occurrences repo-wide are the validator's legacy-vocabulary constant and historical notes | The rejection reason is the argument: `monitoring` was written **"never … across 5,890 fleet status writes."** ADR-0008 settled that declared values must be values the fleet writes. Adding a vocabulary with zero observed demand inverts that rule. Revisit when a fleet repo actually runs a service with an SLO |
 | **Reversibility as a designed property** — flag, canary, migration reversibility, time-to-revert | `CHG-*` has `merged → reverted`; `REL-*` has `released → reverted` plus `previous_release` and a rollback procedure in `release-verification` | After-the-fact revert is modelled for both types. What is missing is *pre-commitment* — a claim about how reversible a change will be, made before it lands. That is a prediction, not a derived fact, so under clause 3 it would be written by exactly the party that benefits from it reading well. Would need a derivation before it would be worth adding |
-| **Code contracts** — interface/API/schema contracts and the mechanism enforcing them | `SCHEMAS.md` plus frontmatter validation is a hard-enforced contract system for *documentation*. Nothing models a contract for code. `DES-*` is design, a different artifact | The strongest of the four, and the closest to in-scope: a crossed interface boundary is precisely what review cannot see. It is a non-goal because a contract note that no tool checks is a documentation artifact, not a contract — and the thing that checks it (schema validation, type checking, consumer tests) lives in the code. Revisit together with [[ISS-0018-Traceability-Stops-At-The-Docs-Boundary|ISS-0018]], whose mechanism it would share |
+| **Code contracts** — interface/API/schema contracts and the mechanism enforcing them | `docs/__templates__/SCHEMAS.md` plus frontmatter validation is a hard-enforced contract system for *documentation*. Nothing models a contract for code. `DES-*` is design, a different artifact | The strongest of the four, and the closest to in-scope: a crossed interface boundary is precisely what review cannot see. It is a non-goal because a contract note that no tool checks is a documentation artifact, not a contract — and the thing that checks it (schema validation, type checking, consumer tests) lives in the code. Revisit together with [[ISS-0018-Traceability-Stops-At-The-Docs-Boundary|ISS-0018]], whose mechanism it would share |
 
 The common thread in all four rejections: project-os can *record* a claim about the running system, but it cannot *derive* one, because it does not execute the project's code. Recording without deriving is what clause 3 forbids. That boundary — not a lack of ambition — is why these four stay out, and it is also the condition under which any of them could come in.
 

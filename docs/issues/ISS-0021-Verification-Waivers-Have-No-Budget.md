@@ -2,7 +2,7 @@
 type: "[[issue]]"
 id: ISS-0021
 aliases: ["ISS-0021"]
-title: "Verification waivers expire individually but nothing bounds how many are outstanding, and a batch stamped with one date is indistinguishable from waivers considered one at a time — all 15 in this repo expire 2026-10-23"
+title: "Verification waivers expire individually but nothing bounds how many are outstanding, and a batch stamped with one date is indistinguishable from waivers considered one at a time — all 19 in this repo expire 2026-10-23, the migration default no waiver has diverged from since"
 status: open
 severity: low
 owner: user:edwin
@@ -41,17 +41,19 @@ That distinction matters because a waiver is the sanctioned exit from the verifi
 
 ## Measured in this repo, 2026-07-29
 
-15 `VERIFY-WAIVED` warnings. **Every one expires `2026-10-23`.**
+19 `VERIFY-WAIVED` warnings. **Every one expires `2026-10-23`.** (An earlier draft of this note said 15 — a miscount from truncated validator output, caught by the ADR-0017 independent review.)
 
-That is the finding the per-waiver check structurally cannot see. Fifteen identical dates is not fifteen independent judgements about how long each item's verification gap should be tolerated — it is one judgement, applied fifteen times, most likely in one sitting. The mechanism that was supposed to force a per-item decision recorded a batch.
+The provenance of the shared date matters and softens the naive reading: `2026-10-23` is the **migration default** — the FEAT-0017/TASK-0070 backfill dated 49 waivers fleet-wide with that single date when `WAIVER` was promoted to error, and that batch is documented in the promotion record. So this is not stealth batch-stamping at close-out.
 
-The population also concentrates: `FEAT-0010` through `FEAT-0017` and `TASK-0041` through `TASK-0052` — i.e. two features' worth of program work closed almost entirely under waiver. Each waiver reason is substantive and mechanically specific (*"validate-docs 0 errors on 10 repos, sync-snapshot --check 0 drift on 10 repos, cockpit suite 253 passed"*), which is the system working as intended at the per-item level, and exactly why the aggregate is worth a look: this is what a well-behaved waiver population looks like, and it is still 15-for-15 on one date.
+What remains is the finding the per-waiver check structurally cannot see: **no waiver has diverged from the migration default since.** The field exists to force a per-item judgement about how long each item's verification gap should be tolerated; nineteen items carrying the migration's one-size date months later means that judgement has not happened once, and nothing will notice if it never does — until all nineteen expire on the same day, as one cliff.
+
+The population also concentrates: `FEAT-0010` through `FEAT-0017` and `TASK-0041` through `TASK-0052` — i.e. two features' worth of program work closed almost entirely under waiver. Each waiver reason is substantive and mechanically specific (*"validate-docs 0 errors on 10 repos, sync-snapshot --check 0 drift on 10 repos, cockpit suite 253 passed"*), which is the system working as intended at the per-item level, and exactly why the aggregate is worth a look: this is what a well-behaved waiver population looks like, and it is still 19-for-19 on one date.
 
 ## Relationship to ADR-0017 and ISS-0019
 
 Under [[ADR-0017-Claims-About-Working-Software-Are-Derived|ADR-0017]] clause 2, the waiver is the correct mechanism — an unexecutable claim, labelled and perishable. This issue is not an argument against waivers.
 
-It pairs with [[ISS-0019-Verify-Is-Blind-To-Tests-That-Were-Never-Linked|ISS-0019]], and the two must be considered together or the fix to one worsens the other. ISS-0019 found 52 items closing with *neither* test nor waiver. The obvious disposition for many of them is a waiver — which would take this repo from 15 outstanding waivers to something nearer 67. Arming ISS-0019 without a view on the budget converts an invisible problem into a large visible one and calls that progress.
+It pairs with [[ISS-0019-Verify-Is-Blind-To-Tests-That-Were-Never-Linked|ISS-0019]], and the two must be considered together or the fix to one worsens the other. ISS-0019 found 52 items closing with *neither* test nor waiver. The obvious disposition for many of them is a waiver — which would take this repo from 19 outstanding waivers to something nearer 71. Arming ISS-0019 without a view on the budget converts an invisible problem into a large visible one and calls that progress.
 
 ## Fix sketch, and the reason to be cautious
 

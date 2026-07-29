@@ -52,7 +52,7 @@ The reasoning is in [[ADR-0017-Claims-About-Working-Software-Are-Derived|ADR-001
 
 ## Sequencing constraint worth preserving
 
-ISS-0019 and ISS-0021 interact and must not be worked independently. ISS-0019's likely disposition for many of its 52 items is a waiver, which would take this repo from 15 outstanding waivers to roughly 67 — so arming a waiver budget before ISS-0019 lands would cap the honest exit while the silent one stays open. ISS-0019 first. Both notes record this.
+ISS-0019 and ISS-0021 interact and must not be worked independently. ISS-0019's likely disposition for many of its 52 items is a waiver, which would take this repo from 19 outstanding waivers to roughly 71 — so arming a waiver budget before ISS-0019 lands would cap the honest exit while the silent one stays open. ISS-0019 first. Both notes record this. (This paragraph originally said 15 and 67; corrected to 19 and 71 after the ADR-0017 independent review recounted — the shared expiry date is the FEAT-0017 migration default, see ISS-0021.)
 
 ## What was right about the intake
 

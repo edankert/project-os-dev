@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 20
-  ISS: 21
+  ISS: 23
   PHASE: 2
   REL: 0
   REQ: 24
@@ -43,7 +43,7 @@ focus:
   feature: "FEAT-0019"
   phase: "PHASE-999"
   issue: ""
-  note: "2026-07-29 nothing in flight; two intakes filed, nothing planned. Comparable-systems review -> ISS-0017, ISS-0018, ADR-0016. Quality-without-reading intake -> ADR-0017, ISS-0019, ISS-0020, ISS-0021 (four findings recorded as non-goals in ADR-0017). Highest-value item is ISS-0019: VERIFY never checked the empty case, 52 registered items closed terminal with neither test nor waiver. Two ADRs await a decision — ADR-0016 (fast path) and ADR-0017 (derivation principle); ADR-0017 classifies ISS-0017 and ISS-0019, so accepting it first makes the rest cheaper to triage. ISS-0021 depends on ISS-0019 landing."
+  note: "2026-07-29 nothing in flight. ADR-0017 accepted; review round two done (clean context, fresh session) and it supersedes round one: all five ISS-0022 findings verified resolved in the text, verdict still changes-requested on new material — findings on ISS-0023. Open on ADR-0017: the frontmatter three-question test still encodes the pre-amendment clause 3 (so it rejects waiver_expires/last_verified, which the body calls compliant), two notes quote the superseded clause, and ISS-0021's provenance paragraph mis-cites TASK-0070 for FEAT-0016/TASK-0068 and claims months where the commit is three days old. Then the QUALITY.md/STATUSES.md wiring (ISS-0022, still unwired). ADR-0016 (fast path) still awaits its decision. ISS-0019 remains the highest-value open issue; ISS-0021 depends on it."
 
 items:
   phases:
@@ -547,9 +547,24 @@ items:
       external: "../project-os-cockpit/docs/issues/ISS-0026-Bundled-Validator-Drift.md"
 
   issues:
+    ISS-0023:
+      file: "docs/issues/ISS-0023-Three-Question-Test-Contradicts-The-Amended-Clause-3.md"
+      title: "Round two on ADR-0017: the three-question test still asks who writes the field, two notes quote the superseded clause 3, and ISS-0021's provenance paragraph mis-cites TASK-0070"
+      status: open
+      severity: medium
+      phase: "[[PHASE-999]]"
+      note: "Round-two independent review of ADR-0017 (verdict changes-requested, superseding round one). All five ISS-0022 findings verified resolved; the fixes introduced five new ones, three blocking. The pattern worth watching: each round's fix has reintroduced the previous round's defect class one level along — a mis-cited ID, and a claim wider than the tree."
+      related: [ISS-0022, ADR-0017]
+    ISS-0022:
+      file: "docs/issues/ISS-0022-ADR-0017-Ratifies-A-Proposed-ADR-And-Clause-3-Has-No-Scope.md"
+      title: "ADR-0017 review findings: it ratifies ADR-0014 while that is only proposed, clause 3 has no stated subject, and a consequence names ISS-0020 for ISS-0019's defect"
+      status: open
+      severity: medium
+      phase: "[[PHASE-999]]"
+      note: "Independent-review findings on ADR-0017 (verdict changes-requested). Three blocking, two corrections; the ADR's three-decisions-one-rule thesis survived refutation. Also carries the correction that this repo has 19 waivers, not the 15 ISS-0021 and the intake note record."
     ISS-0021:
       file: "docs/issues/ISS-0021-Verification-Waivers-Have-No-Budget.md"
-      title: "Verification waivers expire individually but nothing bounds how many are outstanding; all 15 in this repo expire 2026-10-23"
+      title: "Verification waivers expire individually but nothing bounds how many are outstanding; all 19 in this repo expire 2026-10-23, the migration default"
       status: open
       severity: low
       phase: "[[PHASE-999]]"
@@ -1071,7 +1086,7 @@ metrics:
     tests_total: 2
     tests_passing: 2
     tests_failing: 0
-    issues_open: 7
+    issues_open: 9
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0
