@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 20
-  ISS: 26
+  ISS: 27
   PHASE: 2
   REL: 0
   REQ: 24
@@ -547,6 +547,13 @@ items:
       external: "../project-os-cockpit/docs/issues/ISS-0026-Bundled-Validator-Drift.md"
 
   issues:
+    ISS-0027:
+      file: "docs/issues/ISS-0027-Terminal-Items-Are-Stranded-In-The-Parking-Lot-Phase.md"
+      title: "Nothing re-homes an item's phase at close-out, so delivered work stays in the PHASE-999 parking lot forever"
+      status: open
+      severity: medium
+      phase: "[[PHASE-999-Parking-Lot]]"
+      note: "Filed from project-os-cockpit, where 16 of 19 notes naming the sentinel are terminal and the phase strip draws 16 delivered squares inside a phase called Future. The field answers a plan-time question that is never re-asked at close-out, so items are stuck by construction rather than by neglect. Fix is the mirror of PHASE-CHILDREN, reusing PHASE_RESOLVED. Fleet backlog: your-trainer 72, project-os-dev 42."
     ISS-0026:
       file: "docs/issues/ISS-0026-Coverage-Registers-Are-Hand-Maintained.md"
       title: "A TST note's ## Coverage section is hand-written, nothing checks it against the suite, and other notes cite its entries as evidence"
@@ -1108,7 +1115,7 @@ metrics:
     tests_total: 2
     tests_passing: 2
     tests_failing: 0
-    issues_open: 12
+    issues_open: 13
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0
