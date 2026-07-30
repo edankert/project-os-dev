@@ -6,4 +6,8 @@
 # Gitignored because an item is either filed (and the FILED artefact is what
 # gets committed) or discarded. Committing staging would preserve exactly the
 # thing triage exists to resolve.
-inbox/
+# Anchored: an unanchored `inbox/` matches a directory of that name at ANY
+# depth, so a `docs/features/inbox/` would vanish from the repository with
+# no error anywhere (project-os-cockpit ISS-0070 — a whole feature and three
+# tasks were missing from a fresh clone, which then failed the validator).
+/inbox/
