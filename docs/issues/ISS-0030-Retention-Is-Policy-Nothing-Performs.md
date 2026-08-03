@@ -2,7 +2,7 @@
 type: "[[issue]]"
 id: ISS-0030
 aliases: ["ISS-0030"]
-title: "Retention is a policy nothing performs, configured by three flags no code reads, and its normative rule still names the `closed` status ADR-0008 deleted — the fleet's snapshots have grown to 96k tokens and are re-served on every request"
+title: "Retention is a policy nothing performs, configured by three flags no code reads, and its normative rule still names the `closed` status ADR-0008 deleted — so snapshots accumulate until most of what a query matches is finished work"
 status: open
 severity: medium
 owner: user:edwin
@@ -61,9 +61,26 @@ Snapshot sizes across the fleet, 2026-08-03:
 
 `your-trainer` holds 1,065 items of which **709 are terminal** (451 `done` tasks, 205 `fixed` issues, 53 `done` features).
 
-The snapshot is loaded at session start and re-served on every subsequent request. Measured across 590 sessions in `~/.claude/projects`: **cache reads are 19.3 billion tokens, 70% of indicative spend**, against 11% for actual generation. For `your-trainer` alone — 449 sessions — re-serving its snapshot costs on the order of 1.7 billion cache-read tokens, roughly $2,600 at Opus list.
-
 The four largest snapshots are the four oldest active repos. The correlation is with age, not with complexity, which is what identifies this as accumulation rather than legitimate size.
+
+### Correction, 2026-08-03 — the cost model first given here was wrong
+
+This section originally read: *"The snapshot is loaded at session start and re-served on every subsequent request… for `your-trainer` alone, roughly 1.7 billion cache-read tokens, ~$2,600 at Opus list."* **That was never measured.** It was inferred from an assumption about how the snapshot reaches context, then presented alongside real measurements, which made it read as one of them. Recorded rather than deleted, because the failure mode is this issue's own subject matter — a claim nothing checked, restated until it looked settled.
+
+Measured instead:
+
+- **Nothing injects the snapshot.** `snapshot-freshness.sh` (the `SessionStart` hook) emits one `echo`; the file enters context only when an agent reads it.
+- **Agents query rather than load.** In 120 `your-trainer` transcripts: 255 grep/bash accesses, 29 partial reads, **5** full-file reads. Full reads occur in 31 of 590 sessions fleet-wide.
+- **Size does not predict context.** `your-trainer` has the largest snapshot (~96.6k tok) and the *smallest* median first-request context (8,898); `your-sudoku` at ~14.6k sits at 23,959.
+- **Composition of what actually enters context**, across 150 sessions: source code **46.0%**, command/web/agent output **44.1%**, `docs/` 5.9%, **SNAPSHOT.yaml 1.8%**, instructions and skills 0.5%. All project-os artefacts together: **~8%**.
+
+The 70%-cache-read figure stands as a fleet aggregate over *all* context, and is dominated by re-served source code and command output. It was never evidence about this file.
+
+### What the real cost is
+
+**Signal, not tokens.** Because the dominant access pattern is grep, a snapshot that is two-thirds terminal returns mostly finished work to every query about current state. That is the case for retention, and it is a different case from the one this issue was filed on — it argues for pruning on *retrieval quality*, and it does not by itself justify an expensive mechanism.
+
+It also sharpens what to build. If agents query rather than load, the highest-value change may not be pruning at all but making the *instructed* path the selective one: `CLAUDE.md` says "Read SNAPSHOT.yaml at session start" and the hook reminds you to, both pushing toward whole-file loading, while measured behaviour ignores that and greps. Either the instruction is wrong or compliance is low and nobody noticed, because non-compliance happens to be cheaper. That question is now `project-os-bench` PHASE-0004's, and it should be answered before this issue picks an option.
 
 ## What this issue is *not* asking for
 

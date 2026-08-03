@@ -553,7 +553,7 @@ items:
       status: open
       severity: medium
       phase: "[[PHASE-999-Parking-Lot]]"
-      note: "Upstream cause of your-trainer ISS-0371. The four largest snapshots are the four oldest repos (97k/50k/44k/38k tok), re-served on every request — 70% of fleet spend is cache reads, 11% is generation. Does NOT relitigate TASK-0063: the whole-file generator was rejected on evidence and stays rejected; the gap is that the motivation its cancellation preserved (REQ-0020 amendment) was never built. Three options, none requiring generation."
+      note: "Upstream cause of your-trainer ISS-0371. The four largest snapshots are the four oldest repos (97k/50k/44k/38k tok) — accumulation, not complexity. CORRECTED 2026-08-03: the original 're-served on every request' cost model was never measured and is false. Nothing injects the snapshot, agents grep it 255x per 5 full reads, and all project-os artefacts are ~8% of what enters context (source code 46%, command output 44%). The surviving case is retrieval quality — a two-thirds-terminal snapshot returns mostly finished work to every grep. Does NOT relitigate TASK-0063: the whole-file generator was rejected on evidence and stays rejected; the gap is that the motivation its cancellation preserved (REQ-0020 amendment) was never built. Three options, none requiring generation."
     ISS-0029:
       file: "docs/issues/ISS-0029-Lifecycle-Says-When-A-Phase-Is-Needed-Never-When-One-Is-Too-Small.md"
       title: "LIFECYCLE says when a phase is needed, never when one is too small"
