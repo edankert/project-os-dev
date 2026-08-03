@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 20
-  ISS: 30
+  ISS: 31
   PHASE: 2
   REL: 0
   REQ: 24
@@ -547,6 +547,14 @@ items:
       external: "../project-os-cockpit/docs/issues/ISS-0026-Bundled-Validator-Drift.md"
 
   issues:
+    ISS-0031:
+      file: "docs/issues/ISS-0031-Instruction-Prescribes-A-Method-For-Two-Different-Needs.md"
+      title: "The startup instruction prescribes one method — read the whole snapshot — for two different needs, and agents comply 5 times in 260"
+      status: open
+      severity: medium
+      phase: "[[PHASE-999-Parking-Lot]]"
+      note: "Orientation and lookup are different needs; grep serves the second and cannot serve the first (it never sees focus:). Deliberately does NOT claim the behaviour is more correct — only that it is cheaper. Whether grep-only leaves an agent oriented is unmeasured, and assuming otherwise is the error ISS-0030 retracted. Settled by adding a grep-only arm to bench TASK-0008. Shares a fix with ISS-0030: a pruned snapshot IS the orientation slice."
+      related: [ISS-0030]
     ISS-0030:
       file: "docs/issues/ISS-0030-Retention-Is-Policy-Nothing-Performs.md"
       title: "Retention is a policy nothing performs, configured by three flags no code reads, and its normative rule still names the `closed` status ADR-0008 deleted"
@@ -1136,7 +1144,7 @@ metrics:
     tests_total: 2
     tests_passing: 2
     tests_failing: 0
-    issues_open: 16
+    issues_open: 17
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0
