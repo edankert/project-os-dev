@@ -28,13 +28,13 @@ counters:
   ADR: 17
   CHG:
     last_date: 20260726
-  FEAT: 20
+  FEAT: 21
   ISS: 31
   PHASE: 2
   REL: 0
   REQ: 24
   RISK: 2
-  TASK: 79
+  TASK: 81
   TST: 2
   WF: 3
 
@@ -70,6 +70,13 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0021:
+      file: "docs/features/snapshot-access/FEAT-0021-Serve-Orientation-Answer-Lookup.md"
+      title: "Serve orientation, answer lookup: the startup hook emits the in-flight slice instead of a reminder, and a format-independent query replaces grep against YAML"
+      status: backlog
+      phase: "[[PHASE-999]]"
+      tasks: [TASK-0080, TASK-0081]
+      note: "Scopes ISS-0031's two halves. Orientation is SERVED by the hook that already fires (513-3,418 tok in five of six repos) rather than instructed — instructing has ~2% measured uptake. Lookup gets a query because grep is format-dependent: the same query returns status in your-trainer's inline style and not in project-os-dev's block style, silently. TASK-0081 stands on its own evidence; TASK-0080 is sound on ADR-0017 but unquantified until bench TASK-0008 runs."
     FEAT-0020:
       file: "docs/features/typed-evidence/FEAT-0020-Typed-Evidence.md"
       title: "Typed evidence on every ticked claim"
@@ -203,6 +210,22 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0080:
+      file: "docs/features/snapshot-access/plan/tasks/TASK-0080-Hook-Serves-The-In-Flight-Slice.md"
+      title: "SessionStart emits the in-flight slice instead of a reminder to read the file"
+      status: backlog
+      phase: "[[PHASE-999]]"
+      parent: FEAT-0021
+      effort: M
+      note: "Changes hook contract HC-002 and both its implementations (ADR-0002). The design constraint is the token budget: your-trainer's slice is 11,573 tok for 58 items where your-health fits 67 in 3,418 — title length, not item count. A hook injecting 11.5k every session has re-created the cost this work was checking for."
+    TASK-0081:
+      file: "docs/features/snapshot-access/plan/tasks/TASK-0081-Format-Independent-Query.md"
+      title: "A format-independent query for lookup, because grep returns different information per YAML style"
+      status: backlog
+      phase: "[[PHASE-999]]"
+      parent: FEAT-0021
+      effort: M
+      note: "Read-only; writes stay in the notes (ADR-0009). Must fall back to note frontmatter like the validator's resolves(), or it answers 'not found' for pruned-but-real items once ISS-0030 is acted on. A query nobody invokes is worse than none, so it is advertised from TASK-0080's hook output."
     TASK-0078:
       file: "docs/features/design-notes/plan/tasks/TASK-0078-Design-Type-Upstream.md"
       title: "Add the design type upstream: taxonomy, statuses, template, validator, sync"
@@ -1135,11 +1158,11 @@ items:
 
 metrics:
   counts:
-    features_total: 20
+    features_total: 21
     features_done: 18
     phases_total: 3
     phases_done: 2
-    tasks_total: 79
+    tasks_total: 81
     tasks_done: 74
     tests_total: 2
     tests_passing: 2

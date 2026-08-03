@@ -57,7 +57,9 @@ If the snapshot were pruned to active-and-recent, **the whole file would be the 
 ## Options
 
 1. **Split the instruction by need.** Say explicitly: read `focus:` and the active items to orient; grep for everything else. Costs one paragraph, needs no tooling, and matches what agents already do — while giving the orientation half a home it currently lacks.
-2. **Serve the orientation slice.** A `--brief` output (focus plus non-terminal items) that is cheap in any repo regardless of snapshot size. Removes the size dependency entirely, at the cost of a tool.
+2. **Serve the orientation slice.** ~~A `--brief` output (focus plus non-terminal items) that is cheap in any repo regardless of snapshot size.~~ **Superseded 2026-08-03 by option 5, which is strictly better:** a `--brief` an agent must be *told* to run inherits the ~2% uptake this issue documents. Two measurements also refined it — filtering to non-terminal items only gives 1.3×–3.5× reduction (your-trainer's "brief" is still ~28k tokens), so the slice has to be *in-flight* rather than merely non-terminal to be cheap.
+
+5. **Serve it from the hook, so nothing has to be invoked.** The `SessionStart` hook already fires and already emits text into context; it currently spends that on a reminder to read the file. Emitting focus, counts and in-flight items instead costs 513–3,418 tokens in five of six repos and removes the compliance question entirely, because the agent does nothing. This is [[ADR-0017-Claims-About-Working-Software-Are-Derived|ADR-0017]] clause 1 applied one level up: where something can be delivered, deliver it rather than asking and hoping. **Scoped as [[FEAT-0021-Serve-Orientation-Answer-Lookup|FEAT-0021]] (2026-08-03), together with a format-independent query for the lookup half.**
 3. **Prune, and leave the instruction alone** (ISS-0030). Makes the blanket instruction correct again by making the file small — but only until it drifts, which is ISS-0030's whole point.
 4. **Do nothing until measured.** Defensible: the cost of the current state is unknown, and option 1 is only obviously right if grep-only orientation is actually worse.
 
@@ -71,6 +73,7 @@ Until it runs, this issue records an open question, not a defect with a known fi
 
 ## Next Actions
 
-- [ ] Add the grep-only arm to `project-os-bench` TASK-0008 and note that ISS-0031 depends on its result.
-- [ ] Decide options 1–4 once that result exists; if option 1, the wording lands in `CLAUDE.md`, `CONTEXT.md` and the `SessionStart` hook together, and REQ-0018's stated-once rule applies to whichever file becomes normative.
+- [x] Options scoped as [[FEAT-0021-Serve-Orientation-Answer-Lookup|FEAT-0021]] (2026-08-03) — option 5 for orientation (TASK-0080), a format-independent query for lookup (TASK-0081). Option 2 superseded; see above.
+- [ ] Add the grep-only arm to `project-os-bench` TASK-0008. Still wanted: it does not gate TASK-0081 (format-dependent lookup is a defect on its own evidence) but it is the only thing that would *quantify* TASK-0080's value, which FEAT-0021 records as sound-but-unmeasured.
+- [ ] Reconcile the startup instruction surface once the hook serves orientation — `CLAUDE.md`, the user-level `CLAUDE.md`, `CONTEXT.md` and HC-002 — stated once per REQ-0018. Tracked on TASK-0080; if it is not done, this issue reappears with the roles reversed.
 - [ ] Check whether the same instruction/behaviour gap exists for `tools/instructions/` and `tools/skills/` — measured at 0.5% of context, which is either healthy selectivity or evidence the playbooks are not being read at all. The instruction surface says "read them when relevant" and nothing verifies that judgement.
