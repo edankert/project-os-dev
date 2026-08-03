@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 20
-  ISS: 29
+  ISS: 30
   PHASE: 2
   REL: 0
   REQ: 24
@@ -547,6 +547,13 @@ items:
       external: "../project-os-cockpit/docs/issues/ISS-0026-Bundled-Validator-Drift.md"
 
   issues:
+    ISS-0030:
+      file: "docs/issues/ISS-0030-Retention-Is-Policy-Nothing-Performs.md"
+      title: "Retention is a policy nothing performs, configured by three flags no code reads, and its normative rule still names the `closed` status ADR-0008 deleted"
+      status: open
+      severity: medium
+      phase: "[[PHASE-999-Parking-Lot]]"
+      note: "Upstream cause of your-trainer ISS-0371. The four largest snapshots are the four oldest repos (97k/50k/44k/38k tok), re-served on every request — 70% of fleet spend is cache reads, 11% is generation. Does NOT relitigate TASK-0063: the whole-file generator was rejected on evidence and stays rejected; the gap is that the motivation its cancellation preserved (REQ-0020 amendment) was never built. Three options, none requiring generation."
     ISS-0029:
       file: "docs/issues/ISS-0029-Lifecycle-Says-When-A-Phase-Is-Needed-Never-When-One-Is-Too-Small.md"
       title: "LIFECYCLE says when a phase is needed, never when one is too small"
@@ -1129,7 +1136,7 @@ metrics:
     tests_total: 2
     tests_passing: 2
     tests_failing: 0
-    issues_open: 15
+    issues_open: 16
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0
