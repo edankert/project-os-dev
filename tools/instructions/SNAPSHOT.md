@@ -114,7 +114,7 @@ The snapshot is not a full historical database.
 Recommended approach:
 - Keep **active** items in `items.*`:
   - tasks: anything not `done`
-  - issues: anything not `closed`
+  - issues: anything not `fixed`
   - features: anything not `done`
   - risks: anything not `closed`
   - requirements: keep `approved` requirements that still matter for current work, retire when obsolete

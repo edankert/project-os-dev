@@ -39,7 +39,9 @@ keep_done_features_in_snapshot: false
 - issues: anything not `closed`
 ```
 
-[[ADR-0008-States-Must-Earn-Their-Keep|ADR-0008]] deleted issue `closed` and merged it into `fixed`. An agent applying that rule literally retains every `fixed` issue forever — which is exactly what the fleet has done. This is the [[ISS-0011-Phase-Resolved-Kept-Wont-Fix|ISS-0011]] shape a third time: a status rename that missed a consumer, silently, because nothing compares prose to code. The adjacent lines are fine — `risks: anything not closed` is still correct, because risks genuinely close — which is precisely why the stale line reads as plausible.
+[[ADR-0008-States-Must-Earn-Their-Keep|ADR-0008]] deleted issue `closed` and merged it into `fixed`. An agent applying that rule literally retains every `fixed` issue forever — which is exactly what the fleet has done. This is the [[ISS-0011-Phase-Resolved-Kept-Wont-Fix|ISS-0011]] shape a third time: a status rename that missed a consumer, silently, because nothing compares prose to code. The adjacent lines are fine — `risks: anything not closed` is still correct, because risks genuinely close, and `approved` survived TASK-0053 as a requirement status — which is precisely why the stale line reads as plausible.
+
+**Corrected 2026-08-03** (see Next Actions). Fixing it surfaced a second live surface the original diagnosis missed: `.cursor/rules/snapshot.mdc` is generated from this file and carried the same stale rule in all 12 repos, so a Cursor-driven agent read it too. That is the ISS-0011 shape *within the fix for the ISS-0011 shape* — the correct instinct is to ask which generated artefacts embed a source before calling any prose fix complete. The remaining three defects in this issue are untouched by it.
 
 **4. No check exists.** The only retention code in the validator is `DEFER-RETENTION`, which enforces the *opposite* concern (deferred items must never be pruned). Nothing looks at the accumulation.
 
@@ -107,7 +109,7 @@ Every repo in the fleet. The fix to the stale `SNAPSHOT.md` line propagates thro
 
 ## Next Actions
 
-- [ ] Correct `SNAPSHOT.md:117` from `closed` to `fixed`, independent of the larger decision — it is wrong today.
+- [x] Correct `SNAPSHOT.md:117` from `closed` to `fixed` — done 2026-08-03, propagated verbatim to all 12 repos (all copies were byte-identical before and after), **plus the generated Cursor adapter** `.cursor/rules/snapshot.mdc`, which embeds the same guidance and was a second live surface carrying the stale rule. Regenerated via `generate-adapters.py` rather than hand-edited; `--check` clean in all 12. Evidence: `grep -rn 'issues: anything not' */tools/instructions/SNAPSHOT.md` → 12× `fixed`, 0× `closed`; the only remaining occurrences of the old string are this note and your-trainer ISS-0371 quoting the defect.
 - [ ] Decide between the validator finding, the prune subcommand, and deleting the flags; record it as an ADR if the answer is anything other than "delete the flags".
 - [ ] Measure the fleet-wide terminal-item population before arming any check (ISS-0007 precedent).
 - [ ] Confirm whether `recent_changes_max: 25` is honoured anywhere, or is a fourth dead key.
