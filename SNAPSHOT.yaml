@@ -219,13 +219,13 @@ items:
   tasks:
     TASK-0085:
       file: "docs/features/snapshot-retention/plan/tasks/TASK-0085-Fleet-Rollout.md"
-      title: "Fleet rollout: ship both halves inert, then opt in one repo at a time, cheapest first"
+      title: "Fleet rollout: ship both halves inert, then opt in one repo at a time, dogfood repo first and the largest last"
       status: backlog
       phase: "[[PHASE-999]]"
       parent: FEAT-0022
       effort: L
       depends: [TASK-0082, TASK-0083, TASK-0084]
-      note: "Shared code, per-repo readiness — so both halves ship inert and each repo opts in via its own snapshot key. Without that, all 12 CIs go red on sync-snapshot --check simultaneously. Measured worklist: 3,162 items, 657 drifted titles, 1,614 prunable; your-trainer and cockpit are 84% of the drift. Order is ascending cost — first real prune is obsidian-supernote-sync at 3 entries, your-trainer last at 709."
+      note: "Shared code, per-repo readiness — so both halves ship inert and each repo opts in via its own snapshot key. Without that, all 12 CIs go red on sync-snapshot --check simultaneously. Measured worklist: 3,162 items, 657 drifted titles, 1,614 prunable; your-trainer and cockpit are 84% of the drift. Order puts project-os-dev first among repos with content (dogfood: defects found in minutes by whoever caused them), your-trainer last at 709 entries. TASK-0084 is now mechanical — record every old title, then derive — so no per-item judgement is needed."
     TASK-0082:
       file: "docs/features/snapshot-retention/plan/tasks/TASK-0082-Prune-Step-In-Sync.md"
       title: "Prune step in sync-snapshot.py: remove entries by reproducible rule on every run"
@@ -246,14 +246,14 @@ items:
       note: "657 drifted titles fleet-wide across 12 repos (your-trainer 413, cockpit 140, sudoku 29, here 25). Same failure ADR-0009 removed for status. Size effect runs both ways: your-trainer -28%, cockpit and here +2%."
     TASK-0084:
       file: "docs/features/snapshot-retention/plan/tasks/TASK-0084-Reconcile-Drifted-Titles.md"
-      title: "Reconcile 657 drifted titles across the fleet, moving narrative into the note files where it earns its place"
+      title: "Migrate 659 drifted titles mechanically: record every old value, then let derivation replace it"
       status: backlog
       phase: "[[PHASE-999]]"
       parent: FEAT-0022
       effort: L
       depends: [TASK-0083]
       blocks: [TASK-0082]
-      note: "Half mechanical: 227 of 405 divergences are >90% already in the note and safe to discard. The 10 orphans and 168 partials need judgement, and relocation targets the NOTE FILE — never the snapshot note: field, which ADR-0018 rule 3 declares scratch context."
+      note: "Now fully mechanical (effort L -> S). Record every drifted title to a per-repo migration file, then let derivation overwrite it — nothing is lost, so nothing must be judged now. Strict verbatim containment was considered and dropped: it resolves only 75 of 659 (11%), and a fuzzy test would delete the 10 orphans that exist nowhere else."
     TASK-0080:
       file: "docs/features/snapshot-access/plan/tasks/TASK-0080-Hook-Serves-The-In-Flight-Slice.md"
       title: "SessionStart emits the in-flight slice instead of a reminder to read the file"

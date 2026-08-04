@@ -2,15 +2,15 @@
 type: "[[task]]"
 id: TASK-0084
 aliases: ["TASK-0084"]
-title: "Reconcile 657 drifted titles across the fleet, moving narrative into the note files where it earns its place"
+title: "Migrate 659 drifted titles mechanically: record every old value, then let derivation replace it"
 status: backlog
 phase: "[[PHASE-999]]"
 owner: user:edwin
 created: 2026-08-04
 updated: 2026-08-04
-source: ["ADR-0018", "fleet measurement 2026-08-03"]
+source: ["ADR-0018", "fleet measurement 2026-08-04"]
 parent: "[[FEAT-0022]]"
-effort: L
+effort: S
 due: ""
 depends: ["[[TASK-0083]]"]
 blocks: ["[[TASK-0082]]"]
@@ -18,48 +18,42 @@ related: ["[[ADR-0018]]", "[[ISS-0030]]"]
 tests: []
 ---
 
-# Reconcile the drifted titles
+# Migrate the drifted titles
 
 ## What
 
-Before `title` becomes overwritten-from-the-note, decide what happens to each divergence. **657 fleet-wide** (measured 2026-08-04 across all twelve repos, not the three first sampled): 413 in `your-trainer`, 140 in `project-os-cockpit`, 29 in `your-sudoku`, 25 each in `project-os-dev` and `your-applications.com`, 17 in `your-health`, and 12 across the five smallest.
+Before `title` becomes derived, write every drifted snapshot title to a per-repo migration record, then let derivation overwrite it. **659 fleet-wide** (measured 2026-08-04 across all twelve repos): `your-trainer` 413, `project-os-cockpit` 140, `your-sudoku` 29, `project-os-dev` 26, `your-applications.com` 26, `your-health` 17, and 8 across the four smallest.
 
-This is the task that prevents the other two from destroying anything, and it is the only one that needs judgement rather than code.
+No item-by-item decision is required. That is a change from this task's first draft, which called it *"the only one that needs judgement rather than code"* and sized it `L`.
 
-## The three dispositions
+## Why the judgement was avoidable
 
-For each drifted entry:
+The first draft framed the disposition as *discard, relocate, or promote* — a reading of each title's content, 659 times. That conflated two questions:
 
-- **Discard** — the snapshot title is a stale or abbreviated version of the note's. The note wins; nothing is lost. Expected to cover most of `project-os-cockpit`'s 140 and all 25 here, where snapshot titles are *shorter* than their notes'.
-- **Relocate into the note file** — the snapshot title carries narrative the note does not: root cause, current blocker, what changed and why. This is real content and it belongs in the `.md`, **not** in the snapshot's `note:` field, which ADR-0018 rule 3 declares scratch context. Expected to cover much of `your-trainer`'s 413, where snapshot titles run to 2,160 characters and hold crash-report forensics.
-- **Promote to the note** — the snapshot title is simply *better* than the note's. Fix the note; the snapshot then derives correctly.
+- **Is anything lost?** — a safety question, and the only one that must be answered before derivation runs.
+- **Where does this prose ideally belong?** — an editorial question, answerable later, or never.
 
-## How much of this is mechanical
+Recording every old title to one file per repo answers the first completely and defers the second at no cost. Nothing is lost, so nothing has to be decided now.
 
-More than first assumed. Measured on `your-trainer`'s 405 measurable divergences (2026-08-04), by whether the snapshot title's substantive words already appear in the note:
+A containment test was considered and is **not needed**. Strict verbatim containment — is the snapshot title, whitespace- and case-normalised, present in its note? — resolves only **75 of 659 (11%)** fleet-wide, because most drift is paraphrase rather than duplication. A fuzzy test resolves far more but can delete text on a false positive, which is unacceptable for the 10 titles in `your-trainer` that exist nowhere else. Recording everything makes the test unnecessary rather than forcing a choice between a weak one and a dangerous one.
 
-| | count | disposition |
-|---|---:|---|
-| >90% present in the note | **227** | discard — the note already says it |
-| 50–90% present | 168 | inspect; usually a fragment worth folding in |
-| <50% present — orphan prose | **10** | must be relocated into the note file, or it is lost |
+## The migration record
 
-So the worklist can be produced and *ordered* mechanically, and roughly half needs no judgement at all. What cannot be mechanical is the middle band and the orphans: whether the extra text is stale, live, or simply better than the note's own title is a reading of content. A length heuristic would get `project-os-cockpit` roughly right and `your-trainer` badly wrong, since a longer snapshot title there is sometimes a live blocker and sometimes an account of work finished in June.
+One file per repo, written before derivation is enabled there — `docs/reference/snapshot-title-migration-YYYY-MM-DD.md`, a `[[reference]]` note listing each affected ID with its old snapshot title and the note title replacing it.
 
-**The similarity measure orders the work; it must not perform it.** A false positive discards prose that exists nowhere else — that is the same reason ADR-0018 rule 3 refuses to detect "already in the note" automatically.
+- **Lossless**, so derivation can be enabled without inspecting anything.
+- **Reviewable in one place**, rather than 659 diffs scattered across notes.
+- **Does not pollute the notes.** Appending the 584 non-contained titles into their note bodies was the alternative, and would have added mostly-redundant paraphrase to 584 files — preservation by vandalism.
+- Git already holds the old values; this is deliberate redundancy, because finding them in git means knowing which commit to look in.
 
-## Judgement to apply
+## What remains for a human, later and optionally
 
-- **Relocation targets the note file, never `note:`.** Under ADR-0018 rule 3 that field is scratch context; moving durable narrative into it puts the prose back in the place with no archive, which is the defect this task exists to clear.
-- **Discard is safe only where the note already carries the text** — 227 of 405 in `your-trainer`. Elsewhere, discarding destroys the only copy. This corrects the task's first draft, which said "discard by default" on the untested assumption that the narrative was in git and the note body; it is in git, but for ~178 titles it is not in the note.
-- The `# Pruned:` comment style already used in the fleet is the model for legibility: record *why* a batch was discarded, once per batch, not per item.
+Mining the record for prose worth folding into a note properly. `your-trainer`'s 10 orphan titles — under 50% word overlap with their note — are the obvious candidates, and the record should mark them so they are findable. This blocks nothing, and it is legitimate for it never to happen.
 
 ## Definition of Done
 
-- [ ] Every one of the 657 divergences has a recorded disposition.
-- [ ] Narrative worth keeping is in the **note file**; no divergence is resolved by moving prose into the snapshot's `note:` field.
-- [ ] The 10 orphan titles (<50% present in their note) are each accounted for individually — they are the only ones where a mistake is unrecoverable.
-- [ ] Notes corrected where the snapshot title was the better one.
-- [ ] `sync-snapshot.py --check` clean fleet-wide with `title` derivation active.
-- [ ] Per-repo commits, following `TASK-0055`'s fleet-migration pattern.
-- [ ] Before/after snapshot sizes recorded per repo, so the predicted −28% in `your-trainer` is verified rather than assumed — this feature has already had one unmeasured size claim retracted (`ISS-0030`, 2026-08-03).
+- [ ] Migration record written per affected repo, covering every drifted title before derivation is enabled there.
+- [ ] The 10 low-overlap orphans flagged within the record so later mining has a starting point.
+- [ ] Derivation enabled; `sync-snapshot.py --check` clean fleet-wide.
+- [ ] Per-repo commits, following `TASK-0055`'s fleet-migration pattern, sequenced by [[TASK-0085-Fleet-Rollout|TASK-0085]].
+- [ ] Before/after snapshot sizes recorded per repo, so the predicted −28% in `your-trainer` is verified rather than assumed — this feature has already had one unmeasured size claim retracted (`ISS-0030`).

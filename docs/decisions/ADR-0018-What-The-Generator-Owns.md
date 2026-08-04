@@ -89,7 +89,11 @@ So:
 
 **The first draft of this decision got this wrong**, and the error is worth recording because it is the shape this repo keeps finding. It made an annotated entry *permanently exempt*, which would have meant the snapshot accumulating precisely the entries someone bothered to annotate — annotation as a life sentence. `FEAT-0022`'s TASK-0084 then had to carry a warning that relocating narrative into `note:` would exempt 413 entries from the retention the feature exists to deliver. That warning disappears under this rule, because the field no longer confers permanence.
 
-**The signal is the field being empty, not a similarity heuristic.** A measurement on 2026-08-04 showed that `note:` prose is mostly, but not always, already present in the note body — 32 of 32 in this repo, 102 of 120 in `project-os-cockpit`, 86 of 96 in `your-health`, leaving **28 orphans** across two repos. A tool that guessed would delete those 28 on a false positive. The author can settle it in seconds and the tool cannot settle it safely at all, so the tool does not try.
+**The signal is the field being empty, not a similarity heuristic.** A measurement on 2026-08-04 showed that `note:` prose is mostly, but not always, already present in the note body — 32 of 32 in this repo, 102 of 120 in `project-os-cockpit`, 86 of 96 in `your-health`, leaving **28 orphans** across two repos. A tool that guessed would delete those 28 on a false positive.
+
+**What this does not forbid.** The objection is to *deleting on a guess*, not to detection as such. A tool may detect containment freely where the consequence of a wrong answer is to preserve — and where it must delete, it may do so unconditionally provided it has first written the text somewhere durable. `TASK-0084` takes the second route for the one-time title migration: it records every old value to a per-repo migration file and then lets derivation overwrite, which needs no test at all. Strict verbatim containment was measured for that purpose and resolves only 75 of 659 (11%), which is why recording everything beat testing anything.
+
+The rule to carry forward is narrower than "do not detect": **never let a similarity judgement be the only thing standing between prose and deletion.**
 
 | repo | terminal | non-empty `note:` | removable now | held, pending relocation |
 |---|---:|---:|---:|---:|
