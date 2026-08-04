@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0084
 aliases: ["TASK-0084"]
 title: "Migrate 659 drifted titles mechanically: record every old value, then let derivation replace it"
-status: backlog
+status: done
 phase: "[[PHASE-999]]"
 owner: user:edwin
 created: 2026-08-04
@@ -52,7 +52,7 @@ Mining the record for prose worth folding into a note properly. `your-trainer`'s
 
 ## Definition of Done
 
-- [ ] The migration tool produces a complete, correct record for any repo it is pointed at, verified against `project-os-dev`. Producing one per repo happens during [[TASK-0085-Fleet-Rollout|TASK-0085]] and does not gate this task.
-- [ ] The 8 low-coverage orphans flagged within the record so later mining has a starting point.
-- [ ] Record verified lossless: every drifted title present in the record before derivation overwrites it.
-- [ ] The record's format is settled and documented, so `TASK-0085` can apply it twelve times without further decisions.
+- [x] The migration tool produces a complete, correct record for any repo it is pointed at, verified against `project-os-dev`. Producing one per repo happens during [[TASK-0085-Fleet-Rollout|TASK-0085]] and does not gate this task.
+- [x] The 8 low-coverage orphans flagged within the record so later mining has a starting point.
+- [x] Record verified lossless: every drifted title present in the record before derivation overwrites it.
+- [x] The record's format is settled and documented, so `TASK-0085` can apply it twelve times without further decisions.

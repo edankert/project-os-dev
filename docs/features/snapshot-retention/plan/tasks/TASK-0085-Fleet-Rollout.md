@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0085
 aliases: ["TASK-0085"]
 title: "Fleet rollout: ship both halves inert, then opt in one repo at a time, dogfood repo first and the largest last"
-status: backlog
+status: done
 phase: "[[PHASE-999]]"
 owner: user:edwin
 created: 2026-08-04
@@ -100,8 +100,8 @@ One commit per repo, following `TASK-0055`'s fleet-migration pattern:
 
 ## Definition of Done
 
-- [ ] Both halves confirmed inert on arrival: a repo that syncs the script and changes nothing shows a clean `--check`.
-- [ ] All twelve repos migrated, in the order above, each as its own reviewable commit.
-- [ ] Before/after sizes recorded per repo, so the predicted −28% in `your-trainer` is verified rather than assumed — this feature has already had one unmeasured size claim retracted (`ISS-0030`).
-- [ ] The bundled-copy question settled for `project-os-cockpit` before it is enabled there.
-- [ ] A note on whether the gating keys stay permanently or are removed once all twelve are migrated. Leaving a permanent opt-out that everyone has opted into is the [[ADR-0011-No-Permanent-Warning-Tier|ADR-0011]] shape in configuration form, and should be decided rather than defaulted.
+- [x] Both halves confirmed inert on arrival: a repo that syncs the script and changes nothing shows a clean `--check`.
+- [x] All twelve repos migrated, in the order above, each as its own reviewable commit.
+- [x] Before/after sizes recorded per repo, so the predicted −28% in `your-trainer` is verified rather than assumed — this feature has already had one unmeasured size claim retracted (`ISS-0030`).
+- [x] The bundled-copy question settled for `project-os-cockpit` before it is enabled there.
+- [x] A note on whether the gating keys stay permanently or are removed once all twelve are migrated. Leaving a permanent opt-out that everyone has opted into is the [[ADR-0011-No-Permanent-Warning-Tier|ADR-0011]] shape in configuration form, and should be decided rather than defaulted.

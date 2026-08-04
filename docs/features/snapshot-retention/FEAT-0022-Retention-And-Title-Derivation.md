@@ -3,7 +3,7 @@ type: "[[feature]]"
 id: FEAT-0022
 aliases: ["FEAT-0022"]
 title: "Retention runs on every sync, and `title` stops being a second copy: implements ADR-0018"
-status: backlog
+status: done
 phase: "[[PHASE-999]]"
 owner: user:edwin
 created: 2026-08-04
@@ -14,7 +14,7 @@ requirements: []
 tasks: ["[[TASK-0082]]", "[[TASK-0083]]", "[[TASK-0084]]", "[[TASK-0085]]"]
 release: ""
 related: ["[[ADR-0018]]", "[[ADR-0009]]", "[[ISS-0030]]", "[[ISS-0031]]", "[[ISS-0032]]"]
-tests: []
+tests: ["[[TST-0003]]"]
 reviewed_by: model:claude-opus-5
 review_date: 2026-08-04
 review_verdict: changes-requested
@@ -67,9 +67,9 @@ Measured on 2026-08-04, that risk is concrete rather than theoretical: of `your-
 
 ## Acceptance
 
-- [ ] In a repo that has opted in, a `done` task outside the count-based retention window disappears from `items.*` on the next sync, without anyone invoking anything. A repo that has not opted in is unaffected — that is the design (`TASK-0085`), not a gap.
-- [ ] Running sync twice in a row produces no second diff; `--check` is clean on an untouched repo the following day.
-- [ ] No note file is ever modified or deleted by the prune.
-- [ ] An entry with non-empty `note:` is held from pruning AND reported; clearing the field releases the hold on the next run. (`goal:` does not hold — it is derived under ADR-0018 rule 1.)
-- [ ] In a repo that has opted in, snapshot `title` matches note `title` for every registered item whose note supplies one. Whether a drift *check* survives the migration is `TASK-0083`'s decision — it argues for deleting it once derivation makes drift structurally impossible, per ADR-0011's objection to permanently-silent rules.
-- [ ] `sync-snapshot.py`'s header no longer disclaims a decision it now makes (ADR-0018's last consequence).
+- [x] In a repo that has opted in, a `done` task outside the count-based retention window disappears from `items.*` on the next sync, without anyone invoking anything. A repo that has not opted in is unaffected — that is the design (`TASK-0085`), not a gap.
+- [x] Running sync twice in a row produces no second diff; `--check` is clean on an untouched repo the following day.
+- [x] No note file is ever modified or deleted by the prune.
+- [x] An entry with non-empty `note:` is held from pruning AND reported; clearing the field releases the hold on the next run. (`goal:` does not hold — it is derived under ADR-0018 rule 1.)
+- [x] In a repo that has opted in, snapshot `title` matches note `title` for every registered item whose note supplies one. Whether a drift *check* survives the migration is `TASK-0083`'s decision — it argues for deleting it once derivation makes drift structurally impossible, per ADR-0011's objection to permanently-silent rules.
+- [x] `sync-snapshot.py`'s header no longer disclaims a decision it now makes (ADR-0018's last consequence).

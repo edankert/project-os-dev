@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0082
 aliases: ["TASK-0082"]
 title: "Prune step in sync-snapshot.py: remove entries by reproducible rule on every run"
-status: backlog
+status: done
 phase: "[[PHASE-999]]"
 owner: user:edwin
 created: 2026-08-04
@@ -61,12 +61,12 @@ Where `N` lives is a decision this task must make and record. `retention.recent_
 
 ## Definition of Done
 
-- [ ] Prune step implemented, running automatically after status sync.
-- [ ] Window key decided and recorded; the dead `keep_*` flags resolved in the same change.
-- [ ] Idempotence proven by test, including the next-day case.
-- [ ] All six conditions covered by inversion tests, including that a held entry (non-empty `note:`) survives *and is reported*.
-- [ ] Clearing an entry's `note:` makes it prunable on the next run — the hold releases, proving it is a backlog rather than an exemption.
-- [ ] Metrics unchanged and `validate-docs` clean **in a dry-run against all twelve repos** — the code is proven fleet-safe here; actually migrating them is [[TASK-0085-Fleet-Rollout|TASK-0085]] and does not gate this task.
-- [ ] `--no-prune` works and is documented.
-- [ ] `sync-snapshot.py`'s header updated. Three lines, not one: it disclaims membership decisions, and lists both `retention` and `goal/note prose` under LEFT ALONE — all three are now false.
-- [ ] A `TST-*` with a `command:`, per ADR-0010.
+- [x] Prune step implemented, running automatically after status sync.
+- [x] Window key decided and recorded; the dead `keep_*` flags resolved in the same change.
+- [x] Idempotence proven by test, including the next-day case.
+- [x] All six conditions covered by inversion tests, including that a held entry (non-empty `note:`) survives *and is reported*.
+- [x] Clearing an entry's `note:` makes it prunable on the next run — the hold releases, proving it is a backlog rather than an exemption.
+- [x] Metrics unchanged and `validate-docs` clean **in a dry-run against all twelve repos** — the code is proven fleet-safe here; actually migrating them is [[TASK-0085-Fleet-Rollout|TASK-0085]] and does not gate this task.
+- [x] `--no-prune` works and is documented.
+- [x] `sync-snapshot.py`'s header updated. Three lines, not one: it disclaims membership decisions, and lists both `retention` and `goal/note prose` under LEFT ALONE — all three are now false.
+- [x] A `TST-*` with a `command:`, per ADR-0010.

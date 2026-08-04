@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0083
 aliases: ["TASK-0083"]
 title: "`title` is derived from the note, and drifting one becomes a finding"
-status: backlog
+status: done
 phase: "[[PHASE-999]]"
 owner: user:edwin
 created: 2026-08-04
@@ -69,10 +69,10 @@ Required behaviour:
 
 ## Definition of Done
 
-- [ ] `title` written from the note, alongside `status`, in the same surgical style.
-- [ ] Fail-safe implemented and inversion-tested against all 17 real malformed notes plus a synthetic empty-title case: every one leaves the snapshot title untouched and is reported.
-- [ ] The matching rule (by note `id:`) and the disposition of the 161 `CHG-*` entries are documented in the note.
-- [ ] Transitional drift check exists, is used for the migration, and its post-migration disposition is recorded (delete or keep, with reasoning).
-- [ ] In any repo where derivation is enabled, snapshot `title` equals note `title` for every registered item whose note supplies one. Enabling it across the fleet is [[TASK-0085-Fleet-Rollout|TASK-0085]] and does not gate this task.
-- [ ] `sync-snapshot.py --check` clean in a dry-run against all twelve repos with derivation forced on, proving the code is fleet-safe before any repo opts in.
-- [ ] `SNAPSHOT.md` and `SCHEMAS.md` describe `title` as derived, stated once per REQ-0018.
+- [x] `title` written from the note, alongside `status`, in the same surgical style.
+- [x] Fail-safe implemented and inversion-tested against all 17 real malformed notes plus a synthetic empty-title case: every one leaves the snapshot title untouched and is reported.
+- [x] The matching rule (by note `id:`) and the disposition of the 161 `CHG-*` entries are documented in the note.
+- [x] Transitional drift check exists, is used for the migration, and its post-migration disposition is recorded (delete or keep, with reasoning).
+- [x] In any repo where derivation is enabled, snapshot `title` equals note `title` for every registered item whose note supplies one. Enabling it across the fleet is [[TASK-0085-Fleet-Rollout|TASK-0085]] and does not gate this task.
+- [x] `sync-snapshot.py --check` clean in a dry-run against all twelve repos with derivation forced on, proving the code is fleet-safe before any repo opts in.
+- [x] `SNAPSHOT.md` and `SCHEMAS.md` describe `title` as derived, stated once per REQ-0018.

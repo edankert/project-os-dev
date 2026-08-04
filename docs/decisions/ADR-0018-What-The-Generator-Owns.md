@@ -3,7 +3,7 @@ type: "[[adr]]"
 id: ADR-0018
 aliases: ["ADR-0018"]
 title: "What the generator owns: it derives every field that has a note counterpart, it may remove entries by a reproducible rule but never add one, and item-level `note:` is scratch context that holds its entry until cleared"
-status: proposed
+status: accepted
 owner: user:edwin
 created: 2026-08-04
 updated: 2026-08-04

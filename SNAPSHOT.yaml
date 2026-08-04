@@ -12,9 +12,9 @@ project:
 retention:
   policy: active-and-recent
   recent_changes_max: 25
-  keep_closed_issues_in_snapshot: false
-  keep_done_tasks_in_snapshot: false
-  keep_done_features_in_snapshot: false
+  # Read by tools/scripts/sync-snapshot.py (ADR-0018). Absent = feature off.
+  derive_fields: true      # title/goal derived from the note
+  prune_window: 25         # keep N most recent terminal items per collection
   note: "Snapshot keeps active work + recent changes for handoff; notes are the archive."
 
 docs_system:
@@ -35,17 +35,18 @@ counters:
   REQ: 24
   RISK: 2
   TASK: 85
-  TST: 2
+  TST: 3
   WF: 3
 
 focus:
-  task: "TASK-0078"
-  feature: "FEAT-0019"
+  task: ""
+  feature: "FEAT-0022"
   phase: "PHASE-999"
   issue: ""
-  note: "2026-07-29 nothing in flight. ADR-0017 accepted; review round two done (clean context, fresh session) and it supersedes round one: all five ISS-0022 findings verified resolved in the text, verdict still changes-requested on new material — findings on ISS-0023. Open on ADR-0017: the frontmatter three-question test still encodes the pre-amendment clause 3 (so it rejects waiver_expires/last_verified, which the body calls compliant), two notes quote the superseded clause, and ISS-0021's provenance paragraph mis-cites TASK-0070 for FEAT-0016/TASK-0068 and claims months where the commit is three days old. Then the QUALITY.md/STATUSES.md wiring (ISS-0022, still unwired). ADR-0016 (fast path) still awaits its decision. ISS-0019 remains the highest-value open issue; ISS-0021 depends on it."
+  note: "2026-08-04 FEAT-0022 implemented and rolled out to all twelve repos: title/goal derived from notes, retention pruning on every sync, both inert until a repo opts in. Fleet snapshots 1,158KB -> 707KB (-39%); your-trainer -71%. TST-0003 passing, mutation-verified. ISS-0032 stays open pending a re-review round; the CHG note needs independent review."
 
 items:
+  # Pruned 28 terminal item(s) by retention policy (ADR-0018); the notes remain the archive.
   phases:
     PHASE-0001:
       file: docs/phases/PHASE-0001-Documentation-System-Foundations.md
@@ -73,7 +74,7 @@ items:
     FEAT-0022:
       file: "docs/features/snapshot-retention/FEAT-0022-Retention-And-Title-Derivation.md"
       title: "Retention runs on every sync, and `title` stops being a second copy: implements ADR-0018"
-      status: backlog
+      status: done
       phase: "[[PHASE-999]]"
       tasks: [TASK-0082, TASK-0083, TASK-0084, TASK-0085]
       note: "Implements ADR-0018. Counter-intuitive ordering: title derivation (TASK-0083) lands BEFORE the prune, because pruning first would delete entries whose titles hold narrative existing nowhere else — measured, 10 of your-trainer's 405 divergences exist essentially nowhere but the snapshot, and 168 more are partial. Title derivation alone removes 28% of that file."
@@ -90,7 +91,7 @@ items:
       status: backlog
       phase: "[[PHASE-999]]"
       tasks: []
-      goal: "Make every ticked box a machine-readable claim with a strength and a revision — implements ADR-0014. Not yet planned: four open questions in the note, blast radius being the load-bearing one."
+      goal: "Make every ticked box in the fleet a machine-readable claim with a strength and a revision, so that 93.9% of claims stop being unrankable prose and a claim can go stale without anyone editing the note."
     FEAT-0019:
       file: "docs/features/design-notes/FEAT-0019-Design-Note-Type.md"
       title: "A first-class design note type (DES-*)"
@@ -111,7 +112,7 @@ items:
       status: done
       owner: user:edwin
       phase: PHASE-0001
-      goal: "Relationship model for linking notes. NOTE: the semantic-named-field design (implements/fixes/affects/specifies/validates) was reverted in May 2026; the model in force is specified by REQ-0015"
+      goal: "Relationship model for linking notes. NOTE: the semantic-named-field design was reverted in May 2026; the model in force is specified by REQ-0015"
       requirements: [REQ-0010, REQ-0015]
       tasks: [TASK-0023, TASK-0024, TASK-0025, TASK-0027, TASK-0028, TASK-0029]
     FEAT-0008:
@@ -130,7 +131,7 @@ items:
       status: done
       owner: user:edwin
       phase: PHASE-0001
-      goal: "Three-pane Obsidian layout: left sidebar for navigation (features, phases, issues), center editor, right sidebar for dynamic context (tasks, requirements, tests related to active note)"
+      goal: "Three-pane Obsidian layout: left sidebar for navigation, center editor, right sidebar for dynamic context using this.file"
       requirements: [REQ-0012]
       tasks: [TASK-0036, TASK-0037, TASK-0038, TASK-0039, TASK-0040]
       related: [FEAT-0007, FEAT-0008]
@@ -140,7 +141,7 @@ items:
       status: done
       owner: user:edwin
       phase: PHASE-0001
-      goal: "Close the gaps found by the 2026-07-17 full review: template consistency debt, underused native Claude Code machinery, cockpit verification observability, fleet-blind sync tooling, unwired external tools"
+      goal: "Close the gaps found by the 2026-07-17 full review of project-os: internal consistency debt, underused native Claude Code machinery, missing verification observability in the cockpit, fleet-blind sync tooling, and unwired external tools"
       requirements: [REQ-0002, REQ-0006, REQ-0009]
       tasks: [TASK-0041, TASK-0042, TASK-0043, TASK-0044, TASK-0045]
       related: [ADR-0001, ADR-0002, ADR-0004]
@@ -220,7 +221,7 @@ items:
     TASK-0085:
       file: "docs/features/snapshot-retention/plan/tasks/TASK-0085-Fleet-Rollout.md"
       title: "Fleet rollout: ship both halves inert, then opt in one repo at a time, dogfood repo first and the largest last"
-      status: backlog
+      status: done
       phase: "[[PHASE-999]]"
       parent: FEAT-0022
       effort: L
@@ -229,7 +230,7 @@ items:
     TASK-0082:
       file: "docs/features/snapshot-retention/plan/tasks/TASK-0082-Prune-Step-In-Sync.md"
       title: "Prune step in sync-snapshot.py: remove entries by reproducible rule on every run"
-      status: backlog
+      status: done
       phase: "[[PHASE-999]]"
       parent: FEAT-0022
       effort: L
@@ -238,7 +239,7 @@ items:
     TASK-0083:
       file: "docs/features/snapshot-retention/plan/tasks/TASK-0083-Title-Joins-The-Derived-Set.md"
       title: "`title` is derived from the note, and drifting one becomes a finding"
-      status: backlog
+      status: done
       phase: "[[PHASE-999]]"
       parent: FEAT-0022
       effort: M
@@ -247,7 +248,7 @@ items:
     TASK-0084:
       file: "docs/features/snapshot-retention/plan/tasks/TASK-0084-Reconcile-Drifted-Titles.md"
       title: "Migrate 659 drifted titles mechanically: record every old value, then let derivation replace it"
-      status: backlog
+      status: done
       phase: "[[PHASE-999]]"
       parent: FEAT-0022
       effort: S
@@ -303,86 +304,6 @@ items:
       phase: "[[PHASE-999]]"
       parent: FEAT-0018
       note: "Blocked on the user installing + authenticating the CLI. The only fleet case with a known answer — five same-family rounds already hardened the target."
-    TASK-0023:
-      file: docs/features/relationship-model/plan/tasks/TASK-0023-Update-Schemas.md
-      title: "Update SCHEMAS.md with new relationship fields"
-      status: done
-      parent: FEAT-0007
-    TASK-0024:
-      file: docs/features/relationship-model/plan/tasks/TASK-0024-Update-Templates.md
-      title: "Update note templates (task, issue, requirement, test, feature)"
-      status: done
-      parent: FEAT-0007
-    TASK-0025:
-      file: docs/features/relationship-model/plan/tasks/TASK-0025-Update-Traceability.md
-      title: "Update TRACEABILITY.md link rules"
-      status: done
-      parent: FEAT-0007
-    TASK-0027:
-      file: docs/features/relationship-model/plan/tasks/TASK-0027-Update-Bases-Dashboards.md
-      title: "Update top-level .base dashboards to reflect renamed fields"
-      status: done
-      parent: FEAT-0007
-    TASK-0028:
-      file: docs/features/relationship-model/plan/tasks/TASK-0028-Update-Skills.md
-      title: "Update skills that create/link notes (feature-scaffold, issue-intake, task-breakdown, test-authoring)"
-      status: done
-      parent: FEAT-0007
-    TASK-0029:
-      file: docs/features/relationship-model/plan/tasks/TASK-0029-Update-Snapshot-Schema.md
-      title: "Update SNAPSHOT.md and migrate existing snapshot entries"
-      status: done
-      parent: FEAT-0007
-    TASK-0030:
-      file: docs/features/phase-notes/plan/tasks/TASK-0030-Phase-Template.md
-      title: "Create phase note template and schema"
-      status: done
-      parent: FEAT-0008
-    TASK-0031:
-      file: docs/features/phase-notes/plan/tasks/TASK-0031-Phase-Base-Dashboard.md
-      title: "Create Phases.base top-level dashboard"
-      status: done
-      parent: FEAT-0008
-    TASK-0033:
-      file: docs/features/phase-notes/plan/tasks/TASK-0033-Migrate-Phase-Field.md
-      title: "Change phase field from integer to link across all templates"
-      status: done
-      parent: FEAT-0008
-    TASK-0034:
-      file: docs/features/phase-notes/plan/tasks/TASK-0034-Update-Lifecycle-Instructions.md
-      title: "Update LIFECYCLE.md, SNAPSHOT.md, and phase alignment rules"
-      status: done
-      parent: FEAT-0008
-    TASK-0035:
-      file: docs/features/phase-notes/plan/tasks/TASK-0035-Update-Skills-For-Phases.md
-      title: "Update skills to create/reference phase notes instead of integers"
-      status: done
-      parent: FEAT-0008
-    TASK-0036:
-      file: docs/features/cockpit-layout/plan/tasks/TASK-0036-Create-NAV-Base.md
-      title: "Create NAV.base for left sidebar navigation"
-      status: done
-      parent: FEAT-0009
-    TASK-0037:
-      file: docs/features/cockpit-layout/plan/tasks/TASK-0037-Create-CONTEXT-Base.md
-      title: "Create CONTEXT.base for right sidebar dynamic context"
-      status: done
-      parent: FEAT-0009
-    TASK-0038:
-      file: docs/features/cockpit-layout/plan/tasks/TASK-0038-Remove-Overview-Base-Artifacts.md
-      title: "Remove feature-overview.base template and per-feature Overview.base generation"
-      status: done
-      parent: FEAT-0009
-    TASK-0039:
-      file: docs/features/cockpit-layout/plan/tasks/TASK-0039-Update-DASHBOARD-MD.md
-      title: "Update DASHBOARD.md hub note for cockpit layout"
-      status: done
-      parent: FEAT-0009
-    TASK-0040:
-      file: docs/features/cockpit-layout/plan/tasks/TASK-0040-Document-Workspace-Setup.md
-      title: "Document Obsidian workspace setup for cockpit layout"
-      status: done
-      parent: FEAT-0009
     TASK-0041:
       file: docs/features/template-completeness/plan/tasks/TASK-0041-Consistency-Debt-Pass.md
       title: "Consistency-debt pass in the project-os template"
@@ -455,63 +376,6 @@ items:
       status: done
       parent: FEAT-0012
       depends: [TASK-0050]
-    TASK-0053:
-      file: docs/features/status-taxonomy-collapse/plan/tasks/TASK-0053-Decide-Collapsed-Taxonomy.md
-      title: "Decide the collapsed taxonomy per type and rewrite STATUSES.md, templates and SCHEMAS.md"
-      status: done
-      parent: FEAT-0013
-      effort: M
-      blocks: [TASK-0054, TASK-0055, TASK-0056]
-    TASK-0054:
-      file: docs/features/status-taxonomy-collapse/plan/tasks/TASK-0054-Validator-Collapsed-Taxonomy.md
-      title: "Validator: collapsed ALLOWED_STATUS and a status check that reaches registered notes' frontmatter"
-      status: done
-      parent: FEAT-0013
-      effort: M
-      depends: [TASK-0053]
-    TASK-0055:
-      file: docs/features/status-taxonomy-collapse/plan/tasks/TASK-0055-Fleet-Vocabulary-Migration.md
-      title: "Migrate ~300 notes across 10 repos to the collapsed vocabulary, dry-run first, per-repo commits"
-      status: done
-      parent: FEAT-0013
-      effort: L
-      depends: [TASK-0053, TASK-0054]
-    TASK-0056:
-      file: docs/features/status-taxonomy-collapse/plan/tasks/TASK-0056-Metric-Definitions.md
-      title: "Redefine status-keyed metrics against the collapsed vocabulary; fix issues_open"
-      status: done
-      parent: FEAT-0013
-      effort: S
-      depends: [TASK-0053]
-    TASK-0057:
-      file: docs/features/state-contract/plan/tasks/TASK-0057-Author-States-Contract.md
-      title: "Author STATES.md — the single normative state contract (values, gates, and who writes each value)"
-      status: done
-      parent: FEAT-0014
-      effort: M
-      blocks: [TASK-0058]
-    TASK-0058:
-      file: docs/features/state-contract/plan/tasks/TASK-0058-Strip-Restatements.md
-      title: "Replace every state-rule restatement with a link across instructions and skills; fixes ISS-0006"
-      status: done
-      parent: FEAT-0014
-      effort: M
-      depends: [TASK-0057]
-      blocks: [TASK-0059]
-    TASK-0059:
-      file: docs/features/state-contract/plan/tasks/TASK-0059-Adapter-Regeneration.md
-      title: "Regenerate adapters and verify no tool-facing surface embeds a copy of the state rules"
-      status: done
-      parent: FEAT-0014
-      effort: S
-      depends: [TASK-0058]
-    TASK-0060:
-      file: docs/features/derived-state/plan/tasks/TASK-0060-Snapshot-Generator.md
-      title: "Build sync-snapshot.py — generate items, counters and metrics from note frontmatter"
-      status: done
-      parent: FEAT-0015
-      effort: L
-      blocks: [TASK-0061, TASK-0062, TASK-0063, TASK-0065]
     TASK-0061:
       file: docs/features/derived-state/plan/tasks/TASK-0061-Wire-Generation-Retire-Checks.md
       title: "Wire generation into pre-commit and CI; delete ITEM-STATUS, COUNTER and METRICS"
@@ -624,7 +488,7 @@ items:
       note: "Clean-context review verdict on FEAT-0022 (changes-requested). Five blocking, seven not. The measurement mostly reproduces exactly — 659 drift, 1,756/142/1,614, 75/659, -28%/+2% — so these are amendment leftovers rather than a bad design. Worst: ADR-0018's hold table is the pre-amendment rule (19/58 and 36/238 reproduce only if `goal:` also holds; today 8/69 and 34/240), and TASK-0082/0083/0084 each require fleet-wide completion in their DoD while TASK-0085 depends on all three, so no task can be ticked. One real design gap: derivation has no fail-safe where the prune does, blanking 9 entries whose notes are zero-byte or unparseable."
     ISS-0031:
       file: "docs/issues/ISS-0031-Instruction-Prescribes-A-Method-For-Two-Different-Needs.md"
-      title: "The startup instruction prescribes one method — read the whole snapshot — for two different needs, and agents comply 5 times in 260"
+      title: "The startup instruction prescribes one method — read the whole snapshot — for two different needs, and agents comply with it 5 times in 260; whether the 255 that grep instead are actually oriented is unmeasured"
       status: open
       severity: medium
       phase: "[[PHASE-999-Parking-Lot]]"
@@ -632,42 +496,42 @@ items:
       related: [ISS-0030]
     ISS-0030:
       file: "docs/issues/ISS-0030-Retention-Is-Policy-Nothing-Performs.md"
-      title: "Retention is a policy nothing performs, configured by three flags no code reads, and its normative rule still names the `closed` status ADR-0008 deleted"
+      title: "Retention is a policy nothing performs, configured by three flags no code reads, and its normative rule still names the `closed` status ADR-0008 deleted — so snapshots accumulate until most of what a query matches is finished work"
       status: open
       severity: medium
       phase: "[[PHASE-999-Parking-Lot]]"
       note: "Upstream cause of your-trainer ISS-0371. The four largest snapshots are the four oldest repos (97k/50k/44k/38k tok) — accumulation, not complexity. CORRECTED 2026-08-03: the original 're-served on every request' cost model was never measured and is false. Nothing injects the snapshot, agents grep it 255x per 5 full reads, and all project-os artefacts are ~8% of what enters context (source code 46%, command output 44%). The surviving case is retrieval quality — a two-thirds-terminal snapshot returns mostly finished work to every grep. Does NOT relitigate TASK-0063: the whole-file generator was rejected on evidence and stays rejected; the gap is that the motivation its cancellation preserved (REQ-0020 amendment) was never built. Three options, none requiring generation."
     ISS-0029:
       file: "docs/issues/ISS-0029-Lifecycle-Says-When-A-Phase-Is-Needed-Never-When-One-Is-Too-Small.md"
-      title: "LIFECYCLE says when a phase is needed, never when one is too small"
+      title: "LIFECYCLE says when a phase note is needed and never when one is too small, so an agent under the document-first rule mints a phase per request — measured at nine in a day against nine in the preceding twelve weeks"
       status: open
       severity: medium
       phase: "[[PHASE-999-Parking-Lot]]"
       note: "Filed from project-os-cockpit ISS-0077: nine phases in a day against nine in twelve weeks, median 4 items vs 21. Structural, not careless — document-first needs a focus item and an open phase is the cheapest way to get one. The missing mechanism is the STANDING phase; without somewhere to put a small thing, minting a phase is the only move."
     ISS-0028:
       file: "docs/issues/ISS-0028-Close-Out-Has-No-Answer-For-Cannot-Fix.md"
-      title: "Close-out says fix what the validator reports and has no answer for 'cannot fix'"
+      title: "Close-out says to run the validator and fix what it reports, and has no answer for 'cannot fix' — which is exactly the case that needs a human and therefore the one that must leave a record"
       status: open
       severity: low
       phase: "[[PHASE-999-Parking-Lot]]"
       note: "Filed from project-os-cockpit FEAT-0051. The missing half of an existing sentence: every validator error is either fixed or FILED, deduped on (code, subject). Not an automatic filer — issues appearing unasked is a worse failure than one occasionally missed. Running downstream in CLAUDE.md, with a guard that fails if the template adopts it."
     ISS-0027:
       file: "docs/issues/ISS-0027-Terminal-Items-Are-Stranded-In-The-Parking-Lot-Phase.md"
-      title: "Nothing re-homes an item's phase at close-out, so delivered work stays in the PHASE-999 parking lot forever"
+      title: "Nothing re-homes an item's phase at close-out, so work delivered without a plan stays in the PHASE-999 parking lot forever — 16 of 19 notes naming it in one repo are terminal, and the phase strip draws 16 `delivered` squares inside a phase titled 'Future'"
       status: open
       severity: medium
       phase: "[[PHASE-999-Parking-Lot]]"
       note: "Filed from project-os-cockpit, where 16 of 19 notes naming the sentinel are terminal and the phase strip draws 16 delivered squares inside a phase called Future. The field answers a plan-time question that is never re-asked at close-out, so items are stuck by construction rather than by neglect. Fix is the mirror of PHASE-CHILDREN, reusing PHASE_RESOLVED. Fleet backlog: your-trainer 72, project-os-dev 42."
     ISS-0026:
       file: "docs/issues/ISS-0026-Coverage-Registers-Are-Hand-Maintained.md"
-      title: "A TST note's ## Coverage section is hand-written, nothing checks it against the suite, and other notes cite its entries as evidence"
+      title: "A TST note's ## Coverage section is a hand-written register of its own suite's assertions that nothing derives or checks, and other notes cite its entries as evidence — one register was wrong in three consecutive review rounds"
       status: open
       severity: medium
       phase: "[[PHASE-999-Parking-Lot]]"
       note: "Filed from project-os-cockpit ISS-0066. Same dual-write class ADR-0009 and ADR-0010 already solved for statuses and test results — the suite is the truth, the prose is an unchecked copy, and only the copy is read. Four review rounds on one note, wrong in three of them."
     ISS-0025:
       file: "docs/issues/ISS-0025-Review-Verdict-Vocabulary-Is-Unvalidated.md"
-      title: "review_verdict is checked for presence but never for a defined value, so any string reads as a satisfied review"
+      title: "The validator checks that review_verdict is PRESENT but never that it is a DEFINED value, so any string reads as a satisfied review — 10 notes in one repo carried `CLOSE`, which QUALITY.md does not define"
       status: open
       severity: medium
       phase: "[[PHASE-999-Parking-Lot]]"
@@ -682,7 +546,7 @@ items:
       related: [WF-0001, WF-0002, WF-0003]
     ISS-0023:
       file: "docs/issues/ISS-0023-Three-Question-Test-Contradicts-The-Amended-Clause-3.md"
-      title: "Round two on ADR-0017: the three-question test still asks who writes the field, two notes quote the superseded clause 3, and ISS-0021's provenance paragraph mis-cites TASK-0070"
+      title: "Round two on ADR-0017: the frontmatter three-question test still asks who writes the field, which the amended clause 3 abandoned, so it fails the two mechanisms the body calls compliant; two notes still quote the superseded clause; and ISS-0021's new provenance paragraph mis-cites TASK-0070 and claims months of drift where the tree shows three days"
       status: open
       severity: medium
       phase: "[[PHASE-999]]"
@@ -690,14 +554,14 @@ items:
       related: [ISS-0022, ADR-0017]
     ISS-0022:
       file: "docs/issues/ISS-0022-ADR-0017-Ratifies-A-Proposed-ADR-And-Clause-3-Has-No-Scope.md"
-      title: "ADR-0017 review findings: it ratifies ADR-0014 while that is only proposed, clause 3 has no stated subject, and a consequence names ISS-0020 for ISS-0019's defect"
+      title: "ADR-0017 is accepted while ratifying ADR-0014, which is only proposed; clause 3 has no stated subject, so read literally it forbids the waiver and manual-test paths the same ADR says it preserves; and a consequence names ISS-0020 for ISS-0019's defect"
       status: open
       severity: medium
       phase: "[[PHASE-999]]"
       note: "Independent-review findings on ADR-0017 (verdict changes-requested). Three blocking, two corrections; the ADR's three-decisions-one-rule thesis survived refutation. Also carries the correction that this repo has 19 waivers, not the 15 ISS-0021 and the intake note record."
     ISS-0021:
       file: "docs/issues/ISS-0021-Verification-Waivers-Have-No-Budget.md"
-      title: "Verification waivers expire individually but nothing bounds how many are outstanding; all 19 in this repo expire 2026-10-23, the migration default"
+      title: "Verification waivers expire individually but nothing bounds how many are outstanding, and a batch stamped with one date is indistinguishable from waivers considered one at a time — all 19 in this repo expire 2026-10-23, the migration default no waiver has diverged from since"
       status: open
       severity: low
       phase: "[[PHASE-999]]"
@@ -705,14 +569,14 @@ items:
       depends: [ISS-0019]
     ISS-0020:
       file: "docs/issues/ISS-0020-Nothing-Requires-A-Test-To-Be-Executable.md"
-      title: "Nothing requires a TST-* to carry a command:, and no metric distinguishes executable from manual tests"
+      title: "Nothing requires a `TST-*` to carry a `command:`, and no metric distinguishes executable from manual tests — so the project cannot report how much of its verification actually runs"
       status: open
       severity: medium
       phase: "[[PHASE-999]]"
       note: "Intake finding 2, scoped to the derived metric only. Requiring command: is deliberately out of scope — ADR-0010 rejected fake automation and ADR-0017 clause 2 says label the unexecutable, don't outlaw it."
     ISS-0019:
       file: "docs/issues/ISS-0019-Verify-Is-Blind-To-Tests-That-Were-Never-Linked.md"
-      title: "VERIFY iterates only over tests that exist, so terminal items with zero linked tests and no waiver pass silently — 52 registered items in this repo"
+      title: "VERIFY iterates only over tests that exist, so an item reaching terminal with zero linked tests and no waiver passes silently — 52 registered items in this repo did exactly that, against QUALITY.md's stated rule"
       status: open
       severity: high
       phase: "[[PHASE-999]]"
@@ -720,32 +584,25 @@ items:
       blocks: [ISS-0021]
     ISS-0018:
       file: "docs/issues/ISS-0018-Traceability-Stops-At-The-Docs-Boundary.md"
-      title: "The link graph stops at the docs boundary: no requirement names the code that implements it, so `implemented` is asserted rather than covered"
+      title: "The link graph stops at the docs boundary: no requirement names the code that implements it, so `implemented` is asserted by the agent seeking the transition and an unimplemented requirement is undetectable"
       status: open
       severity: medium
       phase: "[[PHASE-999]]"
       note: "Filed from the 2026-07-29 comparable-systems review. Prior art is OpenFastTrace/StrictDoc. Filed because the hole is structural, not because the fix is obviously correct — coverage tags tax source files and policy requirements have no implementing code."
     ISS-0017:
       file: "docs/issues/ISS-0017-Review-Verdicts-Never-Expire.md"
-      title: "A review verdict never expires: reviewed_by/review_date survive any later edit to the note they approved"
+      title: "A review verdict never expires: `reviewed_by`/`review_date`/`review_verdict` survive any later edit to the note they approved, so an approved note and a rewritten-since-approval note are indistinguishable"
       status: open
       severity: medium
       phase: "[[PHASE-999]]"
       note: "Filed from the 2026-07-29 comparable-systems review. Doorstop's item fingerprints and suspect links. Probably the review-surface case of ADR-0014's revision rather than a separate mechanism."
     ISS-0016:
       file: "docs/issues/ISS-0016-Registry-Keyed-On-Identity-And-Unchecked-Metric-Prefixes.md"
-      title: "Completeness registry keyed on id() (defeated by CPython constant dedup); total metrics skipped their prefix check"
+      title: "The completeness registry was keyed on id(), which CPython constant-dedup defeats; and every total metric skipped its prefix check, so a mistyped prefix silently read zero"
       status: fixed
       severity: medium
       phase: "[[PHASE-999]]"
       note: "Found by TASK-0077's two-arm experiment. Clean-context Opus 3 findings, gpt-5-codex 1, one run each."
-    ISS-0002:
-      file: docs/issues/ISS-0002-Deferred-Items-Satisfy-Parent-Completeness.md
-      title: "Deferred items are treated as complete: parents close over them and parked work vanishes from every active surface"
-      status: fixed
-      severity: high
-      owner: user:edwin
-      related: [FEAT-0011]
     ISS-0003:
       file: docs/issues/ISS-0003-Document-First-Hook-Fragile-Focus-Parsing.md
       title: "Stale vendored hooks in project-os-dev: fragile focus parsing and wrong-repo gating already fixed upstream, plus an unfixed non-repo path case"
@@ -753,35 +610,12 @@ items:
       severity: low
       owner: user:edwin
       phase: PHASE-999
-    ISS-0004:
-      file: docs/issues/ISS-0004-Requirements-Never-Advance.md
-      title: "Requirements freeze at draft/approved while their features ship: no lifecycle step ever advances them and acceptance criteria go stale"
-      status: fixed
-      severity: high
-      owner: user:edwin
-      related: [FEAT-0012]
     ISS-0005:
       file: docs/issues/ISS-0005-Feature-Less-Requirement-Triage.md
       title: "Feature-less requirement triage (ADR-0007 follow-up): 14 of 23 resolved mechanically; 9 are a real residue — 5 policies, 3 conventions, 1 unscheduled deliverable"
       status: open
       severity: low
       phase: PHASE-999
-    ISS-0006:
-      file: docs/issues/ISS-0006-Status-Transition-Test-Gates-Requirements.md
-      title: "status-transition/SKILL.md test-gates requirements, contradicting QUALITY.md and ADR-0007 — in all 10 fleet repos"
-      status: fixed
-      severity: medium
-      owner: user:edwin
-      phase: PHASE-0002
-      related: [ADR-0007, FEAT-0014, REQ-0018]
-    ISS-0007:
-      file: docs/issues/ISS-0007-Feature-Req-Cutover-Arms-With-Fleet-Debt.md
-      title: "FEATURE-REQ / REQ-BOXES cutover arms on 2026-07-25 with ~325 unresolved findings still in the fleet"
-      status: fixed
-      severity: high
-      owner: user:edwin
-      phase: PHASE-0002
-      related: [ADR-0007, ADR-0011, FEAT-0017, REQ-0024]
     ISS-0008:
       file: docs/issues/ISS-0008-Issues-Open-Metric-Excludes-Fixed.md
       title: "metrics.issues_open excludes `fixed`, hiding 313 stalled issues across the fleet"
@@ -801,7 +635,7 @@ items:
       related: [ISS-0011, ISS-0012, ISS-0013, ISS-0014, TST-0002]
     ISS-0014:
       file: docs/issues/ISS-0014-Validator-Tail-Duplicated-And-No-Inline-Literal-Claim.md
-      title: "validate-docs.py ships its own second half twice: lines 1560-2560 duplicate 556-1556 verbatim, fleet-wide; the 'no inline status literal remains' claim is false; the walker's boundary prose still overclaims on dict, underscore names and nesting"
+      title: "validate-docs.py ships its own second half twice: lines 1560–2560 duplicate 556–1556 verbatim, fleet-wide; the 'no inline status literal remains' claim is false; the walker's boundary prose still overclaims on dict, underscore names and nesting"
       status: fixed
       severity: medium
       owner: user:edwin
@@ -911,21 +745,21 @@ items:
       implements: [FEAT-0005]
     REQ-0009:
       file: docs/requirements/REQ-0009-Release-Tracking.md
-      title: "Releases must be tracked as first-class notes with traceability to features, changes, and tests"
+      title: "Releases must be tracked as first-class notes with traceability"
       status: implemented
       owner: user:edwin
       priority: medium
       implements: [FEAT-0006]
     REQ-0010:
       file: docs/requirements/REQ-0010-Named-Relationship-Fields.md
-      title: "Child notes must use semantic named relationship fields that support multiple values and are filterable by Obsidian Bases"
+      title: "Named relationship fields with multi-parent support and Bases filterability"
       status: superseded
       owner: user:edwin
       priority: high
       implements: [FEAT-0007]
     REQ-0011:
       file: docs/requirements/REQ-0011-Phase-Notes.md
-      title: "Phases must be navigable first-class notes with contextual dashboards showing all items in that phase"
+      title: "Phases must be navigable first-class notes with contextual dashboards"
       status: implemented
       owner: user:edwin
       priority: medium
@@ -1105,13 +939,13 @@ items:
     ADR-0018:
       file: docs/decisions/ADR-0018-What-The-Generator-Owns.md
       title: "What the generator owns: it derives every field that has a note counterpart, it may remove entries by a reproducible rule but never add one, and item-level `note:` is scratch context that holds its entry until cleared"
-      status: proposed
+      status: accepted
       owner: user:edwin
       decision: "Three rules: fields with a note counterpart are derived (title, feature goal, joining status/counters/metrics); membership is derivable in ONE direction (remove, never add); item-level note: is scratch context that HOLDS its entry from removal and is reported, released by clearing it once the durable copy is in the note file"
       related: [ADR-0009, ADR-0005, ADR-0017, ISS-0030, ISS-0031]
     ADR-0017:
       file: docs/decisions/ADR-0017-Claims-About-Working-Software-Are-Derived.md
-      title: "A claim about whether the software works is derived from execution where possible, labelled and dated where not, and never written by the party seeking the transition it gates"
+      title: "A claim about whether the software works is derived from execution where execution is possible, labelled and dated where it is not, and in neither case trusted on the unmarked word of the party seeking the transition it gates"
       status: accepted
       owner: user:edwin
       decision: "State as one rule what ADR-0009, ADR-0010 and ADR-0014 each implement for one field. Three clauses; clause 3 is the invariant. Bounded to the running-system layer, with gate manifests, observability, pre-commitment reversibility and code contracts recorded as deliberate non-goals"
@@ -1218,13 +1052,13 @@ items:
 metrics:
   counts:
     features_total: 22
-    features_done: 18
+    features_done: 19
     phases_total: 3
     phases_done: 2
     tasks_total: 85
-    tasks_done: 74
-    tests_total: 2
-    tests_passing: 2
+    tasks_done: 78
+    tests_total: 3
+    tests_passing: 3
     tests_failing: 0
     issues_open: 18
     issues_triage: 0
