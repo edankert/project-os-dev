@@ -2,7 +2,7 @@
 type: "[[task]]"
 id: TASK-0084
 aliases: ["TASK-0084"]
-title: "Reconcile 579 drifted titles across the fleet, relocating narrative to `note:` where it earns its place"
+title: "Reconcile 657 drifted titles across the fleet, moving narrative into the note files where it earns its place"
 status: backlog
 phase: "[[PHASE-999]]"
 owner: user:edwin
@@ -22,7 +22,7 @@ tests: []
 
 ## What
 
-Before `title` becomes overwritten-from-the-note, decide what happens to each divergence. **579 fleet-wide**: 413 in `your-trainer`, 140 in `project-os-cockpit`, 26 here.
+Before `title` becomes overwritten-from-the-note, decide what happens to each divergence. **657 fleet-wide** (measured 2026-08-04 across all twelve repos, not the three first sampled): 413 in `your-trainer`, 140 in `project-os-cockpit`, 29 in `your-sudoku`, 25 each in `project-os-dev` and `your-applications.com`, 17 in `your-health`, and 12 across the five smallest.
 
 This is the task that prevents the other two from destroying anything, and it is the only one that needs judgement rather than code.
 
@@ -30,7 +30,7 @@ This is the task that prevents the other two from destroying anything, and it is
 
 For each drifted entry:
 
-- **Discard** — the snapshot title is a stale or abbreviated version of the note's. The note wins; nothing is lost. Expected to cover most of `project-os-cockpit`'s 140 and all 26 here, where snapshot titles are *shorter* than their notes'.
+- **Discard** — the snapshot title is a stale or abbreviated version of the note's. The note wins; nothing is lost. Expected to cover most of `project-os-cockpit`'s 140 and all 25 here, where snapshot titles are *shorter* than their notes'.
 - **Relocate into the note file** — the snapshot title carries narrative the note does not: root cause, current blocker, what changed and why. This is real content and it belongs in the `.md`, **not** in the snapshot's `note:` field, which ADR-0018 rule 3 declares scratch context. Expected to cover much of `your-trainer`'s 413, where snapshot titles run to 2,160 characters and hold crash-report forensics.
 - **Promote to the note** — the snapshot title is simply *better* than the note's. Fix the note; the snapshot then derives correctly.
 
@@ -56,7 +56,7 @@ So the worklist can be produced and *ordered* mechanically, and roughly half nee
 
 ## Definition of Done
 
-- [ ] Every one of the 579 divergences has a recorded disposition.
+- [ ] Every one of the 657 divergences has a recorded disposition.
 - [ ] Narrative worth keeping is in the **note file**; no divergence is resolved by moving prose into the snapshot's `note:` field.
 - [ ] The 10 orphan titles (<50% present in their note) are each accounted for individually — they are the only ones where a mistake is unrecoverable.
 - [ ] Notes corrected where the snapshot title was the better one.

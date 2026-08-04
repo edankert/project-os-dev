@@ -49,6 +49,7 @@ Where `N` lives is a decision this task must make and record. `retention.recent_
 - **Surgical.** Delete whole entries in place. Do not re-emit the file — that is the whole-file generation ADR-0018 explicitly does not revive.
 - **Legible.** Emit a `# Pruned:` comment in the fleet's existing style, and report removals on stdout as counter and metric changes already are.
 - **Escapable.** `--no-prune` disables it.
+- **Inert until the repo opts in.** The prune runs only where the repo's snapshot declares the retention window key; **absent means no-op**. This is what makes the fleet rollout possible at all — see [[TASK-0085-Fleet-Rollout|TASK-0085]]. Without it, the step arms in all twelve repos the moment each syncs, including repos whose drifted titles have not been triaged, and every repo's CI goes red on `sync-snapshot --check` until someone commits a pruned snapshot. A repo that never adds the key keeps today's behaviour indefinitely, which is the correct default for a dormant repo.
 
 ## Verification
 

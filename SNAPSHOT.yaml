@@ -34,7 +34,7 @@ counters:
   REL: 0
   REQ: 24
   RISK: 2
-  TASK: 84
+  TASK: 85
   TST: 2
   WF: 3
 
@@ -75,7 +75,7 @@ items:
       title: "Retention runs on every sync, and `title` stops being a second copy: implements ADR-0018"
       status: backlog
       phase: "[[PHASE-999]]"
-      tasks: [TASK-0082, TASK-0083, TASK-0084]
+      tasks: [TASK-0082, TASK-0083, TASK-0084, TASK-0085]
       note: "Implements ADR-0018. Counter-intuitive ordering: title derivation (TASK-0083) lands BEFORE the prune, because pruning first would delete entries whose titles hold narrative existing nowhere else — measured, 10 of your-trainer's 405 divergences exist essentially nowhere but the snapshot, and 168 more are partial. Title derivation alone removes 28% of that file."
     FEAT-0021:
       file: "docs/features/snapshot-access/FEAT-0021-Serve-Orientation-Answer-Lookup.md"
@@ -217,6 +217,15 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0085:
+      file: "docs/features/snapshot-retention/plan/tasks/TASK-0085-Fleet-Rollout.md"
+      title: "Fleet rollout: ship both halves inert, then opt in one repo at a time, cheapest first"
+      status: backlog
+      phase: "[[PHASE-999]]"
+      parent: FEAT-0022
+      effort: L
+      depends: [TASK-0082, TASK-0083, TASK-0084]
+      note: "Shared code, per-repo readiness — so both halves ship inert and each repo opts in via its own snapshot key. Without that, all 12 CIs go red on sync-snapshot --check simultaneously. Measured worklist: 3,162 items, 657 drifted titles, 1,614 prunable; your-trainer and cockpit are 84% of the drift. Order is ascending cost — first real prune is obsidian-supernote-sync at 3 entries, your-trainer last at 709."
     TASK-0082:
       file: "docs/features/snapshot-retention/plan/tasks/TASK-0082-Prune-Step-In-Sync.md"
       title: "Prune step in sync-snapshot.py: remove entries by reproducible rule on every run"
@@ -234,10 +243,10 @@ items:
       parent: FEAT-0022
       effort: M
       blocks: [TASK-0084]
-      note: "579 drifted titles fleet-wide (your-trainer 413, cockpit 140, here 26). Same failure ADR-0009 removed for status. Size effect runs both ways: your-trainer -28%, cockpit and here +2%."
+      note: "657 drifted titles fleet-wide across 12 repos (your-trainer 413, cockpit 140, sudoku 29, here 25). Same failure ADR-0009 removed for status. Size effect runs both ways: your-trainer -28%, cockpit and here +2%."
     TASK-0084:
       file: "docs/features/snapshot-retention/plan/tasks/TASK-0084-Reconcile-Drifted-Titles.md"
-      title: "Reconcile 579 drifted titles across the fleet, relocating narrative to `note:` where it earns its place"
+      title: "Reconcile 657 drifted titles across the fleet, moving narrative into the note files where it earns its place"
       status: backlog
       phase: "[[PHASE-999]]"
       parent: FEAT-0022
@@ -1204,7 +1213,7 @@ metrics:
     features_done: 18
     phases_total: 3
     phases_done: 2
-    tasks_total: 84
+    tasks_total: 85
     tasks_done: 74
     tests_total: 2
     tests_passing: 2
