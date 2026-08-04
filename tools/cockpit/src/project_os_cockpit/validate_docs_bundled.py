@@ -660,7 +660,7 @@ def load_grandfathered(root):
 METRIC_PREFIXES = {"FEAT", "TASK", "ISS", "PHASE", "TST", "RISK", "REL", "ADR", "REQ"}
 
 
-def compute_metric_counts(items, note_index):
+def compute_metric_counts(items, note_index, claimants=None):
     """Counts over all notes in docs/ (the archive) plus snapshot items; snapshot status wins where both exist."""
     statuses = {}
     for coll in (items.values() if isinstance(items, dict) else []):
@@ -669,7 +669,21 @@ def compute_metric_counts(items, note_index):
         for item_id, entry in coll.items():
             if isinstance(entry, dict) and str(entry.get("status", "") or ""):
                 statuses[item_id] = str(entry.get("status", "") or "")
+    # ADR-0018/FEAT-0022: the archive fallback must use only notes that
+    # genuinely CLAIM an id. `note_index` matches IDs as substrings, so a
+    # composite filename lends its status to an unrelated item once that
+    # item's snapshot entry is pruned.
+    for nid, paths in (claimants or {}).items():
+        if len(paths) != 1:
+            continue
+        fm = parse_frontmatter(paths[0]) or {}
+        st = str(fm.get("status", "") or "").strip()
+        if st:
+            statuses.setdefault(nid, st)
     for nid, (_path, fm) in note_index.items():
+        claimed = str((fm or {}).get("id", "") or "").strip()
+        if claimed and claimed != nid:
+            continue
         statuses.setdefault(nid, str((fm or {}).get("status", "") or ""))
     by_prefix = {}
     for the_id, status in statuses.items():
@@ -692,7 +706,8 @@ def fix_metrics(root):
     snap = load_yaml(text)
     if not isinstance(snap, dict):
         return []
-    computed = compute_metric_counts(snap.get("items") or {}, build_note_index(root / "docs")[0])
+    _idx, _cl = build_note_index(root / "docs")
+    computed = compute_metric_counts(snap.get("items") or {}, _idx, _cl)
     lines = text.splitlines(keepends=True)
     changes = []
     in_metrics = in_counts = False
@@ -1668,7 +1683,7 @@ def validate(root, report):
     metrics = snap.get("metrics") or {}
     counts = metrics.get("counts") if isinstance(metrics, dict) else None
     if isinstance(counts, dict):
-        computed = compute_metric_counts(items, note_index)
+        computed = compute_metric_counts(items, note_index, note_claimants)
         for key in sorted(counts):
             if key not in computed:
                 continue

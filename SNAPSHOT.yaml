@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 22
-  ISS: 32
+  ISS: 39
   PHASE: 2
   REL: 0
   REQ: 24
@@ -43,10 +43,10 @@ focus:
   feature: "FEAT-0022"
   phase: "PHASE-999"
   issue: ""
-  note: "2026-08-04 FEAT-0022 implemented and rolled out to all twelve repos: title/goal derived from notes, retention pruning on every sync, both inert until a repo opts in. Fleet snapshots 1,158KB -> 707KB (-39%); your-trainer -71%. TST-0003 passing, mutation-verified. ISS-0032 stays open pending a re-review round; the CHG note needs independent review."
+  note: "2026-08-04 FEAT-0022 done and rolled out to twelve repos: title/goal derived from notes, retention pruning on every sync, both inert until a repo opts in. Fleet snapshots 1,152KB -> ~715KB; your-trainer -71%, 1,065 -> 412 items. Eight clean-context review rounds (ISS-0032..0039), approved on the eighth; rounds four to eight found no code defect. Losslessness re-derived independently four times: 1,352 removals, 0 whose note cannot supply the terminal status; 709 migration-record rows, 0 mismatches. Recorded debt: ADR-0018 authorises six prune conditions where seven are implemented; twelve bundled validators are no longer verbatim; prunable_ids resolves note_fm through the substring index."
 
 items:
-  # Pruned 28 terminal item(s) by retention policy (ADR-0018); the notes remain the archive.
+  # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
     PHASE-0001:
       file: docs/phases/PHASE-0001-Documentation-System-Foundations.md
@@ -478,6 +478,66 @@ items:
       external: "../project-os-cockpit/docs/issues/ISS-0026-Bundled-Validator-Drift.md"
 
   issues:
+    ISS-0039:
+      file: "docs/issues/ISS-0039-The-Restatement-Reached-Three-Surfaces-Of-Four.md"
+      status: open
+      severity: low
+      phase: "[[PHASE-999]]"
+      component: tooling
+      note: "Round-seven clean-context review verdict on FEAT-0022 (changes-requested). FOURTH consecutive round with no code defect, and the restated skip set is CONFIRMED by my own measurement: 203 registered entries unsupplied fleet-wide = 200 CHG-* + 3 zero-byte (cockpit TASK-0182/0183/0187, the only zero-byte notes in the twelve). Both retracted readings independently refuted — the 14 PyYAML-rejecting files (8/5/1) all supply titles via parse_yaml_subset, and the 14 your-health REF-* entries are supplied. Re-derived: 3,146 pre-migration items, 1,352 removals with 0 lossy, 709 migration rows with 0 mismatches against each repo's own pre-migration snapshot, 12/12 validate exit 0 bar the standing REVIEW error, --check clean, 23 assertions green everywhere, two real syncs byte-identical in all twelve. '10 of 22' confirmed reachable; my own 22 score 8/14 and the gap is my formulations, not the suite. What blocks is one line: test-retention.py:133-136 is the fourth of the four surfaces round six named, and it kept the stale number while dropping the decomposition — it now asserts '17 real notes ... all zero-byte' where 3 exist, which is worse than the text it replaced. Replace '17 real notes' with '3'. Non-blocking: CHG:54's 3,146 -> 1,817 now measures 1,819 (project-os-dev row 136 not 134); CHG:85's 1,350 removals now measures 1,352."
+      related: [FEAT-0022, ADR-0018, ISS-0026, ISS-0033, ISS-0034, ISS-0035, ISS-0036, ISS-0037, ISS-0038, TST-0003, CHG-20260804-Retention-And-Field-Derivation]
+    ISS-0038:
+      file: "docs/issues/ISS-0038-The-Seventeen-Names-Fourteen-Files-That-Do-Supply-Titles.md"
+      status: open
+      severity: low
+      phase: "[[PHASE-999]]"
+      component: tooling
+      note: "Round-six clean-context review verdict on FEAT-0022 (changes-requested). THIRD consecutive round with no code defect, and round five's diagnosis is fixed: the two notes now agree on every shared figure (fails 4, ten breaks, 10 of 22, 200/198, 23 assertions, 3,146, 16/3), the false known-gap is gone and 'every prune condition is violated in turn' is gone. Re-derived independently: my own 22 mutations score 10 caught / 12 survived, all twelve named survivors confirmed individually; 1,352 removals with 0 whose note cannot supply the terminal status; 709 migration rows, every `was:` value verified against that repo's own pre-migration snapshot, 0 mismatches; 12/12 validate exit 0 bar the standing REVIEW error, 0 internal error, --check clean, 23 assertions green everywhere, two real syncs byte-identical in all twelve. What blocks is one sentence: the restated seventeen names 14 files (8 your-trainer, 5 your-health, 1 your-applications.com) as unable to supply a title, and all 14 DO supply one — PyYAML rejects their mis-indented acceptance list, load_yaml's parse_yaml_subset fallback reads them, and your-health's SNAPSHOT carries the derived title for REQ-0024 today. Under the code's own reader 0 files under docs/ are unparseable. The real seventeen is 3 zero-byte notes plus 14 your-health REF-* entries whose notes EXIST but whose prefix is outside ID_PREFIXES, so no note claims the ID — which also balances the note's own 17+200=217. ISS-0037's refutation of round five ('all 14 have note files') is literally true and beside the point. Four surfaces carry it: CHG:78, TST-0003:51, sync-snapshot.py:269-271, test-retention.py:135. Second, smaller: CHG:78 has a spliced `.md` artifact opening an unclosed code span. Non-blocking: CHG:120 names 9 survivors where TST names 12; CHG:70 omits condition (7) from the inverted list; item counts drifted to 3,146 -> 1,818."
+      related: [FEAT-0022, ADR-0018, ISS-0026, ISS-0033, ISS-0034, ISS-0035, ISS-0036, ISS-0037, TST-0003, CHG-20260804-Retention-And-Field-Derivation]
+    ISS-0037:
+      file: "docs/issues/ISS-0037-Round-Five-Corrections-Landed-On-One-Note-Of-Two.md"
+      status: open
+      severity: low
+      phase: "[[PHASE-999]]"
+      component: tooling
+      note: "Round-five clean-context review verdict on FEAT-0022 (changes-requested). SECOND consecutive round with NO code defect: 22 mutations reproduce 10 caught / 12 survived row for row, 1,352 removals with 0 whose note cannot supply the terminal status, 709 migration rows / 0 mismatches, 12/12 validate exit 0 bar the standing REVIEW error, --check clean, two real syncs byte-identical, your-trainer's validator output byte-identical across the prune at 175 lines, cockpit metrics identical on all 14 keys, twelve bundled copies at one md5. Fleet figures now exact: 1,151,665 before, 714,829 after, items 3,146 -> 1,817, 200/198 unclaimed CHG-*, 16 braced and 3 quoted titles, 23 assertions. What blocks: round four's seven corrections landed on CHG-20260804 and not on TST-0003, which still says 'fails 3 assertions' (four), still records a known gap that `the_id not in statuses` survives (it is caught), and still says 161 where 200 is measured — so the two notes under review now contradict each other. CHG:70 still says every prune condition is inverted when condition (4) has no fixture at all. And the rewritten seventeen names a population (every docs/**/*.md) against which it measures 3 and 98, not 3 and 14; the real seventeen is 3 zero-byte notes plus 14 registered entries with no note. Non-blocking: condition (7) resolves note_fm through the substring index rather than claimants — the third instance of that shape, latent, 0 of 12 repos affected."
+      related: [FEAT-0022, ADR-0018, ISS-0026, ISS-0033, ISS-0034, ISS-0035, ISS-0036, TST-0003, CHG-20260804-Retention-And-Field-Derivation]
+    ISS-0036:
+      file: "docs/issues/ISS-0036-Round-Four-Engineering-Resolved-Record-Still-Misstates-It.md"
+      title: "Round-four review of the ISS-0035 fixes: all four blocking items are resolved on the merits — twelve bundled validators patched, deferred protection structural and now genuinely guarded, 1,351 removals with nothing lost — but the rewritten fleet figure is 100 bytes off a git-immutable constant, the condition-(4) sentence round three quoted as false is unchanged, and ADR-0018 still authorises a six-condition rule the code no longer implements"
+      status: open
+      severity: low
+      phase: "[[PHASE-999]]"
+      component: tooling
+      note: "Round-four clean-context review verdict on FEAT-0022 (changes-requested). NO code defect found: all four of ISS-0035's blocking items resolved on the merits. Twelve bundled validator copies counted, patched and byte-identical; cockpit metrics identical to 48ea49e~1 on all 14 keys; deferred protection real, structural and guarded — reverting condition (5) fails four assertions including cond3, block/inline-bare/inline-QUOTED deferred notes all survive through main(), reinstating condition (3) changes 0 of 12 repos, and 0 IDs fleet-wide are in statuses but not in index, so nothing can be pruned that could not be before. Fleet re-measured from scratch: 12/12 validate exit 0 bar the standing REVIEW error, 0 internal error, --check clean, 23 assertions green everywhere, two real syncs byte-identical, 1,351 removals with 0 unbacked, 709 migration rows / 0 mismatches. Ten of 22 mutations caught, not nine — two that round three recorded as surviving now fall to cond3. What blocks is the record: CHG:52's rewritten fleet figure is 1,151,765 against an immutable 1,151,665; CHG:68 still says every prune condition is inverted when condition (4) is not; the 161/Seventeen figures reproduce under no population (200 and 198 measured); commit: empty for a third round. Non-blocking: ADR-0018 enumerates six conditions and the code implements seven, omitting the verification hold entirely; the bundled copies are no longer verbatim, differing by 15 comment lines."
+      related: [FEAT-0022, ADR-0018, ISS-0026, ISS-0033, ISS-0034, ISS-0035, TST-0003, CHG-20260804-Retention-And-Field-Derivation]
+    ISS-0035:
+      file: "docs/issues/ISS-0035-Metric-Fix-Missed-The-Bundled-Validators-And-The-Notes-Still-Describe-Round-Two.md"
+      title: "Round-three review of the ISS-0034 fixes: both blocking defects are genuinely fixed and the fleet is clean, but the metric fix never reached the two bundled validator copies — project-os-cockpit's own cockpit reports `ERROR [METRICS] features_done is 55 but computed 54` today — and `TST-0003`/`CHG-20260804` still describe round two's artifact while six of ISS-0034's next actions are ticked without being done"
+      status: open
+      severity: medium
+      phase: "[[PHASE-999]]"
+      component: tooling
+      note: "Round-three clean-context review verdict on FEAT-0022 (changes-requested). Both ISS-0034 blocking findings resolved on the merits and both self-reported defects gone: cockpit metrics identical to 48ea49e~1 on all 15 keys, the claimants change alters exactly one ID fleet-wide, both round-one reverts now fail the suite, 0 'internal error' in twelve repos, your-health's validator is its own version plus only the metric fix. Fleet healthiest yet: 12/12 --check clean, idempotent over two real syncs, 1,350 pruned entries with 0 whose note cannot supply its terminal status, 709 migration rows with 0 mismatches. Four block. First: the metric fix never reached validate_docs_bundled.py in project-os-dev or project-os-cockpit, so the cockpit's own bundled validator reports ERROR [METRICS] 55 vs 54 today, and CHG impacts: never listed validate-docs.py. Second: TST-0003's adequacy claims 'the deferred check deleted' is caught — it now survives, because tightening condition (5) made condition (3) dead code, which three documents still describe as live. Third: TST-0003 and CHG-20260804 were not updated for this round at all (18 vs 23 assertions, 'Eleven assertions', 8 of 10 byte rows stale, 707 KB vs 711 KB, empty commit:, no description of the round's own fixes). Fourth: four of ISS-0034's six ticked next actions are not done."
+      related: [FEAT-0022, ADR-0018, ISS-0026, ISS-0033, ISS-0034, TST-0003, CHG-20260804-Retention-And-Field-Derivation]
+    ISS-0034:
+      file: "docs/issues/ISS-0034-Cockpit-Features-Done-Still-Short-And-The-Suite-Does-Not-Guard-Either-Fix.md"
+      title: "Round-two review of the ISS-0033 fixes: the fixes hold, but project-os-cockpit still reports one done feature short while CHG-20260804 says the metric is restored, and TST-0003 guards neither of the two blocking fixes — reverting condition (5) to `index` or `_scalar_span` to the original brace test leaves the suite green"
+      status: open
+      severity: medium
+      phase: "[[PHASE-999]]"
+      component: tooling
+      note: "Round-two clean-context review verdict on FEAT-0022 (changes-requested). Four of ISS-0033's five blocking findings resolved on the merits — condition (5) rejects zero-byte/unparseable/status-less/loose-index-only notes, block-style braced derivation works, the migration record is 709 rows with 0 mismatches and 0 omissions, both writers execute, condition (3) is falsifiable AND reachable. Two block. First: project-os-cockpit features_done is still 54 against a pre-migration 55 while CHG-20260804:56 claims both metrics restored; FEAT-0009 is legitimately prunable, and the real loss is compute_metric_counts' index fallback resolving it to CHG-20260525-FEAT-0009-Chrome-Polish ('merged'), so 'the notes remain the archive' fails for that ID. Second: TST-0003 guards neither fix — reverting condition (5) to `index` or _scalar_span to find('{') leaves the suite green, and TST-0003:47 claims a zero-byte/unparseable fixture that does not exist. Non-blocking: _focus_ids collects a greedy token instead of extract_ids, so wikilink/path-form IDs in focus are unprotected (latent, checked all twelve); condition (5) requires a status, not the terminal status, and an inline quoted status makes that live; CHG verification section, impact table, fleet figure and commit: are stale after the re-migration."
+      related: [FEAT-0022, ADR-0018, ISS-0032, ISS-0033, TST-0003, CHG-20260804-Retention-And-Field-Derivation]
+    ISS-0033:
+      file: "docs/issues/ISS-0033-Prune-Deletes-Entries-Whose-Notes-Cannot-Replace-Them.md"
+      title: "Independent review of the FEAT-0022 implementation: the prune deleted three entries whose notes are zero-byte files, derivation silently stops working for any block-style value containing a brace (live in yourtrainer-mcp today), the migration record is empty in four repos that replaced 45 values, and TST-0003 never executes either destructive writer"
+      status: open
+      severity: high
+      phase: "[[PHASE-999]]"
+      component: tooling
+      note: "Clean-context CODE review verdict on FEAT-0022 (changes-requested); ISS-0032 was the planning-note review. Five blocking. Worst: condition (5) checks that a note is INDEXED, not that it parses, so TASK-0182/0183/0187 in project-os-cockpit were pruned against zero-byte notes and tasks_done fell 271->268 — the same 3 zero-byte notes ISS-0032 #5 found, fail-safed on the derivation path and not the destructive one. Second: _scalar_span picks block-vs-inline from find('{') over the whole line, so any block-style value containing a brace is never derived and never reported, --check included; live in yourtrainer-mcp TASK-0065. Third: the migration record says 0 replaced in project-os-dev/articles/edankert.com, which replaced 43 between them. Fourth: stubbing prune_entries and sync_derived_fields to return [] leaves TST-0003 green. Fifth: the condition-3 fixture is not illegal and the deferred branch is unreachable, so ISS-0032 #6 is unresolved. Held on re-measurement: idempotence, --check in both YAML styles, no validator check silenced, the 12/3 hold measurement, 0 errors in twelve repos, -39% fleet and -71% your-trainer."
+      related: [FEAT-0022, ADR-0018, ISS-0032, TST-0003]
     ISS-0032:
       file: "docs/issues/ISS-0032-FEAT-0022-Amendment-Leftovers-And-Derivation-Failsafe.md"
       title: "Independent review of FEAT-0022/ADR-0018: ADR-0018 still publishes the pre-amendment hold table, TASK-0082 contradicts itself on whether `goal:` holds, three tasks carry Definitions of Done that require the task depending on them, and title derivation has no fail-safe for the 9 notes fleet-wide that yield no title"
@@ -616,14 +676,6 @@ items:
       status: open
       severity: low
       phase: PHASE-999
-    ISS-0008:
-      file: docs/issues/ISS-0008-Issues-Open-Metric-Excludes-Fixed.md
-      title: "metrics.issues_open excludes `fixed`, hiding 313 stalled issues across the fleet"
-      status: fixed
-      severity: medium
-      owner: user:edwin
-      phase: PHASE-0002
-      related: [ADR-0008, FEAT-0013, REQ-0017]
     ISS-0015:
       file: docs/issues/ISS-0015-Walker-Depth-Cap-And-Decision-Alias-Nondeterminism.md
       title: "The walker stops at depth 4 while the docstring and TST-0002 say 'any nesting depth'; and the decision-alias hole was a hash-seed coin flip, not 'validated against nothing' — STATUS-VALUE still picks its type nondeterministically"
@@ -660,30 +712,6 @@ items:
       phase: PHASE-999
       note: "Filed from independent review of TST-0002/CHG-20260726 (changes-requested); one-line fix registers CLOSED_PHASE_STATUSES in FLAT_STATUS_TABLES"
       related: [ISS-0011, ADR-0012, TST-0002]
-    ISS-0011:
-      file: docs/issues/ISS-0011-Phase-Resolved-Kept-Wont-Fix.md
-      title: "ADR-0012's `wont-fix` -> `declined` rename missed three status tables in validate-docs.py: PHASE-CHILDREN refused declined issues, and REQ-PREMATURE and PLAN-FOLLOWS were silently dead"
-      status: fixed
-      severity: medium
-      owner: user:edwin
-      phase: PHASE-999
-      related: [ADR-0012, ADR-0008, ISS-0009]
-    ISS-0010:
-      file: docs/issues/ISS-0010-Plans-Never-Advance.md
-      title: "Plan notes never advance: 31 plans sit at draft/active under a done feature, and 16 carry no status at all"
-      status: fixed
-      severity: medium
-      owner: user:edwin
-      phase: PHASE-999
-      related: [ADR-0006, REQ-0018]
-    ISS-0009:
-      file: docs/issues/ISS-0009-Fleet-Status-Vocabulary-Drift.md
-      title: "Fleet status vocabulary drift: ~370 writes outside the taxonomy, including 71 tasks at the illegal status `superseded`"
-      status: fixed
-      severity: medium
-      owner: user:edwin
-      phase: PHASE-0002
-      related: [ADR-0008, FEAT-0013, REQ-0016]
   # Pruned: ISS-0001 (closed, PHASE-0001). Note preserved under docs/issues/.
 
   requirements:
@@ -891,6 +919,12 @@ items:
       status: passing
       requirements: [REQ-0022]
       tasks: [TASK-0067]
+    TST-0003:
+      file: "docs/tests/TST-0003-Retention-And-Derivation-Invariants.md"
+      title: "Retention and derivation invariants: every prune condition holds an entry back, and derivation never blanks a title"
+      status: passing
+      features: [FEAT-0022]
+      tasks: [TASK-0082, TASK-0083]
     TST-0002:
       file: docs/tests/TST-0002-Status-Table-Consistency.md
       title: "Status table consistency: no status table in the validator can drift from the allowed taxonomy"
@@ -1060,7 +1094,7 @@ metrics:
     tests_total: 3
     tests_passing: 3
     tests_failing: 0
-    issues_open: 18
+    issues_open: 25
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0

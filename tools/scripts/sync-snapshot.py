@@ -101,7 +101,7 @@ def _yaml_quote(value):
     """Double-quote a scalar so it is safe in BOTH block and inline-flow context.
 
     Titles legitimately contain commas, braces and quotes -- 16 of the fleet's
-    3,164 carry braces and 3 carry double quotes -- so an unquoted emission
+    3,146 carry braces and 3 carry double quotes -- so an unquoted emission
     would corrupt an inline flow mapping. Always quoting is the only shape that
     is correct in both places.
     """
@@ -120,12 +120,18 @@ def _scalar_span(line, key):
     the first embedded quote, and `[^,]*` mis-ends on the first embedded comma.
     """
     body = line.rstrip("\n")
+    # A block field line is `<indent>key: value`. Decide on THAT, never on
+    # whether a brace appears somewhere in the line: `title: "a {braced} value"`
+    # is block style, and testing find("{") sent it down the inline path where
+    # the key is invisible, so derivation silently skipped it. Ten of twelve
+    # repos are block style, so that mistake disabled the feature almost
+    # everywhere while reporting nothing.
+    m = re.match(r"^\s+%s:[ \t]*" % re.escape(key), body)
+    if m:
+        return (m.end(), len(body))
     brace = body.find("{")
     if brace == -1:
-        m = re.match(r"^\s+%s:[ \t]*" % re.escape(key), body)
-        if not m:
-            return None
-        return (m.end(), len(body))
+        return None
 
     # inline flow mapping: find `key:` at depth 1, outside any quoted scalar
     i, depth, quote = brace, 0, None
@@ -165,6 +171,11 @@ def _value_end(body, start):
                 j += 2
                 continue
             if body[j] == q:
+                # YAML escapes a single quote by DOUBLING it; `'` alone is only
+                # the end if the next character is not another `'`.
+                if q == "'" and j + 1 < len(body) and body[j + 1] == "'":
+                    j += 2
+                    continue
                 return j + 1
             j += 1
         return len(body)
@@ -205,7 +216,7 @@ def note_statuses(root):
         st = str(fm.get("status", "") or "").strip()
         if st:
             out[the_id] = st
-    return out, index
+    return out, index, claimants
 
 
 def sync_statuses(lines, statuses):
@@ -253,11 +264,15 @@ def note_fields(root):
 
     Fail-safe, per ADR-0018 and TASK-0083: an id appears here only when a single
     note claims it AND supplies a non-empty value. Everything else -- missing
-    note, zero-byte file, unparseable frontmatter, absent or blank `title:`,
-    ambiguous claim -- is simply absent, so the caller leaves the snapshot value
-    untouched. Seventeen notes in the fleet are in exactly that state (3
-    zero-byte, 14 unparseable), plus 161 CHG-* entries whose date-slug ids no
-    note claims; blindly writing `note.title` over them would blank every one.
+    note, zero-byte file, ambiguous claim, absent or blank `title:` -- is simply
+    absent, so the caller leaves the snapshot value untouched.
+
+    Measured fleet-wide: 203 registered entries are skipped. 200 are CHG-*
+    entries no note claims by id (change notes are keyed by date-slug); the
+    other 3 are zero-byte notes. Files whose frontmatter PyYAML rejects are NOT
+    among them -- `load_yaml` falls back to `parse_yaml_subset` and they supply
+    titles normally, which three review rounds got wrong in two directions
+    before anyone ran the code.
     """
     _, claimants = build_note_index(root / "docs")
     out = {}
@@ -357,8 +372,8 @@ def sync_counters(lines, index):
     return changes
 
 
-def sync_metrics(lines, snap, index):
-    computed = compute_metric_counts(snap.get("items") or {}, index)
+def sync_metrics(lines, snap, index, claimants=None):
+    computed = compute_metric_counts(snap.get("items") or {}, index, claimants)
     changes, in_metrics, in_counts = [], False, False
     for i, line in enumerate(lines):
         if re.match(r"^metrics:\s*$", line):
@@ -414,14 +429,31 @@ def _owes_verification(entry, note_fm, statuses):
             or str(note_fm.get("verification_waiver", "") or "").strip()):
         return True
     linked = set(_vd.extract_ids(entry.get("tests"))) | set(_vd.extract_ids(note_fm.get("tests")))
-    return any(statuses.get(t, "passing") != "passing" for t in linked)
+    # Fail CLOSED on a test we cannot resolve: an unknown status is not
+    # evidence of passing, and this decides whether an entry is deleted.
+    return any(statuses.get(t, "unknown") != "passing" for t in linked)
 
 
 def prunable_ids(snap, index, window, statuses):
     """IDs removable under ADR-0018's conditions. Fail-safe: doubt -> keep."""
     items = snap.get("items") or {}
-    focus = {str(v).strip() for v in (snap.get("focus") or {}).values()
-             if isinstance(v, str)}
+    def _focus_ids(node, acc):
+        if isinstance(node, str):
+            # Use the validator's own extractor: it returns CANONICAL ids, so a
+            # wikilink or a path resolves to `TASK-0182` rather than to the
+            # whole slug. Collecting a greedy token instead protected neither.
+            acc.update(_vd.extract_ids(node))
+        elif isinstance(node, dict):
+            for v in node.values():
+                _focus_ids(v, acc)
+        elif isinstance(node, list):
+            for v in node:
+                _focus_ids(v, acc)
+        return acc
+    # Focus nests in some repos and names ids in prose in others; an exact
+    # match on top-level strings protected neither, and pruned an id that
+    # `focus.note` was actively discussing.
+    focus = _focus_ids(snap.get("focus") or {}, set())
     out = []
     for coll, terminal in sorted(PRUNABLE_TERMINAL.items()):
         entries = items.get(coll)
@@ -440,13 +472,24 @@ def prunable_ids(snap, index, window, statuses):
             status = str(entry.get("status", "") or "").strip()
             if status != terminal:            # (1) terminal only
                 continue
-            if status == "deferred":          # (3) never -- ADR-0005
-                continue
+            # Deferred items are protected STRUCTURALLY by (5), not by a
+            # separate check: (5) requires the note's status to equal the
+            # collection's terminal status, and `deferred` never is. An
+            # explicit condition here would be unreachable, and an unreachable
+            # rule reads as protection while providing none -- the shape
+            # ADR-0011 refuses. ADR-0005's invariant is unchanged; what changed
+            # is which line enforces it. Asserted by `cond3 deferred survives`.
             if the_id in recent:              # (2)
                 continue
             if the_id in focus:               # (4)
                 continue
-            if the_id not in index:           # (5) note must exist and parse
+            # (5) a note must exist, parse, and genuinely claim this id.
+            # `index` is a loose substring match that also stores {} for an
+            # unparseable file, so membership in it proves neither. Using it
+            # pruned three cockpit tasks whose notes are zero-byte files --
+            # the entry AND the note were then empty, which is the one
+            # outcome this whole feature promised could not happen.
+            if statuses.get(the_id) != terminal:
                 continue
             # (6) `note:` is scratch context but HOLDS its entry until cleared.
             # `goal:` does NOT hold -- it is derived under rule 1.
@@ -478,9 +521,13 @@ def prune_entries(lines, targets):
     drop = {i for _, i in targets}
     if not drop:
         return []
-    keep, removed, skipping, indent = [], [], None, 0
+    keep, removed, skipping, indent, in_items = [], [], None, 0, False
     for line in lines:
-        m = _ITEM_RE.match(line)
+        if re.match(r"^items:\s*$", line):
+            in_items = True
+        elif in_items and re.match(r"^\S", line):
+            in_items = False
+        m = _ITEM_RE.match(line) if in_items else None
         if m:
             skipping = None
             if m.group(2) in drop:
@@ -495,12 +542,13 @@ def prune_entries(lines, targets):
                 continue
         keep.append(line)
     if removed:
-        for i, line in enumerate(keep):
-            if re.match(r"^items:\s*$", line):
-                keep.insert(i + 1, "  # Pruned %d terminal item(s) by retention "
-                                   "policy (ADR-0018); the notes remain the archive.\n"
-                            % len(removed))
-                break
+        banner = ("  # Pruned by retention policy (ADR-0018); the notes remain "
+                  "the archive.\n")
+        if not any(l == banner for l in keep):
+            for i, line in enumerate(keep):
+                if re.match(r"^items:\s*$", line):
+                    keep.insert(i + 1, banner)
+                    break
     lines[:] = keep
     return removed
 
@@ -594,7 +642,7 @@ def main(argv=None):
 
     text = snap_path.read_text(encoding="utf-8")
     lines = text.splitlines(keepends=True)
-    statuses, index = note_statuses(root)
+    statuses, index, claimants = note_statuses(root)
     fields = note_fields(root)
     derive_on, window = retention_config(load_yaml(text) or {})
 
@@ -609,7 +657,7 @@ def main(argv=None):
     fd_changes = sync_derived_fields(lines, fields, derive_on and not args.check)
     ct_changes = sync_counters(lines, index)
     snap_after = load_yaml("".join(lines)) or {}
-    mt_changes = sync_metrics(lines, snap_after, index)
+    mt_changes = sync_metrics(lines, snap_after, index, claimants)
 
     pruned, held = [], []
     if window is not None and not args.no_prune:
@@ -620,7 +668,7 @@ def main(argv=None):
         else:
             pruned = prune_entries(lines, targets)
             snap_after = load_yaml("".join(lines)) or {}
-            mt_changes += sync_metrics(lines, snap_after, index)
+            mt_changes += sync_metrics(lines, snap_after, index, claimants)
     new_text = "".join(lines)
 
     total = (len(st_changes) + len(ct_changes) + len(mt_changes)
