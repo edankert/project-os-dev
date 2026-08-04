@@ -76,7 +76,7 @@ items:
       status: backlog
       phase: "[[PHASE-999]]"
       tasks: [TASK-0082, TASK-0083, TASK-0084]
-      note: "Implements ADR-0018. Counter-intuitive ordering: title derivation (TASK-0083) lands BEFORE the prune, because pruning first would delete entries whose titles hold narrative existing nowhere else — your-trainer has 413 drifted titles and 0 of 709 terminal entries carry note: prose, so rule 6 protects none of them. Title derivation alone removes 28% of your-trainer's file."
+      note: "Implements ADR-0018. Counter-intuitive ordering: title derivation (TASK-0083) lands BEFORE the prune, because pruning first would delete entries whose titles hold narrative existing nowhere else — measured, 10 of your-trainer's 405 divergences exist essentially nowhere but the snapshot, and 168 more are partial. Title derivation alone removes 28% of that file."
     FEAT-0021:
       file: "docs/features/snapshot-access/FEAT-0021-Serve-Orientation-Answer-Lookup.md"
       title: "Serve orientation, answer lookup: the startup hook emits the in-flight slice instead of a reminder, and a format-independent query replaces grep against YAML"
@@ -225,7 +225,7 @@ items:
       parent: FEAT-0022
       effort: L
       depends: [TASK-0084]
-      note: "First operation in the system that deletes lines from a tracked file, running in 12 repos. Idempotence is the acceptance criterion, not a nicety: count-based window only, or an untouched repo drifts overnight and CI --check fails."
+      note: "First operation in the system that deletes lines from a tracked file, running in 12 repos. Idempotence is the acceptance criterion: count-based window only. Condition 6 is a HOLD not an exemption — a non-empty note: keeps the entry and is reported; clearing it releases the hold."
     TASK-0083:
       file: "docs/features/snapshot-retention/plan/tasks/TASK-0083-Title-Joins-The-Derived-Set.md"
       title: "`title` is derived from the note, and drifting one becomes a finding"
@@ -244,7 +244,7 @@ items:
       effort: L
       depends: [TASK-0083]
       blocks: [TASK-0082]
-      note: "The only task needing judgement. Trap: relocating all 413 divergences to note: would exempt 413 entries from pruning under ADR-0018 rule 6, and the file would barely shrink. Discard by default; relocate only for in-flight items."
+      note: "Half mechanical: 227 of 405 divergences are >90% already in the note and safe to discard. The 10 orphans and 168 partials need judgement, and relocation targets the NOTE FILE — never the snapshot note: field, which ADR-0018 rule 3 declares scratch context."
     TASK-0080:
       file: "docs/features/snapshot-access/plan/tasks/TASK-0080-Hook-Serves-The-In-Flight-Slice.md"
       title: "SessionStart emits the in-flight slice instead of a reminder to read the file"
@@ -1087,10 +1087,10 @@ items:
   decisions:
     ADR-0018:
       file: docs/decisions/ADR-0018-What-The-Generator-Owns.md
-      title: "What the generator owns: it may derive `title` as it derives `status`, and it may remove entries by a reproducible rule — but it may never add one, and never rewrites curated prose"
+      title: "What the generator owns: it derives every field that has a note counterpart, it may remove entries by a reproducible rule but never add one, and item-level `note:` is scratch context that holds its entry until cleared"
       status: proposed
       owner: user:edwin
-      decision: "Extend ADR-0009's derived set: title becomes derived; membership becomes derivable in ONE direction (remove, never add); curated note:/goal: prose is never rewritten and exempts its entry from removal, making curation self-protecting"
+      decision: "Three rules: fields with a note counterpart are derived (title, feature goal, joining status/counters/metrics); membership is derivable in ONE direction (remove, never add); item-level note: is scratch context that HOLDS its entry from removal and is reported, released by clearing it once the durable copy is in the note file"
       related: [ADR-0009, ADR-0005, ADR-0017, ISS-0030, ISS-0031]
     ADR-0017:
       file: docs/decisions/ADR-0017-Claims-About-Working-Software-Are-Derived.md

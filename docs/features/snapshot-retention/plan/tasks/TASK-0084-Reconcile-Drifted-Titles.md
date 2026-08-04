@@ -31,25 +31,34 @@ This is the task that prevents the other two from destroying anything, and it is
 For each drifted entry:
 
 - **Discard** — the snapshot title is a stale or abbreviated version of the note's. The note wins; nothing is lost. Expected to cover most of `project-os-cockpit`'s 140 and all 26 here, where snapshot titles are *shorter* than their notes'.
-- **Relocate to `note:`** — the snapshot title carries narrative the note does not: root cause, current blocker, what changed and why. This is real content and `note:` is where ADR-0018 puts it. Expected to cover much of `your-trainer`'s 413, where snapshot titles run to 2,160 characters and hold crash-report forensics.
+- **Relocate into the note file** — the snapshot title carries narrative the note does not: root cause, current blocker, what changed and why. This is real content and it belongs in the `.md`, **not** in the snapshot's `note:` field, which ADR-0018 rule 3 declares scratch context. Expected to cover much of `your-trainer`'s 413, where snapshot titles run to 2,160 characters and hold crash-report forensics.
 - **Promote to the note** — the snapshot title is simply *better* than the note's. Fix the note; the snapshot then derives correctly.
 
-## Why this cannot be automated
+## How much of this is mechanical
 
-The disposition depends on whether the extra text is *stale*, *narrative*, or *better* — which is a reading of content, not a property of it. A length heuristic would get `project-os-cockpit` roughly right and `your-trainer` badly wrong, since a longer snapshot title there is sometimes a live blocker and sometimes an account of work finished in June.
+More than first assumed. Measured on `your-trainer`'s 405 measurable divergences (2026-08-04), by whether the snapshot title's substantive words already appear in the note:
 
-What *can* be mechanical: producing the worklist (`TASK-0083`'s drift check), grouping by repo and collection, and sorting by divergence size so the 351 titles over 200 characters are triaged first.
+| | count | disposition |
+|---|---:|---|
+| >90% present in the note | **227** | discard — the note already says it |
+| 50–90% present | 168 | inspect; usually a fragment worth folding in |
+| <50% present — orphan prose | **10** | must be relocated into the note file, or it is lost |
+
+So the worklist can be produced and *ordered* mechanically, and roughly half needs no judgement at all. What cannot be mechanical is the middle band and the orphans: whether the extra text is stale, live, or simply better than the note's own title is a reading of content. A length heuristic would get `project-os-cockpit` roughly right and `your-trainer` badly wrong, since a longer snapshot title there is sometimes a live blocker and sometimes an account of work finished in June.
+
+**The similarity measure orders the work; it must not perform it.** A false positive discards prose that exists nowhere else — that is the same reason ADR-0018 rule 3 refuses to detect "already in the note" automatically.
 
 ## Judgement to apply
 
-- **Relocating is not free.** `note:` on a *terminal* item is curation nobody will read again, and under ADR-0018 rule 6 it also makes that entry permanently exempt from pruning. So narrative on finished work should mostly be **discarded**, not relocated — it is in git and in the note's body. Relocate for items still in flight.
-- **That interaction is the trap in this task.** Relocating all 413 of `your-trainer`'s divergences to `note:` would exempt 413 entries from the retention this feature exists to deliver, and the file would barely shrink. Discard by default; relocate deliberately.
+- **Relocation targets the note file, never `note:`.** Under ADR-0018 rule 3 that field is scratch context; moving durable narrative into it puts the prose back in the place with no archive, which is the defect this task exists to clear.
+- **Discard is safe only where the note already carries the text** — 227 of 405 in `your-trainer`. Elsewhere, discarding destroys the only copy. This corrects the task's first draft, which said "discard by default" on the untested assumption that the narrative was in git and the note body; it is in git, but for ~178 titles it is not in the note.
 - The `# Pruned:` comment style already used in the fleet is the model for legibility: record *why* a batch was discarded, once per batch, not per item.
 
 ## Definition of Done
 
 - [ ] Every one of the 579 divergences has a recorded disposition.
-- [ ] Narrative worth keeping is in `note:` — and the count of entries thereby exempted from pruning is stated, so the trade against TASK-0082 is visible rather than discovered later.
+- [ ] Narrative worth keeping is in the **note file**; no divergence is resolved by moving prose into the snapshot's `note:` field.
+- [ ] The 10 orphan titles (<50% present in their note) are each accounted for individually — they are the only ones where a mistake is unrecoverable.
 - [ ] Notes corrected where the snapshot title was the better one.
 - [ ] `sync-snapshot.py --check` clean fleet-wide with `title` derivation active.
 - [ ] Per-repo commits, following `TASK-0055`'s fleet-migration pattern.

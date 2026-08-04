@@ -40,13 +40,13 @@ The size effect is a consequence rather than the motive, and it runs both ways �
 
 ## The ordering constraint
 
-This task lands **before** the prune (`TASK-0082`) and its migration (`TASK-0084`) sits between them. Deriving titles first surfaces the 579 divergences while every entry is still present; pruning first would delete entries whose titles hold narrative that exists nowhere else, and ADR-0018's rule 6 protects none of them in `your-trainer`, where 0 of 709 terminal entries carry `note:` prose.
+This task lands **before** the prune (`TASK-0082`) and its migration (`TASK-0084`) sits between them. Deriving titles first surfaces the 579 divergences while every entry is still present; pruning first would delete entries whose titles hold narrative that exists nowhere else, and ADR-0018's condition 6 holds none of them back in `your-trainer`, where 0 of 709 terminal entries carry `note:` prose.
 
 ## Decisions this task must make
 
 - **Overwrite immediately, or report first?** Overwriting is consistent with `status` and is the end state. Reporting first turns 579 silent divergences into a reviewable list, which is what `TASK-0084` needs. Recommend: land the check first, migrate, then switch to overwrite — three steps but no lost prose.
 - **What a drifted title becomes afterwards.** Once titles are derived, drift is structurally impossible and a check would be dead code, exactly as `ITEM-STATUS` became under ADR-0009 and was deleted. Prefer deleting the check after the migration over keeping a permanently-silent one; ADR-0011 forbids the permanent-warning shape and this is its cousin.
-- **Whether `goal:` is affected.** It is not. `goal:` is curation with no note counterpart and stays untouched.
+- **`goal:` is affected, and an earlier draft of this note said it was not.** Checked 2026-08-04: all 22 feature notes carry `goal:` in frontmatter, and of the 12 snapshot features carrying it, **4 have drifted from their note**. So `goal:` is the same defect as `title:` — a duplicated field with no comparator — and belongs in the same derivation, not in ADR-0018's scratch category. The distinguishing test is simply *does the field have a note counterpart*: `title` and `goal` do, `note` does not.
 
 ## Definition of Done
 
