@@ -35,7 +35,7 @@ The first draft framed the disposition as *discard, relocate, or promote* — a 
 
 Recording every old title to one file per repo answers the first completely and defers the second at no cost. Nothing is lost, so nothing has to be decided now.
 
-A containment test was considered and is **not needed**. Strict verbatim containment — is the snapshot title, whitespace- and case-normalised, present in its note? — resolves only **75 of 659 (11%)** fleet-wide, because most drift is paraphrase rather than duplication. A fuzzy test resolves far more but can delete text on a false positive, which is unacceptable for the 10 titles in `your-trainer` that exist nowhere else. Recording everything makes the test unnecessary rather than forcing a choice between a weak one and a dangerous one.
+A containment test was considered and is **not needed**. Strict verbatim containment — is the snapshot title, whitespace- and case-normalised, present in its note? — resolves only **75 of 659 (11%)** fleet-wide, because most drift is paraphrase rather than duplication. A fuzzy test resolves far more but can delete text on a false positive, which is unacceptable for the 8 titles in `your-trainer` that exist nowhere else. Recording everything makes the test unnecessary rather than forcing a choice between a weak one and a dangerous one.
 
 ## The migration record
 
@@ -48,12 +48,11 @@ One file per repo, written before derivation is enabled there — `docs/referenc
 
 ## What remains for a human, later and optionally
 
-Mining the record for prose worth folding into a note properly. `your-trainer`'s 10 orphan titles — under 50% word overlap with their note — are the obvious candidates, and the record should mark them so they are findable. This blocks nothing, and it is legitimate for it never to happen.
+Mining the record for prose worth folding into a note properly. `your-trainer`'s 8 orphan titles — under 50% word coverage by their note — are the obvious candidates, and the record should mark them so they are findable. This blocks nothing, and it is legitimate for it never to happen.
 
 ## Definition of Done
 
-- [ ] Migration record written per affected repo, covering every drifted title before derivation is enabled there.
-- [ ] The 10 low-overlap orphans flagged within the record so later mining has a starting point.
-- [ ] Derivation enabled; `sync-snapshot.py --check` clean fleet-wide.
-- [ ] Per-repo commits, following `TASK-0055`'s fleet-migration pattern, sequenced by [[TASK-0085-Fleet-Rollout|TASK-0085]].
-- [ ] Before/after snapshot sizes recorded per repo, so the predicted −28% in `your-trainer` is verified rather than assumed — this feature has already had one unmeasured size claim retracted (`ISS-0030`).
+- [ ] The migration tool produces a complete, correct record for any repo it is pointed at, verified against `project-os-dev`. Producing one per repo happens during [[TASK-0085-Fleet-Rollout|TASK-0085]] and does not gate this task.
+- [ ] The 8 low-coverage orphans flagged within the record so later mining has a starting point.
+- [ ] Record verified lossless: every drifted title present in the record before derivation overwrites it.
+- [ ] The record's format is settled and documented, so `TASK-0085` can apply it twelve times without further decisions.

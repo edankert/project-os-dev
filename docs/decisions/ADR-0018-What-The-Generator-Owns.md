@@ -21,7 +21,7 @@ consequences:
   - "`title` drift becomes structurally impossible in the same way ADR-0009 made status drift impossible; 659 drifted titles fleet-wide are reconciled once and then cannot recur"
   - "your-trainer's snapshot loses roughly 28% to title derivation before a single entry is pruned, because its snapshot titles are longer than its note titles"
   - "The generator now deletes lines from a tracked file on every run. Git is the safety net, `--no-prune` is the escape hatch, and every removal is reported and comment-marked — but this is the first time the tool removes rather than rewrites, and that deserves the caution"
-  - "An entry carrying `note:` prose is HELD from removal and reported, not permanently exempted. Measured, this holds 0 of 709 terminal items in your-trainer, 88 of 360 in project-os-cockpit and 19 of 77 here — a finite, closable backlog rather than a growing exempt set"
+  - "An entry carrying `note:` prose is HELD from removal and reported, not permanently exempted. Measured 2026-08-04 counting non-empty `note:` only, this holds 0 of 709 terminal items in your-trainer, 88 of 360 in project-os-cockpit and 8 of 77 here — a finite, closable backlog rather than a growing exempt set"
   - "Annotating an item stops being a life sentence for its snapshot entry. Under the first draft of this decision, an entry carrying `note:` was exempt from pruning forever, so the snapshot would have accumulated precisely the entries someone bothered to annotate"
   - "For the ongoing `note:` hold the signal is emptiness, not similarity: a tool guessing 'already in the note' would destroy the 28 measured orphans on a false positive. The rule is narrower than it first read — never let a similarity judgement be the only thing between prose and deletion — so detection is legitimate where a wrong answer preserves, and unconditional deletion is legitimate once the text is recorded durably, which is how TASK-0084 migrates 659 titles with no judgement at all"
   - "ADR-0009's stated boundary changes and its docstring in sync-snapshot.py must change with it, or the script disclaims what it does"
@@ -99,8 +99,8 @@ The rule to carry forward is narrower than "do not detect": **never let a simila
 |---|---:|---:|---:|---:|
 | your-trainer | 709 | 0 | 709 | 0 |
 | project-os-cockpit | 360 | 88 | 272 | 88 |
-| your-health | 274 | 36 | 238 | 36 |
-| project-os-dev | 77 | 19 | 58 | 19 |
+| your-health | 274 | 34 | 240 | 34 |
+| project-os-dev | 77 | 8 | 69 | 8 |
 
 ## Why this is not TASK-0063 returning
 

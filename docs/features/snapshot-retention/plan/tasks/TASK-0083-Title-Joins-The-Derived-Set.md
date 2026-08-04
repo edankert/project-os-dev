@@ -8,7 +8,7 @@ phase: "[[PHASE-999]]"
 owner: user:edwin
 created: 2026-08-04
 updated: 2026-08-04
-source: ["ADR-0018", "fleet measurement 2026-08-03"]
+source: ["ADR-0018", "fleet measurement 2026-08-04"]
 parent: "[[FEAT-0022]]"
 effort: M
 due: ""
@@ -45,6 +45,22 @@ The size effect is a consequence rather than the motive, and it runs both ways �
 
 This task lands **before** the prune (`TASK-0082`) and its migration (`TASK-0084`) sits between them. Deriving titles first surfaces the 659 divergences while every entry is still present; pruning first would delete entries whose titles hold narrative that exists nowhere else, and ADR-0018's condition 6 holds none of them back in `your-trainer`, where 0 of 709 terminal entries carry `note:` prose.
 
+## The fail-safe, which `TASK-0082` has and this task needs too
+
+The prune step refuses to act on uncertainty — *"unparseable note, missing note, ambiguous status → keep"*. Derivation has no equivalent as first drafted, and it needs one, because **it reads a note that may not supply a title.** Measured across the fleet on 2026-08-04:
+
+- **3 zero-byte notes** — `project-os-cockpit` `TASK-0182`, `TASK-0183`, `TASK-0187`.
+- **14 notes with unparseable frontmatter** — 8 in `your-trainer` (`REQ-0194`…`REQ-0201`), 5 in `your-health`, 1 in `your-applications.com`.
+- **161 `CHG-*` snapshot entries that resolve to no note by ID at all**, because change notes are keyed by date-slug rather than a numeric ID.
+
+Seventeen real notes and an entire collection. Derivation that blindly writes `note.title` over `entry.title` would blank or crash on every one.
+
+Required behaviour:
+
+- **Matching is by `id:` in the note's frontmatter**, and this must be stated rather than assumed — no note currently says how a snapshot entry is paired with its file. The `file:` path is a fallback, not the key.
+- **No note, no `id:`, unparseable frontmatter, empty file, or absent/blank `title:` → leave the existing snapshot title untouched and report it.** Never write an empty title.
+- **`CHG-*` and any other collection whose entries have no ID-addressable note are out of scope for derivation** — decide explicitly whether they are excluded or matched some other way, and record which.
+
 ## Decisions this task must make
 
 - **Overwrite immediately, or report first?** **Report first — this is now a requirement rather than a recommendation**, because the code is shared across twelve repos and readiness is per-repo. Shipping overwrite-enabled rewrites 659 titles on first sync everywhere, destroying `your-trainer`'s 413 divergences before `TASK-0084` triages them. So: ship in report mode, migrate per repo, and switch to overwrite only where that repo's reconciliation is done. See [[TASK-0085-Fleet-Rollout|TASK-0085]] for the gating mechanism, which this shares with the prune.
@@ -54,7 +70,9 @@ This task lands **before** the prune (`TASK-0082`) and its migration (`TASK-0084
 ## Definition of Done
 
 - [ ] `title` written from the note, alongside `status`, in the same surgical style.
+- [ ] Fail-safe implemented and inversion-tested against all 17 real malformed notes plus a synthetic empty-title case: every one leaves the snapshot title untouched and is reported.
+- [ ] The matching rule (by note `id:`) and the disposition of the 161 `CHG-*` entries are documented in the note.
 - [ ] Transitional drift check exists, is used for the migration, and its post-migration disposition is recorded (delete or keep, with reasoning).
-- [ ] Fleet-wide: snapshot `title` equals note `title` for every registered item.
-- [ ] `sync-snapshot.py --check` clean in all twelve repos after migration.
+- [ ] In any repo where derivation is enabled, snapshot `title` equals note `title` for every registered item whose note supplies one. Enabling it across the fleet is [[TASK-0085-Fleet-Rollout|TASK-0085]] and does not gate this task.
+- [ ] `sync-snapshot.py --check` clean in a dry-run against all twelve repos with derivation forced on, proving the code is fleet-safe before any repo opts in.
 - [ ] `SNAPSHOT.md` and `SCHEMAS.md` describe `title` as derived, stated once per REQ-0018.

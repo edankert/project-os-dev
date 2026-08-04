@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 22
-  ISS: 31
+  ISS: 32
   PHASE: 2
   REL: 0
   REQ: 24
@@ -225,7 +225,7 @@ items:
       parent: FEAT-0022
       effort: L
       depends: [TASK-0082, TASK-0083, TASK-0084]
-      note: "Shared code, per-repo readiness — so both halves ship inert and each repo opts in via its own snapshot key. Without that, all 12 CIs go red on sync-snapshot --check simultaneously. Measured worklist: 3,162 items, 659 drifted titles, 1,614 prunable; your-trainer and cockpit are 84% of the drift. Order puts project-os-dev first among repos with content (dogfood: defects found in minutes by whoever caused them), your-trainer last at 709 entries. TASK-0084 is now mechanical — record every old title, then derive — so no per-item judgement is needed."
+      note: "Shared code, per-repo readiness — so both halves ship inert and each repo opts in via its own snapshot key. Without that, all 12 CIs go red on sync-snapshot --check simultaneously. Measured worklist: 3,164 items, 659 drifted titles, 1,614 prunable; your-trainer and cockpit are 84% of the drift. Order puts project-os-dev first among repos with content (dogfood: defects found in minutes by whoever caused them), your-trainer last at 709 entries. TASK-0084 is now mechanical — record every old title, then derive — so no per-item judgement is needed."
     TASK-0082:
       file: "docs/features/snapshot-retention/plan/tasks/TASK-0082-Prune-Step-In-Sync.md"
       title: "Prune step in sync-snapshot.py: remove entries by reproducible rule on every run"
@@ -250,7 +250,7 @@ items:
       status: backlog
       phase: "[[PHASE-999]]"
       parent: FEAT-0022
-      effort: L
+      effort: S
       depends: [TASK-0083]
       blocks: [TASK-0082]
       note: "Now fully mechanical (effort L -> S). Record every drifted title to a per-repo migration file, then let derivation overwrite it — nothing is lost, so nothing must be judged now. Strict verbatim containment was considered and dropped: it resolves only 75 of 659 (11%), and a fuzzy test would delete the 10 orphans that exist nowhere else."
@@ -614,6 +614,14 @@ items:
       external: "../project-os-cockpit/docs/issues/ISS-0026-Bundled-Validator-Drift.md"
 
   issues:
+    ISS-0032:
+      file: "docs/issues/ISS-0032-FEAT-0022-Amendment-Leftovers-And-Derivation-Failsafe.md"
+      title: "Independent review of FEAT-0022/ADR-0018: ADR-0018 still publishes the pre-amendment hold table, TASK-0082 contradicts itself on whether `goal:` holds, three tasks carry Definitions of Done that require the task depending on them, and title derivation has no fail-safe for the 9 notes fleet-wide that yield no title"
+      status: open
+      severity: high
+      phase: "[[PHASE-999]]"
+      component: docs
+      note: "Clean-context review verdict on FEAT-0022 (changes-requested). Five blocking, seven not. The measurement mostly reproduces exactly — 659 drift, 1,756/142/1,614, 75/659, -28%/+2% — so these are amendment leftovers rather than a bad design. Worst: ADR-0018's hold table is the pre-amendment rule (19/58 and 36/238 reproduce only if `goal:` also holds; today 8/69 and 34/240), and TASK-0082/0083/0084 each require fleet-wide completion in their DoD while TASK-0085 depends on all three, so no task can be ticked. One real design gap: derivation has no fail-safe where the prune does, blanking 9 entries whose notes are zero-byte or unparseable."
     ISS-0031:
       file: "docs/issues/ISS-0031-Instruction-Prescribes-A-Method-For-Two-Different-Needs.md"
       title: "The startup instruction prescribes one method — read the whole snapshot — for two different needs, and agents comply 5 times in 260"
@@ -1218,7 +1226,7 @@ metrics:
     tests_total: 2
     tests_passing: 2
     tests_failing: 0
-    issues_open: 17
+    issues_open: 18
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0

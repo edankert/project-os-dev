@@ -8,7 +8,7 @@ phase: "[[PHASE-999]]"
 owner: user:edwin
 created: 2026-08-04
 updated: 2026-08-04
-source: ["fleet measurement 2026-08-04: 12 repos, 3,162 items"]
+source: ["fleet measurement 2026-08-04: 12 repos, 3,164 items"]
 parent: "[[FEAT-0022]]"
 effort: L
 due: ""
@@ -28,7 +28,7 @@ So the change ships **switched off**. It arrives everywhere and does nothing. Th
 
 1. pulls in the new script — it is inert
 2. runs the migration that records that repo's old snapshot titles (`TASK-0084`)
-3. adds one key to that repo's `SNAPSHOT.yaml`, which switches the feature on
+3. switches the feature on for that repo — enable title overwrite, add the retention window key
 4. looks at the resulting diff before committing
 5. commits
 
@@ -60,7 +60,7 @@ Measured 2026-08-04 across all twelve repos. "Held" is entries kept back by non-
 |---:|---|---:|---:|---:|---:|---:|
 | 1 | project-os *(template)* | 0 | 0 | 0 | 0 | 0 |
 | 2 | project-os-bench | 29 | 0 | 0 | 0 | 0 |
-| 3 | **project-os-dev** *(dogfood)* | 159 | 26 | 77 | 8 | 69 |
+| 3 | **project-os-dev** *(dogfood)* | 161 | 26 | 77 | 8 | 69 |
 | 4 | obsidian-supernote-sync | 34 | 1 | 3 | 0 | 3 |
 | 5 | edankert.com | 64 | 1 | 46 | 0 | 46 |
 | 6 | articles | 55 | 3 | 1 | 0 | 1 |
@@ -70,7 +70,7 @@ Measured 2026-08-04 across all twelve repos. "Held" is entries kept back by non-
 | 10 | your-health | 573 | 17 | 274 | 34 | 240 |
 | 11 | project-os-cockpit | 593 | 140 | 360 | 88 | 272 |
 | 12 | **your-trainer** | 1,065 | **413** | 709 | **0** | **709** |
-| | **fleet** | **3,162** | **659** | **1,756** | **142** | **1,614** |
+| | **fleet** | **3,164** | **659** | **1,756** | **142** | **1,614** |
 
 The work is concentrated: `your-trainer` and `project-os-cockpit` hold **84% of the drift** and **61% of the pruning**.
 
@@ -83,7 +83,7 @@ Two principles, and they pull in different directions. *Fewest entries at risk* 
 3. **obsidian-supernote-sync, edankert.com, articles, yourtrainer-mcp** — 8 drifted titles between them, and the smallest genuine prunes in the fleet. Cheap confirmation that the migration works somewhere nobody is watching.
 4. **your-sudoku, your-applications.com, your-health** — 72 drift, 447 prunable. `your-health` carries 34 `note:` holds, the largest population outside the cockpit.
 5. **project-os-cockpit** — 140 drift, 88 holds. Also the repo where `ISS-0026`/`TASK-0074` found a *bundled* copy of the validator that had drifted from its source; settle whether anything bundles the sync script the same way **before** enabling here.
-6. **your-trainer** — last. Largest snapshot, 413 drifted titles, 709 prunable, zero holds, and the 10 orphan titles that exist nowhere but the snapshot.
+6. **your-trainer** — last. Largest snapshot, 413 drifted titles, 709 prunable, zero holds, and the 8 orphan titles that exist nowhere but the snapshot.
 
 An earlier draft ordered this purely by blast radius, which put `project-os-dev` eighth. That was wrong: it is the dogfooding repo, and postponing it meant the fleet's own maintainers would be among the last to encounter any defect.
 
