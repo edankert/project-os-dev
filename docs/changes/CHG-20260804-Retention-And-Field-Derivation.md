@@ -72,6 +72,14 @@ Adequacy shown by mutation, three independent breaks each caught: removing the v
 - Derivation fails safe: a note that is missing, zero-byte, unparseable, or has no `title:` leaves the snapshot value untouched. Seventeen real notes fleet-wide are in that state, plus 161 `CHG-*` entries no note claims by ID.
 - Pruning is escapable with `--no-prune`, and a repo that never adds the keys keeps its previous behaviour indefinitely.
 
+## Provenance note: `your-health`
+
+Eleven repos carry this change under a commit that names it. **`your-health` does not.** A concurrent session committed there while the migrated files sat in its working tree, and swept them into `bc04a44` — *"fix(iss-0068): a day's HRV falls back to its own rows when no roll-up exists"* — which contains the gate keys, the new script and the pruned snapshot alongside unrelated application work.
+
+The migration itself is correct there and was verified after the fact: 0 validator errors, `sync-snapshot --check` clean, `TST-0003` passing, 573 → 354 items. Only the record is wrong, and history was left alone rather than rewritten because that commit carries someone else's work.
+
+Recorded because a later reader searching `your-health` for when retention arrived will find nothing, and the answer is `bc04a44`. The general lesson is worth keeping too: **a fleet-wide migration that edits working trees is unsafe against concurrent sessions**, and `TASK-0085`'s per-repo procedure should say so — check the tree is clean before migrating a repo, not just after.
+
 ## Open
 
 - `ISS-0032` remains open pending a re-review round; the author fixing review findings does not close them.

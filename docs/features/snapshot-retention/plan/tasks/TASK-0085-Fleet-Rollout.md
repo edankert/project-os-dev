@@ -91,6 +91,7 @@ An earlier draft ordered this purely by blast radius, which put `project-os-dev`
 
 One commit per repo, following `TASK-0055`'s fleet-migration pattern:
 
+0. **Confirm the repo's working tree is clean before touching it.** Learned the hard way: `your-health` had a concurrent session running, which committed the migrated files into an unrelated commit (`bc04a44`) and lost this change's provenance there. A migration that edits working trees is unsafe against concurrent work.
 1. `sync-project-os.sh` to pick up the (inert) script.
 2. Run `TASK-0084`'s migration for this repo: record its old snapshot titles to `docs/reference/`. No per-item judgement.
 3. Enable title overwrite; add the retention window key.
