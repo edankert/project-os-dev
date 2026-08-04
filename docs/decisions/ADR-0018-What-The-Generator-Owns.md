@@ -18,12 +18,12 @@ alternatives:
   - "Truncate long titles at a fixed width (as TASK-0080 proposed) — rejected: it destroys the narrative rather than relocating it. The narrative has value and belongs in the item's note file — not in the snapshot's `note:` field, which rule 3 declares scratch and which would put it back somewhere with no archive"
 consequences:
   - "Retention becomes a property of the system rather than a duty owed at close-out, and stops depending on anyone remembering"
-  - "`title` drift becomes structurally impossible in the same way ADR-0009 made status drift impossible; 657 drifted titles fleet-wide are reconciled once and then cannot recur"
+  - "`title` drift becomes structurally impossible in the same way ADR-0009 made status drift impossible; 659 drifted titles fleet-wide are reconciled once and then cannot recur"
   - "your-trainer's snapshot loses roughly 28% to title derivation before a single entry is pruned, because its snapshot titles are longer than its note titles"
   - "The generator now deletes lines from a tracked file on every run. Git is the safety net, `--no-prune` is the escape hatch, and every removal is reported and comment-marked — but this is the first time the tool removes rather than rewrites, and that deserves the caution"
   - "An entry carrying `note:` prose is HELD from removal and reported, not permanently exempted. Measured, this holds 0 of 709 terminal items in your-trainer, 88 of 360 in project-os-cockpit and 19 of 77 here — a finite, closable backlog rather than a growing exempt set"
   - "Annotating an item stops being a life sentence for its snapshot entry. Under the first draft of this decision, an entry carrying `note:` was exempt from pruning forever, so the snapshot would have accumulated precisely the entries someone bothered to annotate"
-  - "The mechanical signal is the field being empty, not a similarity heuristic. A tool guessing whether prose is 'already in the note' would destroy text on a false positive, and that risk is not worth automating away a judgement the author can make in seconds"
+  - "For the ongoing `note:` hold the signal is emptiness, not similarity: a tool guessing 'already in the note' would destroy the 28 measured orphans on a false positive. The rule is narrower than it first read — never let a similarity judgement be the only thing between prose and deletion — so detection is legitimate where a wrong answer preserves, and unconditional deletion is legitimate once the text is recorded durably, which is how TASK-0084 migrates 659 titles with no judgement at all"
   - "ADR-0009's stated boundary changes and its docstring in sync-snapshot.py must change with it, or the script disclaims what it does"
 related: [ADR-0009, ADR-0005, ADR-0017, ISS-0030, ISS-0031]
 supersedes: ""
@@ -44,7 +44,7 @@ No such mechanism was built. Six weeks later [[ISS-0030-Retention-Is-Policy-Noth
 
 - `your-trainer` carries **709 terminal items of 1,065** — 451 `done` tasks, 205 `fixed` issues, 53 `done` features.
 - Its **titles are 60% of the file** (231,506 of 386,354 bytes): median 77 characters, p90 585, max 2,160, with 351 items over 200.
-- **413 of its 1,065 titles differ from the note they duplicate**, as do 140 in `project-os-cockpit` and 104 across the other ten — 657 fleet-wide. Nothing syncs them, so nothing can notice.
+- **413 of its 1,065 titles differ from the note they duplicate**, as do 140 in `project-os-cockpit` and 106 across the other ten — 659 fleet-wide. Nothing syncs them, so nothing can notice.
 
 The drift runs in both directions, which is the diagnosis. `your-trainer` grew its titles into status narratives; the other repos abbreviated theirs. `title:` has no contract, so each repo invented one.
 
@@ -56,7 +56,7 @@ The generator's ownership is defined by three rules rather than by a list of fie
 
 A snapshot entry's `title` is written from the note's `title`, and a feature's `goal` from the note's `goal`. They join `status`, `counters` and `metrics.counts` in the set ADR-0009 made underivable-by-hand, and for the same reason: two copies with nothing comparing them is how they disagree.
 
-**The test is whether the field has a counterpart in the note's frontmatter**, and it is what separates rule 1 from rule 3. `title` does — 657 fleet-wide divergences. `goal` does — all 22 feature notes here carry it, and 4 of the 12 snapshot entries carrying it have drifted. `note` does not, which is exactly why it needs different treatment rather than derivation.
+**The test is whether the field has a counterpart in the note's frontmatter**, and it is what separates rule 1 from rule 3. `title` does — 659 fleet-wide divergences. `goal` does — all 22 feature notes here carry it, and 4 of the 12 snapshot entries carrying it have drifted. `note` does not, which is exactly why it needs different treatment rather than derivation.
 
 This does not destroy the narrative that grew into `your-trainer`'s titles. That narrative has real value — an agent reading the snapshot learns *why* an item sits where it does without opening three notes — and it belongs in **the item's note file**, which is the archive. It does **not** belong in the snapshot's `note:` field: rule 3 makes that scratch, so parking it there would return it to a place with no durable home. The instruction is to relocate it into the note, not to delete it and not to move it sideways.
 

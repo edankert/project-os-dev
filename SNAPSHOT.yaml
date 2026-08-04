@@ -225,7 +225,7 @@ items:
       parent: FEAT-0022
       effort: L
       depends: [TASK-0082, TASK-0083, TASK-0084]
-      note: "Shared code, per-repo readiness — so both halves ship inert and each repo opts in via its own snapshot key. Without that, all 12 CIs go red on sync-snapshot --check simultaneously. Measured worklist: 3,162 items, 657 drifted titles, 1,614 prunable; your-trainer and cockpit are 84% of the drift. Order puts project-os-dev first among repos with content (dogfood: defects found in minutes by whoever caused them), your-trainer last at 709 entries. TASK-0084 is now mechanical — record every old title, then derive — so no per-item judgement is needed."
+      note: "Shared code, per-repo readiness — so both halves ship inert and each repo opts in via its own snapshot key. Without that, all 12 CIs go red on sync-snapshot --check simultaneously. Measured worklist: 3,162 items, 659 drifted titles, 1,614 prunable; your-trainer and cockpit are 84% of the drift. Order puts project-os-dev first among repos with content (dogfood: defects found in minutes by whoever caused them), your-trainer last at 709 entries. TASK-0084 is now mechanical — record every old title, then derive — so no per-item judgement is needed."
     TASK-0082:
       file: "docs/features/snapshot-retention/plan/tasks/TASK-0082-Prune-Step-In-Sync.md"
       title: "Prune step in sync-snapshot.py: remove entries by reproducible rule on every run"
@@ -243,7 +243,7 @@ items:
       parent: FEAT-0022
       effort: M
       blocks: [TASK-0084]
-      note: "657 drifted titles fleet-wide across 12 repos (your-trainer 413, cockpit 140, sudoku 29, here 25). Same failure ADR-0009 removed for status. Size effect runs both ways: your-trainer -28%, cockpit and here +2%."
+      note: "659 drifted titles fleet-wide across 12 repos (your-trainer 413, cockpit 140, sudoku 29, here 26). Same failure ADR-0009 removed for status. Size effect runs both ways: your-trainer -28%, cockpit and here +2%."
     TASK-0084:
       file: "docs/features/snapshot-retention/plan/tasks/TASK-0084-Reconcile-Drifted-Titles.md"
       title: "Migrate 659 drifted titles mechanically: record every old value, then let derivation replace it"

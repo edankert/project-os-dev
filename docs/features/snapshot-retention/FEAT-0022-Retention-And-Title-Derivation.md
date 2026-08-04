@@ -24,7 +24,7 @@ tests: []
 Implements [[ADR-0018-What-The-Generator-Owns|ADR-0018]]. Two changes to `sync-snapshot.py`, plus the one-time reconciliation the first of them requires.
 
 - **Retention runs automatically**, inside the sync that already runs at pre-commit and in CI — not as a subcommand anyone has to remember, because ISS-0030 exists precisely because the remembering never happened.
-- **`title` joins the derived set**, so the 657 drifted titles across the fleet are reconciled once and cannot recur.
+- **`title` joins the derived set**, so the 659 drifted titles across the fleet are reconciled once and cannot recur.
 
 ## Why the title half may matter more than the pruning half
 
@@ -39,7 +39,7 @@ That two-way drift is the diagnosis: `title:` has no contract, so each repo inve
 - **TASK-0082** — the prune step, run automatically after status sync.
 - **TASK-0083** — `title` derived from the note, with a drift check for the transition.
 - **TASK-0084** — reconcile the fleet's drifted titles, moving narrative into the note files where it earns its place.
-- **TASK-0085** — the fleet rollout: inert by default, opt in per repo, cheapest first.
+- **TASK-0085** — the fleet rollout: inert by default, opt in per repo, dogfood repo first and the largest last.
 
 ## Ordering, and why it is not the obvious one
 
