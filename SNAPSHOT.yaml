@@ -25,16 +25,16 @@ docs_system:
     - docs/PHASES.md
 
 counters:
-  ADR: 17
+  ADR: 18
   CHG:
     last_date: 20260726
-  FEAT: 21
+  FEAT: 22
   ISS: 31
   PHASE: 2
   REL: 0
   REQ: 24
   RISK: 2
-  TASK: 81
+  TASK: 84
   TST: 2
   WF: 3
 
@@ -70,6 +70,13 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0022:
+      file: "docs/features/snapshot-retention/FEAT-0022-Retention-And-Title-Derivation.md"
+      title: "Retention runs on every sync, and `title` stops being a second copy: implements ADR-0018"
+      status: backlog
+      phase: "[[PHASE-999]]"
+      tasks: [TASK-0082, TASK-0083, TASK-0084]
+      note: "Implements ADR-0018. Counter-intuitive ordering: title derivation (TASK-0083) lands BEFORE the prune, because pruning first would delete entries whose titles hold narrative existing nowhere else — your-trainer has 413 drifted titles and 0 of 709 terminal entries carry note: prose, so rule 6 protects none of them. Title derivation alone removes 28% of your-trainer's file."
     FEAT-0021:
       file: "docs/features/snapshot-access/FEAT-0021-Serve-Orientation-Answer-Lookup.md"
       title: "Serve orientation, answer lookup: the startup hook emits the in-flight slice instead of a reminder, and a format-independent query replaces grep against YAML"
@@ -210,6 +217,34 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0082:
+      file: "docs/features/snapshot-retention/plan/tasks/TASK-0082-Prune-Step-In-Sync.md"
+      title: "Prune step in sync-snapshot.py: remove entries by reproducible rule on every run"
+      status: backlog
+      phase: "[[PHASE-999]]"
+      parent: FEAT-0022
+      effort: L
+      depends: [TASK-0084]
+      note: "First operation in the system that deletes lines from a tracked file, running in 12 repos. Idempotence is the acceptance criterion, not a nicety: count-based window only, or an untouched repo drifts overnight and CI --check fails."
+    TASK-0083:
+      file: "docs/features/snapshot-retention/plan/tasks/TASK-0083-Title-Joins-The-Derived-Set.md"
+      title: "`title` is derived from the note, and drifting one becomes a finding"
+      status: backlog
+      phase: "[[PHASE-999]]"
+      parent: FEAT-0022
+      effort: M
+      blocks: [TASK-0084]
+      note: "579 drifted titles fleet-wide (your-trainer 413, cockpit 140, here 26). Same failure ADR-0009 removed for status. Size effect runs both ways: your-trainer -28%, cockpit and here +2%."
+    TASK-0084:
+      file: "docs/features/snapshot-retention/plan/tasks/TASK-0084-Reconcile-Drifted-Titles.md"
+      title: "Reconcile 579 drifted titles across the fleet, relocating narrative to `note:` where it earns its place"
+      status: backlog
+      phase: "[[PHASE-999]]"
+      parent: FEAT-0022
+      effort: L
+      depends: [TASK-0083]
+      blocks: [TASK-0082]
+      note: "The only task needing judgement. Trap: relocating all 413 divergences to note: would exempt 413 entries from pruning under ADR-0018 rule 6, and the file would barely shrink. Discard by default; relocate only for in-flight items."
     TASK-0080:
       file: "docs/features/snapshot-access/plan/tasks/TASK-0080-Hook-Serves-The-In-Flight-Slice.md"
       title: "SessionStart emits the in-flight slice instead of a reminder to read the file"
@@ -1050,6 +1085,13 @@ items:
       status: merged
 
   decisions:
+    ADR-0018:
+      file: docs/decisions/ADR-0018-What-The-Generator-Owns.md
+      title: "What the generator owns: it may derive `title` as it derives `status`, and it may remove entries by a reproducible rule — but it may never add one, and never rewrites curated prose"
+      status: proposed
+      owner: user:edwin
+      decision: "Extend ADR-0009's derived set: title becomes derived; membership becomes derivable in ONE direction (remove, never add); curated note:/goal: prose is never rewritten and exempts its entry from removal, making curation self-protecting"
+      related: [ADR-0009, ADR-0005, ADR-0017, ISS-0030, ISS-0031]
     ADR-0017:
       file: docs/decisions/ADR-0017-Claims-About-Working-Software-Are-Derived.md
       title: "A claim about whether the software works is derived from execution where possible, labelled and dated where not, and never written by the party seeking the transition it gates"
@@ -1158,11 +1200,11 @@ items:
 
 metrics:
   counts:
-    features_total: 21
+    features_total: 22
     features_done: 18
     phases_total: 3
     phases_done: 2
-    tasks_total: 81
+    tasks_total: 84
     tasks_done: 74
     tests_total: 2
     tests_passing: 2
@@ -1175,4 +1217,4 @@ metrics:
     requirements_implemented: 23
     risks_open: 0
     releases_total: 0
-    decisions_total: 17
+    decisions_total: 18
