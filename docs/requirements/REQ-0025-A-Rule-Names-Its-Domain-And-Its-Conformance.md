@@ -24,7 +24,7 @@ related: ["[[ADR-0022]]", "[[ADR-0023]]", "[[ADR-0011]]", "[[ISS-0005]]"]
 tests: ["[[TST-0004]]"]
 reviewed_by: "model:claude-opus-5[1m]"
 review_date: 2026-08-12
-review_verdict: changes-requested
+review_verdict: approved
 ---
 
 # A rule names its domain and its conformance
@@ -52,7 +52,23 @@ The requirement is on both halves for a reason. A rule with a domain and no conf
 - Decided by: [[ADR-0023]] (the convention), [[ADR-0022]] (why it is a convention and not a type)
 - Verified by: `tools/scripts/validate-docs.py` (`DECISION-RULE`) plus the fixture exercising it; a `TST-*` note is created with [[TASK-0089]] rather than up front, because a test note's status is stamped by execution ([[ADR-0010]]) and there is nothing yet to execute.
 
-## Independent review — 2026-08-12, `model:claude-opus-5[1m]`, **changes-requested**
+## Independent review — 2026-08-12, `model:claude-opus-5[1m]`, **approved** (round two; round one below requested changes)
+
+### Round two — both blocking findings cured
+
+Re-reviewed against project-os `7536e9d` / `4aa2238` and this repo's `36143d0`, verified independently rather than from the author's account. **Approved.** Round one's findings are kept below unedited, per this repo's convention that a record is corrected by addition.
+
+**Blocking finding 1 — cured, and the partial stage is genuinely clean.** The commit adds 148 lines and deletes none; grepping its added lines for `claimant`, `note_claimants`, `compute_metric_counts`, `_idx, _cl` and `claimed` returns nothing, so none of the parallel backfill was staged. Exactly four hunks remain uncommitted in that working tree and none of them mentions `DECISION-RULE`, `_decision_sections` or `_CONFORMANCE_TST_RE`. More than textual cleanliness: I extracted the **committed blob** with `git show HEAD:…validate_docs_bundled.py` and exercised it standalone — 26/26 via the new alternate-target argument, `--self-check` OK, and a your-health scan returning the same 2 pre-existing `TEST-FIELDS` errors and 0 `DECISION-RULE` findings. A partial stage can commit a file that no longer works; this one does.
+
+**Blocking finding 2 — cured.** The pending backfill is now attributed to `ISS-0035` (`open`) in this criterion, in TASK-0089, in both change notes and in the snapshot. The old attribution survives only as retrospective narration of the correction, which is the right shape — the record is amended by recording what it used to say, not by erasing it.
+
+**Non-blocking follow-ups from round one.** The unwiring survivor is dead: deleting the check's one call site in `validate()` now fails the suite with 2 failures and exit 1, on the canonical validator *and* on the committed bundled blob (I ran that mutation against both). The two end-to-end cases are well built — the clean twin exiting 0 is what makes the malformed twin's exit 1 attributable to this check rather than to fixture noise. The two restated sentences are now pointers, with `DECISIONS.md` keeping sole ownership. The marker asymmetry is recorded at TASK-0089 under a heading that says plainly it is recorded and not implemented, which is the honest disposition for a hardening nobody asked for. `adequacy:` now describes a procedure the harness can actually perform, and says so about round one's version.
+
+**Still open, still non-blocking:** three behaviours the `_decision_sections` docstring states as contract remain unasserted (frontmatter stripping, an H1 closing a section, `###` not being a boundary). No live defect follows.
+
+**Re-verified from scratch this round:** 26/26 on the canonical suite, on the bundled working tree and on the extracted committed blob; the runner's own dry run independently reports TST-0004 `passing` with 26 assertions and 0 failures, matching the stamped `exit_code` and leaving the note unmodified; zero `DECISION-RULE` findings across all 12 fleet repos; every line reference cited in criterion 1 still resolves after the skill edits; and `validate-docs.sh`, `--self-check`, `generate-adapters --check` and `sync-snapshot --check` are clean in both repos. The author's `36143d0` touched no `reviewed_by`, `review_date` or `review_verdict` field and no review section.
+
+### Round one — changes-requested (kept for the record)
 
 Clean-context pass (fresh session; these notes and the two commits only, no access to the authoring session's reasoning). **Criteria 1 through 5 each reproduce independently.** Criterion 1's five cited line references all resolve as written (`DECISIONS.md:92` is the section heading; `adr.md:23`, `SCHEMAS.md:55`, `adr-authoring/SKILL.md:27`, `issue-intake/SKILL.md:33` are each a pointer). Criteria 2, 3 and 4 were re-verified by re-running the suite (23 assertions, exit 0) and by mutating the check seven ways on a scratch copy — dropping the `Domain` requirement kills 6 assertions, gating the check to `accepted` kills 13, disabling dangling-TST resolution kills 4 — and end-to-end by running `validate-docs.py --repo-root` over a fixture repo with a malformed rule-ADR (2 errors, exit 1). Criterion 5's census reproduces exactly: 12 repos, two `^## Rule` hits, zero `DECISION-RULE` findings, no `PROMOTIONS` and no grandfather entries.
 

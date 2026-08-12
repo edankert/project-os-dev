@@ -17,7 +17,7 @@ related: ["[[ADR-0022]]", "[[ADR-0023]]", "[[ADR-0011]]", "[[ADR-0021]]", "[[ISS
 tests: ["[[TST-0004]]"]
 reviewed_by: "model:claude-opus-5[1m]"
 review_date: 2026-08-12
-review_verdict: changes-requested
+review_verdict: approved
 ---
 
 # Rule-ADRs
@@ -66,7 +66,17 @@ Two **coordination hazards**, recorded here and carried in the plan rather than 
 - [x] The harvest trigger is written where intake happens, so the second issue of a kind is the moment a rule gets proposed rather than the moment a third one-off gets filed — evidence: `tools/skills/issue-intake/SKILL.md` step 2 (mandatory, before ID allocation, bounded search, one-line negative), `6ca15f4`.
 - [x] The convention is usable on the bare markdown before the check exists — the pilot does not wait for `DECISION-RULE` — evidence: the pilots were authored and accepted on plain headings the morning of 2026-08-12, before the check landed that afternoon, and the check then found them already conformant — the useful result the plan named.
 
-## Independent review — 2026-08-12, `model:claude-opus-5[1m]`, **changes-requested**
+## Independent review — 2026-08-12, `model:claude-opus-5[1m]`, **approved** (round two; round one below requested changes)
+
+### Round two — approved
+
+Both blocking findings are cured, verified independently against project-os `7536e9d` / `4aa2238` and this repo's `36143d0`. The bundled cockpit validator now carries `DECISION-RULE` **in a commit**, by a partial stage I audited rather than took on trust: 148 added lines, none of the parallel backfill, four unrelated hunks correctly left in the tree — and the extracted committed blob runs standalone (26/26, `--self-check` OK, a your-health scan matching the canonical validator's). The pending backfill is now attributed to `ISS-0035` (`open`) everywhere it used to name a close-out that had already happened. My mutation survivor is dead: deleting the check's one call site in `validate()` now fails the suite on the canonical validator and on the committed bundled blob alike.
+
+The engineering was never what this verdict turned on — round one already found no defect in the shipped check, and re-verification this round reproduced that: 26/26 on three separate validator copies, zero `DECISION-RULE` findings across all 12 fleet repos, the runner's own dry run independently agreeing with TST-0004's stamped result, and every gate clean in both repos. What was owed was a record a stranger could act on, and that is now what it is.
+
+Detail, including what remains open and non-blocking, is in REQ-0025's round-two section.
+
+### Round one — changes-requested (kept for the record)
 
 Clean-context pass (fresh session; the notes and the two commits `6ca15f4` / `bc2d840`, never the authoring session's reasoning). Authored by `model:claude-fable-5`, reviewed by `model:claude-opus-5[1m]`.
 
