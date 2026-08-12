@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0087
 aliases: ["TASK-0087"]
 title: "The ADR template carries an optional Rule/Domain/Conformance block, and SCHEMAS.md gains one sentence"
-status: backlog
+status: done
 phase: "[[PHASE-999]]"
 owner: user:edwin
 created: 2026-08-12
@@ -35,11 +35,13 @@ Because most ADRs are not rules, and a template that ships three sections every 
 
 ## Definition of Done
 
-- [ ] `docs/__templates__/adr.md` carries the three headings inside an HTML comment, with a one-line pointer to `tools/instructions/DECISIONS.md` for the semantics — and restates none of them.
-- [ ] `docs/__templates__/SCHEMAS.md` carries one sentence naming the convention and linking to `DECISIONS.md`.
-- [ ] An ADR authored from the template **without** using the block produces zero new validator findings, verified against a fixture note rather than asserted.
-- [ ] An ADR authored from the template **with** the block uncommented and filled in also validates clean.
-- [ ] `bash tools/scripts/validate-docs.sh` clean in `project-os`.
+- [x] `docs/__templates__/adr.md` carries the three headings inside an HTML comment, with a one-line pointer to `tools/instructions/DECISIONS.md` for the semantics — and restates none of them — evidence: project-os `6ca15f4`; the block sits between the H1 and `## Context`, the position the pilot notes established, with angle-bracket placeholders in the template's own idiom.
+- [x] `docs/__templates__/SCHEMAS.md` carries one sentence naming the convention and linking to `DECISIONS.md` — evidence: `6ca15f4`, the "Body sections" line in the `adr.md` section.
+- [x] An ADR authored from the template **without** using the block produces zero new validator findings, verified against a fixture note rather than asserted — evidence: `tools/scripts/test-decision-rule.py`, "the raw template trips nothing", which reads the real template file into a fixture repo — so future template drift that arms the check fails the suite rather than the first downstream repo.
+- [x] An ADR authored from the template **with** the block uncommented and filled in also validates clean — evidence: same suite, "the template with the block uncommented validates clean" (comment markers stripped from the real file), plus the synthetic fully-filled case.
+- [x] `bash tools/scripts/validate-docs.sh` clean in `project-os` — evidence: pre-commit run on `6ca15f4`, exit 0.
+
+*(Checked, per the Notes below: this repo's own `docs/__templates__/adr.md` is indeed still the older `## Alternatives` version — a sync-behind symptom, deliberately not fixed here; it arrives via `sync-project-os.sh`.)*
 
 ## Notes
 

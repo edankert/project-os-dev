@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0088
 aliases: ["TASK-0088"]
 title: "adr-authoring learns to write a rule-ADR; issue-intake learns to harvest one on the second issue of a kind"
-status: backlog
+status: done
 phase: "[[PHASE-999]]"
 owner: user:edwin
 created: 2026-08-12
@@ -48,12 +48,12 @@ Resolve it explicitly in the skill rather than leaving both rules standing and l
 
 ## Definition of Done
 
-- [ ] `tools/skills/adr-authoring/SKILL.md` carries the rule-ADR branch, with *name the domain first, and stop if it cannot be enumerated* as an explicit step; semantics are linked to `DECISIONS.md`, not restated.
-- [ ] `tools/skills/issue-intake/SKILL.md` carries the harvest step as a mandatory step with an explicit trigger, positioned before ID allocation, with the bound on the search and the cheap negative result both stated.
-- [ ] The ADR-0016 tension is addressed in the skill text itself, not only in this task note.
-- [ ] Both skills link to `tools/instructions/DECISIONS.md` and restate none of it (checked against TASK-0086's diff).
-- [ ] `python3 tools/scripts/generate-adapters.py --check` clean — the skills feed generated adapter artifacts, and a skill edit that is not regenerated is a silent divergence.
-- [ ] `bash tools/scripts/validate-docs.sh` clean in `project-os`.
+- [x] `tools/skills/adr-authoring/SKILL.md` carries the rule-ADR branch, with *name the domain first, and stop if it cannot be enumerated* as an explicit step; semantics are linked to `DECISIONS.md`, not restated — evidence: project-os `6ca15f4`, checklist step 3, whose first bullet is the stop rule (with the observation that the missing registry is often the real first deliverable).
+- [x] `tools/skills/issue-intake/SKILL.md` carries the harvest step as a mandatory step with an explicit trigger, positioned before ID allocation, with the bound on the search and the cheap negative result both stated — evidence: `6ca15f4`, checklist step 2 of 10 (ID allocation is step 3): bounded to grepping this repo's `docs/issues/` by keyword and surface; the negative is one recorded line, in the same spirit as the risk scan's explicit negative; the trigger is the second issue of a kind, which still gets filed — the rule-ADR is proposed so the third one-off never needs to be.
+- [x] The ADR-0016 tension is addressed in the skill text itself, not only in this task note — evidence: the step says in as many words that the one-line negative is the entire cost in the common case, which keeps a mandatory step proportionate on the system's highest-frequency operation, and that it stays mandatory rather than conditional because conditional steps get skipped even when the condition holds (ADR-0004).
+- [x] Both skills link to `tools/instructions/DECISIONS.md` and restate none of it (checked against TASK-0086's diff) — evidence: each cites the section by name ("A decision that states a rule") and adds only its own behaviour.
+- [x] `python3 tools/scripts/generate-adapters.py --check` clean — evidence: all 35 artifacts current after both edits, with no regeneration needed: the generated skills are pointers to the canonical playbooks, so a checklist edit does not reach them.
+- [x] `bash tools/scripts/validate-docs.sh` clean in `project-os` — evidence: pre-commit run on `6ca15f4`, exit 0.
 
 ## Notes
 

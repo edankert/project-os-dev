@@ -3,7 +3,7 @@ type: "[[feature]]"
 id: FEAT-0023
 aliases: ["FEAT-0023"]
 title: "Rule-ADRs: the template carries the convention, and the validator refuses the shape that binds nothing"
-status: backlog
+status: done
 phase: "[[PHASE-999]]"
 owner: user:edwin
 created: 2026-08-12
@@ -14,7 +14,7 @@ requirements: ["[[REQ-0025]]"]
 tasks: ["[[TASK-0086]]", "[[TASK-0087]]", "[[TASK-0088]]", "[[TASK-0089]]"]
 release: ""
 related: ["[[ADR-0022]]", "[[ADR-0023]]", "[[ADR-0011]]", "[[ADR-0021]]", "[[ISS-0005]]"]
-tests: []
+tests: ["[[TST-0004]]"]
 ---
 
 # Rule-ADRs
@@ -57,11 +57,11 @@ Two **coordination hazards**, recorded here and carried in the plan rather than 
 
 ## Acceptance
 
-- [ ] A project can state a rule over an enumerable domain, in a note kind that already exists, and the record shows both what the rule ranges over and what discharges it.
-- [ ] A rule-ADR missing its domain or its conformance is reported by the validator rather than by a reviewer noticing.
-- [ ] An ordinary yes/no ADR is completely unaffected — no new required section, no new finding, no template churn visible to a decision that is not a rule.
-- [ ] The harvest trigger is written where intake happens, so the second issue of a kind is the moment a rule gets proposed rather than the moment a third one-off gets filed.
-- [ ] The convention is usable on the bare markdown before the check exists — the pilot does not wait for `DECISION-RULE`.
+- [x] A project can state a rule over an enumerable domain, in a note kind that already exists, and the record shows both what the rule ranges over and what discharges it — evidence: your-health ADR-0020/0021, the pilot pair, each carrying `## Rule`/`## Domain`/`## Conformance` with named TST discharges and an authority sentence; the convention's normative home is project-os `tools/instructions/DECISIONS.md`, "A decision that states a rule" (`6ca15f4`).
+- [x] A rule-ADR missing its domain or its conformance is reported by the validator rather than by a reviewer noticing — evidence: `DECISION-RULE`, error severity, firing on either section absent or empty at any ADR status; [[TST-0004]] passing (23 assertions, inversion-verified).
+- [x] An ordinary yes/no ADR is completely unaffected — no new required section, no new finding, no template churn visible to a decision that is not a rule — evidence: the template block is inside an HTML comment (the heading's presence is the marker, so uncommented would arm the check against every template-derived ADR); fixture cases "ordinary ADR is silent" and "the raw template trips nothing"; the new validator run across all 12 fleet repos reports zero `DECISION-RULE` findings.
+- [x] The harvest trigger is written where intake happens, so the second issue of a kind is the moment a rule gets proposed rather than the moment a third one-off gets filed — evidence: `tools/skills/issue-intake/SKILL.md` step 2 (mandatory, before ID allocation, bounded search, one-line negative), `6ca15f4`.
+- [x] The convention is usable on the bare markdown before the check exists — the pilot does not wait for `DECISION-RULE` — evidence: the pilots were authored and accepted on plain headings the morning of 2026-08-12, before the check landed that afternoon, and the check then found them already conformant — the useful result the plan named.
 
 ## Links
 

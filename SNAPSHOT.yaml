@@ -35,15 +35,15 @@ counters:
   REQ: 25
   RISK: 2
   TASK: 89
-  TST: 3
+  TST: 4
   WF: 3
 
 focus:
   task: ""
-  feature: "FEAT-0022"
+  feature: "FEAT-0023"
   phase: "PHASE-999"
   issue: ""
-  note: "2026-08-04 FEAT-0022 done and rolled out to twelve repos: title/goal derived from notes, retention pruning on every sync, both inert until a repo opts in. Fleet snapshots 1,152KB -> ~715KB; your-trainer -71%, 1,065 -> 412 items. Eight clean-context review rounds (ISS-0032..0039), approved on the eighth; rounds four to eight found no code defect. Losslessness re-derived independently four times: 1,352 removals, 0 whose note cannot supply the terminal status; 709 migration-record rows, 0 mismatches. Recorded debt: ADR-0018 authorises six prune conditions where seven are implemented; twelve bundled validators are no longer verbatim; prunable_ids resolves note_fm through the substring index."
+  note: "2026-08-12 FEAT-0023 landed in project-os (6ca15f4): rule-ADRs specified once in DECISIONS.md, template block commented, two skills taught, DECISION-RULE an error from day one — censused zero violations fleet-wide (two ^## Rule hits, your-health ADR-0020/0021, both conforming). TST-0004 stamped passing (23 assertions, inversion-verified four ways). REQ-0025 implemented. Pending elsewhere: the bundled cockpit validator carries the check in project-os's WORKING TREE only (file was dirty with parallel FEAT-0022-claimants work; that close-out commits both), and project-os-cockpit's diverged 44-code validator still needs its recorded hand-merge, now due. Independent review of TST-0004/CHG-20260812 pending per QUALITY.md. This repo's own validator stays a sync behind by design; sync-project-os.sh is a deliberate separate step."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -74,12 +74,13 @@ items:
     FEAT-0023:
       file: "docs/features/rule-adrs/FEAT-0023-Rule-ADRs-Carry-Their-Conformance.md"
       title: "Rule-ADRs: the template carries the convention, and the validator refuses the shape that binds nothing"
-      status: backlog
+      status: done
       phase: "[[PHASE-999]]"
       owner: user:edwin
       requirements: [REQ-0025]
       tasks: [TASK-0086, TASK-0087, TASK-0088, TASK-0089]
-      note: "Implements ADR-0023 under ADR-0022's constraint that it be a convention, not a kind. The gap: every note kind is singular, and the only quantified rules in the system are the validator's 40 check codes, which are template-owned and closed to projects — its three per-repo levers all subtract. All four tasks edit files in ~/Dev/repos/project-os, not here. Two coordination hazards carried in the plan rather than as RISK notes: the bundled cockpit validator in project-os is dirty with parallel work, and project-os-cockpit's diverged 44-code superset needs a hand-merge filed there when TASK-0089 lands."
+      tests: [TST-0004]
+      note: "Landed 2026-08-12, project-os 6ca15f4. Both coordination hazards played out as the plan predicted and are recorded rather than resolved here: the bundled cockpit validator carries DECISION-RULE in project-os's working tree beside the parallel FEAT-0022-claimants diff (deliberately uncommitted — that close-out carries the file), and project-os-cockpit's diverged 44-code superset still needs its recorded hand-merge, now due (follow-up in CHG-20260812-Rule-ADRs, both repos). Severity was taken from a counted set: zero violations fleet-wide, so error from day one per ADR-0021's precedent."
     FEAT-0022:
       file: "docs/features/snapshot-retention/FEAT-0022-Retention-And-Title-Derivation.md"
       title: "Retention runs on every sync, and `title` stops being a second copy: implements ADR-0018"
@@ -230,7 +231,7 @@ items:
     TASK-0086:
       file: "docs/features/rule-adrs/plan/tasks/TASK-0086-Specify-The-Convention-In-Decisions.md"
       title: "DECISIONS.md specifies the three sections, the harvest trigger and the landing pattern — once, and everything else links to it"
-      status: backlog
+      status: done
       phase: "[[PHASE-999]]"
       parent: FEAT-0023
       effort: M
@@ -239,7 +240,7 @@ items:
     TASK-0087:
       file: "docs/features/rule-adrs/plan/tasks/TASK-0087-The-Template-Carries-The-Block.md"
       title: "The ADR template carries an optional Rule/Domain/Conformance block, and SCHEMAS.md gains one sentence"
-      status: backlog
+      status: done
       phase: "[[PHASE-999]]"
       parent: FEAT-0023
       effort: S
@@ -248,7 +249,7 @@ items:
     TASK-0088:
       file: "docs/features/rule-adrs/plan/tasks/TASK-0088-Authoring-And-Harvest-In-The-Skills.md"
       title: "adr-authoring learns to write a rule-ADR; issue-intake learns to harvest one on the second issue of a kind"
-      status: backlog
+      status: done
       phase: "[[PHASE-999]]"
       parent: FEAT-0023
       effort: M
@@ -257,12 +258,13 @@ items:
     TASK-0089:
       file: "docs/features/rule-adrs/plan/tasks/TASK-0089-Decision-Rule-Check.md"
       title: "DECISION-RULE: a decision carrying `## Rule` must carry a non-empty Domain and Conformance, and a TST named there must resolve"
-      status: backlog
+      status: done
       phase: "[[PHASE-999]]"
       parent: FEAT-0023
       effort: M
       depends: [TASK-0086]
-      note: "Severity is a decision this task takes, not one it inherits: count the fleet's malformed rule-ADRs at landing, then error on day one (ADR-0021's precedent, nothing to migrate) or a PROMOTIONS entry no more than 90 days out — 2026-11-10 at the latest for a 2026-08-12 landing. Must not require a TST: a type that makes the violation unrepresentable is the strongest conformance, and demanding a test note would push authors to the weaker one."
+      tests: [TST-0004]
+      note: "Severity taken, not inherited: censused 2026-08-12, two ^## Rule hits fleet-wide (your-health ADR-0020/0021), both conforming — zero violations, so error from day one; no PROMOTIONS entry, no grandfather entries, count and method in the check's docstring. The bundled copy carries the check in project-os's working tree only, beside the parallel FEAT-0022-claimants diff — deliberately uncommitted with it; loud in the task note and both CHG notes. The cockpit hand-merge is reconciled [~] in the DoD: carried as a due follow-up, not done as a third-repo side effect."
     TASK-0085:
       file: "docs/features/snapshot-retention/plan/tasks/TASK-0085-Fleet-Rollout.md"
       title: "Fleet rollout: ship both halves inert, then opt in one repo at a time, dogfood repo first and the largest last"
@@ -926,7 +928,7 @@ items:
     REQ-0025:
       file: docs/requirements/REQ-0025-A-Rule-Names-Its-Domain-And-Its-Conformance.md
       title: "A rule stated as a decision names the domain it ranges over and the conformance that discharges it, and the validator refuses one that names neither"
-      status: draft
+      status: implemented
       owner: user:edwin
       priority: medium
       phase: "[[PHASE-999]]"
@@ -958,6 +960,14 @@ items:
       status: passing
       requirements: [REQ-0022]
       tasks: [TASK-0067]
+    TST-0004:
+      file: "docs/tests/TST-0004-Decision-Rule-Check.md"
+      title: "DECISION-RULE holds its contract: a `## Rule` heading demands non-empty Domain and Conformance, resolvable TSTs, and nothing else"
+      status: passing
+      requirements: [REQ-0025]
+      features: [FEAT-0023]
+      tasks: [TASK-0089]
+      note: "Command is deliberately cross-repo (python3 ../project-os/tools/scripts/test-decision-rule.py): the check it verifies is owned by the template repo, and this repo's validator is a sync behind by design. Stays pointed at canonical after the sync too."
     TST-0003:
       file: "docs/tests/TST-0003-Retention-And-Derivation-Invariants.md"
       title: "Retention and derivation invariants: every prune condition holds an entry back, and derivation never blanks a title"
@@ -974,6 +984,12 @@ items:
   workflows: {}
 
   changes:
+    CHG-20260812-Rule-ADRs:
+      file: "docs/changes/CHG-20260812-Rule-ADRs.md"
+      title: "Rule-ADRs land in the template: `## Rule`/`## Domain`/`## Conformance` specified once in DECISIONS.md, taught by two skills, carried commented by the template, and enforced by DECISION-RULE as an error from day one"
+      status: merged
+      features: [FEAT-0023]
+      tests: [TST-0004]
     CHG-20260726-Phase-Resolved-Declined:
       file: docs/changes/CHG-20260726-Phase-Resolved-Declined.md
       title: "ADR-0012's rename completed in all three status tables it missed — PHASE_RESOLVED fixed fleet-wide, REQ-PREMATURE and PLAN-FOLLOWS un-deadened, and STATUS-TABLE added so it cannot recur"
@@ -1139,20 +1155,20 @@ items:
 metrics:
   counts:
     features_total: 23
-    features_done: 19
+    features_done: 20
     phases_total: 3
     phases_done: 2
     tasks_total: 89
-    tasks_done: 78
-    tests_total: 3
-    tests_passing: 3
+    tasks_done: 82
+    tests_total: 4
+    tests_passing: 4
     tests_failing: 0
     issues_open: 26
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 25
-    requirements_implemented: 23
+    requirements_implemented: 24
     risks_open: 0
     releases_total: 0
     decisions_total: 23

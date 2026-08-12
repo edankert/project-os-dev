@@ -1,7 +1,7 @@
 ---
 type: "[[plan]]"
 title: "Delivery plan — rule-ADRs in the template, and the pilot that does not wait for them"
-status: draft
+status: done
 owner: user:edwin
 created: 2026-08-12
 updated: 2026-08-12
@@ -49,9 +49,13 @@ related: ["[[ADR-0022]]", "[[REQ-0025]]", "[[ADR-0011]]"]
 
 That ordering is deliberate and worth stating, because it inverts the usual one: **the convention is validated by use before it is validated by code.** If two real rules cannot be written in this shape, the shape is wrong and the check should never be built.
 
-## Open questions
+## Open questions — answered at landing, 2026-08-12
 
 - **What is the counted violation set at landing?** Number of notes across the fleet carrying `## Rule` without both other sections. Zero means `DECISION-RULE` is an error on day one under ADR-0021's precedent; non-zero means a `PROMOTIONS` entry no more than 90 days out, with ADR-0011 clause 3 forbidding promotion until the debt clears. TASK-0089 takes the count; nobody should guess it now.
+  - *Answered:* **zero.** Census 2026-08-12, `grep '^## Rule'` over `docs/decisions/*.md` in all 12 repos: two hits, your-health ADR-0020/0021, both conforming with resolving TSTs. Error from day one; no `PROMOTIONS` entry, no grandfather entries. Method and result live in the check's docstring.
 - **How is a Conformance entry parsed?** `TST-*` IDs are resolvable and the requirement says a dangling one is reported. A validator check code, a type name, or a prose sentence is not resolvable and must not be treated as a dangling link. TASK-0089 has to draw that line explicitly rather than let a regex draw it.
+  - *Answered:* the check extracts only `TST-####` tokens from the Conformance section (a dedicated pattern, deliberately narrower than `extract_ids`' `ID_RE`) and resolves each against the note index and snapshot items; everything else in the section is prose by construction — a check code or type name contains no `TST-` digits and can never read as dangling. Fixture cases pin both directions ([[TST-0004]]).
 - **Do the four `your-health` families reproduce under a stated method?** The survey's classification (~41% of 85 requirements and ~44% of 82 issues naming one metric; ≥15 issues in four families) is the motivating cost and the one figure in [[ADR-0023]] not independently re-derived. The corpus sizes were re-counted on 2026-08-12 and are exact. The pilot should restate the family counts with a reproducible method or drop them — FEAT-0022's independent review flagged exactly this failure mode ("reproduce under no stated method"), and a founding ADR is a bad place for it.
+  - *Still open, and deliberately not this feature's to close:* the restatement belongs to the pilot in `your-health` (its ADR-0020/0021 already cite their families issue by issue, each verified against its note on 2026-08-12, which is a stated method for the instances they use). The fleet-wide family counts remain the survey's classification, flagged as such in ADR-0023 itself.
 - **Does a rule-ADR want its own `## Options`?** [[ADR-0021]] requires two readable options only when the decision *offers a choice*. Many rules genuinely have alternatives (the rejected threshold, the rejected default); some are a plain yes/no. TASK-0086 should say whether rule-ADRs are expected to carry options, or inherit the existing "available, not required" rule unchanged.
+  - *Answered:* inherit unchanged. `DECISIONS.md`'s new section says a rule-ADR carries `## Options` under exactly the existing rule — required whenever the decision offers a choice — with the observation that most real rules did reject something specific. No rule-ADR-special option requirement was added.

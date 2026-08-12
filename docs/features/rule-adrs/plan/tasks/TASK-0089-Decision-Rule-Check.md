@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0089
 aliases: ["TASK-0089"]
 title: "DECISION-RULE: a decision carrying `## Rule` must carry a non-empty Domain and Conformance, and a TST named there must resolve"
-status: backlog
+status: done
 phase: "[[PHASE-999]]"
 owner: user:edwin
 created: 2026-08-12
@@ -15,7 +15,7 @@ due: ""
 depends: ["[[TASK-0086]]"]
 blocks: []
 related: ["[[ADR-0021]]", "[[ADR-0011]]", "[[ADR-0010]]"]
-tests: []
+tests: ["[[TST-0004]]"]
 ---
 
 # The check
@@ -64,14 +64,18 @@ Draw the line in code deliberately rather than letting a regex draw it. `extract
 
 ## Definition of Done
 
-- [ ] `validate_decision_rule` (or equivalent) added to `tools/scripts/validate-docs.py`, with a docstring carrying the measurement and the severity reasoning in the style of the checks around it.
-- [ ] Fixture exercises: absent Domain, empty Domain, absent Conformance, empty Conformance, dangling `TST-*`, resolving `TST-*`, check-code-only Conformance, type-only Conformance, and the fully-clean case. Each asserted, including the negative cases that must **not** fire.
-- [ ] Severity chosen from a counted violation set; the count, the choice and any `PROMOTIONS` / `GRANDFATHERED.yaml` entry recorded in the docstring.
-- [ ] `--self-check` still clean — the new code registers no unregistered status table.
-- [ ] The bundled copy under `tools/cockpit/` carries the check, merged with the parallel work rather than over it.
-- [ ] A `TST-*` note created for the fixture, its status stamped by executing it ([[ADR-0010]]) rather than asserted.
-- [ ] `bash tools/scripts/validate-docs.sh` clean in `project-os` and in `project-os-dev` after sync; the two rule-ADRs in this repo ([[ADR-0022]], [[ADR-0023]]) are the first real corpus it meets — neither carries `## Rule` today, and if the check reports them the check is wrong.
-- [ ] A hand-merge is filed in `project-os-cockpit` once this lands.
+- [x] `validate_decision_rule` (or equivalent) added to `tools/scripts/validate-docs.py`, with a docstring carrying the measurement and the severity reasoning in the style of the checks around it — evidence: project-os `6ca15f4`; the check walks `docs/decisions/*.md` like `DECISION-OPTIONS` beside it, reads headings outside fences and HTML comments, and reports absent and empty sections distinctly.
+- [x] Fixture exercises: absent Domain, empty Domain, absent Conformance, empty Conformance, dangling `TST-*`, resolving `TST-*`, check-code-only Conformance, type-only Conformance, and the fully-clean case. Each asserted, including the negative cases that must **not** fire — evidence: `tools/scripts/test-decision-rule.py`, 23 assertions, plus the cases beyond the list: status independence (`accepted` fires the same), the casual `## Rule` heading (fires twice — ADR-0023's accepted cost, asserted as such), a TST resolved through snapshot items, fenced and commented headings, and the shipped template raw and uncommented. Adequacy by inversion: four deliberate breaks of the check each fail the suite ([[TST-0004]], `adequacy:`).
+- [x] Severity chosen from a counted violation set; the count, the choice and any `PROMOTIONS` / `GRANDFATHERED.yaml` entry recorded in the docstring — evidence: censused 2026-08-12, `grep '^## Rule'` over `docs/decisions/*.md` across all 12 repos under `~/Dev/repos`: exactly two hits, your-health ADR-0020/0021, both conforming with resolving TSTs (and one near-miss correctly outside the marker, your-trainer ADR-0009's `### Rules`). **Zero violations → error from day one** per [[ADR-0021]]'s precedent; no `PROMOTIONS` entry and no grandfather entries, deliberately — all recorded in the docstring.
+- [x] `--self-check` still clean — evidence: exit 0 after the change; the two new module-level constants are compiled regexes, which the completeness walk correctly ignores, and no status collection was added.
+- [x] The bundled copy under `tools/cockpit/` carries the check, merged with the parallel work rather than over it — evidence: the addition sits beside the parallel FEAT-0022-claimants diff in the working tree, touching disjoint regions; `--self-check` clean and the full 23-assertion suite passes against the bundled copy. **See "The bundled copy was applied but not committed" below.**
+- [x] A `TST-*` note created for the fixture, its status stamped by executing it ([[ADR-0010]]) rather than asserted — evidence: [[TST-0004]], stamped `passing` by `run-tests.py --write` (last_run 2026-08-12T16:23Z, exit 0).
+- [x] `bash tools/scripts/validate-docs.sh` clean in `project-os` and in `project-os-dev`; the two rule-ADRs in this repo ([[ADR-0022]], [[ADR-0023]]) are the first real corpus it meets — neither carries `## Rule` today, and if the check reports them the check is wrong — evidence: project-os exit 0 at `6ca15f4`; this repo verified by running the **new** validator against it directly (zero `DECISION-RULE` findings; ADR-0022/0023 correctly unmarked) since the sync is deliberately a separate later step and this repo's own validator remains a sync behind.
+- [~] A hand-merge is filed in `project-os-cockpit` once this lands — reconciled, not delivered here: this change's scope is the two-repo landing (project-os + this record), so the filing in that repo's own intake is carried as an explicit unticked follow-up in both CHG notes (here and in project-os) rather than done as a side-effect commit to a third repo. The obligation stands: that repo's deliberately diverged 44-code validator does not gain `DECISION-RULE` until someone hand-merges it there.
+
+## The bundled copy was applied but not committed — loudly, on purpose
+
+`tools/cockpit/src/project_os_cockpit/validate_docs_bundled.py` in `project-os` was already dirty with unrelated parallel work (the FEAT-0022 claimants fix) when this task landed, exactly as the plan's coordination hazard predicted. The DECISION-RULE addition was applied **in place, beside that work** — the hunks are disjoint — and verified there (self-check plus the full suite). But commit `6ca15f4` deliberately does **not** include the file: staging it would have dragged the parallel diff into this change's commit. The parallel work's own close-out carries the file with both changes. Until then, the bundled copy's *committed* state lacks DECISION-RULE while its working tree has it.
 
 ## Notes
 
