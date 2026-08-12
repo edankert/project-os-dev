@@ -14,9 +14,9 @@ impacts: ["../project-os/tools/instructions/DECISIONS.md", "../project-os/docs/_
 issues: []
 features: [FEAT-0023]
 tests: [TST-0004]
-reviewed_by: ""
-review_date: ""
-review_verdict: ""
+reviewed_by: "model:claude-opus-5[1m]"
+review_date: 2026-08-12
+review_verdict: approved
 related: [ADR-0011, ADR-0021, ADR-0010, REQ-0025, ISS-0005]
 ---
 
@@ -62,6 +62,16 @@ Censused at landing (2026-08-12): `grep '^## Rule'` over `docs/decisions/*.md` a
 - risks: not-applicable (re-checked against the LIFECYCLE triggers: pure-Python addition to an existing walk, no new dependency, env var, path change, or long-running step)
 - changes: new (this note; its counterpart in project-os is `docs/changes/CHG-20260812-Rule-ADRs.md` there, per the Model-Routing precedent for template changes)
 - snapshot: updated (focus → FEAT-0023 close-out; TST-0004 and this note registered)
+
+## Independent review — 2026-08-12, `model:claude-opus-5[1m]`, **approved as a record, with one correction owed**
+
+Stamped for completeness rather than obligation: ADR-0019 removed the review duty from change notes, and this repo's validator still asks only because it is a sync behind. Approved because everything this note asserts about what happened is true and reproduces; the blocking verdict for this work sits on REQ-0025 and FEAT-0023, where the disputed transitions are.
+
+**Verified from this note, independently:** the census (12 repos, two `^## Rule` hits, one `### Rules` near-miss, zero findings) reproduces exactly; the pilots are positively parsed rather than skipped; both validators exit 0; `--self-check` and `sync-snapshot --check` are clean; and the disclosed `generate-adapters` staleness on `.cursor/rules/obsidian.mdc` is confirmed pre-existing at `HEAD~1` and `HEAD~2` and untouched here — that disclosure is accurate.
+
+**Finding.** "The bundled copy: applied, verified, deliberately not committed" says the file rides beside parallel work "whose close-out carries the file with both changes", and the Follow-ups below repeat it. That close-out is not pending — the feature named is `done` and its change note `merged`, dated 2026-08-04. The canonical `tools/scripts/validate-docs.py` already carries the claimants fix at `6ca15f4`, so what keeps the bundled copy dirty is a fix owned by an open review-round issue in that chain — the one whose blocking finding 1 is *"the metric fix never reached the two bundled validator copies"* — which no note in this feature's record names. The disclosure is loud but points at a past event, so a reader with only the notes cannot find who owes the landing. Name the open issue, or file one.
+
+Further findings, with reproduction detail, are in REQ-0025 and TST-0004.
 
 ## Follow-ups
 

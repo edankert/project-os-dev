@@ -15,6 +15,9 @@ tasks: ["[[TASK-0086]]", "[[TASK-0087]]", "[[TASK-0088]]", "[[TASK-0089]]"]
 release: ""
 related: ["[[ADR-0022]]", "[[ADR-0023]]", "[[ADR-0011]]", "[[ADR-0021]]", "[[ISS-0005]]"]
 tests: ["[[TST-0004]]"]
+reviewed_by: "model:claude-opus-5[1m]"
+review_date: 2026-08-12
+review_verdict: changes-requested
 ---
 
 # Rule-ADRs
@@ -62,6 +65,21 @@ Two **coordination hazards**, recorded here and carried in the plan rather than 
 - [x] An ordinary yes/no ADR is completely unaffected — no new required section, no new finding, no template churn visible to a decision that is not a rule — evidence: the template block is inside an HTML comment (the heading's presence is the marker, so uncommented would arm the check against every template-derived ADR); fixture cases "ordinary ADR is silent" and "the raw template trips nothing"; the new validator run across all 12 fleet repos reports zero `DECISION-RULE` findings.
 - [x] The harvest trigger is written where intake happens, so the second issue of a kind is the moment a rule gets proposed rather than the moment a third one-off gets filed — evidence: `tools/skills/issue-intake/SKILL.md` step 2 (mandatory, before ID allocation, bounded search, one-line negative), `6ca15f4`.
 - [x] The convention is usable on the bare markdown before the check exists — the pilot does not wait for `DECISION-RULE` — evidence: the pilots were authored and accepted on plain headings the morning of 2026-08-12, before the check landed that afternoon, and the check then found them already conformant — the useful result the plan named.
+
+## Independent review — 2026-08-12, `model:claude-opus-5[1m]`, **changes-requested**
+
+Clean-context pass (fresh session; the notes and the two commits `6ca15f4` / `bc2d840`, never the authoring session's reasoning). Authored by `model:claude-fable-5`, reviewed by `model:claude-opus-5[1m]`.
+
+**All five acceptance criteria above reproduce on their own evidence, and no defect was found in the shipped check.** The convention is usable on bare markdown (the pilot pair was authored before the check existed and is found conformant by it); `DECISION-RULE` fires at error severity on either section absent or empty at any status, confirmed by seven mutations and by an end-to-end run of `validate-docs.py --repo-root` over a malformed fixture (2 errors, exit 1); an ordinary decision is untouched, confirmed by the raw-template fixture case and by zero findings across all 12 fleet repos; the harvest trigger is at `issue-intake/SKILL.md` step 2, before ID allocation at step 3, as claimed. Both validators exit 0, `--self-check` is clean, `sync-snapshot --check` is clean, and the disclosed `generate-adapters` staleness on `.cursor/rules/obsidian.mdc` is confirmed pre-existing at `HEAD~1` and `HEAD~2` and untouched by this change.
+
+**The verdict is `changes-requested` on the record, not on the engineering.** Two blocking findings sit on the requirement this feature is `done` on the strength of, and two on the test that guards it:
+
+1. **`implemented` on uncommitted state.** REQ-0025's own `scope:` names the bundled cockpit validator; that copy exists only in project-os's working tree, in no commit, guarded by no check. See REQ-0025.
+2. **The pending landing is attributed to a close-out that already happened** (2026-08-04), while the open issue chain that actually owes it is named in no note of this feature. That is a handoff-surface defect, which is the thing a clean-context pass is for. See REQ-0025.
+3. **The suite cannot detect its own check being unwired** — deleting the call site in `validate()` leaves it 23/23 green while the corpus goes unchecked. See TST-0004.
+4. **`adequacy:` records a bundled-copy run that the harness cannot perform "unchanged".** The claim's substance is true; the procedure as recorded is not reproducible. See TST-0004.
+
+Non-blocking: the two skills each restate one normative sentence from `DECISIONS.md` against a DoD box that says none is restated; the `_decision_sections` docstring claims three contracts the suite does not pin; and a descriptive or plural `## Rule` heading escapes the marker silently, an asymmetry ADR-0023's consequences do not record.
 
 ## Links
 

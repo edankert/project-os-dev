@@ -22,6 +22,9 @@ implements: ["[[FEAT-0023]]"]
 verifies: []
 related: ["[[ADR-0022]]", "[[ADR-0023]]", "[[ADR-0011]]", "[[ISS-0005]]"]
 tests: ["[[TST-0004]]"]
+reviewed_by: "model:claude-opus-5[1m]"
+review_date: 2026-08-12
+review_verdict: changes-requested
 ---
 
 # A rule names its domain and its conformance
@@ -48,6 +51,18 @@ The requirement is on both halves for a reason. A rule with a domain and no conf
 - Implements: [[FEAT-0023]]
 - Decided by: [[ADR-0023]] (the convention), [[ADR-0022]] (why it is a convention and not a type)
 - Verified by: `tools/scripts/validate-docs.py` (`DECISION-RULE`) plus the fixture exercising it; a `TST-*` note is created with [[TASK-0089]] rather than up front, because a test note's status is stamped by execution ([[ADR-0010]]) and there is nothing yet to execute.
+
+## Independent review — 2026-08-12, `model:claude-opus-5[1m]`, **changes-requested**
+
+Clean-context pass (fresh session; these notes and the two commits only, no access to the authoring session's reasoning). **Criteria 1 through 5 each reproduce independently.** Criterion 1's five cited line references all resolve as written (`DECISIONS.md:92` is the section heading; `adr.md:23`, `SCHEMAS.md:55`, `adr-authoring/SKILL.md:27`, `issue-intake/SKILL.md:33` are each a pointer). Criteria 2, 3 and 4 were re-verified by re-running the suite (23 assertions, exit 0) and by mutating the check seven ways on a scratch copy — dropping the `Domain` requirement kills 6 assertions, gating the check to `accepted` kills 13, disabling dangling-TST resolution kills 4 — and end-to-end by running `validate-docs.py --repo-root` over a fixture repo with a malformed rule-ADR (2 errors, exit 1). Criterion 5's census reproduces exactly: 12 repos, two `^## Rule` hits, zero `DECISION-RULE` findings, no `PROMOTIONS` and no grandfather entries.
+
+**Finding (blocking). Criterion 6 is ticked, and this requirement is `implemented`, on evidence that exists in no commit.** This note's own `scope:` names "the DECISION-RULE check in validate-docs.py **plus its bundled copy**". A fresh clone of project-os at `6ca15f4` does not contain the check in `tools/cockpit/src/project_os_cockpit/validate_docs_bundled.py`; it lives only in that repo's working tree. This is disclosed loudly and in four places, so it is not concealment — but the repo's own doctrine treats exactly this as a named failure class: `validate-docs.sh` grew its `--as-committed` mode because "a file that is present on disk but ignored, untracked, or simply not staged is invisible to every local check and absent in CI", with two recorded instances. Nothing mechanical guards the bundled copy either — TST-0004's recorded `command:` targets the canonical suite, whose harness hard-codes `HERE / "validate-docs.py"` — so if that working tree is discarded, no check, note or test notices. Either narrow the `scope:` and criterion 6 to the canonical validator and carry the bundled copy as separate work, or hold this requirement at `approved` until the file lands in a commit.
+
+**Finding (blocking, handoff). The disposition of that uncommitted file is attributed to a close-out that has already happened.** This criterion, TASK-0089, both change notes and the snapshot entry all say the file rides "beside the parallel FEAT-0022-claimants work whose close-out commits both". That feature is `status: done` and its change note is `merged`, dated 2026-08-04 — its close-out is in the past, not scheduled. Separately verified: the canonical `tools/scripts/validate-docs.py` already carries the claimants fix at `6ca15f4`, so the only thing keeping the bundled copy dirty is a fix that has an open owner elsewhere — the round-three review issue whose blocking finding 1 is precisely *"the compute_metric_counts fix never reached the two bundled validator copies"*, still `open`, together with five later rounds in the same chain. **No note in this feature's record names any of them.** A reader arriving at this requirement with only the notes — which is the handoff test this review exists to apply — is pointed at a completed event and cannot find the open item that actually owes the landing.
+
+**Finding (non-blocking, REQ-0018).** Criterion 1 asserts the linkers "restate none of it", and TASK-0086 states the standard absolutely: *"If any of them restates a sentence of this section, that is the same defect being reintroduced."* Two sentences are restated near-verbatim: `DECISIONS.md:108` "**If the set cannot be named, the rule is not ready to be decided**" reappears at `adr-authoring/SKILL.md:26`, and `DECISIONS.md:111` "one instance is a bug, two is a domain" reappears at `issue-intake/SKILL.md:33`. Both files also link correctly and both duplicated sentences are rationale rather than the gate, so the blast radius is small — but the box is ticked against a standard the work itself states without exception, and if the harvest trigger ever moves off "the second issue", the skill goes stale with nothing comparing prose to prose.
+
+*Further findings on the test itself are recorded in TST-0004.*
 
 ## Note on the scope of "names neither"
 
