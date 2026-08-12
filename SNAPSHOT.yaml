@@ -25,16 +25,16 @@ docs_system:
     - docs/PHASES.md
 
 counters:
-  ADR: 21
+  ADR: 23
   CHG:
     last_date: 20260726
-  FEAT: 22
+  FEAT: 23
   ISS: 40
   PHASE: 2
   REL: 0
-  REQ: 24
+  REQ: 25
   RISK: 2
-  TASK: 85
+  TASK: 89
   TST: 3
   WF: 3
 
@@ -71,6 +71,15 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0023:
+      file: "docs/features/rule-adrs/FEAT-0023-Rule-ADRs-Carry-Their-Conformance.md"
+      title: "Rule-ADRs: the template carries the convention, and the validator refuses the shape that binds nothing"
+      status: backlog
+      phase: "[[PHASE-999]]"
+      owner: user:edwin
+      requirements: [REQ-0025]
+      tasks: [TASK-0086, TASK-0087, TASK-0088, TASK-0089]
+      note: "Implements ADR-0023 under ADR-0022's constraint that it be a convention, not a kind. The gap: every note kind is singular, and the only quantified rules in the system are the validator's 40 check codes, which are template-owned and closed to projects — its three per-repo levers all subtract. All four tasks edit files in ~/Dev/repos/project-os, not here. Two coordination hazards carried in the plan rather than as RISK notes: the bundled cockpit validator in project-os is dirty with parallel work, and project-os-cockpit's diverged 44-code superset needs a hand-merge filed there when TASK-0089 lands."
     FEAT-0022:
       file: "docs/features/snapshot-retention/FEAT-0022-Retention-And-Title-Derivation.md"
       title: "Retention runs on every sync, and `title` stops being a second copy: implements ADR-0018"
@@ -218,6 +227,42 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0086:
+      file: "docs/features/rule-adrs/plan/tasks/TASK-0086-Specify-The-Convention-In-Decisions.md"
+      title: "DECISIONS.md specifies the three sections, the harvest trigger and the landing pattern — once, and everything else links to it"
+      status: backlog
+      phase: "[[PHASE-999]]"
+      parent: FEAT-0023
+      effort: M
+      blocks: [TASK-0087, TASK-0088, TASK-0089]
+      note: "The single normative statement, per REQ-0018. ISS-0006 is what the alternative costs: requirement advancement stated in four files, amended in three, leaving every repo instructing agents to apply a gate the ADR had just reverted, undetected because no check compares prose to prose. Must also settle whether a rule-ADR is expected to carry ADR-0021's ## Options."
+    TASK-0087:
+      file: "docs/features/rule-adrs/plan/tasks/TASK-0087-The-Template-Carries-The-Block.md"
+      title: "The ADR template carries an optional Rule/Domain/Conformance block, and SCHEMAS.md gains one sentence"
+      status: backlog
+      phase: "[[PHASE-999]]"
+      parent: FEAT-0023
+      effort: S
+      depends: [TASK-0086]
+      note: "Commented, not uncommented — and this is structural rather than stylistic. Under ADR-0023 the presence of `## Rule` IS the marker, so an uncommented heading in the template would mark every ADR authored from it as a rule-ADR and DECISION-RULE would report all of them. ADR-0021 shipped `## Options` uncommented and was right to: that section is required of any decision offering a choice."
+    TASK-0088:
+      file: "docs/features/rule-adrs/plan/tasks/TASK-0088-Authoring-And-Harvest-In-The-Skills.md"
+      title: "adr-authoring learns to write a rule-ADR; issue-intake learns to harvest one on the second issue of a kind"
+      status: backlog
+      phase: "[[PHASE-999]]"
+      parent: FEAT-0023
+      effort: M
+      depends: [TASK-0086]
+      note: "The harvest step is the only part of the feature that catches a rule nobody thought to write — your-health filed at least 15 issues across four families retail because nothing at intake asked about siblings. Phrase it mandatory with an explicit trigger per ADR-0004, which measured that conditional phrasing gets skipped even when the condition holds. Must resolve the tension with ADR-0016 (ceremony proportionate) in the skill text: bound the search, make the negative result one line."
+    TASK-0089:
+      file: "docs/features/rule-adrs/plan/tasks/TASK-0089-Decision-Rule-Check.md"
+      title: "DECISION-RULE: a decision carrying `## Rule` must carry a non-empty Domain and Conformance, and a TST named there must resolve"
+      status: backlog
+      phase: "[[PHASE-999]]"
+      parent: FEAT-0023
+      effort: M
+      depends: [TASK-0086]
+      note: "Severity is a decision this task takes, not one it inherits: count the fleet's malformed rule-ADRs at landing, then error on day one (ADR-0021's precedent, nothing to migrate) or a PROMOTIONS entry no more than 90 days out — 2026-11-10 at the latest for a 2026-08-12 landing. Must not require a TST: a type that makes the violation unrepresentable is the strongest conformance, and demanding a test note would push authors to the weaker one."
     TASK-0085:
       file: "docs/features/snapshot-retention/plan/tasks/TASK-0085-Fleet-Rollout.md"
       title: "Fleet rollout: ship both halves inert, then opt in one repo at a time, dogfood repo first and the largest last"
@@ -376,14 +421,6 @@ items:
       status: done
       parent: FEAT-0012
       depends: [TASK-0050]
-    TASK-0061:
-      file: docs/features/derived-state/plan/tasks/TASK-0061-Wire-Generation-Retire-Checks.md
-      title: "Wire generation into pre-commit and CI; delete ITEM-STATUS, COUNTER and METRICS"
-      status: done
-      parent: FEAT-0015
-      effort: M
-      depends: [TASK-0060]
-      blocks: [TASK-0065]
     TASK-0062:
       file: docs/features/derived-state/plan/tasks/TASK-0062-Derive-Deferral-Bookkeeping.md
       title: "Derive deferral bookkeeping; retire three DEFER checks and keep DEFER-SCOPE an error"
@@ -395,13 +432,6 @@ items:
       file: docs/features/derived-state/plan/tasks/TASK-0063-Retention-In-Generator.md
       title: "Encode retention as generator policy; drop manual pruning from close-out"
       status: cancelled
-      parent: FEAT-0015
-      effort: M
-      depends: [TASK-0060]
-    TASK-0064:
-      file: docs/features/derived-state/plan/tasks/TASK-0064-Evidence-Driven-Transitions.md
-      title: "Evidence-driven transitions: focus implies doing, close-out stamps done, forward-only and never gate-exempt"
-      status: done
       parent: FEAT-0015
       effort: M
       depends: [TASK-0060]
@@ -893,6 +923,15 @@ items:
       priority: high
       phase: PHASE-0002
       implements: [FEAT-0017]
+    REQ-0025:
+      file: docs/requirements/REQ-0025-A-Rule-Names-Its-Domain-And-Its-Conformance.md
+      title: "A rule stated as a decision names the domain it ranges over and the conformance that discharges it, and the validator refuses one that names neither"
+      status: draft
+      owner: user:edwin
+      priority: medium
+      phase: "[[PHASE-999]]"
+      implements: [FEAT-0023]
+      note: "Deliberately tightened from the originating framing: the check fires when EITHER section is missing, not only when both are. Refusing only the both-missing case would let the most common malformation through — a rule with a domain and no discharge, which is exactly the ISS-0005 population of five feature-less policies that name no feature and so block nothing."
 
   risks:
     RISK-0001:
@@ -970,6 +1009,20 @@ items:
       status: merged
 
   decisions:
+    ADR-0023:
+      file: docs/decisions/ADR-0023-A-Quantified-Rule-Is-A-Decision.md
+      title: "A quantified rule is a decision: a rule of the form \"every member of DOMAIN satisfies P\" is recorded as an ADR carrying `## Rule`, `## Domain` and `## Conformance`"
+      status: proposed
+      owner: user:edwin
+      decision: "Option 4. Three sections inside the existing decision kind: `## Rule` (one testable normative sentence), `## Domain` (the enumerable set it ranges over — if the set cannot be named the rule is not ready), `## Conformance` (the named discharge plus which side is authoritative on conflict). The presence of `## Rule` is the marker; no new kind, per ADR-0022"
+      related: [ADR-0022, ADR-0007, ADR-0011, ADR-0021, ISS-0005, REQ-0025]
+    ADR-0022:
+      file: docs/decisions/ADR-0022-Conventions-Before-Types.md
+      title: "Conventions before types: a new note kind is minted only when an existing kind demonstrably cannot carry the semantics, and a convention that stands in for one must name its discharge"
+      status: proposed
+      owner: user:edwin
+      decision: "Option 2. A new first-class kind is created only on at least two concrete instances of a convention failing structurally rather than aesthetically; until then new semantics ride inside an existing kind as a marked convention — a section convention, a role field, or a manifest — and a convention standing in for a type must name the check that discharges it"
+      related: [ADR-0008, ADR-0023, ISS-0005, FEAT-0019]
     ADR-0018:
       file: docs/decisions/ADR-0018-What-The-Generator-Owns.md
       title: "What the generator owns: it derives every field that has a note counterpart, it may remove entries by a reproducible rule but never add one, and item-level `note:` is scratch context that holds its entry until cleared"
@@ -1085,11 +1138,11 @@ items:
 
 metrics:
   counts:
-    features_total: 22
+    features_total: 23
     features_done: 19
     phases_total: 3
     phases_done: 2
-    tasks_total: 85
+    tasks_total: 89
     tasks_done: 78
     tests_total: 3
     tests_passing: 3
@@ -1098,8 +1151,8 @@ metrics:
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0
-    requirements_total: 24
+    requirements_total: 25
     requirements_implemented: 23
     risks_open: 0
     releases_total: 0
-    decisions_total: 21
+    decisions_total: 23
