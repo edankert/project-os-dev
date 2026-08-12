@@ -25,7 +25,7 @@ docs_system:
     - docs/PHASES.md
 
 counters:
-  ADR: 19
+  ADR: 20
   CHG:
     last_date: 20260726
   FEAT: 22
@@ -1102,4 +1102,4 @@ metrics:
     requirements_implemented: 23
     risks_open: 0
     releases_total: 0
-    decisions_total: 19
+    decisions_total: 20
