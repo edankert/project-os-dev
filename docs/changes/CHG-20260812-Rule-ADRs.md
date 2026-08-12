@@ -8,16 +8,16 @@ owner: user:edwin
 created: 2026-08-12
 updated: 2026-08-12
 source: ["[[FEAT-0023]]", "[[ADR-0023]]", "[[ADR-0022]]"]
-commit: "project-os 6ca15f4; this repo's close-out commit carries the record"
+commit: "project-os 6ca15f4 + 7536e9d (bundled copy, partial stage) + 4aa2238 (review fixes); this repo's close-out commits carry the record"
 pr: ""
-impacts: ["../project-os/tools/instructions/DECISIONS.md", "../project-os/docs/__templates__/adr.md", "../project-os/docs/__templates__/SCHEMAS.md", "../project-os/tools/skills/adr-authoring/SKILL.md", "../project-os/tools/skills/issue-intake/SKILL.md", "../project-os/tools/scripts/validate-docs.py", "../project-os/tools/scripts/test-decision-rule.py", "../project-os/tools/cockpit/src/project_os_cockpit/validate_docs_bundled.py (working tree only — see below)"]
+impacts: ["../project-os/tools/instructions/DECISIONS.md", "../project-os/docs/__templates__/adr.md", "../project-os/docs/__templates__/SCHEMAS.md", "../project-os/tools/skills/adr-authoring/SKILL.md", "../project-os/tools/skills/issue-intake/SKILL.md", "../project-os/tools/scripts/validate-docs.py", "../project-os/tools/scripts/test-decision-rule.py", "../project-os/tools/cockpit/src/project_os_cockpit/validate_docs_bundled.py (DECISION-RULE committed at 7536e9d by partial stage; ISS-0035's backfill remains in the working tree — see below)"]
 issues: []
 features: [FEAT-0023]
 tests: [TST-0004]
 reviewed_by: "model:claude-opus-5[1m]"
 review_date: 2026-08-12
 review_verdict: approved
-related: [ADR-0011, ADR-0021, ADR-0010, REQ-0025, ISS-0005]
+related: [ADR-0011, ADR-0021, ADR-0010, REQ-0025, ISS-0005, ISS-0035]
 ---
 
 # Rule-ADRs land in the template
@@ -39,15 +39,18 @@ The specification lives once, in `tools/instructions/DECISIONS.md` ("A decision 
 
 Censused at landing (2026-08-12): `grep '^## Rule'` over `docs/decisions/*.md` across all 12 repos under `~/Dev/repos` → exactly two notes, your-health ADR-0020/0021 (the pilots), both conforming, TST-0018/0019 resolving; one near-miss (`### Rules`, your-trainer ADR-0009) correctly outside the marker. **Zero violations → error on day one** ([[ADR-0021]]'s precedent under [[ADR-0011]]); no `PROMOTIONS` entry, no `GRANDFATHERED.yaml` entries. Count, method and reasoning are in the check's docstring, where this codebase keeps them.
 
-## The bundled copy: applied, verified, deliberately not committed
+## The bundled copy: committed by partial stage; the remaining dirt is [[ISS-0035]]'s
 
-`tools/cockpit/src/project_os_cockpit/validate_docs_bundled.py` in project-os was already dirty with unrelated parallel work (the FEAT-0022 claimants fix) — the coordination hazard the plan predicted. The DECISION-RULE addition is applied **in place beside that work** (disjoint hunks) and verified there (`--self-check` clean; the full suite passes against the bundled copy). Commit `6ca15f4` does **not** include the file: staging it would have dragged the parallel diff into this change. The parallel work's own close-out carries the file with both changes; until then the bundled copy's committed state lacks the check while its working tree has it. Also inherited, not caused here: project-os HEAD currently fails `generate-adapters --check` on `.cursor/rules/obsidian.mdc` (stale since the parallel session committed `OBSIDIAN.md` without the regenerated artifact) — pre-existing at `HEAD~1`, unchanged by `6ca15f4`.
+*(Rewritten after review round one — `244baec`'s finding on this section — which caught the original version attributing the pending landing to "the parallel FEAT-0022-claimants close-out", an event already past: FEAT-0022 is `done`, its change note merged 2026-08-04, and the canonical validator has carried the claimants fix since before `6ca15f4`.)*
+
+`tools/cockpit/src/project_os_cockpit/validate_docs_bundled.py` in project-os was already dirty with a second, unrelated change when this work landed — the coordination hazard the plan predicted. The DECISION-RULE addition was first applied to the working tree only (disjoint hunks) and left uncommitted with it; the review rejected that as `implemented`-on-no-commit, so it now sits in its own commit, project-os **`7536e9d`**: a **partial stage** (`git apply --cached` of only the DECISION-RULE hunks; every staged added line compared against the split patch, 148 = 148, zero lines of the other change staged; the extracted index blob verified by `--self-check`, the full 26-assertion suite, and a your-health scan before committing). **The four hunks still uncommitted in that file are the `compute_metric_counts` claimants backfill that [[ISS-0035]] records** — its blocking finding 1 is *"the metric fix never reached the two bundled validator copies"*, still open — and landing them is that issue's work. Also inherited, not caused here: project-os HEAD fails `generate-adapters --check` on `.cursor/rules/obsidian.mdc` (stale since a parallel session committed `OBSIDIAN.md` without the regenerated artifact) — pre-existing at `6ca15f4~1`, untouched by all three commits here.
 
 ## Verification
 
-- [[TST-0004]] — `tools/scripts/test-decision-rule.py`, 23 assertions, stamped `passing` by `run-tests.py` (2026-08-12T16:23Z, exit 0). Adequacy by inversion: four deliberate breaks of the check each fail the suite; the comment-stripping canary is deliberately asymmetric so a comment-blind parser cannot pass it by accident.
+- [[TST-0004]] — `tools/scripts/test-decision-rule.py`, 26 assertions (23 at round one; +2 end-to-end wiring cases and a clean twin after review finding 1), stamped `passing` by `run-tests.py`. Adequacy by inversion: five deliberate breaks of the check each fail the suite — including deleting its call site in `validate()`, the regression the round-one suite could not see; the comment-stripping canary is deliberately asymmetric so a comment-blind parser cannot pass it by accident.
+- The bundled copy held to the same contract by one reproducible command (review finding 2): `python3 tools/scripts/test-decision-rule.py tools/cockpit/src/project_os_cockpit/validate_docs_bundled.py` — 26/26 against both the working tree and the extracted index blob of `7536e9d`.
 - New validator against the fleet: **zero `DECISION-RULE` findings in all 12 repos**; your-health's pilots positively parsed; its 2 pre-existing TEST-FIELDS errors byte-identical under the HEAD validator.
-- project-os gates at `6ca15f4`: `validate-docs.sh` exit 0 (one pre-existing BRIEF-PLACEHOLDER warning), `--self-check` exit 0, `sync-snapshot --check` clean, `generate-adapters --check` all 35 artifacts current in the working tree.
+- project-os gates at `6ca15f4`, re-run at `7536e9d` and `4aa2238`: `validate-docs.sh` exit 0 (one pre-existing BRIEF-PLACEHOLDER warning), `--self-check` exit 0, `sync-snapshot --check` clean, `generate-adapters --check` all 35 artifacts current in the working tree.
 - This repo verified directly with the **new** validator (zero findings; [[ADR-0022]]/[[ADR-0023]] correctly unmarked — they describe the convention without carrying `## Rule`). Its own validator remains a sync behind by design; `sync-project-os.sh` is deliberately a separate later step.
 
 ## Documentation Coverage (All Types Considered)
@@ -76,5 +79,5 @@ Further findings, with reproduction detail, are in REQ-0025 and TST-0004.
 ## Follow-ups
 
 - [ ] `project-os-cockpit` hand-merge: its deliberately diverged 44-code validator does not gain `DECISION-RULE` until it is hand-merged and recorded there. Now due — TASK-0089 has landed; deliberately not done as a side-effect commit to a third repo.
-- [ ] The bundled copy's DECISION-RULE addition rides in project-os's working tree; the parallel FEAT-0022-claimants close-out commits that file with both changes.
+- [ ] The four claimants-backfill hunks still in `validate_docs_bundled.py`'s working tree are [[ISS-0035]]'s to land (its finding: the metric fix never reached the bundled copies). DECISION-RULE itself no longer rides on that — it is committed at project-os `7536e9d`. *(Corrected from round one, which pointed this follow-up at a close-out already past.)*
 - [ ] Fleet rollout via `sync-project-os.sh` — deliberately not run as part of this change; this repo's own validator gains the check (and `DECISION-OPTIONS`, which it also lacks) on its next sync.

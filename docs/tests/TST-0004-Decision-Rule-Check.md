@@ -13,7 +13,7 @@ kind: automated
 level: unit
 entrypoint: "../project-os/tools/scripts/test-decision-rule.py"
 command: "python3 ../project-os/tools/scripts/test-decision-rule.py"
-last_run: "2026-08-12T16:23Z"
+last_run: "2026-08-12T18:17Z"
 exit_code: 0
 requirements: [REQ-0025]
 features: [FEAT-0023]
@@ -21,7 +21,7 @@ issues: []
 tasks: [TASK-0089]
 artifacts: []
 evidence: []
-adequacy: "Verified by inversion on 2026-08-12: four deliberate breaks of the check on a scratch copy — empty-section detection disabled, HTML-comment stripping disabled, dangling-TST resolution disabled, and the `## Rule` marker gate widened to every note — each fail the suite (exit 1); the pristine copy passes all 23 assertions (exit 0). The comment-stripping canary is deliberately asymmetric: its fixture holds `## Rule` alone inside the comment, because a fully-populated commented block would pass a comment-blind parser by accident. The suite also ran unchanged against the bundled copy under tools/cockpit/ (23/23)."
+adequacy: "Verified by inversion on 2026-08-12, round two after review 244baec: five deliberate breaks of the check on a scratch copy — empty-section detection disabled, HTML-comment stripping disabled, dangling-TST resolution disabled, the `## Rule` marker gate widened to every note, and the check's one call site in validate() deleted — each fail the suite (exit 1); the pristine copy passes all 26 assertions (exit 0). The unwiring break is caught by the two end-to-end cases added for review finding 1, which run the target validator as a subprocess (the real CLI) over fixture repos. The comment-stripping canary is deliberately asymmetric: its fixture holds `## Rule` alone inside the comment, because a fully-populated commented block would pass a comment-blind parser by accident. The bundled copy is held to the same contract by the reproducible command review finding 2 asked for — the harness's alternate-target argument: `python3 tools/scripts/test-decision-rule.py tools/cockpit/src/project_os_cockpit/validate_docs_bundled.py` from the project-os root, 26/26 (run against both the working tree and the extracted index blob of commit 7536e9d); round one had instead relocated the file into a scratch tree, a true result recorded under a procedure the harness could not perform unchanged."
 related: ["[[ADR-0010]]", "[[ADR-0011]]", "[[ADR-0021]]", "[[TST-0002]]"]
 reviewed_by: "model:claude-opus-5[1m]"
 review_date: 2026-08-12
@@ -36,15 +36,16 @@ review_verdict: approved
 
 ## Procedure
 
-`tools/scripts/test-decision-rule.py` in `~/Dev/repos/project-os` — importlib-loads the sibling `validate-docs.py` (the same pattern as `test-retention.py`), builds throwaway fixture repos under a tempdir, and calls `validate_decision_rule` directly. Scoped to the invariant it names rather than the whole validator, which is [[TST-0002]]'s lesson: a test whose command observes its own result cannot converge.
+`tools/scripts/test-decision-rule.py` in `~/Dev/repos/project-os` — importlib-loads its target validator (default: the sibling `validate-docs.py`; an optional argument names an alternate module, which is how the bundled copy under `tools/cockpit/` is held to the same contract), builds throwaway fixture repos under a tempdir, and calls `validate_decision_rule` directly — plus, since review round one, two end-to-end cases that run the target as a subprocess (`--repo-root` over a fixture repo), so the check being unwired from `validate()` fails the suite. Scoped to the invariant it names rather than the whole repo, which is [[TST-0002]]'s lesson: a test whose command observes its own result cannot converge — the e2e fixtures are throwaway repos, never this one.
 
 **The command is deliberately cross-repo.** Every file FEAT-0023 changed lives in `~/Dev/repos/project-os`, and this repo's own validator is a sync behind by design — so the note executes the canonical suite against the canonical check, from this repo's root via the sibling-checkout layout the fleet already assumes (the same convention as `external:` pointers). It keeps testing the canonical implementation after this repo syncs, which is where the check is owned.
 
-## What the 23 assertions pin
+## What the 26 assertions pin
 
 - **Fires:** absent Domain, empty Domain, absent Conformance, empty Conformance (each named distinctly in the message), a dangling `TST-*`, the dangling one among resolving ones (reported once, by name), an `accepted` note (status independence), and a casual `## Rule` used as prose scaffolding — which fires twice and is the accepted cost ADR-0023's consequences record.
 - **Silent:** the fully-clean rule-ADR, a TST resolved via the note index, a TST resolved via snapshot items, check-code-only Conformance, type-only Conformance, an ordinary ADR with no `## Rule`, a `## Rule` quoted inside a fenced code block, and a `## Rule` inside an HTML comment.
 - **The shipped template, both ways:** the raw `docs/__templates__/adr.md` (block commented) trips nothing, and the same file with the comment markers stripped validates clean — read from the real template file, so template drift that arms the check against its own output fails here rather than in the first downstream repo to author an ADR.
+- **Wired, not merely correct** (added for review finding 1): a malformed rule-ADR run through the real CLI (`--repo-root` over a fixture repo, as a subprocess) exits 1 with a `DECISION-RULE` finding, and its clean twin exits 0 — so deleting the check's one call site in `validate()` fails the suite instead of leaving it green while the corpus goes unchecked. The clean twin is what makes the malformed twin's exit 1 attributable to the check rather than to fixture noise.
 
 ## Expected results
 
