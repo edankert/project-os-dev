@@ -3,7 +3,7 @@ type: "[[adr]]"
 id: ADR-0023
 aliases: ["ADR-0023"]
 title: "A quantified rule is a decision: a rule of the form \"every member of DOMAIN satisfies P\" is recorded as an ADR carrying `## Rule`, `## Domain` and `## Conformance`"
-status: proposed
+status: accepted
 owner: user:edwin
 created: 2026-08-12
 updated: 2026-08-12
@@ -17,6 +17,7 @@ alternatives:
 supersedes: ""
 superseded: ""
 related: [ADR-0022, ADR-0007, ADR-0011, ADR-0021, ISS-0005, REQ-0025]
+decided_option: "4"
 ---
 
 # A quantified rule is a decision
@@ -86,3 +87,6 @@ ADR-0011's three clauses apply unchanged and unweakened: the cutover is encoded 
 - **`## Rule` becomes load-bearing syntax in a decision note.** A note that uses the heading casually — as prose scaffolding rather than as the marker — will be checked as a rule-ADR and will fail. That is the cost of a section convention doing a type's job, and it is the cheaper cost.
 - **ISS-0005's five policies now have a mechanism, not just a destination.** Whether to convert them is still Edwin's call and still needs sign-off; what changes is that "make it an ADR" now means something specific about what the ADR must carry.
 - **This is [[ADR-0022]]'s second application and its first test.** If rule-ADRs turn out to need a lifecycle `[[adr]]` cannot express — a rule in force for one repo and not another, say, or a rule with a scheduled repeal — that is one of the two structural failures ADR-0022 requires before `POL-*` is proposed again. Record it here if it happens.
+
+> [!note] Accept — option 4: A rule-ADR — an ordinary ADR carrying `## Rule`, `## Domain` and `## Conformance` — 2026-08-12 (user:edwin)
+> Accepted with [[ADR-0022]] and the two pilot rule-ADRs (your-health ADR-0020/0021). Implementation starts the same day: [[FEAT-0023]] upstream ([[REQ-0025]], `DECISION-RULE`), the registry and the conformance loops in your-health.

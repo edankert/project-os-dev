@@ -1012,14 +1012,14 @@ items:
     ADR-0023:
       file: docs/decisions/ADR-0023-A-Quantified-Rule-Is-A-Decision.md
       title: "A quantified rule is a decision: a rule of the form \"every member of DOMAIN satisfies P\" is recorded as an ADR carrying `## Rule`, `## Domain` and `## Conformance`"
-      status: proposed
+      status: accepted
       owner: user:edwin
       decision: "Option 4. Three sections inside the existing decision kind: `## Rule` (one testable normative sentence), `## Domain` (the enumerable set it ranges over — if the set cannot be named the rule is not ready), `## Conformance` (the named discharge plus which side is authoritative on conflict). The presence of `## Rule` is the marker; no new kind, per ADR-0022"
       related: [ADR-0022, ADR-0007, ADR-0011, ADR-0021, ISS-0005, REQ-0025]
     ADR-0022:
       file: docs/decisions/ADR-0022-Conventions-Before-Types.md
       title: "Conventions before types: a new note kind is minted only when an existing kind demonstrably cannot carry the semantics, and a convention that stands in for one must name its discharge"
-      status: proposed
+      status: accepted
       owner: user:edwin
       decision: "Option 2. A new first-class kind is created only on at least two concrete instances of a convention failing structurally rather than aesthetically; until then new semantics ride inside an existing kind as a marked convention — a section convention, a role field, or a manifest — and a convention standing in for a type must name the check that discharges it"
       related: [ADR-0008, ADR-0023, ISS-0005, FEAT-0019]

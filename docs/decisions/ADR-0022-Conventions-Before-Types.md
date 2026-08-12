@@ -3,7 +3,7 @@ type: "[[adr]]"
 id: ADR-0022
 aliases: ["ADR-0022"]
 title: "Conventions before types: a new note kind is minted only when an existing kind demonstrably cannot carry the semantics, and a convention that stands in for one must name its discharge"
-status: proposed
+status: accepted
 owner: user:edwin
 created: 2026-08-12
 updated: 2026-08-12
@@ -16,6 +16,7 @@ alternatives:
 supersedes: ""
 superseded: ""
 related: [ADR-0008, ADR-0023, ISS-0005, FEAT-0019]
+decided_option: "2"
 ---
 
 # Conventions before types
@@ -78,3 +79,6 @@ So "ride as a convention" is only honest paired with "and name what checks it". 
 - The bar is now written down, so the next refusal costs a link instead of an argument, and the next *acceptance* has to show its two instances in public.
 - `SNAPSHOT.md` line 46 is now visibly in tension with this decision: it permits collections that nothing validates. Left standing and named here rather than silently amended — whether it is narrowed, given a check, or deleted is its own decision with its own evidence, and this ADR is not the place to take it.
 - [[ADR-0023]] is the first application: a quantified rule rides inside `[[adr]]` as a section convention, with `DECISION-RULE` as its named discharge.
+
+> [!note] Accept — option 2: Conventions first, with a named conformance check — 2026-08-12 (user:edwin)
+> "accept the four ADRs and start the implementation" — accepted in one act with [[ADR-0023]] and the pilot's first two rule-ADRs (your-health ADR-0020/0021): the law and its first applications enter force together.
