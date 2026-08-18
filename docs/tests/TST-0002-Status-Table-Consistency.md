@@ -9,7 +9,6 @@ created: 2026-07-26
 updated: 2026-07-28
 source: ["ISS-0011", "ISS-0012", "ISS-0013", "ISS-0014", "ISS-0015"]
 scope: system
-kind: automated
 level: unit
 entrypoint: "tools/scripts/validate-docs.py"
 command: "python3 tools/scripts/validate-docs.py --self-check"

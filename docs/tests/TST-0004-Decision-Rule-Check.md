@@ -9,7 +9,6 @@ created: 2026-08-12
 updated: 2026-08-12
 source: ["[[TASK-0089]]", "[[REQ-0025]]", "[[ADR-0023]]"]
 scope: system
-kind: automated
 level: unit
 entrypoint: "../project-os/tools/scripts/test-decision-rule.py"
 command: "python3 ../project-os/tools/scripts/test-decision-rule.py"

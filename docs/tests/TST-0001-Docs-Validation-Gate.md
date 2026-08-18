@@ -9,7 +9,6 @@ created: 2026-07-25
 updated: 2026-07-28
 source: []
 scope: system
-kind: automated
 level: system
 entrypoint: "tools/scripts/validate-docs.sh"
 command: "bash tools/scripts/validate-docs.sh --quiet"

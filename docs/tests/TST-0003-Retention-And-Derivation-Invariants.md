@@ -9,7 +9,6 @@ created: 2026-08-04
 updated: 2026-08-04
 source: ["FEAT-0022", "ADR-0018", "ISS-0032"]
 scope: system
-kind: automated
 level: unit
 entrypoint: "tools/scripts/test-retention.py"
 command: "python3 tools/scripts/test-retention.py"

@@ -8,7 +8,6 @@ created: 2026-01-27
 updated: 2026-01-27
 source: []
 scope: feature
-kind: manual
 level: system
 entrypoint: ""
 command: ""          # runnable check; when set, `status` is written by the runner, never by hand (ADR-0010)
