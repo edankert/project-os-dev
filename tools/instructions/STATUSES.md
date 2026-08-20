@@ -23,7 +23,8 @@ That last rule is not tidiness. Requirement advancement was previously stated in
 | `feature` | `done` | every task scope-resolved (`done`/`cancelled`/`superseded`); linked tests `passing`; **every requirement naming it has resolved criteria** | agent, at close-out |
 | `requirement` | `implemented` | every acceptance criterion ticked-with-evidence or reconciled — **never gated on tests** (ADR-0007) | agent, at feature close-out |
 | `phase` | `done` | **every exit criterion ticked-with-evidence or reconciled** (PHASE-BOXES); **every note naming it in `phase:` scope-resolved** (PHASE-CHILDREN) | agent |
-| `test` | `passing` / `failing` | — | **the test runner**, from the exit code, when `command:` is set (ADR-0010). Author-written only for manual tests, which must carry `last_verified:` and go stale | 
+| `test` | `passing` / `failing`, or `retired` | — | **the author, and only for a manual test**, which must carry `last_verified:` and goes stale. A test carrying a `command:` holds no verdict at all (ADR-0038) |
+| `test` at `level: acceptance` | `retired` | — | agent or human; it rests at `active` and the **verdict** is `mark:`, never the status (see `[[test]]`) |
 | `risk` | `closed` | — | agent |
 | `release` | `released` | release verification | agent |
 | `change` | `merged` | — | agent |
@@ -132,12 +133,36 @@ Terminal-status semantics: `done`/`closed`/`cancelled`/`declined` **resolve** an
 - `implemented` is terminal-but-alive: the design still describes the built surface, which is what makes design/implementation parity checkable. Use `superseded` when a newer design takes over, not when the code ships.
 
 ## `[[test]]`
-- Allowed: `ready`, `passing`, `failing`
+- Allowed: `draft`, `active`, `ready`, `passing`, `failing`, `retired`
 - Typical transitions:
   - `ready` → `passing` / `failing`
   - `failing` → `passing` (after a fix)
-- `ready` means **defined but not yet executed**. It is the state a test note is created in, and the only honest state for a check that has never run.
-- **`passing`/`failing` are written by the test runner, not by an author** — see `../skills/test-authoring/SKILL.md` and the `command:` field in `SCHEMAS.md`. A test with no `command:` is manual and must carry `last_verified:`; it goes stale, and a stale test does not satisfy the verification gate.
+  - `draft` → `active` → `retired` (the acceptance lifecycle — see below)
+  - anything → `retired` (the subject is gone, or the test was folded into another)
+- `ready` means **defined but not yet executed**. It is the state a test note is created in, and the only honest state for a procedure that has never run.
+- **`passing`/`failing` belong to manual tests only.** A test with no `command:` is manual: it records a verdict, must carry `last_verified:`, goes stale, and a stale test does not satisfy the verification gate. **A test that carries a `command:` records no verdict** — not `ready`, not `passing`, not `failing`, and no `last_run:` or `exit_code:` (ADR-0038). CI is the verdict there, and a red automated test is a broken build rather than a state anybody writes down. See `../skills/test-authoring/SKILL.md` and the `command:` field in `SCHEMAS.md`.
+- **`retired` is terminal, and it is the only removal.** `TESTING.md`: *"Nothing removes a check."* The same holds for any test whose subject has been deleted — leaving it `passing` makes it claim to verify something that is gone, and deleting it is forbidden by `LIFECYCLE.md`.
+
+### `level: acceptance` — the acceptance half of the type
+
+An acceptance test is a `[[test]]` whose `level:` is `acceptance`. It is the thing a person walks; everything else about the type is unchanged. Three rules apply to it and to nothing else:
+
+- **It rests at `active`, and the verdict is `mark:`, never status** (`TAXONOMY.md`). Walking one writes `mark:`, `verdict_date:` and `verdict_reason:` and does not touch `status:`. This is the load-bearing sentence, and it has three deliberate consequences:
+  - The verdict rules do not engage, because the note is not at `passing`/`failing`. A person's judgement lives in a field they say nothing about.
+  - The independent-review gate does not engage, because it is keyed on `passing`. The review of an acceptance test *is* the walk.
+  - The `Run` obligation does not engage, because it is keyed on `ready`. This is what keeps a suite of several hundred self-re-arming rows off a badge nobody could act on.
+- **Adding a `command:` is how it becomes automated**, and that is the point of the type being shared. From that moment the check is settled by CI and leaves the manual list — so automating a check discharges it instead of leaving it owed — and the note records no verdict of its own (ADR-0038). Nothing is moved and nothing is re-filed: the section follows the field.
+- **It never carries a completeness gate of its own**: nothing is blocked by an acceptance test being `draft`, and a `retired` one with an old verdict is a record, not an omission.
+
+## `[[check]]` — retired
+
+**The `check` type no longer exists.** An acceptance check is a `[[test]]` at `level: acceptance`; see the `[[test]]` section above, which carries every rule this section used to.
+
+The type was introduced so that a check's human verdict could not collide with the machinery a test carries — the verdict rules, the review gate and the `Run` obligation. That worked, and it cost the thing that turned out to matter more: **a check could not be automated.** A manual test becomes automated by adding `command:`; a check had no such path, so the 200-odd checks whose bodies already named a covering automated test still blocked releases waiting for a person.
+
+The merged type keeps the protection and adds the path. The gates are keyed on statuses an acceptance test does not hold — `passing` for the review gate, `ready` for the `Run` obligation — so they stay off by construction rather than by an exemption for `level: acceptance`.
+
+*(Decided in `project-os-cockpit` ADR-0031, which supersedes ADR-0030. Notes with `type: "[[check]]"` are migrated, not deleted; their ids move into the `TST-*` space and the old `CHK-*` id is kept as an alias.)*
 
 ## Deferral and re-adoption
 
