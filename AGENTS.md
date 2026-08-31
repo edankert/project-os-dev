@@ -8,6 +8,7 @@ This repository is project-os enabled. Follow this startup sequence before doing
 3. Read `SNAPSHOT.yaml`.
 4. Run `bash tools/agents/bootstrap.sh`.
 5. Follow `tools/instructions/MARKDOWN.md`: do not hard-wrap Markdown prose to a fixed column width.
+6. Follow `tools/instructions/WRITING.md`: write so a reader can follow it — point first, one idea per sentence, no undefined jargon.
 
 Do not skip or reorder these steps.
 
