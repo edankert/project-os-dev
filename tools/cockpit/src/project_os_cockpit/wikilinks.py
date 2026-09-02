@@ -29,6 +29,28 @@ from markdown.inlinepatterns import InlineProcessor
 WIKILINK_RE: re.Pattern[str] = re.compile(r"\[\[([^|\]\n]+)(?:\|([^\]\n]+))?\]\]")
 IMAGE_EMBED_RE: re.Pattern[str] = re.compile(r"!\[\[([^|\]\n]+)(?:\|([^\]\n]+))?\]\]")
 
+#: A reference to a note in **another project** (ADR-0024): `project-id#ID`.
+#: The separator is `#` because what follows it is an *id*, not a path segment
+#: -- `/` promises a directory structure that does not exist and sends the
+#: reader looking for it on disk. In Obsidian `#` is a heading anchor, so these
+#: parse there as "heading ID in a note called project-id", find nothing and
+#: render unresolved -- which is exactly what these citations do today. It
+#: fails to resolve; it never resolves to the wrong thing.
+#:
+#: Deliberately strict about the id half: uppercase type, digits or a dated
+#: CHG slug. A loose pattern would swallow `[[Some Note#Some Heading]]`, which
+#: is ordinary Obsidian and means something else.
+CROSS_REPO_RE: re.Pattern[str] = re.compile(
+    r"^([A-Za-z0-9][A-Za-z0-9._-]*)#((?:[A-Z]+-[0-9A-Za-z-]+))$"
+)
+
+
+def split_cross_repo(target: str) -> Optional[tuple[str, str]]:
+    """``("project-os-dev", "ADR-0011")`` for a cross-repo target, else None."""
+    m = CROSS_REPO_RE.match(target.strip())
+    return (m.group(1), m.group(2)) if m else None
+
+
 Resolver = Callable[[str], Optional[str]]
 ImageResolver = Callable[[str], Optional[str]]
 
@@ -51,9 +73,33 @@ def resolve_text_to_html(text: str, resolver: Resolver) -> str:
     return "".join(out)
 
 
+def _cross_repo_attrs(project: str, note_id: str) -> dict[str, str]:
+    """What a cross-repo link carries.
+
+    **Data, not a URL.** A sidecar serves one repo and cannot resolve another;
+    emitting an href it cannot honour would be the surface asserting something
+    it does not know. The shell holds the fleet -- it discovers every
+    SNAPSHOT-bearing repo and runs a sidecar per workspace -- so it does the
+    lookup, and a project that is not on this machine can be reported rather
+    than silently doing nothing (FEAT-0093).
+    """
+    return {
+        "class": "cross-repo-link",
+        "data-project": project,
+        "data-note-id": note_id,
+        "title": f"{note_id} in {project}",
+    }
+
+
 def _render_match(m: re.Match[str], resolver: Resolver) -> str:
     target = m.group(1).strip()
     display = (m.group(2) or target).strip()
+    cross = split_cross_repo(target)
+    if cross:
+        attrs = " ".join(
+            f'{k}="{escape(v)}"' for k, v in _cross_repo_attrs(*cross).items()
+        )
+        return f"<a href=\"#\" {attrs}>{escape(display)}</a>"
     url = resolver(target)
     if url:
         return f'<a href="{escape(url)}">{escape(display)}</a>'
@@ -72,6 +118,14 @@ class _WikilinkInlineProcessor(InlineProcessor):
     ) -> tuple[etree.Element, int, int]:
         target = m.group(1).strip()
         display = (m.group(2) or target).strip()
+        cross = split_cross_repo(target)
+        if cross:
+            el = etree.Element("a")
+            el.set("href", "#")
+            for key, value in _cross_repo_attrs(*cross).items():
+                el.set(key, value)
+            el.text = display
+            return el, m.start(0), m.end(0)
         url = self._resolver(target)
         if url:
             el = etree.Element("a")

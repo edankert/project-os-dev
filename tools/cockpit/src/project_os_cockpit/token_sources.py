@@ -38,6 +38,16 @@ _SWIFT_RGB = re.compile(
     r"green:\s*([0-9a-fA-Fx.]+)\s*/\s*255\.0\s*,\s*"
     r"blue:\s*([0-9a-fA-Fx.]+)\s*/\s*255\.0")
 
+#: `let Ident = Color(red: 0.6, green: 0.6, blue: 0.6)` — SwiftUI's native
+#: 0–1 doubles. The `/ 255.0` spelling above is one way of writing these, not
+#: the only one (ISS-0073); reporting this form as unresolvable spends the
+#: "no honest value" signal on a colour that has one.
+_SWIFT_UNIT = re.compile(
+    r"\b(?:static\s+)?let\s+([A-Za-z_]\w*)\s*=\s*Color\(\s*"
+    r"red:\s*(\d*\.?\d+)\s*,\s*"
+    r"green:\s*(\d*\.?\d+)\s*,\s*"
+    r"blue:\s*(\d*\.?\d+)\s*\)")
+
 #: Any other `let Ident = Color…` — named, but not resolvable to a value here.
 _SWIFT_OTHER = re.compile(
     r"\b(?:static\s+)?let\s+([A-Za-z_]\w*)\s*=\s*(Color[^\n]*)")
@@ -119,6 +129,18 @@ def synthesise_css(text: str, rel: str) -> str:
                 continue
             seen.add(name)
             resolved.append((name, "#%02X%02X%02X" % tuple(comps)))
+        for name, r, g, b in _SWIFT_UNIT.findall(text):
+            if name in seen:
+                continue
+            try:
+                comps = [float(c) for c in (r, g, b)]
+            except ValueError:
+                continue
+            if any(not 0.0 <= c <= 1.0 for c in comps):
+                continue        # outside the unit interval — not this form
+            seen.add(name)
+            resolved.append(
+                (name, "#%02X%02X%02X" % tuple(round(c * 255) for c in comps)))
         for name, expr in _SWIFT_OTHER.findall(text):
             if name not in seen:
                 seen.add(name)

@@ -38,6 +38,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
+from . import session_cache
 from .events import relative_to_ci
 
 log = logging.getLogger("project_os_cockpit.agent_hooks")
@@ -710,6 +711,12 @@ class AgentSessionTracker:
 
         ``rate_limits`` / ``rate_limits_at`` carry the freshest
         account-global usage reading across ALL sessions (TASK-0171).
+
+        ``cache`` carries prompt-cache standing for the session being
+        shown — what its prefix weighs and whether that prefix is still
+        warm (FEAT-0081 / TASK-0344). Read from the transcript by a
+        bounded tail read, so this stays cheap enough for a block that
+        re-renders on every snapshot.
         """
         with self._lock:
             live = self._live_session_locked()
@@ -727,7 +734,71 @@ class AgentSessionTracker:
             if lrl:
                 out["rate_limits"] = lrl["rate_limits"]
                 out["rate_limits_at"] = lrl["rate_limits_at"]
+            shown = live if live is not None else last
+            if shown is not None:
+                cache = session_cache.live_state(shown.get("transcript_path"))
+                if cache is not None:
+                    out["cache"] = cache.as_dict()
             return out
+
+    def cache_report(self) -> dict[str, Any]:
+        """Retrospective prompt-cache accounting for this workspace
+        (FEAT-0081 / TASK-0345).
+
+        Aggregates :func:`session_cache.history` over every transcript
+        the tracker knows about. Full scans, but memoised against mtime,
+        so a repeat call after no agent activity is free.
+        """
+        with self._lock:
+            paths: list[str] = []
+            for sid in self._order:
+                path = self._sessions[sid].get("transcript_path")
+                if isinstance(path, str) and path and path not in paths:
+                    paths.append(path)
+
+        totals = {
+            "transcripts": 0, "turns": 0,
+            "read_tokens": 0, "write_tokens": 0,
+            "read_cost_usd": 0.0, "write_cost_usd": 0.0,
+        }
+        buckets: dict[str, dict[str, Any]] = {}
+        for path in paths:
+            hist = session_cache.history(path)
+            if hist is None:
+                continue
+            totals["transcripts"] += 1
+            totals["turns"] += hist.turns
+            totals["read_tokens"] += hist.read_tokens
+            totals["write_tokens"] += hist.write_tokens
+            totals["read_cost_usd"] += hist.read_cost_usd
+            totals["write_cost_usd"] += hist.write_cost_usd
+            for cause, agg in hist.buckets().items():
+                dst = buckets.setdefault(
+                    cause, {"count": 0, "tokens": 0, "cost_usd": 0.0}
+                )
+                dst["count"] += agg["count"]
+                dst["tokens"] += agg["tokens"]
+                dst["cost_usd"] += agg["cost_usd"]
+
+        for agg in buckets.values():
+            agg["cost_usd"] = round(agg["cost_usd"], 2)
+        totals["read_cost_usd"] = round(totals["read_cost_usd"], 2)
+        totals["write_cost_usd"] = round(totals["write_cost_usd"], 2)
+        return {
+            **totals,
+            "rewrites": buckets,
+            # Everything but the unavoidable first cold write of a
+            # session. Rendered with a `~`: token counts are exact, the
+            # dollars come from a price table that drifts.
+            "avoidable_cost_usd": round(
+                sum(
+                    agg["cost_usd"]
+                    for cause, agg in buckets.items()
+                    if cause != session_cache.CAUSE_SESSION_START
+                ),
+                2,
+            ),
+        }
 
     def sessions_payload(self) -> list[dict[str, Any]]:
         """Newest-first slim session list for ``/api/cockpit/sessions``

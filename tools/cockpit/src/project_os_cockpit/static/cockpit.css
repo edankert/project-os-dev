@@ -620,20 +620,39 @@ details > summary {
 }
 details > summary::-webkit-details-marker { display: none; }
 
+/* ONE handle across the tree (ISS-0091). Group heads drew an 8px
+   rotated-border caret and feature rows a 4px solid triangle, so two
+   levels of the same tree disagreed about what "expand" looks like.
+   The smaller solid one wins — it is the one Edwin picked, and a caret
+   built from two rotated borders never sits on the text baseline the way
+   a triangle does. */
 .group-chevron {
   display: inline-block;
-  width: 8px;
-  height: 8px;
-  margin-right: 8px;
+  position: relative;
+  width: 12px;
+  height: 12px;
   flex-shrink: 0;
-  border-right: 1.5px solid currentColor;
-  border-bottom: 1.5px solid currentColor;
-  transform: translateY(-1px) rotate(45deg);   /* points down (open) */
-  transition: transform 100ms ease;
-  opacity: 0.7;
+  opacity: 1;
 }
-details:not([open]) > summary .group-chevron {
-  transform: translateY(1px) rotate(-45deg);    /* points right (closed) */
+.group-chevron::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 0;
+  height: 0;
+  border-left: 4px solid currentColor;
+  border-top: 3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+  color: var(--text-faint);
+  transform: rotate(90deg);            /* points down (open) */
+  transition: transform 100ms ease;
+}
+details:not([open]) > summary .group-chevron::before {
+  transform: rotate(0deg);             /* points right (closed) */
+}
+@media (prefers-reduced-motion: reduce) {
+  .group-chevron::before { transition: none; }
 }
 
 .group-header-inner {
@@ -651,21 +670,39 @@ details:not([open]) > summary .group-chevron {
   border-bottom: 1px solid var(--border);
 }
 
+/* The group head takes the context card head's box (ISS-0087).
+   Type was already identical — 11px / 600 / uppercase / --text-faint —
+   and every remaining difference was padding, a background and a border.
+   Measured: 42px against the right pane's 22px, nineteen times over in
+   the features navigator, on a pane whose rows are 27px.
+
+   The bar goes with it. A background and a bottom border per group are
+   what make nineteen heads read as nineteen bars rather than as a list of
+   names; the right pane has neither and is the surface being copied. */
 .nav-group-header {
   display: flex;
   align-items: center;
   margin: 0;
-  padding: 10px 14px;
+  padding: 4px 8px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text-faint);
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  background: none;
+  border-bottom: 0;
 }
 .nav-group:not([open]) > .nav-group-header {
   border-bottom: 0;
+}
+/* The chip is the tallest thing in a group head — 21px against the text's
+   16px, so it alone set the head's height (ISS-0087). Trimmed to sit
+   inside the line rather than define it; the chip in a ROW is untouched,
+   where it is the row's own subject. */
+.nav-group-header .status-chip {
+  padding: 0 6px;
+  line-height: 15px;
+  font-size: 10px;
 }
 .nav-group-header:hover {
   color: var(--text-muted);
@@ -710,6 +747,309 @@ details:not([open]) > summary .group-chevron {
 .nav-item:hover {
   background: var(--surface);
   text-decoration: none;
+}
+/* The fold's own row (FEAT-0056). Quiet, but never invisible: a fold that
+   hides the fact that it hid something is indistinguishable from having
+   nothing there. */
+/* The one-line row (TASK-0271), matching the desktop's `.nav-item-line`.
+   `.nav-item` above sets `padding: 8px 14px 10px` and a bottom border —
+   19px of the 33px this removes — so the reset is explicit rather than
+   relying on cascade order. `.nav-line` wraps by default, which would put
+   the full-width title back on a line of its own. */
+/* The context card's count-and-status (TASK-0274), matching the
+   desktop's `.ctx-card-right`. */
+.ctx-card-right {
+  margin-left: auto;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--text-faint);
+  letter-spacing: 0;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+}
+.ctx-type-label { display: flex; align-items: center; gap: 6px; min-width: 0; width: 100%; }
+
+/* Nav groups ARE cards (ISS-0088) — same frame as the context pane's. */
+.nav-group {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated, var(--surface));
+  padding: 4px 6px;
+  margin-bottom: 6px;
+}
+/* The completed band IS a card, like the overview's and the right pane's;
+   its children carry no frame of their own — one border per object. */
+.nav-group.nav-rollup {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg-elevated, var(--surface));
+  padding: 4px 6px;
+  margin-top: 10px;
+  margin-bottom: 6px;
+}
+.nav-rollup .nav-group {
+  border: 0;
+  background: none;
+  border-radius: 0;
+  padding: 0 0 0 2px;
+  margin-bottom: 0;
+}
+/* Nested rows lose their rules: indentation already says they belong to
+   the row above. */
+.nav-item-nested { border-bottom: 0; }
+.nav-item-children-list { padding-left: 14px; }
+.nav-children-toggle {
+  flex: none; width: 12px; height: 12px; padding: 0; border: 0;
+  background: none; cursor: pointer; position: relative;
+}
+.nav-children-toggle::before {
+  content: ""; position: absolute; inset: 0; margin: auto;
+  width: 0; height: 0;
+  border-left: 4px solid currentColor;
+  border-top: 3.5px solid transparent;
+  border-bottom: 3.5px solid transparent;
+  color: var(--text-faint);
+}
+.nav-children-toggle.is-open::before { transform: rotate(90deg); }
+
+/* A head that names a THING reads as a name, not as a label (ISS-0089).
+   The faint uppercase treatment is right for `TASKS` — scaffolding you
+   read past — and wrong for `PHASE-007 · Agent instrumentation`, which is
+   the content. */
+.nav-group-header.is-thing {
+  font-size: 12.5px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+  padding: 5px 8px;
+}
+.nav-group-header.is-thing .group-header-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text);
+}
+.nav-group-header.is-thing .nav-id {
+  font-size: 11.5px;
+  text-transform: none;
+}
+.nav-group-header.is-thing .nav-group-summary { font-size: 11px; }
+/* …and a thing is not framed. Four boxes around four categories read as
+   structure; eighteen around eighteen phases read as clutter. A single
+   hairline between them is enough to separate one from the next. */
+/* ISS-0131, reversed on Edwin's decision 2026-08-11: a phase group is a card,
+   the same card the Issues and Intent groups get. It keeps the base
+   `.nav-group` box entirely -- border, radius, background, padding -- so the
+   three views cannot drift apart again by carrying separate numbers.
+
+   The count argument this replaces (eighteen boxes read as clutter) was true
+   when written; the view now opens on `OPEN · 8` with finished phases folded
+   into a roll-up, so the live choice is about eight.
+
+   ISS-0093's protection is unaffected: the head's indent came from three
+   paddings compounding, and the body still carries its own 5px below, so the
+   head stays left of its own features. */
+.nav-group:has(> .nav-group-header.is-thing) { margin-bottom: 6px; }
+/* The pill has to be legible where it survives. */
+.nav-group-header .status-chip { color: var(--text-muted); }
+
+.nav-set-heading {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* A thing-head is the overview's scope row (ISS-0090): same weight,
+   colour and gap, and the same `✓ N` trailing form. Four rounds were
+   spent walking this row toward the context card's head; it belongs
+   beside the scope row instead. */
+.nav-group-header.is-thing {
+  font-weight: 400;
+  color: var(--text-muted);
+  gap: 7px;
+}
+.nav-group-header.is-thing .group-header-name {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.nav-group-header.is-thing .nav-group-summary { font-size: 10.5px; }
+.nav-group-header.is-thing .nav-group-summary.is-done { color: var(--status-done); }
+/* A handle standing in for an absent id — `PLAN` — quieter than a real
+   one, because it names a type rather than a note. */
+/* Same SIZE as a real id — `ch` is relative to the font, so a smaller
+   handle makes a narrower column and puts the row back on its own grid.
+   Only the opacity marks it as standing in for something absent. */
+.nav-id.is-typeless { opacity: 0.7; letter-spacing: 0.04em; }
+
+/* The id column needs a WIDTH, or two rows with differently-sized ids sit
+   on different grids — `REQ-0008` is eight characters and `PLAN` is four,
+   which left the plan's title 27px adrift even once it had a handle
+   (ISS-0090). Monospace, so `ch` is exact: nine covers `REQ-0008` and
+   `TASK-0277` alike. */
+.nav-item-children-list .nav-id { min-width: 9ch; }
+
+/* A group head's id never shrinks (ISS-0091). `flex: none` was scoped to
+   `.nav-item-line`, so in a HEAD the id was a flexible item inside an
+   overflow-hidden container and a long phase title squeezed it —
+   `PHASE-007` rendered 7px of the 62px it needs. The name is the thing
+   with an ellipsis; the id is eight characters and fixed. */
+.nav-group-header .nav-id { flex: none; }
+.nav-group-header .group-header-name { min-width: 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- Left-pane consistency sweep (ISS-0093) ----------------------------
+   Measured across all six left panes, three things disagreed:
+
+     section headings   11px/600 in the navigators, 10px/700 on the
+                        overview and the review desk — two styles for one
+                        role, because `.nav-set-heading` was written
+                        without checking `.scope-heading` existed
+     row height         24px everywhere except design's 27, where a status
+                        chip is present and sets the height
+     title column       98px / 103px / 96px, because the id column is as
+                        wide as its longest id and that differs per mode
+
+   Deliberately NOT unified: a group head that names a THING is 12.5px/400
+   and one that names a CATEGORY is 11px/600. That difference is the rule
+   from ISS-0089, not drift. */
+
+/* One section heading. `.scope-heading` is the older of the two and is
+   what the overview and the review desk already use. */
+.nav-set-heading,
+.nav-rollup-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+/* MARGIN, not padding — `.scope-heading` spaces itself with margin, and
+   padding made the same words a 29px block against its 15px. */
+.nav-set-heading { padding: 0; margin: 10px 4px 4px; }
+/* A framed group's content starts 7px in (1px border + 6px padding); an
+   unframed thing-group's started at 0, so the features navigator's rows
+   sat 5px left of every other navigator's. The BODY takes the offset, not
+   the head — the head is the thing being indented from. */
+.nav-group:has(> .nav-group-header.is-thing) > .group-body { padding-left: 5px; }
+
+
+/* A chip never sets a row's height — same rule the group head got at
+   ISS-0087, for the same reason: it is the tallest thing on the line and
+   it is not the line's subject. */
+.nav-item-line .status-chip {
+  padding: 0 6px;
+  line-height: 15px;
+  font-size: 10px;
+}
+
+/* One id column across every navigator, so titles start at the same x
+   whatever the longest id in the mode happens to be. Monospace, so `ch`
+   is exact; ten covers `PHASE-022` and `TASK-0277` alike. */
+.nav-item-line .nav-id { min-width: 10ch; }
+
+/* The roll-up: everything finished, behind one line (TASK-0273). */
+.nav-group.nav-rollup { border-top: 1px solid var(--border); margin-top: 6px; }
+.nav-rollup-header { padding: 6px 12px; }
+.nav-rollup-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.nav-rollup-sub {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.nav-rollup-header:hover .nav-rollup-label { color: var(--text); }
+/* A group header is one line: a phase title can run to 90 characters, and
+   wrapping it restores exactly the space the compaction removed. */
+.nav-group-header { flex-wrap: nowrap; }
+.nav-group-header .group-header-link,
+.nav-group-header > span:not(.nav-group-spacer):not(.nav-group-summary) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-group-summary {
+  flex: none;
+  font-size: 11px;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* The nested row: same grammar, indented (ISS-0085). */
+.nav-item.nav-item-line.nav-item-nested { padding-left: 22px; }
+
+.nav-item.nav-item-line {
+  display: block;
+  padding: 3px 8px;
+  border-bottom: 0;
+  border-radius: 4px;
+}
+.nav-item-line .nav-line {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+  font-size: 12px;
+}
+.nav-item-line .nav-id { flex: none; font-size: 11px; }
+.nav-item.nav-item-line .nav-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  display: block;
+  -webkit-line-clamp: none;
+  word-break: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.nav-item-line .status-chip { flex: none; margin-left: 0; }
+.nav-item-line .nav-subtitle {
+  margin: 1px 0 0;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-item.nav-more {
+  padding: 0;
+  background: none;
+}
+.nav-more-btn {
+  display: block;
+  width: 100%;
+  padding: 4px 8px;
+  text-align: left;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text-faint);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.nav-more-btn:hover { color: var(--text-muted); }
+.nav-more-btn:focus-visible {
+  outline: 2px solid var(--accent-link);
+  outline-offset: -2px;
 }
 .nav-item.is-active {
   background: var(--surface-2);
@@ -1304,6 +1644,7 @@ details:not([open]) > summary .group-chevron {
 .group-icon[data-status="declined"],
 .group-icon[data-status="reverted"],
 .group-icon[data-status="rolled-back"],
+.group-icon[data-status="reconciled"],
 .group-icon[data-status="deprecated"] { color: var(--status-archived); }
 
 .group-icon[data-status="reference"],
@@ -1454,3 +1795,26 @@ details:not([open]) > summary .group-chevron {
   color: var(--text-muted);
 }
 .home-indexes .index-list a:hover { color: var(--accent-link); }
+
+
+/* ---- Obsidian callouts (FEAT-0095 / TASK-0397) -------------------------
+   Mode 1 renders the same notes through the same pipeline, so it needs the
+   same rules — a decision record legible in the shell and not on the tablet
+   would be the two-front-doors divergence ADR-0010 is about. */
+.callout {
+  border-left: 3px solid var(--status-pending);
+  background: var(--bg-elevated);
+  border-radius: 0 6px 6px 0;
+  padding: 10px 14px; margin: 12px 0;
+}
+.callout-title { font-weight: 600; font-size: 13px; margin-bottom: 4px; color: var(--text); }
+.callout-body { font-size: 13px; color: var(--text-muted); }
+.callout-body p:first-child { margin-top: 0; }
+.callout-body p:last-child { margin-bottom: 0; }
+.callout[data-callout="question"], .callout[data-callout="help"],
+.callout[data-callout="faq"] { border-left-color: var(--accent-link); }
+.callout[data-callout="warning"], .callout[data-callout="caution"],
+.callout[data-callout="danger"], .callout[data-callout="error"],
+.callout[data-callout="bug"] { border-left-color: var(--status-blocked); }
+.callout[data-callout="success"], .callout[data-callout="check"],
+.callout[data-callout="done"] { border-left-color: var(--status-done); }

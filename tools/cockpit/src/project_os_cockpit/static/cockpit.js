@@ -30,16 +30,18 @@
   // "Project" is first — the orienting mode (directory trees + pinned +
   // rare lifecycle/supporting types). The mode id stays "library" for storage compatibility,
   // but the user-facing label is "Project".
+  // Tasks retired in TASK-0368 — tasks hang under their feature (TASK-0366).
+  // The server still serves `mode=tasks`; no front door offers it.
   var NAV_MODES = [
     { id: "library",  label: "Project" },
     { id: "features", label: "Features" },
-    { id: "tasks",    label: "Tasks" },
     { id: "issues",   label: "Issues" },
     { id: "recent",   label: "Recent" },
   ];
   var DEFAULT_MODE = "features";
 
-  // Statuses that "Hide completed" filters out. Mirrors the Done-positive
+  // Terminal statuses — what the collapse control folds at (FEAT-0056;
+  // nothing filters on them any more). Mirrors the Done-positive
   // and Done-negative palette buckets — anything terminal disappears.
   //
   // Canonical membership lives in src/project_os_cockpit/statuses.py
@@ -60,7 +62,7 @@
     closed: 1,
     // Done — negative (terminal without success)
     obsolete: 1, retired: 1, cancelled: 1, superseded: 1,
-    "declined": 1, reverted: 1, deprecated: 1,
+    "declined": 1, reverted: 1, deprecated: 1, reconciled: 1,
   };
 
   // ------------------------------------------------------------------ state
@@ -249,10 +251,181 @@
     saveCollapsed();
   }
 
-  function isHidden(status) {
-    if (!hideCompleted) return false;
-    if (!status) return false;
-    return !!COMPLETED_STATUSES[String(status).toLowerCase()];
+  // `isHidden` lived here until FEAT-0056. Nothing removes an item by
+  // status any more.
+  //
+  // At 99% lifecycle completion a state filter is not a filter: with
+  // Hide-completed on, 1 of 18 feature groups survived, 0 of the 4 issue
+  // severity buckets, 5 item rows of 270 tasks, and the right-hand
+  // context pane of a finished note emptied outright. The rule that
+  // replaced it is FOLD ON VOLUME, NEVER ON MEANING — the same rule the desktop renderer encodes in
+  // `completed-work.ts`, and the four functions below are its twin.
+
+  function completionRank(item) {
+    var st = item && item.status ? String(item.status).toLowerCase() : "";
+    // An UNRECOGNISED status ranks open, deliberately: sinking it would
+    // quietly bury a note whose status is a typo.
+    return COMPLETED_STATUSES[st] ? 1 : 0;
+  }
+
+  // True when every item is terminal — the group has nothing to act on.
+  // An EMPTY group counts as settled, same as the desktop twin.
+  //
+  // ISS-0138: this file CALLED this function four times and defined it
+  // nowhere, so `groupIsSettled is not defined` threw on the first group
+  // either side pane rendered — which is every page. Both panes showed an
+  // error box and mode 1 has been unusable since. The desktop shell got
+  // away with it because `completed-work.js` publishes the name as a
+  // global there; nothing loads that file here, and `templates.py` emits
+  // exactly one script tag.
+  //
+  // The comment above says "the three functions below are its twin" and
+  // there were only two. That is the twin problem stated by its own
+  // comment and not noticed — ADR-0021 is the proposal to end it.
+  function groupIsSettled(items) {
+    return !(items || []).some(function (it) { return completionRank(it) === 0; });
+  }
+
+  // Open work first, the server's order (ID, severity, path) preserved
+  // beneath — Array.sort is stable, so nothing else moves.
+  function openFirst(items) {
+    return (items || []).slice().sort(function (a, b) {
+      return completionRank(a) - completionRank(b);
+    });
+  }
+
+  // How much of a group renders. Two independent reasons to fold:
+  // `collapse` (the switch) folds at the first completed item — meaning;
+  // `limit` folds at a length nobody reads past — volume. Neither can
+  // return nothing, so a group can shorten but never vanish.
+  function foldGroup(items, limit, collapse) {
+    var ordered = openFirst(items);
+    if (!ordered.length) return { head: [], hidden: 0 };
+    // head + hidden must equal items.length for EVERY input, not just the
+    // ones we pass: the count is the only thing telling the reader that
+    // anything was withheld.
+    var cap = isFinite(limit) ? Math.max(0, Math.floor(limit)) : ordered.length;
+    var cut = ordered.length;
+    if (collapse) {
+      var firstDone = -1;
+      for (var i = 0; i < ordered.length; i++) {
+        if (completionRank(ordered[i]) === 1) { firstDone = i; break; }
+      }
+      // An entirely settled group cuts to ZERO rows, not one: a single
+      // arbitrary row tells the reader nothing the count does not. The
+      // group stays visible through its header and its count.
+      if (firstDone >= 0) cut = firstDone;
+    }
+    if (cut > cap) cut = cap;
+    return { head: ordered.slice(0, cut), hidden: ordered.length - cut };
+  }
+
+  // Measured group sizes in the pilot corpus: tasks 261/3/2/2/2, issues
+  // 52/18/11/2/1/1/1, features 19/10/5/3/2/2/2/2/2 then nine 1s. A clean
+  // cliff — twelve folds the four that are unreadable (261, 52, 19, 18)
+  // and leaves the other twenty-six whole.
+  // What a group's head should say about its items' status (TASK-0272).
+  // null means "the statuses vary — leave the per-row chips alone". The
+  // rule: repeat a fact per-row only when it varies per-row.
+  function uniformStatus(items) {
+    if (!items || !items.length) return null;
+    var first = String(items[0].status || "").toLowerCase();
+    if (!first) return null;
+    for (var i = 0; i < items.length; i++) {
+      if (String(items[i].status || "").toLowerCase() !== first) return null;
+    }
+    return first;
+  }
+
+  // The short handle for a note ID (ISS-0084). Changes carry
+  // CHG-YYYYMMDD-Short-Description, so their id IS a description and a
+  // row printed it twice — at several times the width of every other ID,
+  // in a column whose width is set by its widest member. Display only;
+  // never feed this back into a lookup.
+  function shortNoteId(id) {
+    if (!id) return "";
+    var m = /^(CHG-\d{8})-.+/.exec(String(id));
+    return m ? m[1] : String(id);
+  }
+
+  // True when the head summary already ends in `· <status>`, so showing
+  // the group's own chip would restate it.
+  function endsWithStatus(summary, status) {
+    var suffix = "\u00b7 " + status;
+    return summary.slice(-suffix.length) === suffix;
+  }
+
+  // `19 · done`, `6 · 5 done`, or just `4`.
+  function groupHeadSummary(items) {
+    var n = items ? items.length : 0;
+    if (!n) return "";
+    var uniform = uniformStatus(items);
+    if (uniform) return n + " \u00b7 " + uniform;
+    var done = 0;
+    for (var i = 0; i < n; i++) if (completionRank(items[i]) === 1) done++;
+    return done ? n + " \u00b7 " + done + " done" : String(n);
+  }
+
+  // The context pane's rows: ordered, folded on length, NEVER on state.
+  // Takes no `collapse` argument on purpose — review reverted the caller
+  // from `false` to `hideCompleted` in one character with every test
+  // still green, on the pane whose emptying was the whole point of the
+  // phase. Removing the parameter is what makes that mutation impossible
+  // to write by accident.
+  function contextGroupRows(items, limit) {
+    return foldGroup(items, limit, false);
+  }
+
+  var NAV_GROUP_FOLD_LIMIT = 12;
+
+  // The fold's own row. The count is never optional: a fold that hides
+  // the fact that it hid something is indistinguishable from having
+  // nothing there — which is exactly how the old filter emptied three
+  // views without ever looking broken.
+  // The context pane's own more-row. Separate from `appendMoreRow`
+  // because this pane renders two runs (linked, then inbound) into one
+  // list and each folds independently.
+  function appendCtxMoreRow(list, folded, allItems, kind) {
+    if (!folded.hidden) return;
+    var btn = el("button", {
+      type: "button",
+      class: "nav-more-btn",
+      text: "\u2026 " + folded.hidden + " more",
+      title: "Show the rest of this group",
+    });
+    btn.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      ev.preventDefault();
+      var li = btn.parentNode;
+      var frag = document.createDocumentFragment();
+      openFirst(allItems).slice(folded.head.length).forEach(function (item) {
+        frag.appendChild(ctxItem(item, kind));
+      });
+      list.replaceChild(frag, li);
+    });
+    list.appendChild(el("li", { class: "nav-item nav-more" }, [btn]));
+  }
+
+  function appendMoreRow(list, folded, group, renderItem) {
+    if (!folded.hidden) return;
+    var btn = el("button", {
+      type: "button",
+      class: "nav-more-btn",
+      text: "\u2026 " + folded.hidden + " more",
+      title: "Show the rest of this group",
+    });
+    btn.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      ev.preventDefault();
+      // Reveal in place. Deliberately NOT a change to `hideCompleted`:
+      // expanding one group must not flip a preference governing every
+      // other group on the surface.
+      var all = openFirst(group.items || []);
+      var frag = document.createDocumentFragment();
+      all.forEach(function (item) { frag.appendChild(renderItem(item)); });
+      list.replaceChildren(frag);
+    });
+    list.appendChild(el("li", { class: "nav-item nav-more" }, [btn]));
   }
 
   // ------------------------------------------------------------------ utils
@@ -1062,14 +1235,14 @@
       type: "button",
       "aria-pressed": hideCompleted ? "true" : "false",
       title: "Toggle visibility of done / closed / obsolete items",
-      text: hideCompleted ? "Hiding completed" : "Hide completed",
+      text: hideCompleted ? "Completed collapsed" : "Collapse completed",
     });
     btn.addEventListener("click", function () {
       hideCompleted = !hideCompleted;
       saveHideCompleted(hideCompleted);
       btn.classList.toggle("is-active", hideCompleted);
       btn.setAttribute("aria-pressed", hideCompleted ? "true" : "false");
-      btn.textContent = hideCompleted ? "Hiding completed" : "Hide completed";
+      btn.textContent = hideCompleted ? "Completed collapsed" : "Collapse completed";
       if (navCache) renderLeftPane(navCache);
       if (ctxCache) renderRightPane(ctxCache);
     });
@@ -1166,50 +1339,53 @@
   //   row 3: [subtitle] when present (goal / parent · effort / type · date / ...)
   // Optional children render as a sibling collapsible <details> below the
   // card — used for nested requirements under features.
+  // TASK-0271: one line — `ID  title…  chip` — at the record column's
+  // height. Measured in the running desktop before and after: 60px to
+  // 27px for identical text. The 33px was three second-encodings: the
+  // type icon (the ID is already type-coloured), the title's own line,
+  // and the icon's gutter.
+  //
+  // `nav-item-line`, NOT `nav-item-compact` — that class already exists
+  // in this stylesheet as the Library's file row and paints a file icon
+  // through ::before.
   function navItem(item) {
-    var topLine = el("div", { class: "nav-line" }, [
-      typeIcon(item.type),
-      item.id
-        ? el("span", { class: "nav-id mono", text: item.id, title: item.id })
-        : null,
-      el("span", { class: "nav-line-spacer" }),
-    ].concat(itemBadges(item), [statusChip(item.status)]));
-    var titleNode = item.title
-      ? el("p", {
-          class: "nav-title",
-          text: item.title,
-          title: item.title,
-        })
-      : null;
-    var subtitleNode = item.subtitle
-      ? el("p", {
-          class: "nav-subtitle",
-          text: item.subtitle,
-          title: item.subtitle,
-        })
-      : null;
-    var card = el("a", {
-      class: "nav-item" + (item.url === active.url ? " is-active" : ""),
-      href: item.url,
-    }, [topLine, titleNode, subtitleNode]);
+    var li = buildNavRow(item);
     var childrenNode = (item.children && item.children.length)
       ? renderItemChildren(item)
       : null;
-    return el("li", null, [card, childrenNode]);
+    if (childrenNode) li.appendChild(childrenNode);
+    return li;
   }
 
   // Collapsible nested children list (used for requirements under features).
   // Default = collapsed. The persisted-collapse-set storage is repurposed
   // as a persisted-OPEN set (key "nav:item-children-open:<id>") so the
   // default is the inverse of the rest of the cockpit.
+  // What the children toggle says a feature carries (TASK-0367). Counts by
+  // type: before tasks joined the list this said "N requirements" for every
+  // child, which a feature with 3 reqs, a plan and 14 tasks reported as
+  // "17 requirements".
+  function childrenSummary(kids) {
+    function n(type) {
+      var c = 0;
+      for (var i = 0; i < kids.length; i++) if (kids[i].type === type) c++;
+      return c;
+    }
+    var reqs = n("requirement"), plans = n("plan"), tasks = n("task");
+    var other = kids.length - reqs - plans - tasks;
+    var parts = [];
+    if (reqs) parts.push(reqs + " requirement" + (reqs === 1 ? "" : "s"));
+    if (plans) parts.push(plans === 1 ? "plan" : plans + " plans");
+    if (tasks) parts.push(tasks + " task" + (tasks === 1 ? "" : "s"));
+    if (other) parts.push(other + " other");
+    return parts.join(" \u00b7 ");
+  }
+
   function renderItemChildren(item) {
-    // Apply the Hide-completed filter to nested children too. Without
-    // this the filter only hits top-level group items (features /
-    // tasks / etc.), leaving verified / retired requirements visible
-    // under their feature card.
-    var visibleChildren = (item.children || []).filter(function (c) {
-      return !isHidden(c.status);
-    });
+    // Children order open-first like everything else, and are never
+    // removed: a feature's completed requirements are part of what the
+    // feature is.
+    var visibleChildren = openFirst(item.children || []);
     if (!visibleChildren.length) return null;
     var openedKey = "nav:item-children-open:" + (item.id || item.url || "");
     var startOpen = isCollapsed(openedKey);
@@ -1217,18 +1393,36 @@
       class: "nav-item-children",
       open: startOpen ? "" : null,
     });
-    var label = visibleChildren.length === 1
-      ? "1 requirement"
-      : visibleChildren.length + " requirements";
+    var label = childrenSummary(visibleChildren);
     var summary = el("summary", { class: "nav-item-children-toggle" }, [
       el("span", { class: "nav-children-chevron", "aria-hidden": "true" }),
       el("span", { text: label }),
     ]);
     details.appendChild(summary);
     var list = el("ul", { class: "nav-item-children-list" });
-    visibleChildren.forEach(function (child) {
+    // Fold on VOLUME (TASK-0367) — tasks joined this list in TASK-0366 and
+    // the largest feature carries 48. Same helper, same limit as the groups.
+    var foldedKids = foldGroup(visibleChildren, NAV_GROUP_FOLD_LIMIT, hideCompleted);
+    foldedKids.head.forEach(function (child) {
       list.appendChild(navItemNested(child));
     });
+    if (foldedKids.hidden > 0) {
+      var moreBtn = el("button", {
+        type: "button",
+        class: "nav-more-btn",
+        text: "\u2026 " + foldedKids.hidden + " more",
+        title: "Show the rest of this feature's children",
+      });
+      moreBtn.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+        while (list.firstChild) list.removeChild(list.firstChild);
+        visibleChildren.forEach(function (c) {
+          list.appendChild(navItemNested(c));
+        });
+      });
+      list.appendChild(el("li", { class: "nav-item nav-more" }, [moreBtn]));
+    }
     details.appendChild(list);
     details.addEventListener("toggle", function () {
       // Mirror the "user opened it" state into collapsed storage so it
@@ -1241,56 +1435,58 @@
 
   // Compact stacked card used for items nested under another card (reqs
   // under features). Smaller padding, single-line title with ellipsis.
-  function navItemNested(item) {
-    var topLine = el("div", { class: "nav-line" }, [
-      typeIcon(item.type, 12),
-      item.id ? el("span", { class: "nav-id mono", text: item.id }) : null,
-      el("span", { class: "nav-line-spacer" }),
-    ].concat(itemBadges(item), [statusChip(item.status)]));
-    var titleNode = item.title
-      ? el("p", {
-          class: "nav-title-nested",
-          text: item.title,
-          title: item.title,
+  // The one row every lifecycle list uses (ISS-0085).
+  //
+  // There were four renderers and TASK-0271 rewrote one, so risks and
+  // designs (`stacked`) and requirements and plans (`nested`) kept the old
+  // two-line card. One builder now, differing only by an indent class.
+  //
+  // `item.subtitle` is deliberately NOT rendered: it is the second line,
+  // and the server sends one for every feature (`goal`), design and risk
+  // (first body paragraph). The left pane is a selection list; a summary
+  // belongs in the note, not in the list of things you might open.
+  function buildNavRow(item, extraClass) {
+    // The id column is a COLUMN: an absent value occupies it rather than
+    // skipping it, or the row lands on a different grid from its siblings
+    // (ISS-0090). A plan carries `id: ""` deliberately, so its TYPE is the
+    // handle — which is what an id is for a note with no number.
+    var handle = item.id || (item.type ? String(item.type).toUpperCase() : "");
+    var idNode = handle
+      ? el("span", {
+          // Display handle only — the anchor's href carries the real
+          // target, and every lookup goes through that (ISS-0084).
+          class: "nav-id mono ov-typed" + (item.id ? "" : " is-typeless"),
+          text: item.id ? shortNoteId(item.id) : handle,
+          title: item.id || handle, "data-type": item.type || null,
         })
       : null;
+    var titleNode = item.title
+      ? el("span", { class: "nav-title", text: item.title, title: item.title })
+      : el("span", { class: "nav-line-spacer" });
+    // The chip is suppressed when the whole group shares one status; the
+    // head says it once instead (TASK-0272).
+    var tail = itemBadges(item).concat(
+      item.chipSuppressed ? [] : [statusChip(item.status)]);
+    var topLine = el("div", { class: "nav-line" }, [idNode, titleNode].concat(tail));
     var card = el("a", {
-      class: "nav-item nav-item-nested"
+      class: "nav-item nav-item-line" + (extraClass ? " " + extraClass : "")
         + (item.url === active.url ? " is-active" : ""),
       href: item.url,
-    }, [topLine, titleNode]);
+    }, [topLine]);
     return el("li", null, [card]);
   }
 
-  // Stacked layout: icon + id on the top line (status right-aligned),
-  // human title on a second line, optional path/parent-dir subtitle on a
-  // third. Used by Project mode's pinned and rare-types sections.
+  // The same row, indented. Requirements and plans under features.
+  function navItemNested(item) {
+    return buildNavRow(item, "nav-item-nested");
+  }
+
+  // Risks and designs. Identical to the default now — "stacked" existed to
+  // give a rare type more room, and more room is the thing being removed.
+  // Kept as a function because the server still sends
+  // `item_layout: "stacked"` and the picker still routes on it.
   function navItemStacked(item) {
-    var topLine = el("div", { class: "nav-line" }, [
-      typeIcon(item.type),
-      item.id ? el("span", { class: "nav-id mono", text: item.id }) : null,
-      el("span", { class: "nav-line-spacer" }),
-    ].concat(itemBadges(item), [statusChip(item.status)]));
-    var titleNode = item.title
-      ? el("p", {
-          class: "nav-title-stacked",
-          text: item.title,
-          title: item.title,
-        })
-      : null;
-    var subtitleNode = item.subtitle
-      ? el("p", {
-          class: "nav-subtitle-stacked mono",
-          text: item.subtitle,
-          title: item.subtitle,
-        })
-      : null;
-    var card = el("a", {
-      class: "nav-item nav-item-stacked"
-        + (item.url === active.url ? " is-active" : ""),
-      href: item.url,
-    }, [topLine, titleNode, subtitleNode]);
-    return el("li", null, [card]);
+    return buildNavRow(item);
   }
 
   // Compact layout: filename only, single line, tight padding.
@@ -1313,7 +1509,93 @@
     return el("li", null, [card]);
   }
 
+  // A surface, drawn the same as in the desktop shell (ISS-0230). PHASE-029:
+  // the two front doors answer the same questions and differ only where a
+  // difference was decided — and nobody decided this one, which is why the
+  // guard that checks both files found it.
+  function navItemSurface(item) {
+    const li = document.createElement("li");
+    li.className = "nav-surface";
+    const head = document.createElement("div");
+    head.className = "nav-surface-head";
+    const chev = document.createElement("button");
+    chev.type = "button";
+    chev.className = "ov-chev";
+    chev.setAttribute("aria-expanded", "false");
+    head.appendChild(chev);
+    if (item.ref) {
+      const id = document.createElement("span");
+      id.className = "nav-surface-id mono is-link";
+      id.textContent = item.ref;
+      id.title = "Open " + item.ref;
+      id.addEventListener("click", (e) => {
+        e.stopPropagation();
+        navigateTo("~note/" + item.ref);
+      });
+      head.appendChild(id);
+    }
+    const title = document.createElement("span");
+    title.className = "nav-surface-title";
+    title.textContent = item.ref_title || item.title || "";
+    title.title = title.textContent;
+    head.appendChild(title);
+    if (item.progress) {
+      const p = item.progress;
+      const bar = document.createElement("span");
+      bar.className = "nav-surface-bar" + (p.stale ? " has-stale" : "");
+      const fill = document.createElement("i");
+      fill.style.width = p.pct + "%";
+      bar.appendChild(fill);
+      bar.title = p.done + " of " + p.total + " completed"
+        + (p.stale ? ", " + p.stale + " stale" : "");
+      head.appendChild(bar);
+      const pct = document.createElement("span");
+      pct.className = "nav-surface-pct num";
+      pct.textContent = p.pct + "%";
+      head.appendChild(pct);
+    }
+    li.appendChild(head);
+    const kids = document.createElement("ul");
+    kids.className = "nav-surface-checks";
+    kids.hidden = true;
+    for (const kid of item.items || []) kids.appendChild(navCheckRow(kid));
+    li.appendChild(kids);
+    const toggle = () => {
+      kids.hidden = !kids.hidden;
+      li.classList.toggle("is-open", !kids.hidden);
+      chev.setAttribute("aria-expanded", String(!kids.hidden));
+    };
+    chev.addEventListener("click", (e) => { e.stopPropagation(); toggle(); });
+    head.addEventListener("click", toggle);
+    head.style.cursor = "pointer";
+    return li;
+  }
+
+  // One check — id, name, and its ledger MARK right-aligned. Never a runner
+  // status: an acceptance check rests at `active` and its outcome is an event.
+  function navCheckRow(item) {
+    const li = document.createElement("li");
+    li.className = "nav-check";
+    const id = document.createElement("span");
+    id.className = "nav-check-id mono is-link";
+    id.textContent = String(item.id || "");
+    li.appendChild(id);
+    const name = document.createElement("span");
+    name.className = "nav-check-name";
+    name.textContent = item.title || "";
+    name.title = item.title || "";
+    li.appendChild(name);
+    if (item.mark) {
+      const mark = document.createElement("span");
+      mark.className = "nav-check-mark";
+      mark.textContent = item.mark;
+      li.appendChild(mark);
+    }
+    return li;
+  }
+
   function pickItemRenderer(layout) {
+    if (layout === "surface") return navItemSurface;
     if (layout === "stacked") return navItemStacked;
     if (layout === "compact") return navItemCompact;
     return navItem;
@@ -1331,13 +1613,20 @@
   }
 
   function renderSubgroup(group, mode, depth) {
-    var visibleItems = (group.items || []).filter(function (it) { return !isHidden(it.status); });
+    var folded = foldGroup(group.items || [], NAV_GROUP_FOLD_LIMIT, hideCompleted);
+    var subUniform = uniformStatus(group.items || []) !== null;
+    var visibleItems = folded.head.map(function (it) {
+      return subUniform ? Object.assign({}, it, { chipSuppressed: true }) : it;
+    });
     var childNodes = renderSubgroups(group, mode, depth + 1);
-    if (!visibleItems.length && !childNodes.length) return null;
+    // A collapsed group cuts to zero rows and is still a group — the
+    // header and the count keep it visible.
+    if (!visibleItems.length && !childNodes.length && !folded.hidden) return null;
 
     var renderItem = pickItemRenderer(group.item_layout);
     var list = el("ul", { class: "nav-items" });
     visibleItems.forEach(function (item) { list.appendChild(renderItem(item)); });
+    appendMoreRow(list, folded, group, renderItem);
 
     var bodyChildren = [list];
     childNodes.forEach(function (node) { bodyChildren.push(node); });
@@ -1346,6 +1635,7 @@
     var sectionExtra = group.item_layout ? " nav-group-" + group.item_layout : "";
     var indentStyle = "--tree-indent:" + String((depth || 0) * 12) + "px";
     var node = collapsibleGroup({
+      defaultOpen: !groupIsSettled(group.items || []),
       key: subKey,
       sectionClass: "nav-subgroup" + sectionExtra,
       headerClass: "nav-subgroup-header",
@@ -1362,6 +1652,29 @@
     return node;
   }
 
+  // Nouns for the roll-up line. "16 finished phases · 54 features" reads;
+  // "16 finished groups · 54 items" does not, and saying what is behind
+  // the line is the whole value of collapsing to one.
+  var ROLLUP_NOUNS = {
+    // A rung, not a group (FEAT-0102): the ladder's units are what
+    // publication is about. Mirrored from renderer.ts, which
+    // `test_the_two_surfaces_agree_on_the_rollup_nouns` pins.
+    publication: { group: ["rung", "rungs"], item: ["item", "items"] },
+    features: { group: ["phase", "phases"], item: ["feature", "features"] },
+    tasks:    { group: ["bucket", "buckets"], item: ["task", "tasks"] },
+    issues:   { group: ["bucket", "buckets"], item: ["issue", "issues"] },
+    // `tests` has no button in this front door yet — the Tests view landed in
+    // the shell first (TASK-0371) and PHASE-029 owns the alignment. The noun
+    // is here because `mode=tests` is served and reachable by URL, and
+    // because the parity guard is the reason the two tables have not drifted.
+    tests:    { group: ["group", "groups"], item: ["test", "tests"] },
+    design:   { group: ["group", "groups"], item: ["design", "designs"] },
+    library:  { group: ["group", "groups"], item: ["note", "notes"] },
+    review:   { group: ["verdict", "verdicts"], item: ["note", "notes"] },
+    _default: { group: ["group", "groups"], item: ["item", "items"] },
+  };
+  function plural(n, pair) { return n === 1 ? pair[0] : pair[1]; }
+
   function renderLeftPane(payload) {
     var groups = (payload && payload.groups) || [];
     var mode = (payload && payload.mode) || navMode;
@@ -1376,11 +1689,41 @@
       return;
     }
 
-    var anyVisible = false;
+    // TASK-0273: groups still holding open work render normally; every
+    // finished one goes below a divider as ONE expandable line. Sixteen
+    // finished phases cost 53px of header each before this.
+    // TASK-0276: the tasks navigator groups BY status, so `Done`,
+    // `Cancelled` and `Superseded` already name their own state and a
+    // divider reading "Completed" would be the word four times over.
+    // Everywhere else the group name is on some other axis and says
+    // nothing about state, so the divider is the only thing that can.
+    var namesStateThemselves = mode === "tasks";
+    var liveGroups = [], settledGroups = [];
     groups.forEach(function (g) {
-      var visibleItems = (g.items || []).filter(function (it) { return !isHidden(it.status); });
+      (!namesStateThemselves && groupIsSettled(g.items || [])
+        ? settledGroups : liveGroups).push(g);
+    });
+    var rollupFrag = settledGroups.length ? document.createDocumentFragment() : null;
+
+    // Where a divider names the finished set, the live set gets a heading
+    // too — a set with no name is not one (ISS-0089).
+    if (liveGroups.length && settledGroups.length && !namesStateThemselves) {
+      frag.appendChild(el("div", {
+        class: "nav-set-heading", text: "Open \u00b7 " + liveGroups.length,
+      }));
+    }
+
+    var anyVisible = false;
+    liveGroups.concat(settledGroups).forEach(function (g) {
+      var intoRollup = settledGroups.indexOf(g) !== -1;
+      var folded = foldGroup(g.items || [], NAV_GROUP_FOLD_LIMIT, hideCompleted);
+      // When the head says the status once, the rows must not repeat it.
+      var gUniform = uniformStatus(g.items || []) !== null;
+      var visibleItems = folded.head.map(function (it) {
+        return gUniform ? Object.assign({}, it, { chipSuppressed: true }) : it;
+      });
       var subgroupNodes = renderSubgroups(g, mode);
-      if (!visibleItems.length && !subgroupNodes.length) return;
+      if (!visibleItems.length && !subgroupNodes.length && !folded.hidden) return;
       anyVisible = true;
 
       var label = g.label || g.key || "";
@@ -1392,34 +1735,106 @@
             title: "Open " + label,
           })
         : el("span", { text: label });
-      var headerChildren = [groupIcon(mode, g), titleNode];
-      if (g.status) {
-        headerChildren.push(el("span", { class: "nav-group-spacer" }));
+      // ISS-0088: the head uses the ROW's grammar — a type-coloured ID and
+      // a name — not an icon plus one flat string.
+      var split = /^([A-Z]+-\d+)\s*\u00b7\s*(.*)$/.exec(label);
+      // A features head names a THING, not a category, so it renders at
+      // row weight rather than in the faint label treatment (ISS-0089).
+      var headerClass = "nav-group-header" + (mode === "features" ? " is-thing" : "");
+      var headerChildren = split
+        ? [el("span", { class: "nav-id mono ov-typed", "data-type": "phase", text: split[1] }),
+           el("span", { class: "group-header-name", text: split[2], title: split[2] })]
+        : [titleNode];
+      headerChildren.push(el("span", { class: "nav-group-spacer" }));
+      // The head carries the count, and the status when every item shares
+      // one (TASK-0272) — the record card's `7 · all accepted` move.
+      // Where the group name IS the status, the summary is the count
+      // alone — `Done · 265`, not `Done · 265 · done`.
+      var gSummary = namesStateThemselves
+        ? String((g.items || []).length || "")
+        : groupHeadSummary(g.items || []);
+      // ISS-0241: a head that already carries counts gets no second one.
+      // The label counts CHECKS and this counts nav ROWS — `361/406` beside
+      // `50 · 1 done`, two populations, no way to tell them apart. Read off a
+      // server flag rather than sniffed from the label: every other group's
+      // trailing count is the ONLY count it has, and must survive.
+      if (g.head_counts) gSummary = "";
+      if (gSummary) {
+        headerChildren.push(el("span", { class: "nav-group-summary", text: gSummary }));
+      }
+      // A group's OWN status is a different fact from its items' — a done
+      // phase can hold an open issue — so it survives unless it would
+      // restate the summary.
+      // Shown unless the group's own NAME already says it — a `done` pill
+      // on a card called `Done` is the word twice (ISS-0089).
+      // No pill where the head names a thing — the overview's scope rows
+      // never had one, and inside a `Completed` band it is the word a
+      // third time (ISS-0090).
+      if (g.status && !namesStateThemselves && mode !== "features") {
         headerChildren.push(statusChip(g.status));
       }
 
       var renderItem = pickItemRenderer(g.item_layout);
       var list = el("ul", { class: "nav-items" });
       visibleItems.forEach(function (item) { list.appendChild(renderItem(item)); });
+      appendMoreRow(list, folded, g, renderItem);
 
       var bodyChildren = [list];
       subgroupNodes.forEach(function (n) { bodyChildren.push(n); });
 
       var sectionExtra = g.item_layout ? " nav-group-" + g.item_layout : "";
       var key = "nav:" + mode + ":" + (g.key || label || "unkeyed");
-      frag.appendChild(collapsibleGroup({
+      (intoRollup ? rollupFrag : frag).appendChild(collapsibleGroup({
         key: key,
         sectionClass: "nav-group" + sectionExtra,
-        headerClass: "nav-group-header",
+        headerClass: headerClass,
         headerChildren: headerChildren,
         bodyChildren: bodyChildren,
+        // TASK-0275: a settled group opens SHUT, the context pane's own
+        // rule. A shut card still carries its name and count.
+        defaultOpen: !groupIsSettled(g.items || []),
       }));
     });
 
+    if (rollupFrag) {
+      var nItems = 0;
+      settledGroups.forEach(function (g) { nItems += (g.items || []).length; });
+      var nouns = ROLLUP_NOUNS[mode] || ROLLUP_NOUNS._default;
+      // The counts are never optional: a roll-up that does not say how
+      // much it rolled up is indistinguishable from an empty pane.
+      // `Completed · N` — the overview's exact wording (its scope pane has
+      // said this since FEAT-0043), so one idea does not wear two names
+      // across two panes. Defaults OPEN: collapsing a group's BODY hides
+      // items nobody is working on, but collapsing its HEAD hides which
+      // phases exist at all, and that is a taxonomy rather than a backlog
+      // (ISS-0086). `collapsibleGroup` persists the divergence from this
+      // default, so closing it sticks.
+      frag.appendChild(collapsibleGroup({
+        key: "nav:" + mode + ":__settled",
+        sectionClass: "nav-group nav-rollup",
+        headerClass: "nav-group-header nav-rollup-header",
+        defaultOpen: true,
+        headerChildren: [
+          el("span", {
+            class: "nav-rollup-label",
+            text: "Completed \u00b7 " + settledGroups.length,
+          }),
+          el("span", {
+            class: "nav-rollup-sub",
+            text: nItems + " " + plural(nItems, nouns.item),
+          }),
+        ],
+        bodyChildren: [rollupFrag],
+      }));
+      anyVisible = true;
+    }
+
     if (!anyVisible) {
+      // Since FEAT-0056 a group folds but never disappears, so this can
+      // only mean the mode genuinely has nothing in it.
       frag.appendChild(el("p", {
         class: "cockpit-empty",
-        text: "Everything in this view is completed (toggle filter to show).",
+        text: "Nothing in this view yet.",
       }));
     }
     leftEl.replaceChildren(frag);
@@ -1530,9 +1945,24 @@
     if (!merged.length) return false;
     var any = false;
     merged.forEach(function (g) {
-      var visibleLinked = g.linked.filter(function (it) { return !isHidden(it.status); });
-      var visibleInbound = g.inbound.filter(function (it) { return !isHidden(it.status); });
-      if (!visibleLinked.length && !visibleInbound.length) return;
+      // The context pane orders by state and NEVER filters by it. The
+      // left pane is a selection list, where a completed item is one you
+      // are not going to click; this pane is a DESCRIPTION, and a note's
+      // completed children are what the note is made of. Filtering here
+      // emptied the pane of every finished note.
+      // Ordered, never filtered — but still folded on LENGTH: 11 of 3192
+      // context groups exceed the limit and the largest real one is 79.
+      var foldedLinked = contextGroupRows(g.linked, NAV_GROUP_FOLD_LIMIT);
+      var foldedInbound = contextGroupRows(g.inbound, NAV_GROUP_FOLD_LIMIT);
+      var ctxUniform = uniformStatus(
+        (g.linked || []).concat(g.inbound || [])) !== null;
+      var suppress = function (it) {
+        return ctxUniform ? Object.assign({}, it, { chipSuppressed: true }) : it;
+      };
+      var visibleLinked = foldedLinked.head.map(suppress);
+      var visibleInbound = foldedInbound.head.map(suppress);
+      if (!visibleLinked.length && !visibleInbound.length
+          && !foldedLinked.hidden && !foldedInbound.hidden) return;
       any = true;
       var typeName = g.type;
       var typeLabel = el("span", {
@@ -1544,6 +1974,7 @@
       ]);
       var list = el("ul", { class: "ctx-items" });
       visibleLinked.forEach(function (item) { list.appendChild(ctxItem(item, "linked")); });
+      appendCtxMoreRow(list, foldedLinked, g.linked, "linked");
       if (visibleLinked.length && visibleInbound.length) {
         list.appendChild(el("li", {
           class: "ctx-divider",
@@ -1559,7 +1990,21 @@
         }));
       }
       visibleInbound.forEach(function (item) { list.appendChild(ctxItem(item, "inbound")); });
+      appendCtxMoreRow(list, foldedInbound, g.inbound, "inbound");
 
+      // TASK-0274: the card head carries the count and, when uniform, the
+      // status; a card whose every link is terminal starts CLOSED.
+      //
+      // Closing a body is not filtering, and that distinction is why this
+      // is allowed where the old filter was not: a closed card still says
+      // the relationship exists, its type and how many. The filter said
+      // nothing at all. `contextGroupRows` still has no parameter to
+      // filter with.
+      var allItems = (g.linked || []).concat(g.inbound || []);
+      var ctxSummary = groupHeadSummary(allItems);
+      if (ctxSummary) {
+        typeLabel.appendChild(el("span", { class: "ctx-card-right", text: ctxSummary }));
+      }
       var key = "ctx:" + (typeName || "_untyped");
       container.appendChild(collapsibleGroup({
         key: key,
@@ -1567,6 +2012,7 @@
         headerClass: "ctx-group-header",
         headerChildren: [typeLabel],
         bodyChildren: [list],
+        defaultOpen: !groupIsSettled(allItems),
       }));
     });
     return any;
@@ -1685,6 +2131,17 @@
 
   function navigateTo(url, options) {
     var pushState = !(options && options.replace);
+    // `~root/<file>` is the nav payload's shape for a top-level project file
+    // (ISS-0037). Mode 3 needs that prefix because its `extractRel` cannot
+    // otherwise tell `/README.md` from the docs note of the same name — but
+    // mode 1 fetches the URL as a page, and `GET /README.md` has always served
+    // the project file correctly. So translate rather than route: the prefix is
+    // a rel-space disambiguator, not an HTTP path.
+    //
+    // Restores what ISS-0037's fix broke here: the payload changed under this
+    // client and `GET /~root/README.md` 404'd, so mode 3 gained a working link
+    // and mode 1 lost one (ISS-0071).
+    if (url && url.indexOf("~root/") === 0) url = "/" + url.slice(6);
     return fetch(url, { headers: { Accept: "text/html" } })
       .then(function (r) {
         if (!r.ok) throw new Error("HTTP " + r.status);

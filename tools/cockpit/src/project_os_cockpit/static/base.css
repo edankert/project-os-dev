@@ -392,6 +392,7 @@ details.metadata-strip > summary:hover {
 .status-chip[data-status="retired"]     { color: var(--status-archived); }
 .status-chip[data-status="cancelled"]   { color: var(--status-archived); }
 .status-chip[data-status="superseded"]  { color: var(--status-archived); }
+.status-chip[data-status="reconciled"]  { color: var(--status-archived); }
 .status-chip[data-status="declined"]    { color: var(--status-archived); }
 .status-chip[data-status="reverted"]    { color: var(--status-archived); }
 .status-chip[data-status="rolled-back"] { color: var(--status-archived); }
@@ -725,3 +726,43 @@ details.metadata-strip > summary:hover {
   text-decoration: line-through;
   text-decoration-color: var(--text-faint);
 }
+
+/* ISS-0231: one line — handle, id, title, bar, percentage. The bar is an
+   inline element here, not the overview's block, because a nav row is one
+   line tall; the previous attempt took the phase row's vertical stack. */
+.nav-surface { list-style: none; margin: 0; }
+.nav-surface-head {
+  display: flex; align-items: center; gap: 6px;
+  padding: 3px 4px; border-radius: 4px; min-width: 0;
+}
+.nav-surface-head:hover { background: var(--bg-subtle, #21262d); }
+.nav-surface-id { flex: none; font-size: 0.82em; color: var(--accent-link, #58a6ff); }
+.nav-surface-id.is-link { cursor: pointer; }
+.nav-surface-id.is-link:hover { text-decoration: underline; }
+.nav-surface-title {
+  flex: 1 1 auto; min-width: 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; font-size: 0.92em;
+}
+.nav-surface-bar {
+  flex: none; width: 56px; height: 4px; border-radius: 2px;
+  background: var(--bg-inset, #010409); overflow: hidden;
+}
+.nav-surface-bar > i { display: block; height: 100%; background: var(--accent-link, #58a6ff); }
+.nav-surface-bar.has-stale > i { background: var(--warn, #d29922); }
+.nav-surface-pct {
+  flex: none; width: 34px; text-align: right;
+  font-size: 0.78em; color: var(--fg-muted, #8b949e);
+}
+.nav-surface-checks { list-style: none; margin: 0; padding-left: 18px; }
+.nav-check {
+  display: flex; align-items: center; gap: 6px;
+  padding: 2px 4px; border-radius: 3px; min-width: 0;
+}
+.nav-check:hover { background: var(--bg-subtle, #21262d); }
+.nav-check-id { flex: none; font-size: 0.78em; color: var(--accent-link, #58a6ff); }
+.nav-check-name {
+  flex: 1 1 auto; min-width: 0; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; font-size: 0.86em;
+}
+/* Right-aligned, which is what `flex:1` on the name buys. */
+.nav-check-mark { flex: none; font-size: 0.75em; text-transform: lowercase; }

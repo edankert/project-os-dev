@@ -37,7 +37,37 @@ from typing import Any
 #: Request kinds the queue understands. `review` is a proposal set
 #: awaiting accept/reject; `question` is the agent asking the human
 #: something and blocking on the answer.
-KINDS: tuple[str, ...] = ("review", "question")
+#: `annotation` is a comment anchored to a place on a design (FEAT-0069):
+#: not a proposal to accept and not a question blocking an agent, but a note
+#: pinned to a spot that a later revision may move or delete.
+KINDS: tuple[str, ...] = ("review", "question", "annotation")
+
+#: What an annotation's anchor may say. **Never a coordinate**: pixel pins die
+#: on the next revision, and the founding artifact went through six in one
+#: session (`append_design_comment`'s lesson, applied to a richer anchor).
+#:
+#: * ``variant``  — the `## Variant <name>` section it sits in
+#: * ``path``     — a CSS path within that variant's fragment
+#: * ``quote``    — the text it was attached to, which is what lets a moved
+#:                  anchor be RE-FOUND rather than guessed at
+ANCHOR_KEYS: frozenset[str] = frozenset({"variant", "path", "quote"})
+
+
+def normalise_anchor(raw: object) -> dict[str, str]:
+    """Keep only the anchor keys, as strings, dropping empties.
+
+    A coordinate arriving under any name is dropped with everything else that
+    is not in `ANCHOR_KEYS` — the schema is an allow-list precisely so a caller
+    cannot smuggle `{x, y}` in and have it silently persisted.
+    """
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, str] = {}
+    for key in sorted(ANCHOR_KEYS):
+        value = str(raw.get(key) or "").strip()
+        if value:
+            out[key] = value[:300]
+    return out
 
 #: Terminal outcomes, recorded for ADR-0007's advisory-phase measurement:
 #: the decision to gate (or not) should rest on how often review actually
@@ -115,7 +145,9 @@ class ReviewStore:
         prompt: str | None = None,
         agent: str | None = None,
         subject: str | None = None,
+        anchor: object = None,
         at_revision: str | None = None,
+        at_note_digest: str | None = None,
     ) -> dict[str, Any]:
         """File a request. Returns the stored record.
 
@@ -130,6 +162,13 @@ class ReviewStore:
         requires `design_revision` on accept and validates it against real
         history, and without the same on the request a reviewer can accept
         something other than what they were shown, with neither party knowing.
+
+        ``at_note_digest`` is the same argument applied to the other half
+        (ISS-0057). `at_revision` follows the artifact; a design's note carries
+        its Problem, Approach, Regions and Tokens, and could be rewritten under
+        a reviewer with every revision signal still reading current. Additive:
+        `at_revision` keeps its meaning exactly, so no stored request or
+        recorded verdict changes meaning.
         """
         if kind not in KINDS:
             raise ValueError(f"unknown kind: {kind}")
@@ -152,6 +191,10 @@ class ReviewStore:
             record["subject"] = str(subject).strip().upper()
         if at_revision:
             record["at_revision"] = str(at_revision).strip()[:40]
+        if anchor:
+            record["anchor"] = normalise_anchor(anchor)
+        if at_note_digest:
+            record["at_note_digest"] = str(at_note_digest).strip()[:64]
         with self._lock:
             # Check-then-act under ONE lock. `open_for_subject` followed by
             # `add` was a race: each call took and released the lock, so 16
@@ -250,3 +293,38 @@ class ReviewStore:
                 if isinstance(outcome, str):
                     counts[outcome] = counts.get(outcome, 0) + 1
         return counts
+
+
+def resolve_anchor(anchor: dict[str, str], design_text: str) -> dict[str, object]:
+    """Re-find an annotation's anchor in the design as it stands now.
+
+    **Never floats to the wrong spot** (TASK-0308). An anchor is re-resolved at
+    render, and when it cannot be found the annotation says so — because a
+    comment silently re-attached to different content is worse than one that
+    admits it is lost: the reader trusts it and it is about something else.
+
+    Resolution is deliberately in this order, weakest claim last:
+
+    1. the **quote** still appears — the strongest evidence the thing being
+       commented on survived, and independent of any structure;
+    2. otherwise the **variant** still exists — the comment is still about a
+       shape that is present, but the exact spot moved;
+    3. otherwise **lost**.
+    """
+    from .cockpit import design_variants
+
+    quote = (anchor or {}).get("quote", "")
+    variant = (anchor or {}).get("variant", "")
+    names = [v["name"] for v in design_variants(design_text)]
+
+    if quote and quote in design_text:
+        return {"state": "found", "by": "quote", "variant": variant}
+    if variant and variant in names:
+        return {
+            "state": "moved", "by": "variant", "variant": variant,
+            "detail": "the quoted text is gone; the variant it was in still exists",
+        }
+    return {
+        "state": "lost", "by": "", "variant": variant,
+        "detail": "neither the quoted text nor the variant it named is in the design now",
+    }

@@ -73,6 +73,13 @@ BANDS: dict[str, tuple[str, ...]] = {
     "archived": (
         "obsolete", "retired", "cancelled", "superseded",
         "declined", "reverted", "deprecated",
+        # ISS-0141: an acceptance-suite check settled by a decision instead of
+        # by being walked (`- [~]`) — terminal, and terminal *without* the
+        # thing having been done, which is what the archived band means. Not a
+        # note status: `validate-docs.py`'s per-type tables still refuse it
+        # everywhere, so membership here buys colour, ordering and
+        # Hide-completed, not permission to write it into frontmatter.
+        "reconciled",
     ),
     "blocked": ("blocked", "failing", "reopened"),
     "reference": ("reference", "deferred"),

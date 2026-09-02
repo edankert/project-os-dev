@@ -45,8 +45,19 @@ from __future__ import annotations
 from typing import TypedDict
 
 
-class AgentSpec(TypedDict):
-    """One dispatchable agent."""
+class AgentSpec(TypedDict, total=False):
+    """One dispatchable agent.
+
+    A **declared entry**, not a branch (ISS-0095). Adding a third agent is one
+    row here and nothing else — `is_dispatchable`, the ledger's wire values and
+    the dispatch menu all read this table already.
+
+    That matters more after [[ADR-0009]]: the principal is a role, and so is
+    the *worker*. A standing worker that can only ever be one vendor is a loop
+    with a single point of vendor failure, and it forecloses the cheapest
+    quality mechanism there is — a second opinion from a different model on the
+    same item, which ADR-0013 already blesses for review.
+    """
 
     id: str
     label: str
@@ -55,6 +66,13 @@ class AgentSpec(TypedDict):
     #: (FEAT-0019). An uninstrumented agent still dispatches; its sessions are
     #: simply not tracked, which is a degradation rather than a failure.
     instrumented: bool
+    #: Optional. Extra argv the launcher passes before the prompt — a driver
+    #: hint rather than a command line, so a vendor's flags live with the
+    #: vendor's row instead of in the launcher's branches.
+    args: tuple[str, ...]
+    #: Optional. What this agent is *for*, when a repo runs more than one.
+    #: Free text, shown in the dispatch menu; no behaviour keys off it.
+    role: str
 
 
 #: Dispatchable agents, in menu order. ``id`` is the wire value used by the
@@ -63,6 +81,39 @@ AGENTS: tuple[AgentSpec, ...] = (
     {"id": "claude", "label": "Claude Code", "command": "claude", "instrumented": True},
     {"id": "codex", "label": "Codex", "command": "codex", "instrumented": True},
 )
+
+
+def extend(entries: list[dict[str, object]]) -> tuple[AgentSpec, ...]:
+    """A repo's own agents, merged over the built-in table (ISS-0095).
+
+    Entries are validated rather than trusted: an entry missing `id`,
+    `label` or `command` is **dropped**, because a half-declared agent in the
+    menu is a dispatch that fails after the human has already committed to it.
+
+    A repo entry with an existing `id` replaces that row — so a project can
+    change how `claude` is launched without forking the table.
+    """
+    merged: dict[str, AgentSpec] = {a["id"]: a for a in AGENTS}
+    for raw in entries or []:
+        if not isinstance(raw, dict):
+            continue
+        agent_id = str(raw.get("id") or "").strip()
+        label = str(raw.get("label") or "").strip()
+        command = str(raw.get("command") or "").strip()
+        if not (agent_id and label and command):
+            continue
+        spec: AgentSpec = {
+            "id": agent_id, "label": label, "command": command,
+            "instrumented": bool(raw.get("instrumented", False)),
+        }
+        args = raw.get("args")
+        if isinstance(args, (list, tuple)):
+            spec["args"] = tuple(str(a) for a in args)
+        role = str(raw.get("role") or "").strip()
+        if role:
+            spec["role"] = role
+        merged[agent_id] = spec
+    return tuple(merged.values())
 
 #: Used when no preference is stored and none is supplied.
 DEFAULT_AGENT: str = "claude"

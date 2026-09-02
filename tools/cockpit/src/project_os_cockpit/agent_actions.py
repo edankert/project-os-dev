@@ -249,6 +249,25 @@ DEFAULT_ACTIONS: dict[str, list[dict[str, Any]]] = {
             ),
         },
     ],
+    # Designs (FEAT-0070 / TASK-0310). Only one verb, and only once accepted:
+    # an unaccepted design has nothing to derive FROM, and offering it earlier
+    # would invite deriving requirements from a shape nobody agreed to.
+    "design": [
+        {
+            "key": "derive", "label": "Derive requirements", "default": True,
+            "when": ["accepted"],
+            "prompt": (
+                "Derive requirements from {id}: read docs/{rel} and run "
+                "tools/skills/impact-analysis/SKILL.md against the existing "
+                "requirements, then tools/skills/feature-scaffold/SKILL.md "
+                "where a new capability is implied. Each REQ arrives "
+                "`status: draft`, cites this design's decisions in `source:`, "
+                "and names the feature it specifies. Do NOT approve them — "
+                "approval is the actuator row's, and a requirement the tool "
+                "approved for itself is not a requirement anybody agreed to."
+            ),
+        },
+    ],
     "risk": [
         {
             "key": "mitigate", "label": "Plan mitigation", "default": True,

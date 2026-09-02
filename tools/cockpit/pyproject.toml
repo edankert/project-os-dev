@@ -40,6 +40,19 @@ dev = [
     "ruff>=0.5",
 ]
 
+[tool.pytest.ini_options]
+# Scope collection to the suite. Without this, a bare `pytest` from the repo
+# root walks into `desktop/python-runtime/` — the bundled interpreter shipped
+# so no user needs a system Python — and tries to collect the `test_*.py`
+# files inside third-party packages there.
+#
+# It worked by luck until 2026-08-13, when adding `tests/conftest.py` changed
+# how pytest resolves the rootdir and the bundled `markdown/test_tools.py`
+# collided with the suite on basename. Relying on the absence of a conftest to
+# keep collection scoped is not a configuration; this is.
+testpaths = ["tests"]
+norecursedirs = ["desktop", "node_modules", ".venv", "build", "dist"]
+
 [project.scripts]
 project-os-cockpit = "project_os_cockpit.__main__:main"
 cockpit = "project_os_cockpit.cli:main"

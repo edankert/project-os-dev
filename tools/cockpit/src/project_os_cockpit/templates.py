@@ -429,7 +429,7 @@ STATUS_RANK: dict[str, int] = {
     # dead / blocked
     "closed": 80, "obsolete": 81,
     "retired": 82, "cancelled": 82, "superseded": 82, "declined": 82,
-    "reverted": 82, "deprecated": 82, "deferred": 83,
+    "reverted": 82, "deprecated": 82, "reconciled": 82, "deferred": 83,
     "blocked": 90, "reopened": 91, "failing": 92,
 }
 STATUS_RANK_DEFAULT: int = 55

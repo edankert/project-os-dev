@@ -30,13 +30,18 @@ TRACEABILITY.md define by convention:
      `implements:` names at most one feature (REQ-OWNER); and a feature may not
      be done while a requirement naming it has unresolved criteria
      (FEATURE-REQ).
-  9. Phase closure (STATUSES.md `[[phase]]`): a phase that is done/superseded has
+  9. Reverse links (PARENT-BACKLINK): a task or issue naming a feature as
+     `parent:` is named back by that feature in `tasks:` / `fixes:` / `issues:`.
+     A relationship declared on one end only is invisible to every other gate.
+     Its companion SNAPSHOT-MEMBERSHIP checks the other copy of the same list:
+     `items.features.*.tasks` must agree with the feature note's `tasks:`.
+ 10. Phase closure (STATUSES.md `[[phase]]`): a phase that is done/superseded has
      no unresolved note naming it in `phase:` (PHASE-CHILDREN), and a done phase
      has every exit criterion ticked-with-evidence or reconciled (PHASE-BOXES).
      The table of statuses that count as resolved is itself checked against the
      allowed taxonomy, so a rename cannot land in one table and not the other
      (STATUS-TABLE).
- 10. Grandfathering: items already violating a gate when that gate was promoted
+ 11. Grandfathering: items already violating a gate when that gate was promoted
      to error are listed in tools/GRANDFATHERED.yaml and report as warnings.
      Everything else errors immediately — there is no date-based exemption.
 
@@ -48,12 +53,15 @@ parser that supports the constrained YAML subset SNAPSHOT.yaml uses
 """
 
 import argparse
+import datetime
+import hashlib
 import re
+import shlex
 import sys
 from pathlib import Path
 
-ID_PREFIXES = ("ADR", "DES", "FEAT", "ISS", "PHASE", "REQ", "RISK", "REL",
-               "TASK", "TST", "WF")
+ID_PREFIXES = ("ADR", "CHK", "DES", "FEAT", "ISS", "PHASE", "REQ", "RISK",
+               "REL", "SUR", "TASK", "TST", "WF")
 ID_RE = re.compile(r"\b(%s)-(\d{2,})\b" % "|".join(ID_PREFIXES))
 
 COLLECTION_TYPE = {
@@ -68,6 +76,8 @@ COLLECTION_TYPE = {
     "changes": {"change"},
     "decisions": {"adr", "decision"},
     "designs": {"design"},
+    #: A place in the product a check's `area:` names ([[TASK-0514]]).
+    "surfaces": {"surface"},
     "releases": {"release"},
 }
 
@@ -95,6 +105,11 @@ ALLOWED_STATUS = {
     # that, and this one adds none.
     "design": {"draft", "proposed", "accepted", "implemented", "superseded",
                "cancelled"},
+    #: **A surface is not *done*** ([[TASK-0514]]): it exists until the product
+    #: stops having it. `retired` says the place is gone; `superseded` says
+    #: another surface took it over. No new vocabulary -- ADR-0008 collapsed 64
+    #: values to 53 and a new type is not a reason to reopen that.
+    "surface": {"active", "retired", "superseded"},
     # `decision` is an accepted alias for `adr` -- COLLECTION_TYPE has mapped
     # decisions to {"adr", "decision"} all along, but ALLOWED_STATUS never
     # carried the alias. Found by the type-table check added for ISS-0014; one
@@ -103,14 +118,70 @@ ALLOWED_STATUS = {
     # type out of an unordered set, so it fired by hash seed (6/12 measured).
     # ISS-0015 replaced that pick with a union check.
     "decision": {"proposed", "accepted", "superseded"},
-    "test": {"ready", "passing", "failing"},
+    # ADR-0031 (project-os-cockpit): the `check` type folds into `test`, and
+    # `level: acceptance` carries the distinction. Three values became six, and
+    # the two additions are what keep the merge safe rather than being a
+    # convenience:
+    #
+    #   `active`  -- where an acceptance test RESTS. It is in neither
+    #               REVIEW_SETTLED_STATUSES nor the Run obligation's states, so
+    #               a 669-note population reaches neither the review gate nor a
+    #               badge. That is the same construction the `check` type used,
+    #               kept after the type itself is gone: the gates are keyed on
+    #               statuses this population does not hold.
+    #   `retired` -- terminal, and the only removal (TESTING.md: acceptance
+    #               checks are "never removed, only deprecated"). It also closes
+    #               ISS-0178, which sat `deferred` because a test whose subject
+    #               was deleted had no honest status: leave it `passing` and it
+    #               claims to verify a deleted surface; delete it and
+    #               LIFECYCLE.md forbids that.
+    #
+    # `draft` joins for symmetry with the type it absorbed; every one of the
+    # three already existed elsewhere in the vocabulary, which is the bar
+    # `check` itself was held to.
+    "test": {"draft", "active", "ready", "passing", "failing", "retired"},
+    # RETIRED by ADR-0031 -- the `check` type folded into `test` at
+    # `level: acceptance`. The row survives only so that a repo which has not
+    # yet run the merge migration still validates: eight of the twelve repos
+    # carry no checks at all, and the three that did are migrated. Remove it
+    # once no `type: "[[check]]"` note exists in any repo the template serves.
+    #
+    # The construction it protected is preserved on the merged type and
+    # asserted by ACCEPTANCE-STATUS rather than left implicit: the gates are
+    # keyed on statuses an acceptance test does not hold.
+    "check": {"draft", "active", "retired"},
     "release": {"draft", "released", "reverted"},
     # `plan` is consumed by validate_plan_notes through load_allowed_status(). It
     # belongs in the defaults like every other type: without it, a repo whose
     # STATUSES.md lacks a `[[plan]]` section gets an empty allowed set and
     # PLAN-STATE flags every plan it finds (STATUSES.md `[[plan]]`).
     "plan": {"draft", "active", "done", "superseded"},
+    # Standing material -- a directory signpost, an API description, the
+    # glossary. Neither has a lifecycle: it is current, or it is deleted. These
+    # tables state what the corpus already writes rather than inventing a
+    # vocabulary (ISS-0124). Measured across all twelve fleet repos, 2026-08-14:
+    #
+    #   reference  206 `active`, 14 with no status
+    #   glossary    10 `active`, 0 with anything else
+    #
+    # One value each, and that single value carries information: it is the
+    # difference between "somebody maintains this" and a field left behind.
+    "reference": {"active"},
+    "glossary": {"active"},
 }
+
+#: Types whose notes legitimately carry NO `status:` at all (ISS-0124).
+#:
+#: One member, because one is what the fleet has. `glossary` was in this set for
+#: about ten minutes on the strength of a guess, and the check's first run
+#: reported project-os's own GLOSSARY.md carrying `status: active` -- so it moved
+#: to ALLOWED_STATUS above. `dashboard` was in it too and came out: it exists
+#: only as a template, which this walk excludes, so listing it would be a rule
+#: about a note that does not exist.
+#:
+#: A type here MAY be absent from ALLOWED_STATUS. What it may not be is
+#: *unknown*, which is the condition STATUS-TYPE reports.
+STATUS_FREE_TYPES = frozenset({"architecture"})
 
 #: Statuses that resolve a child's place in its phase's scope (PHASE-CHILDREN).
 #:
@@ -189,12 +260,283 @@ PLAN_FOLLOWS_FEATURE = {
 #: `(("tests", {"passing"}), ("changes", {"merged"}))` until ISS-0014 -- the
 #: last inline status collection in the file, and the one that falsified
 #: ISS-0013's "no inline status literal remains" claim.
+#: **`changes` left this table on 2026-08-12 (upstream ADR-0019).** Synced
+#: from the canonical script rather than edited here: `tools/scripts/` is
+#: template-owned, and the decision it implements lives in project-os-dev.
+#: The registry stopped counting the obligation a day earlier (ADR-0023),
+#: and the surface and the validator disagreed until this landed.
 REVIEW_SETTLED_STATUSES = {
     "tests": ("passing",),
-    "changes": ("merged",),
 }
 
-#: Test statuses that only the runner may write (TEST-FIELDS, ADR-0010).
+#: Verdicts that leave work owed -- a reviewer asked for something (ISS-0253).
+#: Mirrors `cockpit.OWED_VERDICTS`; the two are pinned by
+#: `test_the_validator_and_the_cockpit_agree_on_which_verdicts_owe`.
+OWED_VERDICTS = frozenset({"changes-requested", "rejected"})
+
+#: Statuses at which the work a verdict judged is FINISHED, across every note
+#: type (ISS-0253). Cross-type by construction -- the population it describes
+#: is 30 `done`, 8 `merged`, 4 `implemented` and 9 `fixed` -- so it cannot be
+#: registered in FLAT_STATUS_TABLES, which pairs one collection with one type.
+#:
+#: *(This comment said 27/7/4/5 for one commit, restating the figures ISS-0253
+#: filed and this file's own PROMOTIONS entry now calls a coincidence of two
+#: errors. Corrected against `git archive f5ca55b` -- and it is the third
+#: place the same unmeasured number had been copied to.)*
+#: `validate_status_tables` therefore asserts each value is legal for at least
+#: one type instead, which is the cross-type form of the same ISS-0011 guard.
+REVIEW_TERMINAL_STATUSES = frozenset({
+    "done", "fixed", "implemented", "merged", "closed", "cancelled",
+    "superseded", "retired", "released", "accepted", "declined", "passing",
+})
+
+#: Statuses at which an acceptance test never sits, and therefore the exact
+#: gates ADR-0031 relies on staying off. `passing` is the review gate and the
+#: runner-only rule; `ready` is the obligation registry's `Run`. A note at
+#: `level: acceptance` holding either of these means the merge's central
+#: construction has failed -- and it fails silently, as several hundred rows
+#: arriving on a badge nobody can act on (ADR-0027). ACCEPTANCE-STATUS is an
+#: ERROR rather than a warning for that reason.
+ACCEPTANCE_FORBIDDEN_STATUSES = ("ready", "passing", "failing")
+
+
+#: A walked test's marks that count as settled -- the same three
+#: `acceptance.Item.settled` reads, named here because the validator does not
+#: import the cockpit package.
+_SETTLED_MARKS = ("done", "incomplete", "canceled", "x", "X", "/", "~", "-")
+#: The word half of the above — safe to strip and lowercase, unlike the
+#: characters, where surrounding space is a typo rather than formatting.
+_SETTLED_WORDS = ("done", "incomplete", "canceled")
+
+
+def _acceptance_is_settled(note_id, note_index):
+    """Whether a walked test's verdict settles it (ADR-0034).
+
+    The walked half of one rule: an executable test is settled when the runner
+    says `passing`; a walked one is settled when its `mark:` says so. Both
+    characters and words are read, because a repo that has not migrated its
+    vocabulary must keep gating correctly.
+    """
+    entry = note_index.get(note_id)
+    if not entry:
+        return False
+    fm = entry[1] or {}
+    if str(fm.get("command", "") or "").strip():
+        return str(fm.get("status", "") or "").strip() == "passing"
+    # **Never strip the character form.** `" x"` and `"x "` are the exact typos
+    # the row parser refuses to normalise, and stripping moved them from
+    # unrecognised-and-blocking to settled. `acceptance.normalise_mark` was
+    # fixed for this on 2026-08-18 and **this copy was not** — which is the copy
+    # that gates pre-commit and CI, so the fix landed everywhere except where it
+    # mattered most. Found by the second independent review.
+    raw = str(fm.get("mark", "") or "")
+    mark = raw.strip('"')
+    if mark not in _SETTLED_MARKS:
+        # A WORD may carry surrounding space (YAML scalars do); a CHARACTER may
+        # not, because a space beside it is a typo and not formatting.
+        word = mark.strip().lower()
+        mark = word if word in _SETTLED_WORDS else mark
+    return mark in _SETTLED_MARKS
+
+
+def _release_version_key(raw):
+    """`2.1.10` -> `(2, 1, 10)`, so `2.1.10` sorts above `2.1.9`.
+
+    A compact restatement of `publication._version_key`. This module is
+    stdlib-only and copied whole into every downstream repo, so it cannot
+    import the package -- the same deliberate duplication `_acceptance_is_settled`
+    and the command-target parser carry, and `tests/test_release_preparing.py`
+    holds the two to the same answers.
+    """
+    parts = []
+    for chunk in re.split(r"[.\-+]", str(raw or "").strip().lstrip("vV")):
+        if chunk.isdigit():
+            parts.append(int(chunk))
+        elif chunk:
+            break
+    return tuple(parts)
+
+
+def _preparing_conflicts(note_index):
+    """Platforms carrying **more than one** release in preparation ([[TASK-0557]]).
+
+    Edwin: *"Let's consider one release at the time only … We can potentially
+    have multiple releases going on at the same time for different platforms."*
+
+    **Two on one platform is the state [[ADR-0037]]'s ledger cannot
+    represent**: one working ledger per platform, and sealing assigns it to a
+    release, so a verdict recorded while two were open would belong to neither
+    by construction. That is why it is an ERROR and not a warning.
+
+    *Preparing* is narrower than `draft`: a draft a shipped version has already
+    overtaken is stale record-keeping, not a release in preparation.
+    `your-trainer` carries `REL-0008` at `draft`, version 2.0.2, with 2.1.6
+    shipped -- counting it would report a conflict that is not one.
+    """
+    releases = []
+    for note_id, entry in (note_index or {}).items():
+        fm = (entry[1] if entry else None) or {}
+        if note_type(fm) != "release":
+            continue
+        releases.append((
+            note_id,
+            str(fm.get("status", "") or "").strip().lower(),
+            _release_version_key(fm.get("version")),
+            str(fm.get("platform", "") or "").strip().lower(),
+            #: **`preparing:` is FRONTMATTER, not a status** (FEAT-0105).
+            #: `publication.preparing` reads this field, and the first cut of
+            #: this rule keyed on `status: draft` alone -- so the validator and
+            #: the library would have disagreed about what *preparing* means,
+            #: which is [[REQ-0059]]'s forbidden shape and the third instance
+            #: found in this phase. Two open drafts nobody has declared for
+            #: ship are a normal repo, not an error.
+            str(fm.get("preparing", "") or "").strip().lower()
+            in ("true", "yes", "1"),
+        ))
+    shipped = max((v for _i, st, v, _p, _q in releases if st == "released"),
+                  default=())
+    by_platform = {}
+    for note_id, status, version, platform, is_preparing in sorted(releases):
+        if is_preparing and status == "draft" and version > shipped:
+            by_platform.setdefault(platform, []).append(note_id)
+    return {p: ids for p, ids in by_platform.items() if len(ids) > 1}
+
+
+def _repo_has_an_acceptance_suite(note_index):
+    """Does this repo hold any acceptance check at all? ([[TASK-0523]])
+
+    The uncovered-feature rule is meaningless where there is nothing to cover
+    WITH. Measured across the twelve `SNAPSHOT.yaml`-bearing repos 2026-08-20:
+    **225** terminal features have no acceptance check under this rule, and
+    **only three repos hold a suite** -- so **86** of them sit in repos with
+    nothing to cover WITH, and firing there would scold them for not using a
+    mechanism they have never adopted.
+
+    **86 is the stable number here.** The fleet and suite totals move under
+    every commit -- 225 / 139 now, 220 / 134 hours earlier -- while the nine
+    repos with no suite do not move at all, so the gap is 86 at either basis.
+    It read 89 until 2026-08-20, which was the difference between the two WIDE
+    figures carried over onto the narrow ones.
+    """
+    for _id, entry in (note_index or {}).items():
+        fm = (entry[1] if entry else None) or {}
+        if str(fm.get("level", "") or "").strip().lower() == "acceptance":
+            return True
+    return False
+
+
+def _features_covered_by_acceptance(note_index):
+    """Every `FEAT-*` named in the `covers:` of an acceptance check.
+
+    The reverse index, the direction [[ADR-0032]] settled on: the test names
+    what it covers, and nothing maintains a second copy on the feature.
+    """
+    covered = set()
+    for _id, entry in (note_index or {}).items():
+        fm = (entry[1] if entry else None) or {}
+        if str(fm.get("level", "") or "").strip().lower() != "acceptance":
+            continue
+        for ref in (fm.get("covers") or []):
+            for match in re.finditer(r"FEAT-\d+", str(ref)):
+                covered.add(match.group(0))
+    return covered
+
+
+def _is_acceptance_test(note_id, note_index):
+    """True when `note_id` names a test at `level: acceptance`."""
+    entry = note_index.get(note_id)
+    if not entry:
+        return False
+    fm = entry[1] or {}
+    return str(fm.get("level", "") or "").strip().lower() == "acceptance"
+
+
+#: **Does the thing a `command:` names still exist?** (ADR-0039)
+#:
+#: A deliberate duplicate of `command_targets.py`. This module is stdlib-only
+#: and self-contained because it is copied whole into every downstream repo, so
+#: it cannot import the package. `tests/test_command_target_parity.py` asserts
+#: the two agree on every command in the corpus and on the constructed cases --
+#: the same treatment `_SETTLED_MARKS` gets, for the same reason.
+#:
+#: Three answers, never two. A command naming no target this can find is
+#: UNCHECKABLE, not resolved and not broken: 5 of the fleet's 139 automated
+#: notes are that shape, and calling them either would be a lie in one
+#: direction or the other.
+CMD_RESOLVES, CMD_BROKEN, CMD_UNCHECKABLE = "resolves", "broken", "uncheckable"
+_CMD_JVM_CLASS = re.compile(r"(?:--tests|class=)\s*([A-Za-z_][\w.]*\.[A-Z]\w+)")
+_CMD_JVM_SUFFIXES = (".kt", ".java")
+_CMD_SOURCE_PATH = re.compile(r"\.(py|ts|tsx|js|mjs|swift)$")
+
+
+def command_targets(command):
+    """Every target a command names, as (kind, value). Mirrors `command_targets.targets`."""
+    out = []
+    if not command:
+        return out
+    try:
+        tokens = shlex.split(command, posix=True)
+    except ValueError:
+        tokens = []
+    for token in tokens:
+        if token.startswith("-"):
+            continue
+        head = token.split("::", 1)[0]
+        if _CMD_SOURCE_PATH.search(head):
+            out.append(("path", head))
+    for match in _CMD_JVM_CLASS.finditer(command):
+        out.append(("class", match.group(1)))
+    return out
+
+
+def _command_target_exists(kind, value, root):
+    if kind == "path":
+        if (root / value).exists():
+            return True
+        return any(root.rglob(Path(value).name))
+    leaf = value.rsplit(".", 1)[-1]
+    return any(any(root.rglob(leaf + suffix)) for suffix in _CMD_JVM_SUFFIXES)
+
+
+def _command_target_checkable(kind, value, root):
+    """Is there source here to look in at all?
+
+    A missing file inside a directory that exists is a RENAME. A missing
+    directory is a tree that was never here. Without this the validator
+    silently depends on the source tree: against a docs-only checkout every
+    automated test reports a broken command at once -- 71 errors over a valid
+    corpus, which is how a gate teaches people to stop reading it.
+    """
+    if kind == "path":
+        return (root / value).parent.is_dir()
+    return any(any(root.rglob("*" + suffix)) for suffix in _CMD_JVM_SUFFIXES)
+
+
+def resolve_command(command, root):
+    """CMD_RESOLVES / CMD_BROKEN / CMD_UNCHECKABLE. Mirrors `command_targets.resolve`."""
+    found = command_targets(command)
+    if not found:
+        return CMD_UNCHECKABLE
+    checkable = [(k, v) for k, v in found if _command_target_checkable(k, v, root)]
+    if not checkable:
+        return CMD_UNCHECKABLE
+    for kind, value in checkable:
+        if not _command_target_exists(kind, value, root):
+            return CMD_BROKEN
+    return CMD_RESOLVES
+
+
+#: The two verdict statuses. **The name is now wrong and is kept anyway**: it
+#: is the key this collection is registered under in `FLAT_STATUS_TABLES`, and
+#: in the copy of this file that ships to every downstream repo. Renaming it
+#: buys accuracy in one identifier and costs a fleet-wide rename of a registry
+#: key, which is a bad trade for a comment that can simply say so.
+#:
+#: Nothing writes these from a run any more (ADR-0038). They belong to a MANUAL
+#: test, author-written; an automated one holds no verdict at all. The single
+#: remaining reader is TEST-ENTRYPOINT, which asks whether a note claiming a
+#: verdict has any way to refresh it.
+#:
 #: Inline until ISS-0013 -- the second round of review found it, which is the
 #: point: an inline literal is invisible to the guard by construction.
 TEST_RUNNER_STATUSES = ("passing", "failing")
@@ -212,6 +554,9 @@ METRIC_PREFIX_TYPE = {
     # `decisions_total` is a total (`allowed is None`) and the check `continue`d
     # before reaching the prefix. Every total metric was unguarded the same way.
     "ADR": "adr",
+    # `CHK` is retired (ADR-0031): acceptance checks are tests and their ids
+    # live in the `TST` space. The prefix stays in ID_PREFIXES so that a
+    # `[[CHK-0001]]` alias in an older note still resolves.
 }
 
 #: metric name -> (ID prefix, statuses counted). `None` means "count them all".
@@ -263,6 +608,10 @@ TERMINAL_TYPES = {
 #: validate_status_tables walks this, so adding a status table means adding a row
 #: here rather than remembering to write another check by hand.
 FLAT_STATUS_TABLES = {
+    # Registered rather than exempted: every value in it IS a test status, and
+    # the point of the collection is that an acceptance test must not hold one.
+    # A typo here would silently disarm ADR-0031's central construction.
+    "ACCEPTANCE_FORBIDDEN_STATUSES": (ACCEPTANCE_FORBIDDEN_STATUSES, ("test",)),
     "RESOLVED_STATUSES": (RESOLVED_STATUSES, ("task", "feature")),
     "FEATURE_ACTIVE_STATUSES": (FEATURE_ACTIVE_STATUSES, ("feature",)),
     "CLOSED_PHASE_STATUSES": (CLOSED_PHASE_STATUSES, ("phase",)),
@@ -278,7 +627,7 @@ _CHECKED_TABLE_NAMES = frozenset({
     "ALLOWED_STATUS", "PHASE_RESOLVED", "PLAN_FOLLOWS_FEATURE", "TERMINAL",
     "TERMINAL_TYPES", "METRIC_STATUS_FILTERS", "METRIC_PREFIX_TYPE",
     "COLLECTION_TYPE", "REVIEW_SETTLED_STATUSES", "FLAT_STATUS_TABLES",
-    "PROMOTIONS", "METRIC_PREFIXES",
+    "PROMOTIONS", "METRIC_PREFIXES", "REVIEW_TERMINAL_STATUSES",
 })
 
 #: Module-level string collections that are deliberately NOT status collections.
@@ -298,6 +647,40 @@ _NON_STATUS_COLLECTIONS = frozenset({
     # exactly the mechanism that made an unregistered table invisible.
     "_CHECKED_TABLE_NAMES",
     "_NON_STATUS_COLLECTIONS",
+    # ISS-0124 / ISS-0163: note TYPES and frontmatter KEYS, not statuses.
+    # Both were caught by this very guard on the day they were added, which is
+    # the behaviour ISS-0012 and ISS-0013 paid for.
+    "STATUS_FREE_TYPES",
+    # ISS-0253: review VERDICTS, not statuses. `changes-requested` is not a
+    # status of anything and never was -- registering it as one would fail
+    # STATUS-TABLE against every type in ALLOWED_STATUS.
+    "OWED_VERDICTS",
+    # ADR-0034: acceptance VERDICTS, not statuses. A walked test's verdict lives
+    # in `mark:` precisely so it is not a status -- which is the construction
+    # that keeps a suite of several hundred out of the review gate and off a
+    # badge -- so registering these as statuses would assert the opposite of the
+    # thing they exist to preserve. Caught by this guard on the day it was
+    # added, which is the third time it has earned its keep.
+    "_SETTLED_MARKS",
+    "_SETTLED_WORDS",
+    "MANUAL_DECLARATION_KEYS",
+    # ADR-0037: the acceptance LEDGER's outcome vocabulary, its reason-bearing
+    # subset, and how a result arrived. None is a status, and registering them
+    # as one would assert the opposite of what they exist to preserve: a
+    # verdict is an EVENT, deliberately outside the status vocabulary, which is
+    # what keeps 671 acceptance tests off the review gate and off a badge.
+    # Caught by this guard on the day they were added — the fourth time it has
+    # earned its keep.
+    # ADR-0039: SOURCE FILE SUFFIXES a JVM test class could live in. Not a
+    # status by any reading, and caught by this guard the moment the resolver
+    # landed -- the fifth time it has earned its keep, and the second time in
+    # one day that a collection added for a good reason was stopped from
+    # entering the status vocabulary by accident.
+    "_CMD_JVM_SUFFIXES",
+    "LEDGER_MARKS",
+    "LEDGER_NEEDS_REASON",
+    "LEDGER_METHODS",
+    "LEDGER_MOVED_FIELDS",
 })
 
 
@@ -377,6 +760,18 @@ def validate_status_tables(report):
     for expected in PLAN_FOLLOWS_FEATURE.values():
         plan_values.update(expected)
     _check_values(report, "PLAN_FOLLOWS_FEATURE values", plan_values, "plan")
+
+    #: **Cross-type, so `_check_values` cannot be used** (ISS-0253).
+    #: REVIEW_TERMINAL_STATUSES spans every note type, and asserting it
+    #: against any single one would report `merged` as an illegal task status.
+    #: The equivalent assertion is that each value is a real status SOMEWHERE
+    #: -- which is what catches the ISS-0011 rename this guard exists for.
+    _every_status = set()
+    for _allowed in ALLOWED_STATUS.values():
+        _every_status.update(_allowed)
+    _unknown = sorted(REVIEW_TERMINAL_STATUSES - _every_status)
+    if _unknown:
+        report.error("STATUS-TABLE", "REVIEW_TERMINAL_STATUSES contains %s, which no type in ALLOWED_STATUS holds; a value was renamed in one status table and not the other -- see ISS-0011" % ", ".join("'%s'" % u for u in _unknown))
 
     for collection, settled in sorted(REVIEW_SETTLED_STATUSES.items()):
         note_types = COLLECTION_TYPE.get(collection)
@@ -579,12 +974,104 @@ GRANDFATHER_FILE = "tools/GRANDFATHERED.yaml"
 #: 90-day ceiling means a stalled migration fails the build instead of dissolving
 #: back into permanent warning noise.
 PROMOTIONS = {
+    # ADR-0034's uniform gate: an acceptance test gates what it COVERS, like
+    # any other test. Measured on the day it shipped: 0 findings in three of
+    # the four suite repos and **6 in `your-sudoku`**, where FEAT-0025 is `done`
+    # and six checks covering it have never been walked. Those are true, and
+    # erroring on day one would take a green repo red for a rule it had no
+    # chance to satisfy -- ADR-0011 clause 3, and the reason TEST-ENTRYPOINT
+    # shipped the same way.
+    "VERIFY-ACCEPTANCE": "2026-11-20",
     "REVIEW": "2026-10-23",
     # Plans went unvalidated entirely until PLAN-STATE existed, so the
     # debt is pre-existing rather than newly introduced: 19 of 33 plans
     # in project-os-cockpit carry no status. Clause 3 forbids promoting
     # over debt, so this warns while the fleet is groomed.
     "PLAN-STATE": "2026-10-24",
+    # Added 2026-08-14 with TEST-ENTRYPOINT and STATUS-TYPE themselves --
+    # which shipped that morning as UNDATED warnings, under a comment
+    # claiming "a warning with a promotion date, per ADR-0011". The
+    # justification was written and the date was not, which is precisely the
+    # permanent-warning tier ADR-0011 exists to forbid: "a check with no
+    # cutover is promoted or deleted". Found by independent review the same
+    # day, in the change that cited the rule.
+    #
+    # 43 findings across five repos at introduction, none in the repo that
+    # had just fixed its own. 90 days is the ceiling clause 3 allows and the
+    # debt is real but bounded -- a `command:` or a `kind: manual` per note.
+    "TEST-ENTRYPOINT": "2026-11-12",
+    # 4 findings across three repos, and every one is a note type somebody
+    # invented without a status table. Cheaper to clear than TEST-ENTRYPOINT
+    # and dated the same day for one cutover rather than two.
+    "STATUS-TYPE": "2026-11-12",
+    # ADR-0039 / REQ-0060. A check's section is DERIVED from `covers:` -- a
+    # `FEAT-*` makes it a standing behaviour claim that a change re-opens, an
+    # `ISS-*` makes it a claim about a fixed defect that nothing re-opens. A
+    # check naming neither cannot be classified and defaults to a behaviour
+    # claim, which is the safe direction but is a guess.
+    #
+    # **117 findings at introduction**, all in `your-trainer`, none in any
+    # other repo. Measured at HEAD across the fleet; an earlier comment here
+    # said 44, which was that repo's WORKING TREE. They name only a `PHASE-*`
+    # or a `TASK-*`, or nothing -- provenance, the work the check came out of,
+    # rather than the thing it verifies. Same conflation ISS-0235 found.
+    #
+    # Warned rather than errored on day one for ADR-0011 clause 3: the debt is
+    # real, bounded, and one line per note to clear.
+    "CHECK-SUBJECT": "2026-11-18",
+    # ADR-0038's two halves. **Measured at HEAD across every repo carrying a
+    # test note**, after two earlier counts here were taken from one repo and
+    # from a working tree:
+    #
+    #   TEST-AUTOMATED-STATUS    12  (your-trainer 2, project-os-dev 4, your-health 6)
+    #   TEST-AUTOMATED-EVIDENCE  24  (4 / 8 / 12)
+    #   ACCEPTANCE-STATUS         0  everywhere -- which is why that code keeps
+    #                                its day-one error, and only the newly
+    #                                forbidden half is dated.
+    #
+    # `project-os-cockpit` carries zero of all three, which is what the first
+    # measurement saw and mistook for the fleet.
+    #
+    # Dated rather than grandfathered by ID: the debt is one script run per
+    # repo (`tools/scripts/migrate-automated-verdicts.py`), and ADR-0011
+    # clause 3 prefers clearing to listing.
+    "TEST-AUTOMATED-STATUS": "2026-11-18",
+    "TEST-AUTOMATED-EVIDENCE": "2026-11-18",
+    # A check whose `area:` names no surface (ISS-0250). **21 distinct names
+    # over 34 checks in this repo at introduction**, and zero in the other
+    # eleven -- none of them holds a `SUR-*` note, so the rule is silent there
+    # by its own guard rather than by exemption.
+    #
+    # The debt is one `SUR-*` note per surface, which is TASK-0515's shape and
+    # a body of work rather than a line edit -- so it is dated rather than
+    # errored on day one, per ADR-0011 clause 3.
+    "SURFACE-ORPHAN": "2026-11-18",
+    # A terminal note still carrying `changes-requested` with nothing recorded
+    # about what was done (ISS-0253). **51 findings in this repo**, measured at
+    # `f5ca55b` after independent review corrected both the filed count and the
+    # rule's own domain: 30 `done`, 8 `merged`, 4 `implemented`, 9 `fixed`, the
+    # earliest **eight** dated **2026-07-30** -- every one a verdict that was
+    # true when written and false as a description of the note today.
+    #
+    # *(It said "dating to 2026-08-02", which was ISS-0253's date and not this
+    # population's; then it said "six", which was a reviewer's figure typed
+    # over a measurement that had printed EIGHT on the same screen. Counted:
+    # 8. Fourth wrong number about one population in one file, and the only
+    # one produced by copying rather than by not measuring.)*
+    #
+    # The first cut reported 43 and read `note_index`, which holds no `CHG-*`
+    # note at all (`ID_PREFIXES` has no `CHG`, and a change note's id is not
+    # `CHG-0000`). All 8 `merged` findings are change notes, so the rule could
+    # not produce the population this comment described -- and 43 agreeing with
+    # the number ISS-0253 filed by hand was a coincidence of two different
+    # errors. It walks the files now.
+    #
+    # Clearing it is one `review_response:` line per note, written by the
+    # author, saying what was done. That is a body of work and it is exactly
+    # what ADR-0011 clause 3 forbids erroring over on day one. It is NOT
+    # clearable by flipping the verdict, which is the whole reason the issue
+    # exists.
+    "REVIEW-STALE": "2026-11-18",
 }
 
 
@@ -600,6 +1087,23 @@ def promotion_emit(report, gate, grandfathered, item_id):
 #: Default staleness window for MANUAL verification (ADR-0010 / REQ-0023).
 #: Overridable per repo via `verification.staleness_days` in SNAPSHOT.yaml.
 DEFAULT_STALENESS_DAYS = 90
+
+
+def surface_key(raw):
+    """The join `cockpit.surface_coverage` performs, reproduced ([[ISS-0250]]).
+
+    **The second implementation is forced and therefore guarded.** This file is
+    stdlib-only and standalone -- it cannot import the cockpit -- so the join
+    exists twice, which is [[REQ-0059]]'s forbidden shape unless something pins
+    the two together. `test_the_rule_and_the_join_agree_on_normalisation`
+    drives BOTH over the same strings and requires the same answer, rather than
+    matching text in either.
+
+    One function, used on both sides. Normalising the surface's title one way
+    and the check's `area:` another is the defect the rule exists to report,
+    committed by the rule itself.
+    """
+    return str(raw or "").strip().lower()
 
 
 def _today():
@@ -631,6 +1135,29 @@ def is_stale(fm, staleness_days):
     if d is None:
         return False
     return (_today() - d).days > staleness_days
+
+
+#: Frontmatter keys a corpus uses to say who runs a test. `kind:` is the one
+#: the template ships; the others are what real notes were found using.
+MANUAL_DECLARATION_KEYS = ("automation", "kind", "mode", "method")
+
+
+def _declares_manual(fm):
+    """True when a test note SAYS a person performs it (TEST-ENTRYPOINT).
+
+    Deliberately narrow: only an explicit declaration exempts a note. Silence
+    does not, because silence is what the gate exists to find -- a note that
+    declares nothing reads as automated everywhere else in the system and then
+    turns out to have no way to run.
+
+    The accepted spellings match what the corpus actually writes rather than one
+    canonical key, the same lesson ADR-0006 recorded: a check follows what is
+    written, not what it wishes were written.
+    """
+    for key in MANUAL_DECLARATION_KEYS:
+        if "manual" in str((fm or {}).get(key, "") or "").lower():
+            return True
+    return False
 
 
 def load_grandfathered(root):
@@ -669,10 +1196,17 @@ def compute_metric_counts(items, note_index, claimants=None):
         for item_id, entry in coll.items():
             if isinstance(entry, dict) and str(entry.get("status", "") or ""):
                 statuses[item_id] = str(entry.get("status", "") or "")
-    # ADR-0018/FEAT-0022: the archive fallback must use only notes that
-    # genuinely CLAIM an id. `note_index` matches IDs as substrings, so a
-    # composite filename lends its status to an unrelated item once that
-    # item's snapshot entry is pruned.
+    # The archive fallback must use only notes that genuinely CLAIM an id.
+    # `note_index` matches IDs as SUBSTRINGS, so a composite filename like
+    # CHG-20260525-FEAT-0009-Chrome-Polish.md is indexed under FEAT-0009 and,
+    # sorting first, lends a change note's `merged` to a feature. Pruning
+    # FEAT-0009's entry then let that manufactured claim decide the count, and
+    # features_done fell by one against a note that says `done`.
+    # `note_statuses` was taught this lesson; this counter was not. Rejecting
+    # the impostor is not enough on its own -- it holds the index slot, so the
+    # REAL note is absent from `note_index` under that id and the item would
+    # then be counted by nobody. `claimants` knows which file actually claims
+    # an id, so it supplies the status and the index is the fallback.
     for nid, paths in (claimants or {}).items():
         if len(paths) != 1:
             continue
@@ -685,8 +1219,21 @@ def compute_metric_counts(items, note_index, claimants=None):
         if claimed and claimed != nid:
             continue
         statuses.setdefault(nid, str((fm or {}).get("status", "") or ""))
+    # Acceptance tests are excluded from every metric (ADR-0030, carried into
+    # ADR-0031): *"a count of acceptance rows on the overview is a number
+    # nobody acts on"*. That refusal used to be free, because a check carried
+    # a `CHK-` prefix and no metric named it; the renumber into the `TST-`
+    # space undid it silently and `tests_total` went 43 -> 77 here, with the
+    # overview's *Tests passing* tile reading 40/77 instead of 40/43 -- and it
+    # would read ~18/597 in `your-trainer`. Found by independent review.
+    acceptance_ids = {
+        nid for nid, (_path, _fm) in (note_index or {}).items()
+        if str((_fm or {}).get("level", "") or "").strip().lower() == "acceptance"
+    }
     by_prefix = {}
     for the_id, status in statuses.items():
+        if the_id in acceptance_ids:
+            continue
         m = ID_RE.match(the_id)
         if m and m.group(1) in METRIC_PREFIXES:
             by_prefix.setdefault(m.group(1), []).append(status)
@@ -1052,6 +1599,96 @@ def validate_unregistered_notes(root, items, note_index, claimants, allowed_stat
 _BRIEF_PLACEHOLDER_RE = re.compile(r"REPLACE[ _-]?ME", re.IGNORECASE)
 
 
+def validate_decision_options(root, report):
+    """DECISION-OPTIONS — a decision's options can be read, or nobody can pick one.
+
+    Edwin, 2026-08-12, on a `proposed` ADR listing three options: *"why do I not
+    have a way to select an option? how can we make sure the LLM formats the
+    document correctly for me to be able to make these decisions?"*
+
+    A control can only offer what a document declares. Measured that day across
+    one corpus: three decisions carried an ``## Options`` section in **two**
+    different forms, because nothing had ever said which was right — and a form
+    the tool cannot read is a decision nobody can record an answer to.
+
+    Both observed forms are legal; what is checked is that the section can be
+    read **at all**:
+
+        1. **Label.** rationale…
+        ### 1. Label
+
+    An **error**, not a dated warning, and that is ADR-0011 applied rather than
+    ignored: the convention is new, so there is no fleet debt to grandfather,
+    and a check with nothing to migrate has no reason to warn first.
+    """
+    decisions_dir = root / "docs" / "decisions"
+    if not decisions_dir.is_dir():
+        return
+    for path in sorted(decisions_dir.glob("*.md")):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        body = text
+        if not re.search(r"(?m)^##\s+Options\s*$", body):
+            continue
+        options = _parse_decision_options(body)
+        rel = path.relative_to(root).as_posix()
+        if len(options) < 2:
+            report.error(
+                "DECISION-OPTIONS",
+                "%s has an `## Options` section that yields %d readable option(s); "
+                "a decision offering options must state each as `N. **Label.** …` "
+                "or `### N. Label` so the surface can offer them (%s)"
+                % (path.stem.split("-")[0] + "-" + path.stem.split("-")[1],
+                   len(options), rel),
+            )
+            continue
+        numbers = [o[0] for o in options]
+        if numbers != list(range(1, len(numbers) + 1)):
+            report.error(
+                "DECISION-OPTIONS",
+                "%s numbers its options %s; they must run 1..N so a recorded "
+                "choice means the same thing to every reader (%s)"
+                % (path.stem.split("-")[0] + "-" + path.stem.split("-")[1],
+                   numbers, rel),
+            )
+
+
+def _parse_decision_options(text):
+    """The validator's own reader — deliberately a second implementation.
+
+    `decisions.py` in the cockpit parses these for the surface. This one exists
+    so the *check* does not depend on the tool being installed, which is the
+    same reason the validator ships standalone at all.
+    """
+    out = []
+    inside = False
+    in_fence = False
+    for line in text.splitlines():
+        if re.match(r"^\s*(```|~~~)", line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if re.match(r"(?m)^##\s+Options\s*$", line):
+            inside = True
+            continue
+        if inside and re.match(r"^##\s+", line):
+            break
+        if not inside:
+            continue
+        stripped = line.strip()
+        m = re.match(r"^(\d+)\.\s+\*\*(.+?)\.?\*\*", stripped)
+        if m:
+            out.append((int(m.group(1)), m.group(2)))
+            continue
+        m = re.match(r"^###\s+(\d+)\.\s+(.+?)\s*$", stripped)
+        if m:
+            out.append((int(m.group(1)), m.group(2)))
+    return out
+
+
 def validate_brief(root, report):
     """BRIEF-PLACEHOLDER — the project says what it is, or says nothing.
 
@@ -1264,10 +1901,333 @@ def validate_plan_notes(root, docs_dir, allowed_status, grandfathered, report):
         )
 
 
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _is_real_date(raw):
+    """A date, not a date-SHAPED string.
+
+    `2026-13-45` matched the regex and was accepted. A ledger is sorted by this
+    field, so a nonsense date does not merely look wrong — it reorders which
+    verdict wins. Found by independent review, 2026-08-19.
+    """
+    if not DATE_RE.match(raw or ""):
+        return False
+    try:
+        datetime.date.fromisoformat(raw)
+    except ValueError:
+        return False
+    return True
+
+
+LEDGERS_REL = "releases/ledgers"
+#: The acceptance ledger's outcome vocabulary (project-os-cockpit ADR-0037).
+#: Restated here rather than imported: this script is template-owned and runs
+#: in twelve repos, none of which may depend on the cockpit being installed.
+#: `tests/test_ledger.py::test_taxonomy_documents_exactly_the_vocabulary`
+#: keeps the restatement honest by reading TAXONOMY.md against the module.
+LEDGER_MARKS = ("pass", "partial", "na", "excused", "blocked", "fail",
+                "question")
+LEDGER_NEEDS_REASON = tuple(m for m in LEDGER_MARKS if m != "pass")
+LEDGER_METHODS = ("manual", "automated", "migration")
+LEDGER_NAME_RE = re.compile(r"^(?:WORKING|[A-Z]{2,6}-\d{3,4})-(.+)$")
+
+
+#: The seven fields ADR-0037 moved into the ledger. Refused **only in a repo
+#: that keeps ledgers** — the discriminator matters more than the list: a
+#: schema change that broke every repo which had not migrated yet would be a
+#: worse failure than the one it fixes, and eight of twelve fleet repos are in
+#: exactly that state. Same construction that keeps `mark_check` alive.
+LEDGER_MOVED_FIELDS = ("mark", "verdict_date", "verdict_reason",
+                       "invalidated_by", "automation", "covered_by",
+                       "evidence",
+                       # ISS-0224: a position in a document that no longer
+                       # exists. Order is (tier, id); grouping is `area`.
+                       "section", "ordinal",
+                       # ISS-0233: provenance of migrations that are finished.
+                       # `migrated_from` names a document nobody can open;
+                       # `merged_from` an id space that is gone; `burden` was
+                       # empty on every check in the fleet. Git holds the
+                       # first two, with the shas ADR-0030 and ADR-0031 name.
+                       "migrated_from", "merged_from", "burden")
+
+
+def validate_vouched_ledgers(root, report, note_index):
+    """Every ledger a release vouches for still hashes to what it recorded.
+
+    **Driven from the release note, not from the ledger.** The first version
+    walked `docs/releases/ledgers/*.json` and checked the ones whose `sealed`
+    key was set -- gating the check on a field *inside the file it protects*.
+    Independent review reproduced four clean bypasses: delete the `sealed`
+    key and rewrite every entry; delete the file; move it out of the
+    directory; rewrite LF to CRLF. The record that vouches lives outside the
+    file, so the walk starts there.
+
+    **Bytes, not text.** `Path.read_text()` normalises newlines, so a CRLF
+    rewrite hashed identically -- a hash that is not a hash of the bytes is
+    not a hash.
+    """
+    for note_id, (path, fm) in sorted((note_index or {}).items()):
+        if not isinstance(fm, dict):
+            continue
+        for row in fm.get("ledgers") or []:
+            if not isinstance(row, dict) or not row.get("file"):
+                continue
+            name = str(row["file"])
+            vouched = str(row.get("sha") or "")
+            target = root / "docs" / LEDGERS_REL / name
+            rel = "docs/%s/%s" % (LEDGERS_REL, name)
+            if not target.is_file():
+                report.error(
+                    "LEDGER-SEALED",
+                    "%s vouches for %s and it is not there. A release that "
+                    "records what it was measured against, against a file "
+                    "nobody can open, is the answer `was release R walked?` "
+                    "silently becoming unavailable" % (note_id, rel))
+                continue
+            raw = target.read_bytes()
+            found = hashlib.sha1(b"blob %d\0" % len(raw) + raw).hexdigest()
+            if found != vouched:
+                report.error(
+                    "LEDGER-SEALED",
+                    "%s no longer hashes to what %s records (%s != %s). "
+                    "`was release R walked?` is answerable only while that "
+                    "answer cannot change"
+                    % (rel, note_id, found[:12], vouched[:12] or "nothing"))
+
+
+def validate_moved_verdict_fields(root, report, note_index):
+    """A verdict field on a note, in a repo whose verdicts live in ledgers.
+
+    Two sources for one fact is what this whole decision removes, and the
+    stale one wins by being older: `apply_ledger` reads the ledger, so a
+    leftover `mark: done` is invisible until somebody greps for it and
+    concludes the migration did not run.
+    """
+    if not (root / "docs" / LEDGERS_REL).is_dir():
+        return
+    if not any((root / "docs" / LEDGERS_REL).glob("*.json")):
+        return
+    for note_id, (path, fm) in sorted(note_index.items()):
+        if not isinstance(fm, dict):
+            continue
+        if str(fm.get("level", "") or "").strip().lower() != "acceptance":
+            continue
+        found = [f for f in LEDGER_MOVED_FIELDS if f in fm]
+        if found:
+            try:
+                rel = path.relative_to(root)
+            except ValueError:                       # pragma: no cover
+                rel = path
+            report.error(
+                "LEDGER-FIELD",
+                "%s carries %s — this repo records verdicts in "
+                "docs/%s/, and a verdict on the note is a second source for "
+                "one fact (ADR-0037) (%s)"
+                % (note_id, ", ".join("`%s`" % f for f in found),
+                   LEDGERS_REL, rel))
+
+
+def validate_frontmatter_parses(root, report):
+    """A note whose frontmatter is not YAML ([[ISS-0214]]).
+
+    Identity comes from the FILENAME almost everywhere, so a note whose
+    frontmatter will not parse still indexes, still links, still counts -- and
+    every field on it silently reads as absent. No status, no parent, no
+    phase. It is worse than a wrong value and it fired twice in one day:
+    `TASK-0521` shipped with unescaped quotes in its title, and `FEAT-0128`
+    with a truncated `tasks:` list, both past a green validator.
+    """
+    try:
+        import yaml
+    except ImportError:                                  # pragma: no cover
+        return
+    docs = root / "docs"
+    if not docs.is_dir():
+        return
+    for path in sorted(docs.rglob("*.md")):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:                                  # pragma: no cover
+            continue
+        if not text.startswith("---"):
+            continue
+        try:
+            #: **A real YAML parse, not `load_yaml`.** This script's own
+            #: parser is a deliberate dependency-free SUBSET, and it is
+            #: lenient exactly where a broken note is broken -- it read
+            #: `title: "Retire "walk" from it"` without complaint. So the
+            #: check needs PyYAML, and is silent where PyYAML is absent
+            #: rather than pretending a subset parse is a YAML parse.
+            yaml.safe_load(text.split("---", 2)[1])
+        except Exception as exc:                         # noqa: BLE001
+            try:
+                rel = path.relative_to(root)
+            except ValueError:                           # pragma: no cover
+                rel = path
+            report.error(
+                "NOTE-FRONTMATTER",
+                "%s: frontmatter does not parse (%s). Identity comes from the "
+                "filename, so this note still indexes and links while every "
+                "field on it reads as absent" % (rel, str(exc).splitlines()[0]))
+
+
+def _blob_sha(text):
+    """Git's blob hash, computed rather than shelled out."""
+    import hashlib
+
+    raw = text.encode("utf-8")
+    return hashlib.sha1(b"blob %d\0" % len(raw) + raw).hexdigest()
+
+
+def _sealed_shas(note_index):
+    """`{ledger filename: sha}` from every release note's `ledgers:`."""
+    out = {}
+    for _note_id, (_path, fm) in (note_index or {}).items():
+        if not isinstance(fm, dict):
+            continue
+        for row in fm.get("ledgers") or []:
+            if isinstance(row, dict) and row.get("file"):
+                out[str(row["file"])] = str(row.get("sha") or "")
+    return out
+
+
+def validate_ledgers(root, report, note_index):
+    """The acceptance ledgers — required fields, reasons, and immutability.
+
+    Three rules, and the third is the one that makes *"was release R walked?"*
+    answerable at all:
+
+    * every entry names a check, a date, an author and a method;
+    * every mark but `pass` carries a reason — [[ADR-0029]]'s rule, enforced
+      here for the first time against something that exists (`verdict_reason:`
+      was non-empty on **0 of 671** notes, because nobody ever wrote one of the
+      marks that demanded it);
+    * **a sealed ledger differing from its committed content is an error.**
+      Without that, the ledger is a mutable log, which is a scalar with extra
+      steps.
+
+    A repo with no ledger directory is silent: nine of twelve fleet repos have
+    none, and absent is a real state rather than a broken one.
+    """
+    import json
+    import subprocess
+
+    ledger_dir = root / "docs" / LEDGERS_REL
+    if not ledger_dir.is_dir():
+        return
+    sealed_shas = _sealed_shas(note_index)
+    for path in sorted(ledger_dir.glob("*.json")):
+        rel = "docs/%s/%s" % (LEDGERS_REL, path.name)
+        # A filename the reader cannot place is a ledger that disappears from
+        # its own platform while still sitting there looking read -- the same
+        # failure the `_platform_of` fix closed, reached through a different
+        # door (independent review, finding 5).
+        if not LEDGER_NAME_RE.match(path.stem):
+            report.error(
+                "LEDGER-NAME",
+                "%s does not name a platform. It must be "
+                "`WORKING-<platform>.json` or `REL-####-<platform>.json`, or "
+                "its verdicts are invisible to every query" % rel)
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception as exc:  # noqa: BLE001
+            report.error("LEDGER-PARSE", "%s is not readable as JSON: %s"
+                         % (rel, exc))
+            continue
+        if not isinstance(data, dict):
+            report.error("LEDGER-PARSE", "%s is not an object" % rel)
+            continue
+        stated = str(data.get("platform") or "").strip()
+        named = LEDGER_NAME_RE.match(path.stem)
+        if stated and named and stated != named.group(1):
+            report.error(
+                "LEDGER-NAME",
+                "%s says platform %r and is filed under %r. The reader "
+                "REFUSES this rather than guessing, so one such file makes "
+                "every ledger in the repo unreadable"
+                % (rel, stated, named.group(1)))
+        entries = data.get("entries") or []
+        pairs = set()
+        for n, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                report.error("LEDGER-ENTRY", "%s entry %d is not an object"
+                             % (rel, n))
+                continue
+            check = str(entry.get("check") or "").strip()
+            when = str(entry.get("date") or "").strip()
+            if not check:
+                report.error("LEDGER-ENTRY",
+                             "%s entry %d names no check" % (rel, n))
+                continue
+            pairs.add((check, when))
+            if not _is_real_date(when):
+                report.error("LEDGER-ENTRY", "%s %s has no usable date (%r)"
+                             % (rel, check, when))
+            if "platform" in entry:
+                report.error(
+                    "LEDGER-ENTRY",
+                    "%s %s carries its own platform — the platform is the "
+                    "ledger's, and an entry that can contradict its file is a "
+                    "second encoding of one fact" % (rel, check))
+            if note_index and check not in note_index:
+                report.error("LEDGER-ENTRY",
+                             "%s %s is not a note in this repo" % (rel, check))
+            if entry.get("invalidated_by"):
+                if entry.get("mark"):
+                    report.error(
+                        "LEDGER-ENTRY",
+                        "%s %s carries both a mark and an invalidation — they "
+                        "are two events and belong on two lines" % (rel, check))
+                continue
+            mark = str(entry.get("mark") or "").strip()
+            if mark not in LEDGER_MARKS:
+                report.error("LEDGER-MARK", "%s %s has mark %r; expected one "
+                             "of %s" % (rel, check, mark,
+                                        ", ".join(LEDGER_MARKS)))
+                continue
+            if mark in LEDGER_NEEDS_REASON and not str(
+                    entry.get("reason") or "").strip():
+                report.error(
+                    "LEDGER-REASON",
+                    "%s a %s verdict on %s needs a reason — the mark and its "
+                    "justification are one event, so a check cannot leave the "
+                    "gate without saying why" % (rel, mark, check))
+            if str(entry.get("method") or "").strip() not in LEDGER_METHODS:
+                report.error("LEDGER-ENTRY", "%s %s has method %r; expected "
+                             "one of %s" % (rel, check, entry.get("method"),
+                                            ", ".join(LEDGER_METHODS)))
+            if not str(entry.get("by") or "").strip():
+                report.error("LEDGER-ENTRY",
+                             "%s %s names nobody in `by`" % (rel, check))
+
+        for n, item in enumerate(data.get("evidence") or []):
+            if not isinstance(item, dict):
+                continue
+            key = (str(item.get("check") or "").strip(),
+                   str(item.get("date") or "").strip())
+            if key not in pairs:
+                report.error(
+                    "LEDGER-EVIDENCE",
+                    "%s evidence %d is for %s @ %s, which matches no entry — "
+                    "evidence for a walk nobody recorded is a claim with "
+                    "nothing behind it" % (rel, n, key[0] or "?", key[1] or "?"))
+
+        if str(data.get("sealed") or "").strip() and path.name not in sealed_shas:
+            report.error(
+                "LEDGER-SEALED",
+                "%s is sealed and no release note vouches for it. A sealed "
+                "ledger with nothing recording its hash is exactly the state "
+                "the old check could not tell from a good one -- add "
+                "`ledgers: [{file, sha}]` to its release" % rel)
+
+
 def validate(root, report):
     # Self-check first: it needs no repo state, and a validator whose own status
     # tables disagree cannot be trusted to report on anything else.
     validate_status_tables(report)
+    validate_frontmatter_parses(root, report)
 
     snap_path = root / "SNAPSHOT.yaml"
     if not snap_path.is_file():
@@ -1291,12 +2251,57 @@ def validate(root, report):
     docs_dir = root / "docs"
     note_index, note_claimants = build_note_index(docs_dir)
     allowed_status = load_allowed_status(root)
+    validate_ledgers(root, report, note_index)
+    validate_moved_verdict_fields(root, report, note_index)
+    validate_vouched_ledgers(root, report, note_index)
     grandfathered = load_grandfathered(root)
     verification_cfg = snap.get("verification") if isinstance(snap.get("verification"), dict) else {}
     try:
         staleness_days = int(verification_cfg.get("staleness_days", DEFAULT_STALENESS_DAYS))
     except (TypeError, ValueError):
         staleness_days = DEFAULT_STALENESS_DAYS
+
+    # -- STATUS-VALUE-NOTE: a status a type does not allow, checked by walking
+    #    docs/ rather than any index.
+    #
+    #    STATUS-VALUE has always run inside the SNAPSHOT items loop, so it only
+    #    sees notes the snapshot registers. Measured 2026-08-20: 906 of 1438
+    #    typed notes -- 63% -- are unregistered, because retention keeps the
+    #    snapshot to active-and-recent. Four illegal statuses sat on disk in
+    #    that blind spot, three of them `change` notes at `active`, which
+    #    ALLOWED_STATUS has never permitted.
+    #
+    #    **The first fix for this was itself blind**, and it is worth recording
+    #    why. It iterated `note_index`, on the reasoning that the note walk is
+    #    where the notes are -- and `build_note_index` holds 1194 entries and
+    #    **zero** CHG notes, so the check could not see a single one of the
+    #    notes that motivated it. Placing a rule "on the note walk" is not the
+    #    same as placing it where its subjects are; this walks the tree.
+    #
+    #    Same family as FEATURE-UNCOVERED, which read 0 against 88 for exactly
+    #    this reason. STATUS-VALUE stays: the snapshot loop also compares the
+    #    snapshot's copy of a status against the note's (ITEM-STATUS), which
+    #    this cannot do -- it never reads the snapshot.
+    for _p in sorted(docs_dir.rglob("*.md")):
+        #: Templates and bases carry placeholder frontmatter, and every other
+        #: walk in this file skips them (`build_note_index`, and the walks at
+        #: the PLAN and TYPE gates). A template's `status:` is an example, not
+        #: a claim about the project.
+        if "__templates__" in _p.parts or "__bases__" in _p.parts:
+            continue
+        _fm = parse_frontmatter(_p) or {}
+        _nt = note_type(_fm)
+        _st = str(_fm.get("status", "") or "").strip()
+        if not _nt or not _st:
+            continue
+        _allowed = allowed_status.get(_nt)
+        if _allowed and _st not in _allowed:
+            _nid = str(_fm.get("id", "") or "").strip() or _p.name
+            report.error(
+                "STATUS-VALUE-NOTE",
+                "%s status '%s' not allowed for %s (allowed: %s) [%s]" % (
+                    _nid, _st, _nt, ", ".join(sorted(_allowed)),
+                    _p.relative_to(root)))
 
     def emit_for(gate, item_id):
         """report.warn when `item_id` was already violating `gate` at promotion, else report.error."""
@@ -1307,6 +2312,7 @@ def validate(root, report):
     NOTE_INDEX_FOR_PLANS.clear()
     NOTE_INDEX_FOR_PLANS.update(note_index)
     validate_brief(root, report)
+    validate_decision_options(root, report)
     validate_design_notes(root, docs_dir, report)
     validate_plan_notes(root, docs_dir, allowed_status, grandfathered, report)
 
@@ -1319,6 +2325,33 @@ def validate(root, report):
     # -- per-item checks
     all_snapshot_ids = []
     path_alias_items = []
+    # subject id -> the tests naming it in `covers:` (ADR-0032). Built once:
+    # the validator has no index of its own -- it works from SNAPSHOT.yaml plus
+    # note frontmatter -- so the reverse direction is materialised here rather
+    # than looked up per subject.
+    covers_index = {}
+    for _tst_id, (_tst_path, _tst_fm) in note_index.items():
+        if note_type(_tst_fm) != "test":
+            continue
+        _subjects = extract_ids((_tst_fm or {}).get("covers"))
+        # A repo that has not consolidated its fields yet keeps its coverage.
+        # These are the FORWARD fields `covers:` renames -- test -> subject, the
+        # same direction -- so reading them is a rename transition and not a
+        # return to the bidirectional pair ADR-0032 removes. The subject's own
+        # `tests:` is deliberately NOT read here.
+        #
+        # Measured when the inversion landed: without this, obsidian-supernote-
+        # sync silently lost its one VERIFY finding, because its TST-0001 says
+        # `verifies:` and nothing had rewritten it. A gate that quietly stops
+        # firing in a repo nobody is looking at is the worst shape this change
+        # could have taken.
+        if not _subjects:
+            for _legacy in ("features", "verifies", "validates"):
+                _subjects = extract_ids((_tst_fm or {}).get(_legacy))
+                if _subjects:
+                    break
+        for _subject in _subjects:
+            covers_index.setdefault(_subject, set()).add(_tst_id)
     for coll_name, coll in (items.items() if isinstance(items, dict) else []):
         if not isinstance(coll, dict):
             continue
@@ -1388,9 +2421,27 @@ def validate(root, report):
             # and features, where linked tests are the agreed instrument.
             if coll_name == "requirements":
                 terminal = None
+            # A check is verified BY BEING WALKED, and its verdict lives in
+            # `mark:`. Demanding linked passing tests before it may be
+            # retired would gate a human judgement on an automated one --
+            # the collision ADR-0030 gives the type its own name to avoid.
+            if coll_name == "checks":
+                terminal = None
             if terminal and status == terminal:
                 waiver = str(fm.get("verification_waiver", "") or entry.get("verification_waiver", "")).strip()
-                linked_tests = set(extract_ids(entry.get("tests"))) | set(extract_ids(fm.get("tests")))
+                # ADR-0032: the verification link has ONE encoding and one
+                # direction -- the test's `covers:` -- so this reads the reverse
+                # index rather than the subject's own list. `tests:` on the
+                # subject was the second, hand-maintained copy, and 20 of the
+                # fleet's 61 feature->test edges disagreed with it when measured.
+                #
+                # `tests:` is still unioned in for `task`, `issue` and
+                # `requirement`, which are not normalised yet (330 live edges
+                # against the feature's 62). A feature's `tests:` is gone from
+                # the schema, so for a feature this is the reverse index alone.
+                linked_tests = set(covers_index.get(item_id, ()))
+                if coll_name != "features":
+                    linked_tests |= set(extract_ids(entry.get("tests"))) | set(extract_ids(fm.get("tests")))
                 if waiver:
                     expires_raw = fm.get("waiver_expires") or entry.get("waiver_expires")
                     expires = _parse_date(expires_raw)
@@ -1411,6 +2462,39 @@ def validate(root, report):
                                     % (item_id, terminal, expires, waiver))
                 else:
                     for tst in sorted(linked_tests):
+                        # ADR-0031/ADR-0032: an acceptance test rests at
+                        # `active` and its verdict is `mark:`, so demanding
+                        # `passing` of one would fire on every note in a suite
+                        # of several hundred. ADR-0032 removes `tests:` from
+                        # the feature, which closes this by construction there;
+                        # `task`, `issue` and `requirement` still carry the
+                        # field (330 live edges fleet-wide against the
+                        # feature's 62), so the guard stays until those are
+                        # normalised too. It is deliberately keyed on the
+                        # LEVEL and not on the id prefix -- after the merge a
+                        # walk and a pytest module share the `TST-` space.
+                        # ADR-0034: an acceptance test gates what it COVERS,
+                        # like any other test. What differs is only what
+                        # `settled` means -- a runner's exit code for an
+                        # executable test, a settled `mark:` for a walked one --
+                        # so the gate asks that question instead of demanding a
+                        # status the walked population never holds.
+                        #
+                        # This `continue` was ADR-0031's stopgap: acceptance
+                        # tests rest at `active`, and a gate demanding `passing`
+                        # would have fired on every note in a suite. Skipping
+                        # them was right for a day and is exactly the
+                        # special-case ADR-0034 removes.
+                        if _is_acceptance_test(tst, note_index):
+                            if not _acceptance_is_settled(tst, note_index):
+                                promotion_emit(
+                                    report, "VERIFY-ACCEPTANCE",
+                                    grandfathered, item_id)(
+                                    "VERIFY-ACCEPTANCE",
+                                    "%s is %s but the acceptance test %s covering it is not "
+                                    "settled -- its mark is not done/incomplete/canceled"
+                                    % (item_id, terminal, tst))
+                            continue
                         tst_status = ""
                         tests_coll = items.get("tests") or {}
                         if tst in tests_coll and isinstance(tests_coll[tst], dict):
@@ -1420,9 +2504,31 @@ def validate(root, report):
                         else:
                             emit_for("VERIFY", item_id)("VERIFY", "%s is %s but linked test %s was not found" % (item_id, terminal, tst))
                             continue
-                        if tst_status != "passing":
+                        # **An automated test is discharged by its command
+                        # resolving, not by a stamped status** (ADR-0038).
+                        #
+                        # It carries no verdict at all now, so reading `status`
+                        # here would fail every automated test on the day the
+                        # migration landed -- which it did, loudly, and that is
+                        # what this branch is for.
+                        #
+                        # The claim being checked is strictly stronger than the
+                        # one it replaces: a stamped `passing` cannot notice
+                        # that the test it stands for was renamed. A command
+                        # stops resolving.
+                        tst_command = ""
+                        if tst in note_index:
+                            tst_command = str((note_index[tst][1] or {}).get("command", "") or "").strip()
+                        if tst_command:
+                            if resolve_command(tst_command, root) == CMD_BROKEN:
+                                emit_for("VERIFY", item_id)(
+                                    "VERIFY",
+                                    "%s is %s but linked automated test %s has a broken command -- "
+                                    "it names something that no longer exists, so nothing is verifying it"
+                                    % (item_id, terminal, tst))
+                        elif tst_status != "passing":
                             emit_for("VERIFY", item_id)("VERIFY", "%s is %s but linked test %s is '%s', not passing" % (item_id, terminal, tst, tst_status))
-                        elif tst in note_index and is_stale(note_index[tst][1], staleness_days):
+                        elif not tst_command and tst in note_index and is_stale(note_index[tst][1], staleness_days):
                             # REQ-0023: verification that was true a year ago is not
                             # evidence about today's system.
                             emit_for("VERIFY", item_id)(
@@ -1453,6 +2559,66 @@ def validate(root, report):
                     if has_value(entry.get("parent")) or has_value(fm.get("parent")):
                         report.error("DEFER-PARENT", "%s is deferred but still has a parent; descoping clears parent (origin + phase replace it while parked)" % item_id)
 
+    # -- every type the CORPUS uses is known to the status tables (ISS-0124)
+    #
+    # `validate_status_tables` already guards table against table: it errors when
+    # an internal table names a type ALLOWED_STATUS lacks. That is one direction.
+    # This is the other, and it is the one a real note travels -- nothing asked
+    # whether every type appearing in notes has an entry, so a type nobody
+    # tabulated had its `status:` read, rendered, coloured and sorted while being
+    # validated against nothing.
+    #
+    # Found downstream: project-os-cockpit's ARCHITECTURE.md read `status: draft`
+    # for three months and no gate ever mentioned it, because `architecture` had
+    # no table. A typo, a retired value, or a status meaningless for that type
+    # would all have passed the same way.
+    #
+    # A warning, not an error (ADR-0011's shape): a repo that has invented a note
+    # type has done nothing wrong, and failing its build on the day this ships
+    # would be the ISS-0057 mistake. What it must not do is stay silent.
+    # Walks docs/ directly rather than note_index, and that is the whole
+    # difficulty. `note_index` is keyed by IDs matching ID_PREFIXES -- ADR, DES,
+    # FEAT, ISS, PHASE, REL, REQ, RISK, TASK, TST, WF -- and the notes this check
+    # exists for carry none of them: ARCHITECTURE.md is `ARCH`, the glossary is
+    # `GLOSSARY`, a directory signpost is `DOCS-README`. An index-based version
+    # of this check was written first and reported nothing, because it could not
+    # see a single one of its own subjects. The types with no status table are
+    # exactly the types with no ID prefix, and for the same reason: nobody
+    # tabulated them.
+    seen_types = {}
+    docs_dir = root / "docs"
+    if docs_dir.is_dir():
+        for path in sorted(docs_dir.rglob("*.md")):
+            if "__templates__" in path.parts or "__bases__" in path.parts:
+                continue
+            fm = parse_frontmatter(path)
+            if not isinstance(fm, dict):
+                continue
+            ntype = note_type(fm)
+            rel = path.relative_to(root).as_posix()
+            if not ntype:
+                continue
+            if ntype in STATUS_FREE_TYPES:
+                # The exemption must not become a hiding place: a status-free
+                # type that quietly acquires a status is back to a value nothing
+                # validates, which is the condition this whole check is about.
+                if has_value(fm.get("status")):
+                    promotion_emit(report, "STATUS-TYPE", grandfathered, rel)(
+                        "STATUS-TYPE",
+                        "%s is a '%s' note, a type recorded as carrying no lifecycle status, but "
+                        "declares status: '%s'; give the type a table or drop the field"
+                        % (rel, ntype, str(fm.get("status")).strip('"')))
+                continue
+            if ntype in ALLOWED_STATUS:
+                continue
+            seen_types.setdefault(ntype, rel)
+    for ntype, rel in sorted(seen_types.items()):
+        promotion_emit(report, "STATUS-TYPE", grandfathered, rel)(
+            "STATUS-TYPE",
+            "note type '%s' appears in docs/ but has no entry in ALLOWED_STATUS and is not in "
+            "STATUS_FREE_TYPES, so any status: it carries is validated against nothing (e.g. %s)"
+            % (ntype, rel))
+
     # -- test verification fields (ADR-0010; REQ-0022 / REQ-0023)
     for the_id, (path, fm) in sorted(note_index.items()):
         if note_type(fm) != "test":
@@ -1460,17 +2626,191 @@ def validate(root, report):
         rel = path.relative_to(root).as_posix()
         command = str((fm or {}).get("command", "") or "").strip()
         status = str((fm or {}).get("status", "") or "").strip()
+        level = str((fm or {}).get("level", "") or "").strip().lower()
+
+        # ADR-0031's central construction, asserted rather than trusted. An
+        # acceptance test rests at `active`; that is the ONLY reason the
+        # review gate, the runner-only rule and the `Run` obligation stay off
+        # a population of several hundred self-re-arming rows. One careless
+        # status write undoes it, and the symptom -- a badge nobody can act on
+        # (ADR-0027) -- appears far from the cause.
+        #
+        # **`command:` is no longer an exception; it is the other half of the
+        # domain** (ADR-0038). This rule used to range over `level: acceptance`
+        # and exempt `passing`/`failing` for a note carrying a command, on the
+        # ground that "the runner owns its status from then on". The runner
+        # owns nothing now: an automated test records no verdict at all, and
+        # CI answers the question the stamp was answering.
+        #
+        # So the same three statuses are forbidden on both populations, and the
+        # rule finally covers the domain it always described. Measured
+        # 2026-08-19 before the widening: it already applied to 89 of the 139
+        # automated notes fleet-wide -- 64% -- purely because those happened to
+        # sit at `level: acceptance`, and nothing could say why it stopped
+        # there.
+        #
+        # `ready` was forbidden even with a command: before this, and that
+        # exception-to-the-exception is now simply the rule. It was
+        # reproduced by independent review: give one migrated note a command:
+        # and status: ready and the validator said OK while the badge went
+        # 3 -> 4.
+        #: **Two codes, because the two halves carry different debt.**
+        #:
+        #: Independent review, 2026-08-20: this landed as one widened rule
+        #: erroring from day one, on a measurement taken in THIS repo only.
+        #: Against `your-trainer` at HEAD the widened half has **2 errors**
+        #: (`TST-0016`, `TST-0017`) and `TEST-AUTOMATED-EVIDENCE` has **4** --
+        #: so the corpus was not clean and ADR-0011 clause 3 forbids promoting
+        #: over unpaid debt. It was not red there only because that repo runs
+        #: an older copy of this file.
+        #:
+        #: `ACCEPTANCE-STATUS` keeps its day-one error over `level:
+        #: acceptance`, where the corpus genuinely holds zero and has since
+        #: ADR-0031. The command-bearing half is its own code with a dated
+        #: cutover.
+        #: **The split is cut on WHAT CHANGED, not on `level:`.**
+        #:
+        #: Third independent review, 2026-08-20: cutting it on `level:` sent a
+        #: note that is BOTH `level: acceptance` and command-bearing to the
+        #: day-one code -- the acceptance-level half of the automated
+        #: population. That is 89 of the fleet's 139 automated notes in
+        #: `your-trainer`'s WORKING TREE and **0 at every fleet HEAD**, so the
+        #: hazard is latent rather than live -- but every repo except this one
+        #: still ships a `run-tests.py` that writes those statuses, so one
+        #: sync plus one execution is all it takes.
+        #:
+        #: What errored before ADR-0038, and still errors on day one:
+        #:   * `level: acceptance`, no command, any of the three;
+        #:   * `level: acceptance`, WITH a command, at `ready` -- the
+        #:     exception-to-the-exception ADR-0031 kept, because `ready` is
+        #:     what the `Run` obligation counts and reaches the badge.
+        #: What ADR-0038 newly forbids, and is therefore dated:
+        #:   * anything command-bearing at `passing`/`failing`, at any level.
+        automated = bool(command)
+        if status in ACCEPTANCE_FORBIDDEN_STATUSES:
+            #: Newly forbidden = what ADR-0038 added, which is (the rule after)
+            #: minus (the rule before). Before, ONLY `level: acceptance`
+            #: mattered, and a command exempted `passing`/`failing` there. So:
+            #:
+            #:   acceptance + command + passing/failing  -- was allowed  -> new
+            #:   NOT acceptance + command + any of three -- had no rule   -> new
+            #:   acceptance + command + ready            -- was an error  -> old
+            #:   acceptance + no command + any           -- was an error  -> old
+            #:
+            #: **The `level != "acceptance"` disjunct is not decoration.** A
+            #: fourth independent review executed all 24 cells and found the
+            #: one this clause was missing: command-bearing, not an acceptance
+            #: check, at `ready` fell to SILENCE -- it fails
+            #: `TEST_RUNNER_STATUSES` and the `elif` below only catches
+            #: acceptance notes. It had warned in the previous commit. A case
+            #: reporting less than it did is worse than one reporting under
+            #: the wrong code.
+            newly_forbidden = automated and (
+                status in TEST_RUNNER_STATUSES or level != "acceptance")
+            if newly_forbidden:
+                promotion_emit(report, "TEST-AUTOMATED-STATUS", grandfathered, the_id)(
+                    "TEST-AUTOMATED-STATUS",
+                    "%s declares a command: and is at status: '%s' -- a machine-executed test holds no "
+                    "verdict and is never owed to a person; CI is its verdict (ADR-0038) (%s)"
+                    % (the_id, status, rel))
+            elif level == "acceptance":
+                emit_for("ACCEPTANCE-STATUS", the_id)(
+                    "ACCEPTANCE-STATUS",
+                    "%s is at level: acceptance and status: '%s' -- it rests at `active` and holds no "
+                    "verdict (ADR-0031). Holding '%s' puts it in front of the review gate and/or the "
+                    "Run obligation, which is what ADR-0027 forbids for this population (%s)"
+                    % (the_id, status, status, rel))
+
+        #: **A check names what it verifies** (REQ-0060). Without a `FEAT-*` or
+        #: an `ISS-*` its section cannot be derived and it defaults to a
+        #: behaviour claim -- which keeps it on the list, the safe direction,
+        #: but by guessing rather than by reading.
+        #:
+        #: Automated checks are exempt: `command:` decides their section
+        #: outright, so nothing about them is being guessed.
+        if level == "acceptance" and not command:
+            refs = extract_ids((fm or {}).get("covers"))
+            if not any(r.startswith(("FEAT-", "ISS-")) for r in refs):
+                promotion_emit(report, "CHECK-SUBJECT", grandfathered, the_id)(
+                    "CHECK-SUBJECT",
+                    "%s names no FEAT-* or ISS-* in covers:, so its section cannot be derived and it "
+                    "defaults to a feature check -- name the feature it verifies, or the issue whose "
+                    "fix it verifies (ADR-0039) (%s)" % (the_id, rel))
+
         if command:
-            # An executable test's status is the runner's output, so it must carry
-            # the run that produced it. A stamped status with no `last_run` means
-            # somebody typed it -- the exact thing ADR-0010 removes.
-            if status in TEST_RUNNER_STATUSES and not has_value((fm or {}).get("last_run")):
-                emit_for("TEST-FIELDS", the_id)(
-                    "TEST-FIELDS",
-                    "%s declares a command: and is '%s' but has no last_run:; an executable test's status is "
-                    "written by tools/scripts/run-tests.py, never by hand (ADR-0010) (%s)" % (the_id, status, rel))
+            # **Evidence of an execution, on a note that records no execution**
+            # (ADR-0038). `last_run:` and `exit_code:` existed to carry the run
+            # that produced a stamped status. There is no stamped status now, so
+            # they carry nothing -- and they do not merely go stale, they lie:
+            # measured 2026-08-19, `your-trainer` holds 69 `exit_code` values
+            # against 2 verdicts, so 67 notes assert a failure that exists
+            # nowhere else in the record.
+            for field in ("last_run", "exit_code"):
+                if has_value((fm or {}).get(field)):
+                    promotion_emit(report, "TEST-AUTOMATED-EVIDENCE", grandfathered, the_id)(
+                        "TEST-AUTOMATED-EVIDENCE",
+                        "%s declares a command: and carries %s:; an automated test records no verdict and no "
+                        "evidence of one -- CI is the verdict, and this field outlives the status it used to "
+                        "explain (ADR-0038) (%s)" % (the_id, field, rel))
         else:
+            # A test the corpus treats as automated but that declares no way to run
+            # is a status no machine can refresh. Release verification re-runs a
+            # note's `command:` to move a STALE verdict back to CURRENT; with no
+            # entrypoint that trip is impossible, so `passing` becomes a claim
+            # nobody can check without first reverse-engineering which module
+            # verifies it.
+            #
+            # A warning with a promotion date (PROMOTIONS, 2026-11-12), per
+            # ADR-0011: measured across the
+            # twelve repos the cockpit renders, 91 of 92 test notes are automated
+            # and only one declares a command, so erroring on day one would fail
+            # every repo for a rule none of them knew existed.
+            if status in TEST_RUNNER_STATUSES and not _declares_manual(fm):
+                promotion_emit(report, "TEST-ENTRYPOINT", grandfathered, the_id)(
+                    "TEST-ENTRYPOINT",
+                    "%s is '%s' and is not declared manual, but has no command:; nothing can re-run it, so its "
+                    "status cannot be refreshed by machine -- add a command:, or say kind: manual (%s)"
+                    % (the_id, status, rel))
             if not has_value((fm or {}).get("last_verified")):
+                if level == "acceptance":
+                    # An acceptance test records WHEN IT WAS WALKED in
+                    # `verdict_date:`, beside the `mark:` that says what the walk
+                    # found. Demanding `last_verified:` as well would be the same
+                    # fact in two fields, which is the duplication ADR-0032 exists
+                    # to remove -- and the migration would have had to synthesise
+                    # it, inventing a date for 669 notes.
+                    #
+                    # Found by RUNNING the migration, not by reading the ADR: the
+                    # pilot's 34 notes failed this rule the moment they became
+                    # tests, which is a sixth collision ADR-0031 did not name. Its
+                    # five were about gates that fire on a STATUS; this one fires
+                    # on a FIELD, and no amount of resting at `active` avoids it.
+                    #
+                    # Staleness for this population is `invalidated_by:` against
+                    # `verdict_date:` -- change-driven, not time-driven -- so the
+                    # TEST-STALE branch below is deliberately skipped too.
+                    continue
+                if status == "ready":
+                    # `ready` means defined but not yet executed -- STATUSES.md calls
+                    # it "the only honest state for a check that has never run".
+                    # Demanding a last_verified: date here would force the author to
+                    # assert a run that did not happen, which is the assertion problem
+                    # ADR-0010 removed. A `ready` test satisfies no verification gate
+                    # anyway, so nothing is weakened by letting it say so.
+                    #
+                    # RESTORED 2026-08-14, and how it was lost is the reason this
+                    # comment is long. Added 2026-08-01 by 5a487ad; removed by
+                    # 59bd47c three weeks later -- not by decision, but by a
+                    # whole-file overwrite from a downstream copy that predated it.
+                    # 5a487ad's own message predicted exactly that: the fixes "had
+                    # been made downstream and never pushed up, so every sync
+                    # reported them as local divergence and they were one --force
+                    # away from being lost." They were then lost, and the cost was
+                    # paid downstream, where authoring a genuinely never-run manual
+                    # test required typing a verification date for a walk nobody had
+                    # performed, plus a paragraph of prose explaining that the field
+                    # did not mean what the field means.
+                    continue
                 emit_for("TEST-FIELDS", the_id)(
                     "TEST-FIELDS",
                     "%s is a manual test with no last_verified:; record when the procedure was last performed, "
@@ -1480,6 +2820,140 @@ def validate(root, report):
                     "TEST-STALE",
                     "%s was last verified %s, over %d days ago; it no longer satisfies the verification gate (%s)"
                     % (the_id, str((fm or {}).get("last_verified")).strip('"'), staleness_days, rel))
+
+    # -- SURFACE-ORPHAN: a check names a surface that does not exist (ISS-0250)
+    #
+    # `surface_coverage()` joins a surface to its checks on the **lower-cased,
+    # stripped title**. There is no link, no id and no reverse check, so
+    # editing a surface's `title:` moves its count to zero and moves nothing
+    # else -- and **the two states render identically**: a surface with
+    # genuinely no checks and a surface whose checks were orphaned by a rename
+    # both read *"no checks"*. The orphaned one is the more urgent of the two
+    # and is the one the surface tells you least about.
+    #
+    # Measured (ISS-0250, reproduced by independent review): case and
+    # SURROUNDING whitespace survive the join; an em dash retyped as a hyphen
+    # does not, and **8 of `your-trainer`'s 15** surface titles contain an em
+    # dash. `Riding - routes` drops that surface from 91 checks to 0 with no
+    # validator error and no test failure.
+    #
+    # This closes it from the side where the population lives -- `area:` values
+    # naming no surface -- because nothing walked them at all. The other
+    # direction (a surface no check names) is NOT reported: that is the row
+    # FEAT-0130 built the type to produce.
+    #
+    # **Guarded on "this repo has surfaces".** Eleven of twelve fleet repos
+    # hold no `SUR-*` note, and a rule that fires on every check in a repo
+    # that never opted into the type is a rule people turn off.
+    #
+    # **One finding per orphaned NAME, not per check.** A rename orphans every
+    # check on the surface at once; 91 identical errors describe one edit.
+    #
+    # Warned with a promotion date (ADR-0011 clause 3): measured in this repo
+    # 2026-08-21, 21 distinct `area:` values over 34 checks name no surface,
+    # because only `SUR-0001` was ever written. That is real debt and it is one
+    # note per surface to clear -- it is not a reason to ship the rule silent.
+    surface_titles = {}
+    for the_id, (path, fm) in note_index.items():
+        if note_type(fm) != "surface":
+            continue
+        key = surface_key((fm or {}).get("title"))
+        if key:
+            surface_titles.setdefault(key, the_id)
+    if surface_titles:
+        orphans = {}
+        for the_id, (path, fm) in sorted(note_index.items()):
+            if note_type(fm) != "test":
+                continue
+            raw_area = str((fm or {}).get("area") or "").strip()
+            #: An empty `area:` is the un-placed check, not an orphaned one --
+            #: `TST-0015` and `TST-0018` in `your-trainer` are exactly that.
+            if not raw_area or surface_key(raw_area) in surface_titles:
+                continue
+            orphans.setdefault(raw_area, []).append(the_id)
+        for raw_area, ids in sorted(orphans.items()):
+            promotion_emit(report, "SURFACE-ORPHAN", grandfathered, raw_area)(
+                "SURFACE-ORPHAN",
+                "%d check(s) name area: %r and no surface carries that title, so their coverage "
+                "reads as zero and the surface -- if one was renamed -- is indistinguishable from "
+                "one nobody has ever tested; add a SUR-* note with that title, or correct the "
+                "area: (e.g. %s)" % (len(ids), raw_area, ", ".join(ids[:3])))
+
+    # -- REVIEW-STALE: a verdict outlives the work it judged (ISS-0253)
+    #
+    # `review_verdict` is **sticky and nothing refreshes it.** A reviewer
+    # writes `changes-requested`, the findings are acted on -- often within the
+    # hour -- the note reaches `done`/`merged`/`fixed`/`implemented`, and no
+    # mechanism writes a new verdict. Measured against `git archive f5ca55b`:
+    # **56 notes carry an owed verdict, 51 of them at a terminal status**, the
+    # earliest EIGHT dated 2026-07-30.
+    #
+    # *(ISS-0253 filed 49/43 dating to 2026-08-02, and this comment restated
+    # it. None of the three figures reproduces. The date was the ISSUE's, not
+    # the population's -- see the PROMOTIONS entry for how 43 came to agree
+    # with a number that was also wrong.)*
+    #
+    # Every one of those is TRUE as a fact about a moment and FALSE as a
+    # description of the note today, and a reader cannot tell a live objection
+    # from a settled one.
+    #
+    # **This is ISS-0121 inverted.** That issue found the field sticky in the
+    # other direction -- a row reviewed once read as reviewed forever, and all
+    # ten owed rows were false -- and the renderer stopped reading the field
+    # alone because of it. The same stickiness is here on the AUTHORING side.
+    #
+    # **The fix is not "the author flips it."** That is exactly what ADR-0011
+    # exists to prevent: a verdict is the reviewer's, and self-clearing it
+    # turns an independent gate into a formality. The gap is that *"the
+    # findings were addressed"* had nowhere to go. `review_response:` is that
+    # place -- the author records what was done, dated, WITHOUT touching the
+    # verdict -- and this rule makes an unanswered verdict visible instead of
+    # silently permanent.
+    #
+    # **It does not re-arm on `updated:`.** The obvious trigger -- `updated:`
+    # later than `review_date:` -- was rejected twice over: ISS-0007 records
+    # that an `updated:`-date heuristic re-arms a gate whenever a note is
+    # edited for any reason, and `cockpit._verdict_is_owed` measured that
+    # stamping a verdict IS an edit, so 85 of 103 verdicts in this corpus have
+    # `updated <= review_date`. The discriminator is whether an answer was
+    # recorded, which is a fact rather than a proxy for one.
+    #: **It walks the FILES, not `note_index`** -- and reading the index was a
+    #: rule that could not fire on a whole type. `ID_PREFIXES` has no `CHG`,
+    #: and a change note's id is `CHG-YYYYMMDD-Slug` rather than `CHG-0000`, so
+    #: `build_note_index` holds no change note at all. Measured after the fix:
+    #: **8 of the 51 terminal owed verdicts are `CHG-*`**, and every `merged`
+    #: one is -- so the rule's own promotion comment described a population it
+    #: was structurally incapable of producing.
+    #:
+    #: `CHG-*` is one of the two types `../skills/independent-review/SKILL.md`
+    #: names as a MANDATORY review trigger, which makes it the worst possible
+    #: type to be blind to. Found by independent review, 2026-08-21.
+    for path in sorted((root / "docs").rglob("*.md")):
+        if "__templates__" in path.parts or "__bases__" in path.parts:
+            continue
+        fm = parse_frontmatter(path)
+        if not isinstance(fm, dict):
+            continue
+        verdict = str(fm.get("review_verdict") or "").strip().lower()
+        if verdict not in OWED_VERDICTS:
+            continue
+        the_id = str(fm.get("id") or "").strip().strip("\"'") or path.stem
+        status = str((fm or {}).get("status") or "").strip().lower()
+        #: A non-terminal note carrying `changes-requested` is ordinary work in
+        #: flight. **Five of the 56** are that, and reporting them would say a
+        #: reviewer's live objection is a defect in the record.
+        if status not in REVIEW_TERMINAL_STATUSES:
+            continue
+        if has_value((fm or {}).get("review_response")):
+            continue
+        rel = path.relative_to(root).as_posix()
+
+        promotion_emit(report, "REVIEW-STALE", grandfathered, the_id)(
+            "REVIEW-STALE",
+            "%s is '%s' and still carries review_verdict: %s with no review_response:; the verdict was "
+            "true when written and describes the note today only if nothing was done about it -- record "
+            "what was done in review_response: (the verdict stays the reviewer's, ADR-0011), or ask for "
+            "a fresh pass (%s)" % (the_id, status, verdict, rel))
 
     # -- requirement lifecycle (QUALITY.md; close-out "Requirement advancement")
     def effective_status(the_id):
@@ -1582,6 +3056,78 @@ def validate(root, report):
                 else "requirements it owns have")
         emit("FEATURE-REQ", "%s is done but %s unresolved acceptance criteria: %s; tick with evidence, reconcile, or descope the requirement before closing the feature (ADR-0007)" % (feat_id, noun, ", ".join(unresolved)))
 
+    # -- FEAT-0070 DESIGN-GATE: a feature naming a design that is not accepted.
+    #
+    #    "Design before code" is the phase's title, and this is the only
+    #    mechanical part of it. A WARNING, on the same reasoning as
+    #    ACCEPT-STALE and independent review: the judgment being gated
+    #    (is this design right?) cannot be automated, and a blocking gate on
+    #    it gets cleared to unblock the build rather than because somebody
+    #    looked. Escalation is deferred until the convention has been lived
+    #    with, which is ADR-0011's path.
+    #
+    #    Only while the feature is PAST the pending band: naming a design you
+    #    have not accepted yet is the normal state of planning, and warning
+    #    about it would fire on every feature the moment it was written.
+    _PENDING = {"backlog", "planned", "deferred", "cancelled", "superseded"}
+    for feat_id in sorted(i for i in note_index if prefix_of(i) == "FEAT"):
+        f_path, f_fm = note_index.get(feat_id, (None, {}))
+        if f_path is None:
+            continue
+        if effective_status(feat_id) in _PENDING:
+            continue
+        for des_id in extract_ids((f_fm or {}).get("design")):
+            if prefix_of(des_id) != "DES":
+                continue
+            d_path, d_fm = note_index.get(des_id, (None, {}))
+            if d_path is None:
+                report.warn("DESIGN-GATE", "%s names design %s, which is not in the corpus (%s)" % (
+                    feat_id, des_id, f_path.relative_to(root)))
+                continue
+            d_status = str((d_fm or {}).get("status") or "").strip().strip('"').lower()
+            # `accepted` is the gate, but it is not the only status PAST it:
+            # STATUSES.md's progression is `proposed -> accepted ->
+            # implemented`, and `superseded` means a later design replaced one
+            # that had been accepted. Warning on those was the first cut, and
+            # it fired five times on this corpus the moment it was written —
+            # every one a false positive. A nag that fires wrongly is the
+            # fastest way to teach somebody to ignore it, which is the whole
+            # argument for making these warnings rather than errors.
+            if d_status not in {"accepted", "implemented", "superseded"}:
+                report.warn("DESIGN-GATE", "%s has left the pending band but its design %s is '%s' — never accepted; accept the design or drop the `design:` link (%s)" % (
+                    feat_id, des_id, d_status or "unset", f_path.relative_to(root)))
+
+    # -- FEAT-0064 ACCEPT-STALE: a `done` feature that asked for acceptance and
+    #    has not had it, for longer than the staleness window.
+    #
+    #    A WARNING, never an error, and that is the phase's whole argument:
+    #    acceptance is the one judgment that cannot be automated, and a gate
+    #    that BLOCKS on it becomes a rubber stamp — somebody clears it to get
+    #    the build green rather than because they looked. So it nags, visibly
+    #    and forever, and never stops the work.
+    #
+    #    Same shape independent review took (warning first, ADR-0011's deadline
+    #    mechanism only if it earns one), and proposed upstream on that basis.
+    for feat_id in sorted(i for i in note_index if prefix_of(i) == "FEAT"):
+        f_path, f_fm = note_index.get(feat_id, (None, {}))
+        if f_path is None or effective_status(feat_id) != "done":
+            continue
+        if str((f_fm or {}).get("acceptance") or "").strip().lower() != "requested":
+            continue
+        # Age from `updated:`, the only date every note carries. A feature
+        # closed today and asking for acceptance is not yet debt.
+        # `_parse_date` / `_today` rather than a fresh datetime import: this
+        # file has its own helpers and a malformed date must be skipped, not
+        # raise, on a validator that walks the whole corpus.
+        when = _parse_date((f_fm or {}).get("updated"))
+        if when is None:
+            continue
+        age = (_today() - when).days
+        if age <= staleness_days:
+            continue
+        report.warn("ACCEPT-STALE", "%s is done and has asked for acceptance for %d days (threshold %d); walk its criteria in the cockpit or drop the request (%s)" % (
+            feat_id, age, staleness_days, f_path.relative_to(root)))
+
     # -- ISS-0357 PHASE-CHILDREN / PHASE-BOXES: a closed phase must have closed
     #    its children and recorded evidence for its exit criteria.
     #
@@ -1600,6 +3146,83 @@ def validate(root, report):
     #    against ALLOWED_STATUS by validate_status_tables (STATUS-TABLE). They used to
     #    be locals here, which is precisely why ISS-0011 went unnoticed: no test could
     #    reach them.
+
+    # -- ISS-0117 SNAPSHOT-MEMBERSHIP: the note and the snapshot agree about
+    #    which tasks a feature owns.
+    #
+    #    PARENT-BACKLINK looks down the link from the child; nothing looked at
+    #    the snapshot's own copy of the list. FEAT-0081 spent four review rounds
+    #    with five tasks in `items.features.*.tasks` against thirteen everywhere
+    #    else — twice recorded as repaired without being repaired, because both
+    #    attempts were string replaces whose pattern no longer matched and
+    #    neither asserted the match. `SNAPSHOT.yaml` was in the diff each time,
+    #    so a "was the file edited" check could not see it either.
+    #
+    #    ADR-0009 makes the note the authored source of state, so the note wins
+    #    and the snapshot is what gets corrected. Only TASK ids are compared:
+    #    a `tasks:` list that mentions another id type is a different defect.
+    snap_features = ((items or {}).get("features") or {})
+    for feat_id, entry in sorted(snap_features.items()):
+        if not isinstance(entry, dict):
+            continue
+        note = note_index.get(feat_id)
+        if note is None:
+            continue
+        note_tasks = {t for t in extract_ids((note[1] or {}).get("tasks"))
+                      if prefix_of(t) == "TASK"}
+        snap_tasks = {t for t in extract_ids(entry.get("tasks"))
+                      if prefix_of(t) == "TASK"}
+        if not note_tasks and not snap_tasks:
+            continue
+        missing = sorted(note_tasks - snap_tasks)
+        extra = sorted(snap_tasks - note_tasks)
+        if missing or extra:
+            bits = []
+            if missing:
+                bits.append("missing from the snapshot: %s" % ", ".join(missing))
+            if extra:
+                bits.append("in the snapshot but not the note: %s" % ", ".join(extra))
+            emit = emit_for("SNAPSHOT-MEMBERSHIP", feat_id)
+            emit("SNAPSHOT-MEMBERSHIP", "%s: SNAPSHOT.yaml and the note disagree about which tasks it owns (%s); the note is the authored source (ADR-0009), so correct the snapshot (%s)" % (
+                feat_id, "; ".join(bits), note[0].relative_to(root)))
+
+    # -- ISS-0112 PARENT-BACKLINK: a relationship declared on one end must be
+    #    declared on the other.
+    #
+    #    FEAT-0081 was closed as `done` while its note listed three of its five
+    #    tasks and none of the issues it fixed: the tasks named their parent, the
+    #    snapshot agreed with the tasks, and the feature knew about neither. Every
+    #    gate in the repo passed. Membership is curation `sync-snapshot.py`
+    #    deliberately leaves alone, and nothing looked back down the link — so the
+    #    feature's Acceptance section was missing criteria for half its delivered
+    #    behaviour and no check could tell.
+    #
+    #    Deliberately narrow. A task naming a feature as `parent:` must appear in
+    #    that feature's `tasks:`; an issue naming one must appear in its `fixes:`
+    #    or `issues:`. Those are the two shapes this repo actually uses, and a
+    #    check that accepted any mention (`related:` counts!) would pass the drift
+    #    it exists to catch.
+    for child_id, (c_path, c_fm) in sorted(note_index.items()):
+        ctype = note_type(c_fm)
+        back_fields = {"task": ("tasks",), "issue": ("fixes", "issues")}.get(ctype)
+        if not back_fields:
+            continue
+        for parent_id in extract_ids((c_fm or {}).get("parent")):
+            if prefix_of(parent_id) != "FEAT":
+                continue
+            parent = note_index.get(parent_id)
+            if parent is None:
+                continue          # DANGLING-LINK owns the missing-note case
+            p_fm = parent[1] or {}
+            named = set()
+            for field in back_fields:
+                named.update(extract_ids(p_fm.get(field)))
+            if child_id not in named:
+                emit = emit_for("PARENT-BACKLINK", child_id)
+                emit("PARENT-BACKLINK", "%s declares parent: %s, but %s does not name it in %s; add it, or drop the parent (%s)" % (
+                    child_id, parent_id, parent_id,
+                    " / ".join("`%s:`" % f for f in back_fields),
+                    c_path.relative_to(root)))
 
     children_by_phase = {}   # PHASE id -> [(child id, child status)]
     for child_id, (_c_path, c_fm) in note_index.items():
@@ -1656,10 +3279,75 @@ def validate(root, report):
         if not in_snapshot:
             report.error("DEFER-RETENTION", "%s is deferred but missing from SNAPSHOT.yaml; deferred items are active and never pruned (%s)" % (item_id, path.relative_to(root)))
 
-    # -- counter integrity (snapshot IDs and note IDs)
+    for _platform, _ids in sorted(_preparing_conflicts(note_index).items()):
+        report.error(
+            "RELEASE-PREPARING",
+            "%s release(s) are preparing for platform '%s' at once (%s); "
+            "ADR-0037's ledger is one per platform, so a verdict recorded now "
+            "would belong to neither -- ship one, or branch"
+            % (len(_ids), _platform or "(all)", ", ".join(_ids)))
+
+    #: **A finished feature that nothing verifies** ([[TASK-0523]]).
+    #:
+    #: Walked over the NOTES, not the snapshot collections. The first cut sat
+    #: in the snapshot loop and fired **zero** times against 93 measured
+    #: findings in this repo, because retention prunes terminal features out of
+    #: `SNAPSHOT.yaml` -- a rule placed exactly where its subjects are not.
+    #: Another check that could not fire, caught by measuring the corpus first
+    #: and disbelieving the zero.
+    #:
+    #: One finding, on the FEATURE, at its terminal status -- not a per-check
+    #: obligation and not a badge that counts checks ([[ADR-0027]],
+    #: [[ADR-0030]]).
+    #:
+    #: **A warning, and deliberately undated.** [[ADR-0011]] clause 3 forbids
+    #: promoting over debt: **225** terminal features fleet-wide have no
+    #: acceptance check under the rule as it SHIPS (`done` alone), **139**
+    #: counting only the three repos that hold a suite, **94** of them here
+    #: (2026-08-20; it was 220 / 134 / 88 earlier the same day and the whole
+    #: delta is this repo's own close-outs -- the number moves under every
+    #: commit, which is why no test pins it).
+    #: (236 / 147 / 93 is the same count with `superseded` and `cancelled`
+    #: treated as terminal too -- corrected after independent review, which
+    #: found the note quoting the wide figures beside the narrow one.) A date would either fail every build on arrival or be moved when
+    #: it did, and a promotion nobody intends to honour teaches people to
+    #: ignore the table. It earns a date when the number is small enough that
+    #: one is a promise.
+    #:
+    #: **Only where there is something to cover WITH.** Nine of the twelve
+    #: fleet repos hold no acceptance suite at all; firing there would scold
+    #: them for not using a mechanism they never adopted.
+    #:
+    #: **The escape is `acceptance_exception:`**, and the rule is dishonest
+    #: without it: some features never can have a check -- an engine with no
+    #: rider-facing surface, a phase of work, a repo that ships prose. Said
+    #: once, in the note. ([[TASK-0524]] refused to write 33 exceptions it
+    #: could not justify; this is where justified ones go.)
+    if _repo_has_an_acceptance_suite(note_index):
+        _covered = _features_covered_by_acceptance(note_index)
+        _uncovered = []
+        for _fid, (_fpath, _ffm) in sorted(note_index.items()):
+            _ffm = _ffm or {}
+            if note_type(_ffm) != "feature":
+                continue
+            _fstatus = str(_ffm.get("status", "") or "").strip().lower()
+            if _fstatus != TERMINAL.get("features"):
+                continue
+            if str(_ffm.get("acceptance_exception", "") or "").strip():
+                continue
+            if _fid in _covered:
+                continue
+            _uncovered.append(_fid)
+        for _fid in _uncovered:
+            report.warn(
+                "FEATURE-UNCOVERED",
+                "%s is done and no acceptance check covers it; add one, or "
+                "record why it needs none in `acceptance_exception:`" % _fid)
+
     if path_alias_items:
         report.warn("PATH-ALIAS", "%d item(s) use legacy `path:` instead of `file:` (e.g. %s); prefer `file:` per SNAPSHOT.md" % (len(path_alias_items), path_alias_items[0]))
 
+    # -- counter integrity (snapshot IDs and note IDs)
     def check_counter(the_id, origin):
         m = ID_RE.match(the_id)
         if not m:
