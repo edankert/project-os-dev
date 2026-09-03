@@ -25,7 +25,7 @@ globs: ["**/*"]
 | `change` | `merged` | — | agent |
 | `adr` | `accepted` / `superseded` | — | human decision |
 
-Derived, never hand-written (ADR-0009): each item's status in `SNAPSHOT.yaml`, `counters`, and `metrics.counts`. Author the status in the note; `tools/scripts/sync-snapshot.py` propagates it.
+Which snapshot fields are derived from the notes, and by what, is `LIFECYCLE.md`, "Mandatory Automated Documentation" (ADR-0009).
 
 ## Two things that are not statuses
 
@@ -156,7 +156,7 @@ The steps, and re-adoption, are in `../skills/status-transition/SKILL.md` ("Defe
 ## `[[plan]]`
 - Allowed: `draft`, `active`, `done`, `superseded`
 - A plan's status follows its feature and is advanced at close-out: `active` while building, `done` when the feature closes, `superseded` if the delivery sequence was replaced.
-- Plans carry no `id:`; a `PLAN-FEAT-0012` id would resolve to `FEAT-0012` in the ID parser. They are found by `type: [[plan]]` (validator PLAN-STATE).
+- Plans carry no `id:`; a `PLAN-FEAT-0012` id would resolve to `FEAT-0012` in the ID parser. They are found by `type: [[plan]]` (validator PLAN-ID; PLAN-STATE checks their status).
 
 ## `[[reference]]`
 - Allowed: `active`, `deprecated`

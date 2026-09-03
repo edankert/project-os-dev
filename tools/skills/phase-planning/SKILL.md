@@ -4,7 +4,7 @@ id: SKILL-PHASE-PLANNING
 status: active
 owner: group:maintainers
 created: 2026-05-05
-updated: 2026-09-03
+updated: 2026-09-04
 tags: [skills, phases, planning]
 ---
 
@@ -28,8 +28,7 @@ tags: [skills, phases, planning]
 
 ## Checklist
 1. Decide whether a first-class phase note is needed:
-   - Use a `PHASE-*` note when the milestone has scope, exit criteria, or linked work.
-   - A simple integer phase in `phase:` is acceptable only for lightweight projects or migration.
+   - Which form `phase:` takes is stated once in `../../../docs/PHASES.md`.
 2. Allocate the next `PHASE-####` from `../../../SNAPSHOT.yaml -> counters.PHASE`.
 3. Create the phase note from `../../../docs/__templates__/phase.md`.
 4. Populate:

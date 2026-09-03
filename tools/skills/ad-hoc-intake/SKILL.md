@@ -4,7 +4,7 @@ id: SKILL-ADHOC-INTAKE
 status: active
 owner: group:maintainers
 created: 2026-01-29
-updated: 2026-09-03
+updated: 2026-09-04
 tags: [skills, intake, adhoc]
 ---
 
@@ -33,5 +33,5 @@ tags: [skills, intake, adhoc]
 1. Decide if the prompt requires documentation or project state changes.
 2. If **no**: answer directly and stop.
 3. If **yes**: choose the correct intake path (issue/feature/task).
-4. Put the prompt verbatim in the issue note's "As reported" callout under Problem (`../../../docs/__templates__/issue.md`; the same callout shape `../../instructions/DECISIONS.md` uses for a decision in the decider's own words), so the reporter's words and your paraphrase never share a paragraph. Link related items.
+4. Put the prompt verbatim in the issue note's "As reported" callout (`../issue-intake/SKILL.md`, step 6). Link related items.
 5. Update `SNAPSHOT.yaml` and run `../snapshot-sync/SKILL.md` if multiple items changed.

@@ -1,5 +1,5 @@
 ---
-description: "Rules for the lifecycle of work: intake, plan, implement, verify, close. Each is stated once here, with a reason and a link (project-os-dev REQ-0026)."
+description: "Rules for the lifecycle of work. Each is stated once here, with a reason and a link (project-os-dev REQ-0026)."
 globs: ["**/*"]
 ---
 
@@ -7,7 +7,7 @@ globs: ["**/*"]
 
 # Lifecycle rules (LLM-maintained documentation system)
 
-Rules for the lifecycle of work: intake, plan, implement, verify, close. Each is stated once here, with a reason and a link (project-os-dev REQ-0026).
+Rules for the lifecycle of work. Each is stated once here, with a reason and a link (project-os-dev REQ-0026).
 
 ## Source of truth
 - `../../SNAPSHOT.yaml` is the canonical, machine-readable active context for agents. Notes under `../../docs/` are the durable human record, and the snapshot's derived fields follow them ("Mandatory Automated Documentation" below). Bases views are for people and are not canonical for agents.
@@ -70,4 +70,4 @@ A bug, a cleanup or a missing abstraction the task did not ask for is an `ISS-*`
 - Keep the snapshot to active and recent items (`SNAPSHOT.md`); the notes are the archive.
 
 ## Risk scan triggers (create/update a `RISK-*`)
-- A new external dependency or version constraint; a new required env var or configuration surface; a directory layout or artifact path change; a runtime increase or new long-running step; a security, credential or licence exposure.
+- A new external dependency or version constraint; a new required env var or configuration surface; a directory layout or artifact path change; a runtime increase or new long-running step; a security, credential or licence exposure. If none applies, say so in the note or the summary; the negative result is part of the scan.

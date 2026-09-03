@@ -28,9 +28,7 @@ Every documentation type is considered on a behaviour or path change; the list i
 - Optional docs cockpit: `bash tools/cockpit/run.sh docs --bind 127.0.0.1 --port 8765`.
 
 ## Edit Boundaries
-- Live docs (frequent updates): `docs/features/**`, `docs/issues/**`, `docs/workflows/**`, `docs/changes/**`, `SNAPSHOT.yaml`.
-- Reference docs (change rarely): `docs/ARCHITECTURE.md`, `docs/DESIGN.md`, `docs/STYLEGUIDE.md`, `docs/requirements/**`, `docs/risks/**`, `docs/decisions/**`, `docs/reference/**`, `docs/research/**`.
-- Agent/tool operating instructions are not project documentation: `tools/**`.
+- Which paths are live documentation, reference documentation and tool instructions is stated once in `CONTEXT.md`, "Edit policy".
 
 ## Output Expectations
 - Prose written for a person follows `tools/instructions/WRITING.md`: one line before starting on what you are about to do, a recap at the end that stands on its own, and evidence for every claim of progress (`tools/instructions/QUALITY.md`, "Verification expectations").

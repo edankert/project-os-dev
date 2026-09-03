@@ -4,7 +4,7 @@ id: SKILL-ISSUE-INTAKE
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-09-03
+updated: 2026-09-04
 tags: [skills, issues]
 ---
 
@@ -51,9 +51,9 @@ tags: [skills, issues]
    - tasks inherit phase from the issue or parent feature
 8. **Impact analysis:**
    - If the issue links to existing features, run `../impact-analysis/SKILL.md` to check whether the proposed fix may conflict with existing requirements.
-   - If conflicts are found, how to resolve them is the user's decision; present the options and continue with what does not depend on them (`../../instructions/LIFECYCLE.md`, "When to pause for the user").
+   - If conflicts are found, how to resolve them is the user's decision (`../../instructions/LIFECYCLE.md`, "When to pause for the user").
 9. **Risk scan:**
    - Review the issue against risk scan triggers in `../../instructions/LIFECYCLE.md`.
    - If any trigger applies, run `../risk-scan/SKILL.md` and create/update `RISK-*` notes.
-   - If no trigger applies, record that no new risks were identified in the issue note or final summary — the negative result is part of the scan.
+   - If no trigger applies, record the negative result (`../../instructions/LIFECYCLE.md`, "Risk scan triggers").
 10. If verification is needed, create a `TST-*` note (use `../test-authoring/SKILL.md`) and link it from the issue/task/requirement as appropriate.

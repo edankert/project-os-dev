@@ -4,7 +4,7 @@ id: SKILL-RISK-MITIGATION-PLANNING
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-01-27
+updated: 2026-09-04
 tags: [skills, risk]
 ---
 
@@ -27,4 +27,4 @@ tags: [skills, risk]
 3. Update `../../../SNAPSHOT.yaml`:
    - add tasks under `items.tasks`
    - link tasks from the risk (`related` and/or `mitigation_tasks` if you adopt it)
-4. Update the risk note to link the mitigation tasks in `mitigation_tasks:`. The risk stays `open` until it is closed — ADR-0008 removed `mitigating`/`monitoring` (1 and 0 writes fleet-wide); progress is the tasks, not a status word.
+4. Update the risk note to link the mitigation tasks in `mitigation_tasks:`; the risk stays `open` until it is closed (`../../instructions/STATUSES.md` `[[risk]]`).

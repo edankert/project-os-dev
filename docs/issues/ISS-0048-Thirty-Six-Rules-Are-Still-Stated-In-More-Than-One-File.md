@@ -123,7 +123,8 @@ Each pass is a full read of the domain in a clean context, as the docs-audit ski
 | 5 | `ae33478` | 2 confirmed (the surface template's comment restating TAXONOMY.md "kind (surfaces)"; STATUSES.md citing cockpit ADR-0038 where six files cite ADR-0025), 0 dangling citations | fixed in `de6e89b` |
 | 6 | `de6e89b` | 2 confirmed (AGENTS.md restating the change template's coverage checklist; design-authoring restating TRACEABILITY.md's revisions rule), 0 dangling citations | fixed in `1afc71e` |
 | 7 | `1afc71e` | 0 confirmed, 0 dangling citations; the first clean pass | |
-| 8 | `1afc71e` | the second quiescence pass, read fresh without the earlier tables; recorded when it returns | |
+| 8 | `1afc71e` | read fresh without the earlier tables: 21 confirmed (enum values in the test template and SCHEMAS.md, the no-verdict and clean-context rules restated in skills, the close-out steps in QUALITY.md, the edit boundaries in AGENTS.md, the pause clause quoted at two sites, the negative-result convention with no home, and one contradiction in enforcement: HC-003 test-gated requirements), 2 mis-citations | fixed in `277c46d` |
+| 9 | `277c46d` | the first quiescence pass, read fresh; recorded when it returns | |
 
 ## Sibling search
 

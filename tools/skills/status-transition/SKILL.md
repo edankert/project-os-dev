@@ -4,7 +4,7 @@ id: SKILL-STATUS-TRANSITION
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-09-03
+updated: 2026-09-04
 tags: [skills, statuses]
 ---
 
@@ -36,11 +36,11 @@ tags: [skills, statuses]
 Requirements are advanced by the work that delivers them, not on their own schedule:
 
 1. `draft` → `approved`: the criteria are agreed and features may now implement against them (`../feature-scaffold/SKILL.md`, step 7 "Requirement approval gate").
-2. `approved` → `implemented`: terminal, set at feature close-out (`../../instructions/STATUSES.md` `[[requirement]]`; procedure in `../close-out/SKILL.md`, step 3 "Requirement advancement").There is no `verified` requirement status; verification lives in `[[test]]` notes and the per-criterion evidence pointers.
+2. `approved` → `implemented`: terminal, set at feature close-out (`../../instructions/STATUSES.md` `[[requirement]]`; procedure in `../close-out/SKILL.md`, step 3 "Requirement advancement").
 
 ## Deferral procedure (transition to `deferred`)
 
-`deferred` means "out of the current parent's scope, still wanted later" — it never satisfies completeness, and the validator rejects deferred items left in a scope list or parked without provenance and a home (see `../../instructions/STATUSES.md`, "Deferral and re-adoption"). All steps in one turn:
+`deferred` never satisfies completeness (`../../instructions/STATUSES.md`, "Deferral and re-adoption"). All steps in one turn:
 
 1. **Descope from the parent**: remove the item's ID from the parent's scope list (feature `tasks:`) and add it to the parent's `deferred:` list — in both the parent note and `../../../SNAPSHOT.yaml`.
 2. **Record provenance**: on the deferred item, set `origin:` to the former parent link and clear `parent:`.

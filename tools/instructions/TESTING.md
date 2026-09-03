@@ -26,7 +26,7 @@ A check is not filed into a section. Its section is computed from two fields it 
 
 ### Automated tests — executed by CI
 - Carries a non-empty `command:`; it is here because a machine executes it, and leaves when the command is removed.
-- **Carries no verdict**: no `ready`, `passing`, `failing`, `last_run:` or `exit_code:`. CI is the verdict, and a red automated test is a broken build.
+- **Carries no verdict** (`STATUSES.md` `[[test]]`); a red run is a red build.
 
 ## Lifecycle rules
 

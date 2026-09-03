@@ -4,7 +4,7 @@ id: SKILL-TEST-AUTHORING
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-09-03
+updated: 2026-09-04
 tags: [skills, tests]
 ---
 
@@ -39,5 +39,5 @@ A `TST-*` note is the record of verification: the procedure, the verdict, and th
      - request human feedback (pass/fail + evidence)
    - For a test with a **`command:`**:
      - set `command:` and `entrypoint` (repo path) and the expected artifacts
-     - leave `status: active` and record no verdict; CI is the verdict (`../../instructions/STATUSES.md` `[[test]]`, ADR-0025), and `python3 tools/scripts/run-tests.py --filter TST-####` reproduces the run without writing
+     - leave `status: active` (`../../instructions/STATUSES.md` `[[test]]` says why); `python3 tools/scripts/run-tests.py --filter TST-####` reproduces the run
 4. Apply the gates in `../../instructions/STATUSES.md`, "The contract at a glance", before any terminal status.

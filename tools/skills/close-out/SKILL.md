@@ -4,7 +4,7 @@ id: SKILL-CLOSE-OUT
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-09-03
+updated: 2026-09-04
 tags: [skills, closeout]
 ---
 
@@ -49,7 +49,7 @@ tags: [skills, closeout]
 6. **Risk scan:**
    - Review the completed work against risk scan triggers in `../../instructions/LIFECYCLE.md`.
    - If any trigger applies, run `../risk-scan/SKILL.md` and create/update `RISK-*` notes.
-   - If no trigger applies, record that no new risks were identified in the relevant task/issue note or final summary.
+   - If no trigger applies, record the negative result (`../../instructions/LIFECYCLE.md`, "Risk scan triggers").
 7. **Mechanical validation:**
    - Run `bash tools/scripts/validate-docs.sh` and fix every reported error before finishing.
    - Before pushing and after, follow `../../instructions/LIFECYCLE.md` close-out steps 8 and 9 (`--as-committed`, then confirm the CI run went green).

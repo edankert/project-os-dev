@@ -4,7 +4,7 @@ id: SKILL-INDEPENDENT-REVIEW
 status: active
 owner: group:maintainers
 created: 2026-07-05
-updated: 2026-09-03
+updated: 2026-09-04
 tags: [skills, review, verification]
 ---
 
@@ -33,7 +33,7 @@ Two kinds of correlation were being conflated. Shared **weights** correlate capa
 - Findings filed as `ISS-*` notes (status `triage`) when the review surfaces defects.
 
 ## Independence rules
-1. The reviewer must start from a **clean context** — the notes and the diff, never the author's reasoning trace — and must not be the session that authored the work. A human pass also satisfies this. Model family is not the gate (ADR-0013); a different family is welcome and is no longer required. `reviewed_by` still records the model, as provenance rather than a compliance token: a later reader needs to know who reviewed, and a future finding about a specific model's blind spots needs the data. Record both sides when it is not obvious ("authored by model:X, reviewed by model:Y").
+1. What makes a review independent is stated once in `../../instructions/QUALITY.md`, "Independent review (clean-context)". `reviewed_by` still records the model, as provenance rather than a compliance token: a later reader needs to know who reviewed, and a future finding about a specific model's blind spots needs the data. Record both sides when it is not obvious ("authored by model:X, reviewed by model:Y").
 2. **Never write the verdict before the reviewer returns it.** `review_verdict` is transcribed from what the review actually returned, never anticipated, and never filled in "pending" optimism — recording an approval you expect to receive is the review-level version of ticking an acceptance criterion to fit. If a close-out needs the field present before the review lands, leave it empty and finish the close-out after the verdict arrives.
 3. The reviewer gets the notes and the diff, not the author's reasoning transcript. If the change cannot be justified from the notes alone, that is itself a finding (the documentation failed its handoff purpose).
 4. The reviewer's job is to **refute**, not to confirm: actively look for inputs/states where the change is wrong, and for guarding tests that would still pass if the fix were reverted (a test that cannot fail does not guard).

@@ -4,7 +4,7 @@ id: INSTR-SNAPSHOT
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-09-03
+updated: 2026-09-04
 tags: [instructions, snapshot]
 ---
 
@@ -47,7 +47,7 @@ Projects may add collections (e.g. `epics`, `milestones`) if rules are documente
 
 ## Focus object
 The `focus` object tracks the current work context:
-- `focus.phase` (PHASE ID, integer, or empty string): Active development phase. `PHASE-*` IDs are preferred when using first-class phase notes; integer values are accepted for simple projects and migration.
+- `focus.phase` (PHASE ID, integer, or empty string): the active development phase; which form to use is `../../docs/PHASES.md`.
 - `focus.feature` (string): Currently active feature ID (or empty string).
 - `focus.task` (string): Currently active task ID (or empty string).
 - `focus.issue` (string): Currently active issue ID (or empty string).
@@ -96,7 +96,7 @@ The `goal` and `note` prose on any item is at most two sentences each. It is the
 - `tests_total` / `tests_passing` / `tests_failing`: all `TST-*`; by status `passing` / `failing`.
 - `issues_open`: `ISS-*` with status `open`; `issues_triage`: status `triage`. The two are disjoint, and together they are the outstanding set — since ADR-0008 merged `closed` into `fixed`, `fixed` is terminal and correctly excluded. (Before the merge, `fixed` meant "implemented, not verified" and 313 issues fleet-wide sat in it counted by nothing; that limbo is what ISS-0008 reported, and removing the state resolved it rather than widening the metric.)
 - `tasks_deferred` / `issues_deferred`: `TASK-*` / `ISS-*` with status `deferred` (parked work stays visible; see `STATUSES.md`, "Deferral and re-adoption").
-- `risks_open`: `RISK-*` with status `open`. ADR-0008 removed `mitigating`/`monitoring`; mitigation progress lives in `mitigation_tasks:`, not in a status word.
+- `risks_open`: `RISK-*` with status `open`.
 - `releases_total`: all `REL-*`; `decisions_total`: all `ADR-*`.
 
 ## Team model (optional)

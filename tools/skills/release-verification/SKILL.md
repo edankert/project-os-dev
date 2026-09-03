@@ -4,7 +4,7 @@ id: SKILL-RELEASE-VERIFICATION
 status: active
 owner: group:maintainers
 created: 2026-03-08
-updated: 2026-09-03
+updated: 2026-09-04
 tags: [skills, testing, release]
 ---
 
@@ -42,7 +42,7 @@ Also include any `TST-*` with `level: acceptance` and `scope: system` — these 
 
 ### 3. Settle each test by its kind
 The verdict model is stated once, in `../../instructions/STATUSES.md` `[[test]]` and `../../instructions/TESTING.md` "Release gating"; this step applies it to each collected test:
-- **A test with a `command:`** is settled by CI on every push and carries no verdict on the note (ADR-0025). Its verdict here is **CI**; nothing is re-run by hand, and `python3 tools/scripts/run-tests.py` reproduces the run locally without writing.
+- **A test with a `command:`** is settled by CI (`../../instructions/STATUSES.md` `[[test]]`). Its verdict here is **CI**; nothing is re-run by hand.
 - **An acceptance check** (`level: acceptance`, no `command:`) is settled per release and platform in the ledger. Unsettled for this release and platform is **BLOCKED**.
 - **A manual test** (no `command:`, any other level) carries a hand-written verdict and `last_verified:`. **CURRENT**: `status: passing` and `last_verified` inside the staleness window and after the latest `updated` among the tasks under its features. **STALE**: `last_verified` older than that. **UNTESTED**: `status: ready` or `draft`. **FAILING**: `status: failing`.
 
@@ -76,7 +76,7 @@ Sections and gating are stated once, in `../../instructions/TESTING.md` ("The th
 For each test that needs re-running:
 1. Read the test note's Preconditions and Procedure sections.
 2. If the test has no `command:` (a manual test): present the procedure to the user for execution. The user runs through the steps and reports PASS or FAIL.
-3. If the test carries a `command:`: there is nothing to record. CI ran it; `python3 tools/scripts/run-tests.py --filter TST-####` reproduces the run locally and writes nothing (ADR-0025).
+3. If the test carries a `command:`: nothing to record (`../../instructions/STATUSES.md` `[[test]]`).
 4. For a manual test, update the test note:
    - `status: passing` or `status: failing`
    - `last_verified: <today's date>`

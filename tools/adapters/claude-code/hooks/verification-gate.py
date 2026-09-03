@@ -2,8 +2,8 @@
 """HC-003: Verification Gate (blocking).
 
 Claude Code PreToolUse hook for Write|Edit. Denies an edit that transitions an
-item to a terminal status (task done, issue fixed, requirement implemented,
-feature done; the list is HOOKS.md HC-003) while any linked TST-* note is not
+item to a terminal status (task done, issue fixed, feature done; the list is
+HOOKS.md HC-003, and a requirement is never test-gated) while any linked TST-* note is not
 `status: passing`.
 
 Escape hatches (both are recorded artifacts, not silence):
@@ -22,7 +22,8 @@ import sys
 from pathlib import Path
 
 TERMINAL_RE = re.compile(r"status:\s*[\"']?(done|fixed|implemented)[\"']?\b")
-ID_RE = re.compile(r"\b((?:TASK|ISS|REQ|FEAT))-(\d{2,})\b")
+# REQ is not here: a requirement is never test-gated (STATUSES.md [[requirement]], ADR-0007).
+ID_RE = re.compile(r"\b((?:TASK|ISS|FEAT))-(\d{2,})\b")
 TST_RE = re.compile(r"\bTST-\d{2,}\b")
 WAIVER_RE = re.compile(r"verification_waiver:\s*\S")
 
@@ -135,7 +136,7 @@ def main():
 
     # Which items is this edit touching? Note edits: the note's own ID. Snapshot edits: IDs present in the new content.
     ids = set("%s-%s" % m for m in ID_RE.findall(new_content))
-    note_match = re.match(r"((?:TASK|ISS|REQ|FEAT)-\d{2,})", Path(file_path).name)
+    note_match = re.match(r"((?:TASK|ISS|FEAT)-\d{2,})", Path(file_path).name)
     if note_match:
         ids = {note_match.group(1)}
     if not ids:

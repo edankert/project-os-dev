@@ -4,7 +4,7 @@ id: INSTR-IMPORTING
 status: active
 owner: group:maintainers
 created: 2026-01-29
-updated: 2026-05-08
+updated: 2026-09-04
 tags: [instructions, import]
 ---
 
@@ -35,4 +35,4 @@ Use this when initializing project-os for an existing project to capture provena
 
 ## Snapshot expectations
 - `SNAPSHOT.yaml` should include all **active** derived items and the correct counters.
-- Keep closed/done history in notes; follow retention policy in `SNAPSHOT.yaml`.
+- Keep closed/done history in notes; the retention policy is `SNAPSHOT.md`, "Retention policy".

@@ -4,7 +4,7 @@ id: INSTR-HOOKS
 status: active
 owner: group:maintainers
 created: 2026-03-08
-updated: 2026-09-03
+updated: 2026-09-04
 tags: [instructions, hooks]
 ---
 
@@ -38,7 +38,7 @@ Contract IDs are `HC-001`..`HC-008`. (Earlier revisions of this file used `CHC-0
 
 ## HC-003: Verification gate
 
-- Trigger: before marking a task `done`, issue `fixed`, requirement `implemented`, or feature `done`.
+- Trigger: before marking a task `done`, issue `fixed`, or feature `done`. A requirement is never test-gated (`STATUSES.md` `[[requirement]]`), so `implemented` is not a trigger.
 - Rule: `QUALITY.md` — "Verification gating (tests)".
 - Check logic:
   - Find linked `TST-*` IDs from the snapshot and note frontmatter.

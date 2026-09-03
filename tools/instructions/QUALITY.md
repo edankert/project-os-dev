@@ -15,9 +15,7 @@ These rules define what "done" means for work tracked in this documentation syst
 > **State vocabulary and per-type gates are normative in `STATUSES.md`**, which also records who writes each status. This file describes the close-out process; where the two disagree, `STATUSES.md` wins and the disagreement is a bug to file.
 
 ## Minimum close-out for any implemented task
-- Set the task note to `done`; the snapshot follows through the sync script.
-- Update `focus` (clear it or move to the next task) and the statuses of related items (issue fixed, feature progressed).
-- If behaviour, paths or contracts changed, create a `CHG-*` note and link it.
+- The steps are stated once in `LIFECYCLE.md`, "Close-out (must happen after work)"; this file says what "done" must mean before any of them is taken.
 
 ## Documentation Fidelity
 - `metrics.counts` in `../../SNAPSHOT.yaml` must match the computed counts (definitions in `SNAPSHOT.md`); `bash tools/scripts/validate-docs.sh --fix-metrics` rewrites the block when it drifts.
