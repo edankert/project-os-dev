@@ -25,25 +25,25 @@ docs_system:
     - docs/PHASES.md
 
 counters:
-  ADR: 23
+  ADR: 24
   CHG:
     last_date: 20260726
-  FEAT: 23
-  ISS: 40
-  PHASE: 2
+  FEAT: 27
+  ISS: 45
+  PHASE: 3
   REL: 0
-  REQ: 25
+  REQ: 27
   RISK: 2
-  TASK: 89
-  TST: 4
+  TASK: 105
+  TST: 7
   WF: 3
 
 focus:
   task: ""
-  feature: "FEAT-0023"
-  phase: "PHASE-999"
-  issue: ""
-  note: "2026-08-12 FEAT-0023 landed in project-os (6ca15f4), reviewed (244baec: TST-0004 and CHG approved; REQ-0025/FEAT-0023 changes-requested on the record), and the findings addressed same day (project-os 7536e9d + 4aa2238): the bundled validator's DECISION-RULE hunks committed alone by partial stage — the remaining working-tree dirt is ISS-0035's claimants backfill, which round one had mis-attributed to the already-past FEAT-0022 close-out — the suite grew end-to-end wiring cases (26 assertions; unwiring the check now fails it), the harness takes an alternate-target path so the bundled copy is verifiable by one command, and both skills point at DECISIONS.md instead of restating its two sentences. Census unchanged: zero violations fleet-wide, error from day one. Awaiting re-review of REQ-0025/FEAT-0023; review fields untouched by the author. Still due elsewhere: project-os-cockpit's recorded hand-merge (44-code superset). This repo's validator stays a sync behind by design."
+  feature: "FEAT-0024"
+  phase: "PHASE-0003"
+  issue: "ISS-0041"
+  note: "PHASE-0003 opened 2026-09-03 from the prompting-guide review; the four contradictions ISS-0041 to ISS-0044 come first, then FEAT-0024. Nothing is implemented yet, and every fix lands in ~/Dev/repos/project-os except the second half of TASK-0095."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -62,6 +62,13 @@ items:
       order: 2
       owner: user:edwin
       goal: "Contract the state model to what the fleet actually uses, and derive the rest: collapse the status taxonomy, state the rules once, generate the snapshot, stamp test status by execution, and end the permanent warning tier"
+    PHASE-0003:
+      file: docs/phases/PHASE-0003-Prompting-Guide-Conformance.md
+      title: "Prompting-guide conformance"
+      status: active
+      order: 3
+      owner: user:edwin
+      goal: "Bring the template's instructions, skills, hooks and subagents in line with the Claude 5 prompting guides: remove the contradictions, state each rule once, trim what every session loads, and stop the hooks and hints from teaching bypasses"
     PHASE-999:
       file: docs/phases/PHASE-999-Parking-Lot.md
       title: "Parking lot — future and unplanned work"
@@ -71,6 +78,43 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0027:
+      file: "docs/features/delegation-hint/FEAT-0027-The-Hint-Serves-Focus-State-Instead-Of-Pushing-Delegation.md"
+      title: "The hint serves focus state instead of pushing delegation"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      owner: user:edwin
+      tasks: [TASK-0102, TASK-0103, TASK-0104, TASK-0105]
+      tests: [TST-0007]
+      related: [FEAT-0021, ISS-0003]
+      note: "Prompting-guide review findings 2.2, 3.1, 3.2, 7.3. Overlaps FEAT-0021 (TASK-0080 serves the same state at SessionStart): the plan proposes SessionStart carries the slice and the per-prompt hint carries only what changes, and that division is the owner's to confirm."
+    FEAT-0026:
+      file: "docs/features/instruction-weight/FEAT-0026-Trim-The-Instruction-Files-Loaded-Every-Session.md"
+      title: "Trim the instruction files an agent loads every session"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      owner: user:edwin
+      requirements: [REQ-0026]
+      tasks: [TASK-0098, TASK-0099, TASK-0100, TASK-0101]
+      tests: [TST-0006]
+      note: "Prompting-guide review findings 4.1, 4.3, 4.4. Runs after FEAT-0024 and FEAT-0025, which both add text to the files this trims."
+    FEAT-0025:
+      file: "docs/features/writing-and-length/FEAT-0025-Writing-Rules-For-The-Final-Message-And-Length-Limits.md"
+      title: "Writing rules for the final message, and length limits on notes"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      owner: user:edwin
+      tasks: [TASK-0096, TASK-0097]
+      note: "Prompting-guide review findings 4.2, 5.1, 5.2. Carries an acceptance_exception rather than an acceptance check: no command distinguishes a writing rule that is stated from one that is followed."
+    FEAT-0024:
+      file: "docs/features/pause-and-scope-rules/FEAT-0024-One-Pause-Rule-And-The-Scope-Rules-The-Guides-State.md"
+      title: "One pause rule, and the scope rules the guides state"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      owner: user:edwin
+      tasks: [TASK-0090, TASK-0091, TASK-0092, TASK-0093, TASK-0094, TASK-0095]
+      tests: [TST-0005]
+      note: "Prompting-guide review findings 2.1, 2.3, 5.3, 6.1, 6.2, 7.1, 7.2, 7.4, 8.1. TASK-0092 and TASK-0101 each add a judgement threshold to a step ADR-0004 made mandatory; both say so in the note rather than resolving it silently."
     FEAT-0023:
       file: "docs/features/rule-adrs/FEAT-0023-Rule-ADRs-Carry-Their-Conformance.md"
       title: "Rule-ADRs: the template carries the convention, and the validator refuses the shape that binds nothing"
@@ -228,6 +272,131 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0105:
+      file: "docs/features/delegation-hint/plan/tasks/TASK-0105-The-Issue-Template-Quotes-The-Prompt.md"
+      title: "The issue template quotes the prompt under 'As reported'"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0027
+      effort: S
+    TASK-0104:
+      file: "docs/features/delegation-hint/plan/tasks/TASK-0104-Delegation-Carries-The-Prompt-And-The-Reason.md"
+      title: "Delegation carries the user's prompt verbatim and the reason"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0027
+      effort: S
+      note: "Shares the generator string with TASK-0091 and TASK-0092; whichever lands last re-runs it once."
+    TASK-0103:
+      file: "docs/features/delegation-hint/plan/tasks/TASK-0103-HC-008-Serves-State.md"
+      title: "HC-008 serves focus state and recommends the planner selectively"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0027
+      effort: M
+      depends: [TASK-0102]
+      note: "Blocked behind ISS-0041, which renames HC-008 and rewrites the same contract line. Must update the ADAPTER.md routing table in the same commit or it creates a fifth contradiction of exactly ISS-0041's kind."
+    TASK-0102:
+      file: "docs/features/delegation-hint/plan/tasks/TASK-0102-Close-Out-Hook-Names-The-Two-Actions.md"
+      title: "The close-out Stop hook names the two real actions"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0027
+      effort: S
+      note: "Also writes the fixture harness behind TST-0007, so the two later hook tasks land against an existing test."
+    TASK-0101:
+      file: "docs/features/instruction-weight/plan/tasks/TASK-0101-Generated-Skill-Bodies-Stop-Repeating-Close-Out.md"
+      title: "Generated skill bodies stop repeating the close-out steps"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0026
+      effort: S
+    TASK-0100:
+      file: "docs/features/instruction-weight/plan/tasks/TASK-0100-Template-Frontmatter-Comments.md"
+      title: "Template frontmatter comments: one line per field, plus a pointer"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0026
+      effort: S
+    TASK-0099:
+      file: "docs/features/instruction-weight/plan/tasks/TASK-0099-The-Same-Pass-Over-Four-More-Files.md"
+      title: "The same pass over STATUSES, TESTING, QUALITY and DECISIONS"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0026
+      effort: L
+      depends: [TASK-0098]
+      note: "One commit per file. Sequence after ISS-0042 and ISS-0043, which delete text from two of these four."
+    TASK-0098:
+      file: "docs/features/instruction-weight/plan/tasks/TASK-0098-Lifecycle-Under-800-Words.md"
+      title: "LIFECYCLE.md under 800 words: rule, reason, link"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0026
+      effort: M
+      blocks: [TASK-0099]
+      note: "1,343 words today, loaded by every Claude Code and Cursor session in twelve repos. Runs after FEAT-0024 adds three rules to the same section, so the budget is met with them in place."
+    TASK-0097:
+      file: "docs/features/writing-and-length/plan/tasks/TASK-0097-Length-Limits-In-Snapshot-And-Three-Templates.md"
+      title: "Length limits in SNAPSHOT.md and three templates"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0025
+      effort: S
+    TASK-0096:
+      file: "docs/features/writing-and-length/plan/tasks/TASK-0096-Writing-Gains-Five-Rules-And-Agents-Links-Them.md"
+      title: "WRITING.md gains five rules; AGENTS.md links them"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0025
+      effort: S
+    TASK-0095:
+      file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0095-The-Reviewer-Reports-Every-Finding.md"
+      title: "The reviewer reports every finding; the repro filter moves downstream"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0024
+      effort: S
+      note: "The only task in this plan with a half that lands in this repo: tools/scripts/review-external.py. Sequence after ISS-0041, which edits line 45 of the same skill."
+    TASK-0094:
+      file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0094-Test-Authoring-Says-What-A-Test-Note-Is.md"
+      title: "test-authoring says what a TST note is and is not"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0024
+      effort: S
+    TASK-0093:
+      file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0093-Four-One-Sentence-Rules-In-Four-Files.md"
+      title: "Four one-sentence rules: QUALITY, HANDOFF, MARKDOWN, skills README"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0024
+      effort: S
+    TASK-0092:
+      file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0092-Give-The-Ambiguity-Check-A-Threshold.md"
+      title: "Give the spec-ambiguity check a threshold; the planner allocates what is settled"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0024
+      effort: S
+      note: "Adds a judgement threshold to a step ADR-0004 made mandatory. The check stays unconditional and the assumption must be written into the note; the owner may prefer to keep the stop and take only the planner half."
+    TASK-0091:
+      file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0091-Eight-Stop-Points-Shorten-To-A-Decision-Plus-A-Link.md"
+      title: "Eight stop-points shorten to the decision plus a link"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0024
+      effort: M
+      depends: [TASK-0090]
+    TASK-0090:
+      file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0090-State-The-Pause-Rule-And-The-Scope-Rule-In-Lifecycle.md"
+      title: "State the pause rule and the scope rule in LIFECYCLE.md"
+      status: backlog
+      phase: "[[PHASE-0003]]"
+      parent: FEAT-0024
+      effort: S
+      blocks: [TASK-0091]
+      note: "First item to be worked after the four contradiction issues; everything in TASK-0091 links to what this writes."
     TASK-0086:
       file: "docs/features/rule-adrs/plan/tasks/TASK-0086-Specify-The-Convention-In-Decisions.md"
       title: "DECISIONS.md specifies the three sections, the harvest trigger and the landing pattern — once, and everything else links to it"
@@ -325,12 +494,6 @@ items:
       phase: "[[PHASE-999]]"
       parent: FEAT-0019
       note: "First real exercise of the ISS-0016 STATUS-TABLE guard: confirm it fires on a deliberately incomplete edit before trusting it."
-    TASK-0079:
-      file: "docs/features/design-notes/plan/tasks/TASK-0079-Propagate-And-Migrate.md"
-      title: "Propagate the design type to the fleet and migrate REF-0001"
-      status: done
-      phase: "[[PHASE-999]]"
-      parent: FEAT-0019
     TASK-0077:
       file: "docs/features/external-review/plan/tasks/TASK-0077-Independence-Premise-Experiment.md"
       title: "Test the independence premise: clean-context Opus vs a different family, identical prompt"
@@ -338,12 +501,6 @@ items:
       phase: "[[PHASE-999]]"
       parent: FEAT-0018
       note: "QUALITY.md's different-family rule has been asserted and never tested. Two arms, byte-identical prompt, against the one case with a known answer (four Fable rounds, four real defects)."
-    TASK-0075:
-      file: "docs/features/external-review/plan/tasks/TASK-0075-Prototype-The-Runner.md"
-      title: "Prototype the external review runner"
-      status: done
-      phase: "[[PHASE-999]]"
-      parent: FEAT-0018
     TASK-0076:
       file: "docs/features/external-review/plan/tasks/TASK-0076-Calibration-Run.md"
       title: "Calibration run: point a non-Claude reviewer at ISS-0011..ISS-0015"
@@ -437,79 +594,46 @@ items:
       parent: FEAT-0015
       effort: M
       depends: [TASK-0060]
-    TASK-0065:
-      file: docs/features/derived-state/plan/tasks/TASK-0065-Rewrite-Snapshot-Sync-Skill.md
-      title: "Rewrite the snapshot-sync skill against the generator; move semantic reconciliation to docs-audit"
-      status: done
-      parent: FEAT-0015
-      effort: S
-      depends: [TASK-0060, TASK-0061]
-    TASK-0066:
-      file: docs/features/executable-verification/plan/tasks/TASK-0066-Test-Command-Schema.md
-      title: "Add command, last_run, last_verified and waiver_expires to the test schema and templates"
-      status: done
-      parent: FEAT-0016
-      effort: S
-      blocks: [TASK-0067, TASK-0068]
-    TASK-0067:
-      file: docs/features/executable-verification/plan/tasks/TASK-0067-Test-Runner.md
-      title: "Build run-tests.py: stamp TST-* status from execution; make hand-edited status an error"
-      status: done
-      parent: FEAT-0016
-      effort: L
-      depends: [TASK-0066]
-    TASK-0068:
-      file: docs/features/executable-verification/plan/tasks/TASK-0068-Staleness-And-Waiver-Expiry.md
-      title: "Staleness finding for manual tests and expiry for verification waivers"
-      status: done
-      parent: FEAT-0016
-      effort: M
-      depends: [TASK-0066]
-    TASK-0069:
-      file: docs/features/enforcement-severity/plan/tasks/TASK-0069-Triage-Validator-Warnings.md
-      title: "Triage every validator warning code: promote with a dated cutover, or delete"
-      status: done
-      parent: FEAT-0017
-      effort: M
-      blocks: [TASK-0071]
-    TASK-0070:
-      file: docs/features/enforcement-severity/plan/tasks/TASK-0070-Fleet-Backfill-Before-Cutover.md
-      title: "Clear ~325 REQ-BOXES/FEATURE-REQ findings across the fleet, and resolve the live ADR-0007 cutover"
-      status: done
-      parent: FEAT-0017
-      effort: XL
-    TASK-0071:
-      file: docs/features/enforcement-severity/plan/tasks/TASK-0071-Independent-Review-Wiring.md
-      title: "Wire independent review into close-out so it runs, or narrow its scope to CHG-* notes"
-      status: done
-      parent: FEAT-0017
-      effort: M
-      depends: [TASK-0069]
-    TASK-0072:
-      file: docs/features/derived-state/plan/tasks/TASK-0072-Fleet-Rollout-Scripts-Hooks-CI.md
-      title: "Fleet rollout: propagate scripts, hooks and the CI workflow to 10 repos; close the MANIFEST seed gap"
-      status: done
-      parent: FEAT-0015
-      effort: M
-      depends: [TASK-0060, TASK-0061]
-    TASK-0073:
-      file: docs/features/status-taxonomy-collapse/plan/tasks/TASK-0073-Cockpit-Vocabulary-Alignment.md
-      title: "Cockpit: align the status vocabulary across eight surfaces; the delivered band empties"
-      status: done
-      parent: FEAT-0013
-      effort: M
-      depends: [TASK-0053]
-      external: "../project-os-cockpit/docs/issues/ISS-0025-Incoming-Taxonomy-Collapse.md"
-    TASK-0074:
-      file: docs/features/derived-state/plan/tasks/TASK-0074-Cockpit-Bundled-Validator.md
-      title: "Cockpit: the bundled validator copy must track every retired and re-severitied check"
-      status: done
-      parent: FEAT-0015
-      effort: M
-      depends: [TASK-0061]
-      external: "../project-os-cockpit/docs/issues/ISS-0026-Bundled-Validator-Drift.md"
-
   issues:
+    ISS-0044:
+      file: "docs/issues/ISS-0044-The-Adapter-Calls-The-Pinned-Subagent-Model-The-Strongest.md"
+      status: open
+      severity: low
+      phase: "[[PHASE-0003]]"
+      component: adapters-hooks
+      note: "Prompting-guide review finding 1.4. Decided 2026-09-03: retarget PLANNER_MODEL and REVIEWER_MODEL to claude-fable-5-1 and reword ADAPTER.md; downstream repos pick it up at the next sync plus generator run."
+    ISS-0043:
+      file: "docs/issues/ISS-0043-Release-Skills-And-Two-Templates-Use-Retired-Vocabulary.md"
+      status: open
+      severity: medium
+      phase: "[[PHASE-0003]]"
+      component: docs
+      note: "Prompting-guide review finding 1.3, eight rows. An agent running release-prep today looks for CHK-* files no repo has and writes statuses the taxonomy deleted."
+      related: [ISS-0009, ADR-0008]
+    ISS-0042:
+      file: "docs/issues/ISS-0042-Grandfathering-Is-Described-Two-Incompatible-Ways.md"
+      status: open
+      severity: medium
+      phase: "[[PHASE-0003]]"
+      component: docs
+      note: "Prompting-guide review finding 1.2. QUALITY.md describes the date heuristic ISS-0007 removed; STATUSES.md describes the ID list that replaced it."
+      related: [ISS-0007]
+    ISS-0045:
+      file: "docs/issues/ISS-0045-Nothing-Says-A-Review-Or-Design-Deliverable-Is-Filed.md"
+      status: open
+      severity: low
+      phase: "[[PHASE-0003]]"
+      component: docs
+      note: "Edwin's 2026-09-03 ask: the LLM's reviews and designs should live in the repo and show in the cockpit. The display exists (References group, design bench); the close-out rule does not."
+      related: [ISS-0040, FEAT-0025, FEAT-0019]
+    ISS-0041:
+      file: "docs/issues/ISS-0041-Four-Files-Still-Require-A-Different-Model-Family.md"
+      status: open
+      severity: medium
+      phase: "[[PHASE-0003]]"
+      component: docs
+      note: "Prompting-guide review finding 1.1. ADR-0013 replaced the different-family rule with clean context, and four files still instruct the old one — including the review skill, two paragraphs after it states the new one."
+      related: [ISS-0006, ADR-0013, ADR-0024]
     ISS-0039:
       file: "docs/issues/ISS-0039-The-Restatement-Reached-Three-Surfaces-Of-Four.md"
       status: open
@@ -701,7 +825,7 @@ items:
       status: open
       severity: low
       owner: user:edwin
-      phase: PHASE-999
+      phase: "[[PHASE-0003]]"
     ISS-0005:
       file: docs/issues/ISS-0005-Feature-Less-Requirement-Triage.md
       title: "Feature-less requirement triage (ADR-0007 follow-up): 14 of 23 resolved mechanically; 9 are a real residue — 5 policies, 3 conventions, 1 unscheduled deliverable"
@@ -872,7 +996,7 @@ items:
     REQ-0018:
       file: docs/requirements/REQ-0018-State-Rules-Stated-Once.md
       title: "State and transition rules must be normative in exactly one file; every other document links rather than restates"
-      status: implemented
+      status: superseded
       owner: user:edwin
       priority: high
       phase: PHASE-0002
@@ -935,6 +1059,27 @@ items:
       implements: [FEAT-0023]
       note: "Deliberately tightened from the originating framing: the check fires when EITHER section is missing, not only when both are. Refusing only the both-missing case would let the most common malformation through — a rule with a domain and no discharge, which is exactly the ISS-0005 population of five feature-less policies that name no feature and so block nothing."
 
+    REQ-0026:
+      file: "docs/requirements/REQ-0026-Instruction-Files-Carry-Rules-Not-History.md"
+      title: "An always-loaded instruction file carries rules and reasons, not history"
+      status: draft
+      owner: user:edwin
+      priority: medium
+      phase: "[[PHASE-0003]]"
+      implements: [FEAT-0026]
+      note: "LIFECYCLE.md under 800 words is the firm criterion. Budgets for the other four files were added 2026-09-03 as provisional stopping rules for the trim, not gates; Edwin is unsure how useful they are."
+
+    REQ-0027:
+      file: "docs/requirements/REQ-0027-Every-Normative-Rule-Is-Stated-Once.md"
+      title: "Every normative rule is stated in exactly one file"
+      status: approved
+      owner: user:edwin
+      priority: high
+      phase: "[[PHASE-0003]]"
+      implements: []
+      supersedes: [REQ-0018]
+      related: [ADR-0024, REQ-0018, ISS-0041, ISS-0042, ISS-0043]
+      note: "ADR-0024 option 1: widens REQ-0018 from state rules to every normative rule. Supersedes it rather than reopening a terminal requirement."
   risks:
     RISK-0001:
       file: docs/risks/RISK-0001-Fleet-Status-Migration.md
@@ -954,6 +1099,29 @@ items:
       related: [FEAT-0015, TASK-0060, ADR-0009, REQ-0019]
 
   tests:
+    TST-0007:
+      file: "docs/features/delegation-hint/plan/tests/TST-0007-The-Hooks-Emit-What-The-Contracts-Say.md"
+      title: "The hooks emit what their contracts now say they emit"
+      status: draft
+      features: [FEAT-0027]
+      issues: [ISS-0003]
+      tasks: [TASK-0102, TASK-0103]
+      note: "Draft until TASK-0102 lands what it measures; not run before then, so it is never recorded as failing."
+    TST-0006:
+      file: "docs/features/instruction-weight/plan/tests/TST-0006-Instruction-Files-Under-Their-Word-Budgets.md"
+      title: "The always-loaded instruction files are under their word budgets"
+      status: draft
+      requirements: [REQ-0026]
+      features: [FEAT-0026]
+      tasks: [TASK-0098]
+      note: "Draft until TASK-0098 lands what it measures; not run before then, so it is never recorded as failing."
+    TST-0005:
+      file: "docs/features/pause-and-scope-rules/plan/tests/TST-0005-One-Pause-Rule-And-Eight-Stop-Points-That-Link-It.md"
+      title: "One pause rule stated once, and eight stop-points that link it"
+      status: draft
+      features: [FEAT-0024]
+      tasks: [TASK-0090, TASK-0091]
+      note: "Draft until TASK-0091 lands what it measures; not run before then, so it is never recorded as failing."
     TST-0001:
       file: docs/tests/TST-0001-Docs-Validation-Gate.md
       title: "Docs validation gate: the repo's own invariants hold"
@@ -1025,6 +1193,14 @@ items:
       status: merged
 
   decisions:
+    ADR-0024:
+      file: "docs/decisions/ADR-0024-A-Normative-Rule-Is-Stated-Once.md"
+      title: "A normative rule is stated in one file and linked everywhere else"
+      status: accepted
+      owner: user:edwin
+      decision: "Option 1. Widen REQ-0018 from state rules to every normative rule; a terminal requirement is not reopened, so REQ-0027 supersedes it. Discharge is the docs-audit drift dimension; a mechanical RULE-ONCE check stays an open acceptance thread"
+      related: [ISS-0006, ISS-0041, ISS-0042, ISS-0043, REQ-0018, REQ-0027, ADR-0023]
+      note: "Accepted 2026-09-03 with option 1. REQ-0027 supersedes REQ-0018 and widens it to every normative rule; RULE-ONCE stays an open acceptance thread."
     ADR-0023:
       file: docs/decisions/ADR-0023-A-Quantified-Rule-Is-A-Decision.md
       title: "A quantified rule is a decision: a rule of the form \"every member of DOMAIN satisfies P\" is recorded as an ADR carrying `## Rule`, `## Domain` and `## Conformance`"
@@ -1154,21 +1330,21 @@ items:
 
 metrics:
   counts:
-    features_total: 23
+    features_total: 27
     features_done: 20
-    phases_total: 3
+    phases_total: 4
     phases_done: 2
-    tasks_total: 89
+    tasks_total: 105
     tasks_done: 82
-    tests_total: 4
+    tests_total: 7
     tests_passing: 4
     tests_failing: 0
-    issues_open: 26
+    issues_open: 31
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0
-    requirements_total: 25
-    requirements_implemented: 24
+    requirements_total: 27
+    requirements_implemented: 23
     risks_open: 0
     releases_total: 0
-    decisions_total: 23
+    decisions_total: 24

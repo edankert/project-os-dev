@@ -3,11 +3,12 @@ type: "[[requirement]]"
 id: REQ-0018
 aliases: ["REQ-0018"]
 title: "State and transition rules must be normative in exactly one file; every other document links rather than restates"
-status: implemented
+status: superseded
+superseded_by: "[[REQ-0027-Every-Normative-Rule-Is-Stated-Once]]"
 phase: "[[PHASE-0002-State-Model-Simplification]]"
 owner: user:edwin
 created: 2026-07-25
-updated: 2026-07-25
+updated: 2026-09-03
 priority: high
 scope: docs-system
 source: ["review:2026-07-25-fleet-state-audit"]
@@ -24,6 +25,8 @@ acceptance:
 ---
 
 # State rules are stated once
+
+> **Superseded 2026-09-03** by [[REQ-0027-Every-Normative-Rule-Is-Stated-Once|REQ-0027]], which widens the rule from state and transition rules to every normative rule (ADR-0024, option 1). Nothing here is retracted: the six criteria below stay satisfied and are re-checked as REQ-0027's third criterion.
 
 ## Statement
 

@@ -16,7 +16,8 @@ Individual `PHASE-*` notes under `phases/` hold the detailed scope, exit criteri
 | Phase | Name | Status | Scope |
 |-------|------|--------|-------|
 | [[PHASE-0001-Documentation-System-Foundations\|PHASE-0001]] | Documentation system foundations | `done` | Everything project-os was built out of: tool adapters, hook contracts, mandatory skill steps, the relationship and phase models, the Obsidian cockpit, deferral and requirement-lifecycle enforcement. FEAT-0001–FEAT-0012, REQ-0001–REQ-0015, ADR-0001–ADR-0007 |
-| [[PHASE-0002-State-Model-Simplification\|PHASE-0002]] | State model simplification | `active` | The first phase that removes structure. Collapse the status taxonomy, state the rules once, generate the snapshot, stamp test status by execution, end the permanent warning tier. FEAT-0013–FEAT-0017, REQ-0016–REQ-0024, ADR-0008–ADR-0011 |
+| [[PHASE-0002-State-Model-Simplification\|PHASE-0002]] | State model simplification | `done` | The first phase that removes structure. Collapse the status taxonomy, state the rules once, generate the snapshot, stamp test status by execution, end the permanent warning tier. FEAT-0013–FEAT-0017, REQ-0016–REQ-0024, ADR-0008–ADR-0011 |
+| [[PHASE-0003-Prompting-Guide-Conformance\|PHASE-0003]] | Prompting-guide conformance | `active` | The template's instructions, skills, hooks and subagents brought in line with the Claude 5 prompting guides: four contradictions fixed, every rule stated once, the always-loaded files trimmed, hooks and hints that no longer teach bypasses. FEAT-0024–FEAT-0027, REQ-0026–REQ-0027, ADR-0024, ISS-0041–ISS-0045 |
 | [[PHASE-999-Parking-Lot\|PHASE-999]] | Parking lot — future and unplanned | `planned` | Forward home for deferred items and for tracked-but-unscheduled work. Never completes; items leave by adoption or cancellation |
 
 ## Conventions
