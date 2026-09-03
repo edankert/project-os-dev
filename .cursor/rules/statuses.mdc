@@ -1,5 +1,5 @@
 ---
-description: "**This file is the single normative source for item state.** Allowed values, the gates on each terminal transition, and \u2014 new since ADR-0009/ADR-0010 \u2014 *who or what writes the value*. Other documents "
+description: "**This file is the single normative source for item state**: allowed values, the gate on each terminal transition, and who writes the value. Other documents link here and none restates these rules. Re"
 globs: ["**/*"]
 ---
 
@@ -7,9 +7,7 @@ globs: ["**/*"]
 
 # Status taxonomies and transitions
 
-**This file is the single normative source for item state.** Allowed values, the gates on each terminal transition, and — new since ADR-0009/ADR-0010 — *who or what writes the value*. Other documents link here; none restates these rules.
-
-That last rule is not tidiness. Requirement advancement was previously stated in four files, and when ADR-0007 was amended, three were corrected and `status-transition/SKILL.md` was not — leaving every repo in the fleet instructing agents to apply a gate the ADR had just reverted (ISS-0006). Nothing detected it, because no check compares prose to prose. One copy is the only durable fix.
+**This file is the single normative source for item state**: allowed values, the gate on each terminal transition, and who writes the value. Other documents link here and none restates these rules. Reason: a rule in two files is amended in one and left wrong in the other (ISS-0006; project-os-dev ADR-0024).
 
 ## The contract at a glance
 
@@ -17,91 +15,85 @@ That last rule is not tidiness. Requirement advancement was previously stated in
 |---|---|---|---|
 | `task` | `done` | linked tests `passing`; parent gates apply | agent, at close-out |
 | `issue` | `fixed` | linked tests `passing` and not stale | agent, at close-out |
-| `feature` | `done` | every task scope-resolved (`done`/`cancelled`/`superseded`); linked tests `passing`; **every requirement naming it has resolved criteria** | agent, at close-out |
-| `requirement` | `implemented` | every acceptance criterion ticked-with-evidence or reconciled — **never gated on tests** (ADR-0007) | agent, at feature close-out |
-| `phase` | `done` | **every exit criterion ticked-with-evidence or reconciled** (PHASE-BOXES); **every note naming it in `phase:` scope-resolved** (PHASE-CHILDREN) | agent |
-| `test` | `passing` / `failing`, or `retired` | — | **the author, and only for a manual test**, which must carry `last_verified:` and goes stale. A test carrying a `command:` holds no verdict at all (ADR-0038) |
-| `test` at `level: acceptance` | `retired` | — | agent or human; it rests at `active` and the **verdict** is `mark:`, never the status (see `[[test]]`) |
+| `feature` | `done` | every task scope-resolved (`done`/`cancelled`/`superseded`); linked tests `passing`; every requirement naming it has resolved criteria | agent, at close-out |
+| `requirement` | `implemented` | every acceptance criterion ticked-with-evidence or reconciled; never gated on tests (ADR-0007) | agent, at feature close-out |
+| `phase` | `done` | every exit criterion ticked-with-evidence or reconciled (PHASE-BOXES); every note naming it in `phase:` scope-resolved (PHASE-CHILDREN) | agent |
+| `test` | `passing` / `failing`, or `retired` | — | the author, and only for a manual test, which carries `last_verified:` and goes stale. A test carrying a `command:` holds no verdict (ADR-0038) |
+| `test` at `level: acceptance` | `retired` | — | agent or human; it rests at `active` and the verdict is in the release ledger, not on the note (see `[[test]]`) |
 | `risk` | `closed` | — | agent |
 | `release` | `released` | release verification | agent |
 | `change` | `merged` | — | agent |
 | `adr` | `accepted` / `superseded` | — | human decision |
 
-Derived, never hand-written (ADR-0009): each item's status **in `SNAPSHOT.yaml`**, `counters`, and `metrics.counts`. Author the status in the note; `tools/scripts/sync-snapshot.py` propagates it at pre-commit and CI checks it. Snapshot *membership* and `goal:`/`note:` prose remain curation.
+Derived, never hand-written (ADR-0009): each item's status in `SNAPSHOT.yaml`, `counters`, and `metrics.counts`. Author the status in the note; `tools/scripts/sync-snapshot.py` propagates it.
 
 ## Two things that are not statuses
 
-- **Blocked-ness** — record `depends: [ID]`, which names what is blocking. An item can be blocked while still `doing`; a status cannot express that, and a relationship can.
-- **Staleness** — computed from `last_verified:`, reported by the validator. Adding a `stale` value would let an agent type it, reintroducing the assertion problem ADR-0010 removed.
+- **Blocked-ness** is `depends: [ID]`; an item can be blocked while still `doing`, which a status cannot express.
+- **Staleness** is computed from `last_verified:` by the validator; a typed `stale` would reintroduce the assertion problem ADR-0010 removed.
 
 ## Grandfathering
 
-Items already violating a gate when it was promoted to error are listed by ID in `tools/GRANDFATHERED.yaml`, and report as warnings. Everything else errors immediately. There is no date-based exemption — the previous `updated:`-date heuristic re-armed a gate whenever a note was edited for any reason (ISS-0007).
+Items already violating a gate when it was promoted to error are listed by ID in `tools/GRANDFATHERED.yaml` and report as warnings; everything else errors. There is no date-based exemption, because an `updated:`-date heuristic re-arms on every edit (ISS-0007, ADR-0011).
 
 ---
 
-
-This file defines the allowed `status` values and recommended transitions for each note type.
-
-If a project needs different states, update this file and the templates in `../../docs/__templates__/`.
-
-Terminal-status semantics: `done`/`closed`/`cancelled`/`declined` **resolve** an item's place in its parent's scope (the parent can complete over them). `deferred` does **not** — it is a parked, non-terminal state governed by the deferral rules at the end of this file.
+If a project needs different states, update this file and the templates in `../../docs/__templates__/`. `done`/`closed`/`cancelled`/`declined` **resolve** an item's place in its parent's scope; `deferred` does not ("Deferral and re-adoption" below).
 
 ## `[[task]]`
 - Allowed: `backlog`, `doing`, `done`, `deferred`, `cancelled`, `superseded`
 - Typical transitions:
   - `backlog` → `doing` → `done`
-  - `backlog` → `deferred` (descoped from the parent and parked; see "Deferral and re-adoption") or `cancelled` (will not be done)
-  - `deferred` → `backlog` (re-adopted under a new or the original parent)
-  - any → `superseded` (the work was absorbed into a successor; link it with `superseded_by:`)
-- Blocked-ness is **not** a status: record `depends: [ID]` on the blocked item, which names what is blocking it. An item can be blocked while still `doing`, which a status cannot express.
+  - `backlog` → `deferred` (descoped and parked; see "Deferral and re-adoption") or `cancelled` (will not be done)
+  - `deferred` → `backlog` (re-adopted)
+  - any → `superseded` (absorbed into a successor; link it with `superseded_by:`)
 
 ## `[[issue]]`
 - Allowed: `triage`, `open`, `fixed`, `declined`, `deferred`
 - Typical transitions:
   - `triage` → `open` → `fixed`
-  - `fixed` → `open` (regression; git holds the history and the note records why — there is no separate `reopened` status)
-  - `triage`/`open` → `declined` (deliberate no-action, keep the note) or `deferred` (descoped and parked; see "Deferral and re-adoption")
+  - `fixed` → `open` (regression; git holds the history and the note records why, so there is no `reopened`)
+  - `triage`/`open` → `declined` (deliberate no-action, keep the note) or `deferred` (descoped and parked)
   - `deferred` → `open` (re-adopted)
-- **`fixed` is the single terminal status.** There is no `fixed` → `closed` second step: across the fleet only 3% of issues ever took it (10 of 324), so "implemented" and "verified" were never actually distinguished by it. Verification lives in linked `[[test]]` notes, where it carries evidence.
-- Blocked-ness is recorded as `depends: [ID]`, not as a status.
+- **`fixed` is the single terminal status.** There is no `fixed` → `closed` second step; verification lives in linked `[[test]]` notes, where it carries evidence (ADR-0008).
 
 ## `[[feature]]`
 - Allowed: `backlog`, `planned`, `doing`, `review`, `done`, `deferred`, `cancelled`, `superseded`
 - Typical transitions:
   - `backlog` → `planned` → `doing` → `review` → `done`
-  - `backlog`/`planned` → `deferred` (descoped and parked; see "Deferral and re-adoption") or `cancelled` (will not be built)
+  - `backlog`/`planned` → `deferred` (descoped and parked) or `cancelled` (will not be built)
   - `deferred` → `planned` (re-adopted)
   - `done` → `superseded` (replaced by a newer feature; link the successor)
-- **A feature may not reach `done` while a requirement that names it in `implements:` still has an unresolved acceptance criterion** (ADR-0007, validator FEATURE-REQ) — unless that requirement is descoped (`deferred`/`cancelled`/`superseded`). Satisfy the requirement's criteria, or descope it, before closing the feature. This is in addition to the task and test gates in `QUALITY.md`.
+- **A feature may not reach `done` while a requirement naming it in `implements:` has an unresolved acceptance criterion** (ADR-0007, validator FEATURE-REQ), unless that requirement is descoped.
+- **A feature may not move to `doing` while a requirement it implements is still `draft`**; approve the requirement first (`../skills/feature-scaffold/SKILL.md`, step 7 "Requirement approval gate"). Reason: implementation works against agreed criteria, not against a draft.
 
 ## `[[phase]]`
 - Allowed: `planned`, `active`, `done`, `deferred`, `superseded`
 - Typical transitions:
   - `planned` → `active` → `done`
   - `planned` → `deferred`
-  - any → `superseded` (the phase's scope was absorbed into a successor; link it with `superseded_by:`)
-- **A phase may not be `done` or `superseded` while a note naming it in `phase:` is unresolved** (validator PHASE-CHILDREN). Resolve the child, or re-home it to the phase that now owns its work — the common case is a child left pointing at a closed phase after its owning feature moved on, which is why the gate reads the children rather than the phase's own `features:` list. Tasks, issues, requirements, features **and risks** all count: an `open` risk is not resolved by the phase that raised it closing. `deferred` does not resolve a child: park it under a real future phase (or `PHASE-999`) so the relationship, not the status word, records where the work went.
-- **A phase may not be `done` with an unticked exit criterion** (validator PHASE-BOXES). Tick each with an evidence pointer, or mark it `- [~]` with the reason it was cut — the same reconciliation convention requirements use for acceptance criteria. A done phase with **no** `## Exit Criteria` section, or one with zero boxes, fails the same gate: "no criteria recorded" is the same missing-evidence failure as "criteria left unticked", and exempting it would make the gate vacuous exactly where it matters most. A phase closed without ticking its own criteria is the phase-level form of the assertion problem ADR-0010 removed from tests: the status claims completion that nothing recorded. `superseded` phases are exempt — their criteria moved to the successor.
+  - any → `superseded` (scope absorbed into a successor; link it with `superseded_by:`)
+- **A phase may not be `done` or `superseded` while a note naming it in `phase:` is unresolved** (validator PHASE-CHILDREN): tasks, issues, requirements, features and risks all count, and `deferred` does not resolve a child. Reason: the common failure is a child left pointing at a closed phase after its feature moved on.
+- **A phase may not be `done` with an unticked exit criterion** (validator PHASE-BOXES); tick each with evidence or mark it `- [~]` with the reason it was cut. No `## Exit Criteria` section, or zero boxes, fails the same gate. Reason: a phase closed without its criteria is the assertion problem ADR-0010 removed from tests. `superseded` phases are exempt.
 
 ## `[[requirement]]`
 - Allowed: `draft`, `approved`, `implemented`, `retired`, `deferred`, `cancelled`, `superseded`
-- **`implemented` is terminal** (ADR-0007), and gated on acceptance criteria alone — never on linked tests. There is no `verified` requirement status: verification lives in `[[test]]` notes (which carry their own `passing`/`failing` status) and in the per-criterion evidence pointers on the acceptance checkboxes. Recording it a second time as a requirement status added no information and, in practice, was set on delivery or on nothing far more often than on proof.
+- **`implemented` is terminal** (ADR-0007), gated on acceptance criteria alone and never on linked tests. There is no `verified` status; verification lives in `[[test]]` notes and the per-criterion evidence.
 - Typical transitions:
   - `draft` → `approved` → `implemented`
-  - `approved` → `implemented` is set at **feature close-out**, not independently: once the feature named in the requirement's `implements:` has reached a terminal status, its acceptance criteria are ticked against evidence and any departed-from criterion is reconciled (`../skills/close-out/SKILL.md`, "Requirement advancement"). A requirement left at `draft`/`approved` once its feature is terminal (`done`, `cancelled`, or `superseded`) is a validator error (REQ-STALE) — if the feature was cancelled or superseded rather than delivered, supersede or cancel the requirement instead of advancing it.
-  - Advancing to `implemented` requires every acceptance criterion to be **ticked with evidence or reconciled**; an unresolved criterion on a terminal requirement is a validator error (REQ-BOXES). The checkboxes, not the status word, are the evidence surface.
+  - `approved` → `implemented` is set at **feature close-out** (`../skills/close-out/SKILL.md`, step 3 "Requirement advancement"). A requirement left at `draft`/`approved` after its feature is terminal is a validator error (REQ-STALE); a cancelled or superseded feature supersedes or cancels its requirement instead.
+  - `implemented` requires every acceptance criterion **ticked with evidence or reconciled** (validator REQ-BOXES).
   - `implemented` → `retired`
-  - `draft`/`approved` → `deferred` (descoped and parked; see "Deferral and re-adoption") or `cancelled`
+  - `draft`/`approved` → `deferred` (descoped and parked) or `cancelled`
   - `deferred` → `draft` (re-adopted)
   - any → `superseded` (replaced by a newer requirement; link the successor)
-- **Ownership:** a requirement's `implements:` names **at most one** feature (ADR-0007). Two or more is a validator error — split the requirement, or pick the true owner. Zero is permitted (an unowned or cross-cutting requirement gates no feature).
+- **Ownership:** `implements:` names at most one feature (ADR-0007); two is a validator error, zero is permitted.
 
 ## `[[risk]]`
 - Allowed: `open`, `closed`
 - Typical transitions:
   - `open` → `closed`
-- Mitigation progress is tracked in `mitigation_tasks:` and the note body, not as a status: `mitigating` and `monitoring` were written once and never, respectively, across 5,890 fleet status writes.
+- Mitigation progress is tracked in `mitigation_tasks:` and the note body, not as a status (ADR-0008).
 
 ## `[[workflow]]`
 - Allowed: `draft`, `active`, `deprecated`
@@ -116,7 +108,7 @@ Terminal-status semantics: `done`/`closed`/`cancelled`/`declined` **resolve** an
 - Typical transitions:
   - `proposed` → `accepted`
   - `accepted` → `superseded`
-- A decision that is not taken is **deleted or superseded**, not marked `rejected` — `rejected` was never written once across the fleet, and a rejected proposal that is worth keeping is worth recording as the alternative it lost to (ADRs already carry `alternatives:`).
+- A decision that is not taken is deleted or superseded, not marked `rejected`; a rejected proposal worth keeping is the alternative it lost to, and ADRs carry `alternatives:` (ADR-0008).
 
 ## `[[design]]`
 - Allowed: `draft`, `proposed`, `accepted`, `implemented`, `superseded`, `cancelled`
@@ -125,65 +117,46 @@ Terminal-status semantics: `done`/`closed`/`cancelled`/`declined` **resolve** an
   - `proposed` → `accepted` → `implemented`
   - `proposed` → `cancelled` (abandoned without a replacement)
   - any → `superseded` (a later design replaces it; link it with `superseded_by:`)
-- **Every value here already existed in the vocabulary.** This type adds no status values: `draft` from `[[requirement]]`/`[[workflow]]`/`[[plan]]`, `proposed` and `accepted` from `[[adr]]`, `implemented` from `[[requirement]]`, `superseded` and `cancelled` from most types. ADR-0008 collapsed this vocabulary from 64 values to 53 after measuring that several had never been written once; a new type is not a reason to reopen that.
-- A design is not an ADR. An ADR records *what was decided and why*; a design records *what a surface should look like*, carries a rendered `asset:`, and is superseded by its own next revision rather than by a competing argument. Revisions are commits against the asset, not new notes — a design note that spawns a note per revision is being used as a changelog.
-- `implemented` is terminal-but-alive: the design still describes the built surface, which is what makes design/implementation parity checkable. Use `superseded` when a newer design takes over, not when the code ships.
+- Every value here already existed in the vocabulary; a new type is not a reason to add statuses (ADR-0008).
+- A design records what a surface should look like and carries a rendered `asset:`; revisions are commits against the asset, not new notes. `implemented` means the design still describes the built surface; `superseded` means a newer design took over.
 
 ## `[[test]]`
 - Allowed: `draft`, `active`, `ready`, `passing`, `failing`, `retired`
 - Typical transitions:
   - `ready` → `passing` / `failing`
   - `failing` → `passing` (after a fix)
-  - `draft` → `active` → `retired` (the acceptance lifecycle — see below)
+  - `draft` → `active` → `retired` (the acceptance lifecycle, below)
   - anything → `retired` (the subject is gone, or the test was folded into another)
-- `ready` means **defined but not yet executed**. It is the state a test note is created in, and the only honest state for a procedure that has never run.
-- **`passing`/`failing` belong to manual tests only.** A test with no `command:` is manual: it records a verdict, must carry `last_verified:`, goes stale, and a stale test does not satisfy the verification gate. **A test that carries a `command:` records no verdict** — not `ready`, not `passing`, not `failing`, and no `last_run:` or `exit_code:` (ADR-0038). CI is the verdict there, and a red automated test is a broken build rather than a state anybody writes down. See `../skills/test-authoring/SKILL.md` and the `command:` field in `SCHEMAS.md`.
-- **`retired` is terminal, and it is the only removal.** `TESTING.md`: *"Nothing removes a check."* The same holds for any test whose subject has been deleted — leaving it `passing` makes it claim to verify something that is gone, and deleting it is forbidden by `LIFECYCLE.md`.
+- `ready` means defined but not yet executed: the state a test note is created in.
+- **`passing`/`failing` belong to manual tests only.** A test with no `command:` records a verdict, carries `last_verified:` and goes stale; a stale test does not satisfy the verification gate. **A test with a `command:` records no verdict**: not `ready`, not `passing`, not `failing`, and no `last_run:` or `exit_code:` (ADR-0038). CI is the verdict. See `command:` in `SCHEMAS.md`.
+- **`retired` is the only removal** (`TESTING.md`); deleting a test is forbidden by `LIFECYCLE.md`.
 
 ### `level: acceptance` — the acceptance half of the type
 
-An acceptance test is a `[[test]]` whose `level:` is `acceptance`. It is the thing a person walks; everything else about the type is unchanged. Three rules apply to it and to nothing else:
+An acceptance test is a `[[test]]` at `level: acceptance`: the thing a person walks. Three rules apply to it and nothing else:
 
-- **It rests at `active`, and the verdict is `mark:`, never status** (`TAXONOMY.md`). Walking one writes `mark:`, `verdict_date:` and `verdict_reason:` and does not touch `status:`. This is the load-bearing sentence, and it has three deliberate consequences:
-  - The verdict rules do not engage, because the note is not at `passing`/`failing`. A person's judgement lives in a field they say nothing about.
-  - The independent-review gate does not engage, because it is keyed on `passing`. The review of an acceptance test *is* the walk.
-  - The `Run` obligation does not engage, because it is keyed on `ready`. This is what keeps a suite of several hundred self-re-arming rows off a badge nobody could act on.
-- **Adding a `command:` is how it becomes automated**, and that is the point of the type being shared. From that moment the check is settled by CI and leaves the manual list — so automating a check discharges it instead of leaving it owed — and the note records no verdict of its own (ADR-0038). Nothing is moved and nothing is re-filed: the section follows the field.
-- **It never carries a completeness gate of its own**: nothing is blocked by an acceptance test being `draft`, and a `retired` one with an old verdict is a record, not an omission.
+- **It rests at `active`, and its verdict is not on the note**: a walk records a dated event in the release ledger, per check, platform and release (`TAXONOMY.md`, "Acceptance outcomes (the ledger's vocabulary)"; ADR-0037). Reason: the verdict rules, the review gate and the `Run` obligation are keyed on `passing` and `ready`, so they never engage for a suite of hundreds of self-re-arming rows.
+- **Adding a `command:` makes it automated** (`TESTING.md`, "When to create", rule 3).
+- **It carries no completeness gate of its own**: nothing is blocked by an acceptance test being `draft`.
 
-## `[[check]]` — retired
-
-**The `check` type no longer exists.** An acceptance check is a `[[test]]` at `level: acceptance`; see the `[[test]]` section above, which carries every rule this section used to.
-
-The type was introduced so that a check's human verdict could not collide with the machinery a test carries — the verdict rules, the review gate and the `Run` obligation. That worked, and it cost the thing that turned out to matter more: **a check could not be automated.** A manual test becomes automated by adding `command:`; a check had no such path, so the 200-odd checks whose bodies already named a covering automated test still blocked releases waiting for a person.
-
-The merged type keeps the protection and adds the path. The gates are keyed on statuses an acceptance test does not hold — `passing` for the review gate, `ready` for the `Run` obligation — so they stay off by construction rather than by an exemption for `level: acceptance`.
-
-*(Decided in `project-os-cockpit` ADR-0031, which supersedes ADR-0030. Notes with `type: "[[check]]"` are migrated, not deleted; their ids move into the `TST-*` space and the old `CHK-*` id is kept as an alias.)*
+The retired `check` type is `TAXONOMY.md`, "`check` — retired".
 
 ## Deferral and re-adoption
 
-`deferred` means "explicitly out of the current parent's scope, still wanted later". It is **not** terminal and never satisfies completeness: a parent whose scope list still contains a deferred item cannot reach a terminal status (enforced by `tools/scripts/validate-docs.py`).
+`deferred` means out of the current parent's scope and still wanted later. It never satisfies completeness: a parent whose scope list holds a deferred item cannot reach a terminal status (validator DEFER checks). Deferring is a **descoping operation** (ADR-0005; procedure in `../skills/status-transition/SKILL.md`):
 
-Deferring an item is therefore a **descoping operation**, not just a status flip (decision: ADR "Deferral is a descoping operation" where adopted; procedure: `../skills/status-transition/SKILL.md`):
-
-1. Remove the item's ID from the parent's scope list (e.g. the feature's `tasks:`) and record it in the parent's `deferred:` list instead.
-2. On the deferred item, set `origin:` to the former parent (provenance — where the work was originally scoped) and clear `parent:`.
-3. Give it a forward home: set `phase:` to a real future phase when one exists, else to the `PHASE-999` parking-lot note (create `docs/phases/PHASE-999-Parking-Lot.md` once if absent; all-9s sentinel IDs are counter-exempt).
-4. Mirror all of this in `SNAPSHOT.yaml`. Deferred items count as **active** for snapshot retention — never prune them.
-
-Re-adoption reverses it: assign a new (or the original) parent, add the ID back to that parent's scope list, set the non-parked status (`backlog`/`open`/`draft`/`planned`), and keep `origin:` as history. Backlog grooming reviews every parked item each pass (`../skills/backlog-grooming/SKILL.md`).
+The steps, and re-adoption, are in `../skills/status-transition/SKILL.md` ("Deferral procedure", "Re-adoption"). Two status facts belong here: a deferred item is never pruned from the snapshot, and re-adoption sets the non-parked status for its type (`backlog`/`open`/`draft`/`planned`).
 
 ## `[[release]]`
 - Allowed: `draft`, `released`, `reverted`
 - Typical transitions:
-  - `draft` → `released` (`draft` covers "prepared and verified, not yet live"; see `../skills/release-verification/SKILL.md`)
-  - `released` → `reverted` (rollback occurred; keep the note and link the successor release when one ships)
+  - `draft` → `released` (`draft` covers prepared and verified, not yet live; `../skills/release-verification/SKILL.md`)
+  - `released` → `reverted` (rollback; keep the note and link the successor release)
 
 ## `[[plan]]`
 - Allowed: `draft`, `active`, `done`, `superseded`
-- A plan's status **follows its parent feature**, and is advanced at close-out: `active` while the feature is being built, `done` when it closes, `superseded` if the delivery sequence was replaced.
-- Plans deliberately carry **no `id:`**. The template's `PLAN-FEAT-0000` form makes `extract_ids` resolve `PLAN-FEAT-0012` to `FEAT-0012`, so the plan would masquerade as its own feature. They are found by `type: [[plan]]` instead, and the `PLAN-STATE` check is what covers them.
+- A plan's status follows its feature and is advanced at close-out: `active` while building, `done` when the feature closes, `superseded` if the delivery sequence was replaced.
+- Plans carry no `id:`; a `PLAN-FEAT-0012` id would resolve to `FEAT-0012` in the ID parser. They are found by `type: [[plan]]` (validator PLAN-STATE).
 
 ## `[[reference]]`
 - Allowed: `active`, `deprecated`

@@ -18,7 +18,7 @@ Field definitions: `[[SCHEMAS]]`.
 - One template per note type (`phase.md`, `issue.md`, `feature.md`, `task.md`, `adr.md`, `change.md`, `workflow.md`, `release.md`, `plan.md`, etc.).
   - Includes `test.md` for manual/automated verification notes.
   - Includes `reference.md` for durable explanatory or registry-style documents.
-  - Includes `acceptance-tests.md` for the consolidated `docs/tests/ACCEPTANCE_TESTS.md` release checklist (see `../../tools/instructions/TESTING.md`).
+  - Includes `acceptance-tests.md` for the older single-document form (`docs/tests/ACCEPTANCE_TESTS.md`). The current form is one `test.md` note per check at `level: acceptance`, stored per `tools/instructions/LIFECYCLE.md` "Test storage"; a repo that has migrated deletes that file rather than keeping both, and a repo that has not is unaffected (see `../../tools/instructions/TESTING.md`).
 
 ## How to use templates
 - Copy the appropriate template into the target directory.

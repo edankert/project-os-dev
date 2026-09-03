@@ -36,12 +36,14 @@ CURSOR_RULES = [
     ("MARKDOWN.md", "markdown", ["**/*.md"]),
 ]
 
-# Model routing (HC-008). The lifecycle phases that most reward capability —
-# planning and adversarial review — get the strongest pin. Full model IDs, not
-# aliases, so `reviewed_by` stays deterministic across releases.
+# Model pins for the two subagents (HC-008 delegation hint). The lifecycle
+# phases that most reward capability — planning and adversarial review — get
+# the pin. Full model IDs, not aliases, so `reviewed_by` stays deterministic
+# across releases. The pins are revisited at each model release; they are not a
+# standing claim about the strongest model available.
 #
-# Both are Opus as of ADR-0013, and deliberately the same as the likely
-# authoring model. The pins used to differ as a proxy for independence; that
+# Both are Fable 5.1 as of 2026-09-03 (project-os-dev ISS-0044), and
+# deliberately the same as the likely authoring model. The pins used to differ as a proxy for independence; that
 # proxy is retired. Independence is now a clean context and a separate session
 # (QUALITY.md, "Independent review (clean-context)"), which subagents provide by
 # construction — they start from the notes and the diff, never the author's
@@ -57,8 +59,8 @@ CURSOR_RULES = [
 # `reviewed_by` still records the model. That is provenance, not a compliance
 # token: a later reader needs to know who reviewed, and a future finding about a
 # specific model's blind spots needs the data.
-PLANNER_MODEL = "claude-opus-5"
-REVIEWER_MODEL = "claude-opus-5"
+PLANNER_MODEL = "claude-fable-5-1"
+REVIEWER_MODEL = "claude-fable-5-1"
 
 PLANNER_AGENT = """---
 name: planner
@@ -69,24 +71,25 @@ model: %s
 You are the project-os planning agent. You own preflight (`tools/instructions/LIFECYCLE.md`, "Preflight (must happen before code changes)") and nothing else.
 
 1. Follow the canonical playbooks rather than improvising: `tools/skills/issue-intake/SKILL.md` (including its spec-ambiguity check before any ID is allocated), `tools/skills/feature-scaffold/SKILL.md`, `tools/skills/task-breakdown/SKILL.md`, `tools/skills/impact-analysis/SKILL.md`, and `tools/skills/backlog-grooming/SKILL.md` when the prompt is about ordering rather than new work.
-2. Update `SNAPSHOT.yaml` first (allocate IDs by incrementing `counters`, create `items.*` entries with relationships, set `focus`), then create the notes from `docs/__templates__/` with frontmatter consistent with the snapshot.
+2. Update `SNAPSHOT.yaml` first (create `items.*` entries with relationships and set `focus`; an ID is allocated by creating its note, and the sync script raises `counters`), then create the notes from `docs/__templates__/` with frontmatter consistent with the snapshot.
 3. Respect phase boundaries (`docs/PHASES.md`): flag future-phase dependencies instead of quietly planning around them.
 4. Do not write or edit implementation code. Planning artifacts only — the main loop implements what you plan.
-5. If the request is ambiguous, stop and return the ambiguities as questions instead of allocating IDs. Ambiguity is upstream of documentation and cannot be fixed by tracking.
+5. If part of the request is ambiguous, allocate and draft what is settled, and return the ambiguities as questions beside it; which reading to build is the user's decision (`tools/instructions/LIFECYCLE.md`, "When to pause for the user"). Ambiguity is upstream of documentation and cannot be fixed by tracking, so do not paper over it with a note that guesses.
+6. Expect the delegation to carry the user's prompt verbatim and one sentence on what the result enables; if either is missing, ask for it in your first line rather than classifying a paraphrase. The verbatim text lands in the issue note's "As reported" callout under Problem (`docs/__templates__/issue.md`); your paraphrase stays outside it.
 
 Return the allocated IDs with their paths, a short plan summary per item, any impact-analysis conflicts, and open questions.
 """ % PLANNER_MODEL
 
 REVIEWER_AGENT = """---
 name: independent-reviewer
-description: Independent review pass required by project-os QUALITY.md — any change that creates or updates a TST-* or CHG-* note, or transitions a requirement to verified / feature to done. Reviews adversarially and records reviewed_by/review_date/review_verdict in the note frontmatter.
+description: Independent review pass at the gates project-os QUALITY.md states (a TST-* reaching passing, a requirement reaching implemented, a feature reaching done). Reviews adversarially from a clean context and records reviewed_by/review_date/review_verdict in the note frontmatter.
 model: %(model)s
 ---
 
 You are the project-os independent reviewer. Your review counts only if you genuinely try to refute the work, not confirm it.
 
 1. Read `tools/skills/independent-review/SKILL.md` in full and follow it exactly.
-2. Read the notes under review (TST-*/CHG-*/REQ-*/FEAT-*) and the code or docs they claim to cover; attempt to refute each claim (does the test fail when the fix is broken? does the change note match what actually changed?).
+2. Read the notes under review (TST-*/REQ-*/FEAT-*, and a CHG-* only when asked; a change note owes no review) and the code or docs they claim to cover; attempt to refute each claim (does the test fail when the fix is broken? does the change note match what actually changed?).
 3. Record the outcome in each reviewed note's frontmatter: `reviewed_by: model:%(model)s`, `review_date: <today>`, `review_verdict: approved` or `changes-requested` (with your findings in the note body).
 4. What makes this pass independent is your **context**, not your model (ADR-0013): you start from the notes and the diff and have never seen the author's reasoning. Protect that. Do not ask the author what they meant, and do not reconstruct their intent charitably — if the change cannot be justified from the notes alone, that is a finding about the documentation, which is the point of the handoff surface.
 5. You are very likely the same model that wrote the work. That is expected and is not a defect in this pass; a shared model correlates *capability*, a shared context correlates *commitment*, and it is the second that review exists to break. What you must not be is the same *session*: if you find yourself with any memory of authoring this, stop and say so — that is self-review and your verdict cannot settle it.
@@ -141,11 +144,20 @@ def build_skill(name, src_rel, body):
         "",
         "This operation is governed by the canonical project-os playbook.",
         "",
-        "1. Read `%s` in full — it is the source of truth for this skill." % src_rel,
-        "2. Execute its checklist exactly, honoring the preflight and close-out rules in `tools/instructions/LIFECYCLE.md` (document first, update `SNAPSHOT.yaml` and notes in the same turn as the work).",
-        "3. Before finishing, run `bash tools/scripts/validate-docs.sh` and fix anything it reports.",
-        "",
+        "1. Read `%s` in full; it is the source of truth for this skill." % src_rel,
+        "2. Follow its checklist, honouring the preflight and close-out rules in `tools/instructions/LIFECYCLE.md` (document first; update `SNAPSHOT.yaml` and the notes in the same turn as the work). Where the checklist and the repo disagree, say so and file an `ISS-*` rather than improvising.",
     ]
+    if bullets:
+        lines += ["", "Use when:", ""] + ["- %s." % b for b in bullets]
+    # The three close-out steps belong to the close-out playbook. Repeating them
+    # in every generated skill told inbox-triage and ad-hoc-intake, which push
+    # nothing, to confirm a CI run (project-os-dev TASK-0101).
+    if name == "close-out":
+        lines += [
+            "",
+            "3. Then follow `tools/instructions/LIFECYCLE.md` close-out steps 7 to 9: run the validator, run `--as-committed` before pushing, and confirm the CI run went green.",
+        ]
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -231,6 +243,39 @@ def install_hooks(root, force=False):
     return "merged hooks into .claude/settings.json"
 
 
+
+def untracked_artifacts(root, artifacts):
+    """Generated artifacts present on disk that git will not carry.
+
+    The failure this catches is silent and total: the artifacts are correct
+    locally, `--check` passes locally, and CI reports every one of them stale
+    forever, because a fresh checkout does not contain them at all. Regenerating
+    cannot fix it — the fix is always in .gitignore.
+
+    A local check that reads the working tree cannot see the difference, which is
+    exactly why it has to be asked explicitly.
+
+    Returns [] when git is unavailable or this is not a repository: an inability
+    to check is not evidence of a problem.
+    """
+    import subprocess
+
+    rels = sorted(artifacts)
+    if not rels:
+        return []
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "--cached", "--"] + rels,
+            capture_output=True, text=True, timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return []
+    if proc.returncode != 0:
+        return []
+    tracked = {line.strip() for line in proc.stdout.splitlines() if line.strip()}
+    return [rel for rel in rels if (root / rel).is_file() and rel not in tracked]
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Generate native adapter artifacts from project-os playbooks.")
     ap.add_argument("--repo-root", default=".", help="Repo root (default: cwd)")
@@ -262,6 +307,18 @@ def main(argv=None):
             for rel in stale:
                 print("generate-adapters: STALE %s" % rel)
             print("generate-adapters: %d artifact(s) out of date; run: python3 tools/scripts/generate-adapters.py" % len(stale))
+            return 1
+        untracked = untracked_artifacts(root, artifacts)
+        if untracked:
+            for rel in untracked:
+                print("generate-adapters: UNTRACKED %s" % rel)
+            print(
+                "generate-adapters: %d artifact(s) exist here but are not tracked by git.\n"
+                "  These are build outputs the repository is meant to carry (SYNCING.md: 'template-owned\n"
+                "  build outputs'), so a fresh clone will not have them and CI will report every one STALE\n"
+                "  however many times you regenerate. Check .gitignore — a stock '.claude/' or '.cursor/'\n"
+                "  line from a language scaffold is the usual cause." % len(untracked)
+            )
             return 1
         print("generate-adapters: all %d artifacts current" % len(artifacts))
         return 0

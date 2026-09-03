@@ -10,6 +10,7 @@ updated: 2026-03-08
 phase: "[[PHASE-0001-Documentation-System-Foundations]]"
 goal: "Harden project-os skill enforcement by making risk scans, verification gating, and impact analysis mandatory steps rather than conditional ones"
 related: [ADR-0004]
+tasks: ["[[TASK-0013]]", "[[TASK-0014]]", "[[TASK-0015]]", "[[TASK-0016]]", "[[TASK-0017]]"]
 ---
 
 # Enforcement Hardening

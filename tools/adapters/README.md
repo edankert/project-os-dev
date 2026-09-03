@@ -25,11 +25,11 @@ tools/adapters/
 
 ## Enforcement asymmetry (deliberate)
 
-All tools share the same mechanical backstop: `tools/scripts/validate-docs.sh` at git pre-commit (`tools/scripts/install-git-hooks.sh`) and in CI (`.github/workflows/validate-docs.yml`). What differs is in-session, real-time enforcement of the hook contracts (`../instructions/HOOKS.md`):
+All tools share the same mechanical backstop, the outer two of the three enforcement layers in `../instructions/QUALITY.md` "Documentation Fidelity". What differs is in-session, real-time enforcement of the hook contracts (`../instructions/HOOKS.md`):
 
 | Adapter | In-session enforcement | Install |
 |---|---|---|
-| claude-code | All seven HC-* contracts as session hooks; HC-001/HC-003 blocking | `claude-code/ADAPTER.md` (hooks into `.claude/settings.json`) |
+| claude-code | All eight HC-* contracts as session hooks; HC-001/HC-003 blocking | `claude-code/ADAPTER.md` (hooks into `.claude/settings.json`) |
 | codex | HC-001/HC-002 via `tools/agents/*.sh`, rest advisory prose | Root `AGENTS.md` + `LLM_BRIEF.md` (present by default) |
 | cursor | None (rules prose only) | Generate `.cursor/rules/` per `cursor/ADAPTER.md` |
 | generic | None (prose only) | Point the tool at `CONTEXT.md` |

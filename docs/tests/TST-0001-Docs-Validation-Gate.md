@@ -3,7 +3,7 @@ type: "[[test]]"
 id: TST-0001
 aliases: ["TST-0001"]
 title: "Docs validation gate: the repo's own invariants hold"
-status: passing
+status: active
 owner: user:edwin
 created: 2026-07-25
 updated: 2026-07-28
@@ -12,8 +12,6 @@ scope: system
 level: system
 entrypoint: "tools/scripts/validate-docs.sh"
 command: "bash tools/scripts/validate-docs.sh --quiet"
-last_run: "2026-07-28T17:11Z"
-exit_code: 0
 requirements: [REQ-0022]
 features: []
 issues: []
@@ -32,7 +30,7 @@ The first executable test note in the fleet, and the end-to-end proof that [[ADR
 
 ## Procedure
 
-Automated. `run-tests.py` executes `bash tools/scripts/validate-docs.sh --quiet` at the repo root and stamps `passing` (exit 0), `failing` (non-zero), or leaves the status alone if the command could not run at all.
+Automated. `run-tests.py` executes `bash tools/scripts/validate-docs.sh --quiet` at the repo root and reports the outcome; the note records no verdict, CI is the verdict (ADR-0025, since 2026-09-03).
 
 ## Expected results
 

@@ -3,7 +3,7 @@ type: "[[test]]"
 id: TST-0008
 aliases: ["TST-0008"]
 title: "The runner writes nothing, and the gate accepts an executable test at active"
-status: draft
+status: active
 owner: user:edwin
 created: 2026-09-03
 updated: 2026-09-03
@@ -17,7 +17,7 @@ features: ["[[FEAT-0028-Executable-Tests-Carry-No-Verdict]]"]
 issues: ["[[ISS-0046-Release-Verification-Still-Writes-Test-Verdicts-By-Hand]]"]
 tasks: ["[[TASK-0106]]", "[[TASK-0107]]", "[[TASK-0109]]"]
 artifacts: []
-adequacy: ""
+adequacy: "Inverted three ways on 2026-09-03 against the template at a8694f0, each on a copy of the file restored afterwards: the gate's skip for a command: test removed, 2 failures (the done task fails VERIFY on the active test); the COMMAND-VERDICT cutover moved to the past, 2 failures (an error instead of a warning, exit 1); the runner made to append a line to each note, 1 failure (byte-identical). Pristine tree 11 of 11."
 related: ["[[ADR-0025-An-Executable-Test-Records-No-Verdict]]"]
 ---
 
@@ -25,7 +25,7 @@ related: ["[[ADR-0025-An-Executable-Test-Records-No-Verdict]]"]
 
 ## Purpose
 
-[[ADR-0025-An-Executable-Test-Records-No-Verdict|ADR-0025]] makes two claims a harness can settle: `run-tests.py` leaves every note byte-identical, and the verification gate treats a `command:` test at `active` as settled while warning on one that still carries a verdict. This note executes both against fixture repos. Draft until [[TASK-0107]] writes the harness.
+[[ADR-0025-An-Executable-Test-Records-No-Verdict|ADR-0025]] makes two claims a harness can settle: `run-tests.py` leaves every note byte-identical, and the verification gate treats a `command:` test at `active` as settled while warning on one that still carries a verdict. This note executes both against fixture repos.
 
 ## Procedure
 
@@ -38,8 +38,8 @@ related: ["[[ADR-0025-An-Executable-Test-Records-No-Verdict]]"]
 
 ## Expected results
 
-- Exit 0 once TASK-0106 and TASK-0107 have landed.
+- Exit 0: every assertion holds. First real run 2026-09-03 at template commit a8694f0, 11 of 11; CI runs it on every push through run-tests.py.
 
 ## Adequacy (who verifies this test?)
 
-Invert by restoring the `--write` branch in a copy of the runner and by making the gate demand `passing` of a `command:` test again; record both here when the harness first runs green.
+Inverted three ways on 2026-09-03 against the template at `a8694f0`, each mutation confirmed to have landed and reverted by copying the saved file back: the gate's skip for a `command:` test removed (2 failures: the done task fails VERIFY on the `active` test, and a VERIFY error names it); the COMMAND-VERDICT cutover moved to the past (2 failures: an error instead of a warning, and the stamped fixture exits 1); the runner made to append a line to every note it ran (1 failure: byte-identical). The pristine tree passes 11 of 11.

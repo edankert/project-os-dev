@@ -13,6 +13,7 @@ source: []
 goal: "Define enforceable hook contracts in project-os and provide tool-specific implementations that turn prescriptive skills into deterministic gates"
 release: ""
 related: ["[[ADR-0002-Hook-Contract-Pattern]]", "[[FEAT-0001-Tool-Adapters]]"]
+tasks: ["[[TASK-0004]]", "[[TASK-0005]]", "[[TASK-0006]]"]
 ---
 
 # Hook contract definitions and tool-specific implementations

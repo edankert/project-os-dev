@@ -104,6 +104,58 @@ def read_state(root):
     return state
 
 
+
+def triage_divergence(current, new, base):
+    """Why does this downstream file differ, and is --force safe?
+
+    `DIVERGED` alone forces the operator to hand-diff before they can act, and
+    it conflates two cases that want opposite responses: a fix made downstream
+    and never pushed up (forcing destroys it, silently and permanently), versus
+    a merely older copy (forcing is the correct fix and loses nothing).
+
+    What this can decide mechanically is narrow, and the labels say only that:
+
+      SUBSET         every downstream line exists upstream. --force is safe.
+      LOCAL-CONTENT  N lines exist only downstream. --force discards them.
+      CONFLICT       both sides moved since the baseline.
+      UNKNOWN        no baseline recorded, so no claim is made.
+
+    LOCAL-CONTENT deliberately does NOT say "push this upstream". Whether those
+    lines are a valuable fix or stale prose is a judgement the tool cannot make
+    -- the six repos carrying an older migrate-status-vocabulary.py have
+    downstream-only lines that are simply an outdated docstring, and telling
+    someone to upstream those would be confidently wrong. The tool reports the
+    fact; the operator reads the diff.
+
+    UNKNOWN is the same discipline: an inability to tell is not evidence either
+    way, and a guess here would be worse than silence.
+    """
+    def lines(b):
+        if b is None:
+            return None
+        return b.decode("utf-8", errors="replace").splitlines()
+
+    cur_l, new_l = lines(current), lines(new)
+    only_downstream = [ln for ln in cur_l if ln.strip() and ln not in new_l]
+
+    if not only_downstream:
+        return ("SUBSET", "every downstream line exists upstream; --force is safe")
+
+    base_l = lines(base)
+    n = len(only_downstream)
+    sample = only_downstream[0].strip()
+    if len(sample) > 56:
+        sample = sample[:53] + "..."
+    detail = "%d line(s) exist only downstream, e.g. %r" % (n, sample)
+
+    if base_l is None:
+        return ("UNKNOWN", "no baseline recorded. " + detail)
+    if new_l != base_l:
+        return ("CONFLICT", "both sides changed since the baseline. " + detail)
+    return ("LOCAL-CONTENT", detail + " -- read them before forcing; --force discards them")
+
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Sync project-os template-owned files with divergence detection.")
     ap.add_argument("src", help="Path to the upstream project-os template repo")
@@ -164,7 +216,11 @@ def main(argv=None):
             if not args.dry_run:
                 shutil.copy2(src_file, target)
             return
-        (merge_pending if owner == "merge" else diverged).append(rel)
+        if owner == "merge":
+            merge_pending.append(rel)
+        else:
+            label, hint = triage_divergence(current, new, base)
+            diverged.append((rel, label, hint))
 
     # walk manifest-owned files as they exist upstream
     for rel_base, owner in sorted(owners.items()):
@@ -200,9 +256,16 @@ def main(argv=None):
     for rel in copied + updated + seeded:
         print("%s  synced  %s" % (prefix, rel))
     if diverged:
-        print("%sACTION REQUIRED — locally diverged template-owned files (hand-merge or --force):" % prefix)
-        for rel in diverged:
-            print("%s  DIVERGED  %s" % (prefix, rel))
+        print("%sACTION REQUIRED — locally diverged template-owned files:" % prefix)
+        # Ordered so the destructive case is read first: PUSH-UPSTREAM is the one
+        # where --force loses work.
+        rank = {"LOCAL-CONTENT": 0, "CONFLICT": 1, "UNKNOWN": 2, "SUBSET": 3}
+        for rel, label, hint in sorted(diverged, key=lambda d: (rank.get(d[1], 9), d[0])):
+            print("%s  %-14s %s" % (prefix, label, rel))
+            print("%s                 %s" % (prefix, hint))
+        risky = [rel for rel, label, _ in diverged if label != "SUBSET"]
+        if risky:
+            print("%s  --force overwrites all of the above. Only SUBSET is provably safe; read the rest first." % prefix)
     if merge_pending:
         print("%sExpected-divergence (merge-owned) files left alone (--force does not touch these) — merge upstream changes by hand if relevant:" % prefix)
         for rel in merge_pending:

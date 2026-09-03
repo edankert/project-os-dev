@@ -22,7 +22,7 @@ fi
 is_doc_only_path() {
   local path="$1"
   case "$path" in
-    docs/*|SNAPSHOT.yaml|AGENTS.md|LLM_BRIEF.md|tools/agents/*)
+    docs/*|tools/*|.claude/*|.cursor/*|.github/*|SNAPSHOT.yaml|CLAUDE.md|CONTEXT.md|README.md|AGENTS.md|LLM_BRIEF.md|.prettierrc|.markdownlint*|.yamllint*|.gitignore|.project-os-sync)  # the list is HOOKS.md HC-001
       return 0
       ;;
     *)
@@ -45,15 +45,15 @@ if [[ "$CODE_CHANGED" -eq 0 ]]; then
   exit 0
 fi
 
+# A change note is due at close-out when behaviour, paths or contracts change
+# (tools/instructions/LIFECYCLE.md, "Close-out", step 3); this script cannot
+# judge that, so a missing note is a warning, not a failure. Snapshot statuses,
+# counters and metrics are derived by sync-snapshot.py (ADR-0009), so a code
+# change without a SNAPSHOT.yaml edit is not a defect.
 CHG_FILES="$(printf '%s\n' "$CHANGED" | grep '^docs/changes/CHG-.*\.md$' || true)"
 if [[ -z "$CHG_FILES" ]]; then
-  echo "[FAIL] Code changes detected but no docs/changes/CHG-*.md update found."
-  exit 1
-fi
-
-if ! printf '%s\n' "$CHANGED" | grep -qx 'SNAPSHOT.yaml'; then
-  echo "[FAIL] Code changes detected but SNAPSHOT.yaml was not updated."
-  exit 1
+  echo "[WARN] Code changes detected and no docs/changes/CHG-*.md in this change set; add one if behaviour, paths or contracts changed (LIFECYCLE.md, Close-out)."
+  exit 0
 fi
 
 required_keys=(

@@ -40,16 +40,23 @@ EOF
   fi
 fi
 
-# Check if focus.task or focus.issue is still set (work in progress)
-FOCUS_TASK=$(echo "" | jq -r --arg f "$(grep -A2 '^focus:' "$SNAPSHOT" | grep 'task:' | sed 's/.*task:[[:space:]]*//' | tr -d '"' | tr -d "'")" '$f' 2>/dev/null)
-FOCUS_ISSUE=$(echo "" | jq -r --arg f "$(grep -A4 '^focus:' "$SNAPSHOT" | grep 'issue:' | sed 's/.*issue:[[:space:]]*//' | tr -d '"' | tr -d "'")" '$f' 2>/dev/null)
+# Check if focus.task or focus.issue is still set (work in progress). Read the
+# whole focus block, so key order does not matter. This used to pipe the value
+# through `echo "" | jq -r --arg f ... '$f'`, which never runs the filter on an
+# empty input, so both values were always empty and this hook never blocked
+# (project-os-dev TASK-0102, found by TST-0007).
+focus_value() {
+  sed -n '/^focus:/,/^[^[:space:]]/p' "$SNAPSHOT" | grep -E "^[[:space:]]+$1:" | head -1 | sed -E "s/^[[:space:]]+$1:[[:space:]]*//" | sed 's/#.*//' | tr -d '"' | tr -d "'" | tr -d '[:space:]'
+}
+FOCUS_TASK=$(focus_value task)
+FOCUS_ISSUE=$(focus_value issue)
 
 if [ -n "$FOCUS_TASK" ] && [ "$FOCUS_TASK" != "" ] && [ "$FOCUS_TASK" != "null" ]; then
   # Focus task is still set — might need close-out
   cat <<EOF
 {
   "decision": "block",
-  "reason": "Close-out check (HC-006): focus.task is still set to $FOCUS_TASK in SNAPSHOT.yaml. If work is complete, update the task status to done and clear focus. If work is ongoing, this is expected — acknowledge to continue."
+  "reason": "Close-out check (HC-006): focus.task is still $FOCUS_TASK in SNAPSHOT.yaml. If the work is complete, set the task status to done and clear focus now. If you are stopping mid-flight for the user, write the handoff into the task note (HANDOFF.md, Before stopping work: what was done, what is next, approaches set aside, the user's decisions in their words), then stop; this check lets that second stop through."
 }
 EOF
   exit 0
@@ -59,7 +66,7 @@ if [ -n "$FOCUS_ISSUE" ] && [ "$FOCUS_ISSUE" != "" ] && [ "$FOCUS_ISSUE" != "nul
   cat <<EOF
 {
   "decision": "block",
-  "reason": "Close-out check (HC-006): focus.issue is still set to $FOCUS_ISSUE in SNAPSHOT.yaml. If the issue is resolved, update its status and clear focus. If work is ongoing, this is expected — acknowledge to continue."
+  "reason": "Close-out check (HC-006): focus.issue is still $FOCUS_ISSUE in SNAPSHOT.yaml. If the issue is resolved, set its status to fixed and clear focus now. If you are stopping mid-flight for the user, write the handoff into the issue note (HANDOFF.md, Before stopping work), then stop; this check lets that second stop through."
 }
 EOF
   exit 0

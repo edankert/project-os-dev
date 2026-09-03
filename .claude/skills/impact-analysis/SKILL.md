@@ -7,6 +7,12 @@ description: "project-os impact analysis playbook. Use when: A new requirement (
 
 This operation is governed by the canonical project-os playbook.
 
-1. Read `tools/skills/impact-analysis/SKILL.md` in full — it is the source of truth for this skill.
-2. Execute its checklist exactly, honoring the preflight and close-out rules in `tools/instructions/LIFECYCLE.md` (document first, update `SNAPSHOT.yaml` and notes in the same turn as the work).
-3. Before finishing, run `bash tools/scripts/validate-docs.sh` and fix anything it reports.
+1. Read `tools/skills/impact-analysis/SKILL.md` in full; it is the source of truth for this skill.
+2. Follow its checklist, honouring the preflight and close-out rules in `tools/instructions/LIFECYCLE.md` (document first; update `SNAPSHOT.yaml` and the notes in the same turn as the work). Where the checklist and the repo disagree, say so and file an `ISS-*` rather than improvising.
+
+Use when:
+
+- A new requirement (`REQ-*`) is being created or significantly modified.
+- A new feature (`FEAT-*`) is being scaffolded that touches an existing area of the codebase.
+- An issue (`ISS-*`) is filed that may affect features constrained by existing requirements.
+- Any time a change may interact with or contradict existing documented requirements.

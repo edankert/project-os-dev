@@ -40,3 +40,14 @@ Notes:
 - The right pane follows the *focused* note. If it looks empty, the focused note has no inbound links yet — that is information, not a bug.
 - Downstream repos get these files from the template sync; per-feature or per-phase `.base` files are deliberately not used (one navigation view plus one context view covers both roles).
 - For a browser-based alternative that needs no Obsidian at all, see `tools/cockpit/README.md`.
+
+## Callouts
+
+Obsidian's callout syntax is part of the record's vocabulary, not a rendering flourish:
+
+```markdown
+> [!note] Accept — 2026-08-12 (user:edwin)
+> The reasoning, in the decider's own words.
+```
+
+Used by the decision record (`DECISIONS.md`) and available anywhere prose needs to be set apart. **Both readers must render it** — Obsidian does natively, and a tool that renders project-os notes should too, degrading an unrecognised type to a plain blockquote **with its title kept** rather than printing `[!whatever]` at the reader. Obsidian ships dozens of types; an unknown one is a rendering question, never an error.

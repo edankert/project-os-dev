@@ -80,7 +80,7 @@ items:
   features:
     FEAT-0028:
       file: "docs/features/executable-tests-no-verdict/FEAT-0028-Executable-Tests-Carry-No-Verdict.md"
-      status: doing
+      status: done
       phase: "[[PHASE-0003]]"
       goal: "Make the template and this repo follow one verdict model: a test with a command: is run and reported, never stamped; CI gates it; the validator treats it as settled."
       requirements: []
@@ -168,7 +168,7 @@ items:
       title: "External independent review — run the QUALITY.md gate on a non-Claude model"
       status: doing
       phase: "[[PHASE-999]]"
-      tasks: [TASK-0075, TASK-0076]
+      tasks: [TASK-0075, TASK-0076, TASK-0077]
       note: "Every review recorded across the fleet is Claude-on-Claude; the different-family gate has never actually been satisfied. Runner prototyped (TASK-0075); the ISS-0011..0015 calibration is the test of whether it is worth promoting."
     FEAT-0007:
       file: docs/features/relationship-model/FEAT-0007-Relationship-Model.md
@@ -178,7 +178,7 @@ items:
       phase: PHASE-0001
       goal: "Relationship model for linking notes. NOTE: the semantic-named-field design was reverted in May 2026; the model in force is specified by REQ-0015"
       requirements: [REQ-0010, REQ-0015]
-      tasks: [TASK-0023, TASK-0024, TASK-0025, TASK-0027, TASK-0028, TASK-0029]
+      tasks: [TASK-0023, TASK-0024, TASK-0025, TASK-0027, TASK-0028, TASK-0029, TASK-0026]
     FEAT-0008:
       file: docs/features/phase-notes/FEAT-0008-Phase-Notes.md
       title: "Phases as first-class note type"
@@ -187,7 +187,7 @@ items:
       phase: PHASE-0001
       goal: "Promote phases from a single registry file to individual navigable notes with contextual dashboards"
       requirements: [REQ-0011]
-      tasks: [TASK-0030, TASK-0031, TASK-0033, TASK-0034, TASK-0035]
+      tasks: [TASK-0030, TASK-0031, TASK-0033, TASK-0034, TASK-0035, TASK-0032]
       related: [FEAT-0007]
     FEAT-0009:
       file: docs/features/cockpit-layout/FEAT-0009-Cockpit-Layout.md
@@ -284,28 +284,28 @@ items:
   tasks:
     TASK-0106:
       file: "docs/features/executable-tests-no-verdict/plan/tasks/TASK-0106-The-Runner-Reports-And-Exits.md"
-      status: backlog
+      status: done
       parent: FEAT-0028
       phase: "[[PHASE-0003]]"
       effort: S
       tests: [TST-0008]
     TASK-0107:
       file: "docs/features/executable-tests-no-verdict/plan/tasks/TASK-0107-The-Validator-Treats-A-Command-Test-As-Settled.md"
-      status: doing
+      status: done
       parent: FEAT-0028
       phase: "[[PHASE-0003]]"
       effort: M
       tests: [TST-0008]
     TASK-0108:
       file: "docs/features/executable-tests-no-verdict/plan/tasks/TASK-0108-One-Verdict-Model-In-The-Templates-And-Skills.md"
-      status: backlog
+      status: done
       parent: FEAT-0028
       phase: "[[PHASE-0003]]"
       effort: M
       tests: []
     TASK-0109:
       file: "docs/features/executable-tests-no-verdict/plan/tasks/TASK-0109-This-Repo-Follows-Sync-Debt-And-Seven-Tests.md"
-      status: backlog
+      status: done
       parent: FEAT-0028
       phase: "[[PHASE-0003]]"
       effort: M
@@ -682,7 +682,7 @@ items:
       related: [FEAT-0023, REQ-0025, TST-0004, ADR-0023, ADR-0010]
     ISS-0046:
       file: "docs/issues/ISS-0046-Release-Verification-Still-Writes-Test-Verdicts-By-Hand.md"
-      status: open
+      status: fixed
       severity: low
       phase: "[[PHASE-0003]]"
       component: docs
@@ -1164,7 +1164,7 @@ items:
   tests:
     TST-0008:
       file: "docs/features/executable-tests-no-verdict/plan/tests/TST-0008-The-Runner-Writes-Nothing-And-The-Gate-Accepts-Active.md"
-      status: draft
+      status: active
       scope: feature
       level: acceptance
       entrypoint: "../project-os/tools/scripts/test-verdict-model.sh"
@@ -1173,7 +1173,7 @@ items:
     TST-0007:
       file: "docs/features/delegation-hint/plan/tests/TST-0007-The-Hooks-Emit-What-The-Contracts-Say.md"
       title: "The hooks emit what their contracts now say they emit"
-      status: passing
+      status: active
       features: [FEAT-0027]
       issues: [ISS-0003]
       tasks: [TASK-0102, TASK-0103]
@@ -1181,7 +1181,7 @@ items:
     TST-0006:
       file: "docs/features/instruction-weight/plan/tests/TST-0006-Instruction-Files-Under-Their-Word-Budgets.md"
       title: "The always-loaded instruction files are under their word budgets"
-      status: passing
+      status: active
       requirements: [REQ-0026]
       features: [FEAT-0026]
       tasks: [TASK-0098]
@@ -1189,20 +1189,20 @@ items:
     TST-0005:
       file: "docs/features/pause-and-scope-rules/plan/tests/TST-0005-One-Pause-Rule-And-Eight-Stop-Points-That-Link-It.md"
       title: "One pause rule stated once, and twelve stop-points in nine files that link it"
-      status: passing
+      status: active
       features: [FEAT-0024]
       tasks: [TASK-0090, TASK-0091]
       note: "Draft until TASK-0091 lands what it measures; not run before then, so it is never recorded as failing."
     TST-0001:
       file: docs/tests/TST-0001-Docs-Validation-Gate.md
       title: "Docs validation gate: the repo's own invariants hold"
-      status: passing
+      status: active
       requirements: [REQ-0022]
       tasks: [TASK-0067]
     TST-0004:
       file: "docs/tests/TST-0004-Decision-Rule-Check.md"
       title: "DECISION-RULE holds its contract: a `## Rule` heading demands non-empty Domain and Conformance, resolvable TSTs, and nothing else"
-      status: passing
+      status: active
       requirements: [REQ-0025]
       features: [FEAT-0023]
       tasks: [TASK-0089]
@@ -1210,13 +1210,13 @@ items:
     TST-0003:
       file: "docs/tests/TST-0003-Retention-And-Derivation-Invariants.md"
       title: "Retention and derivation invariants: every prune condition holds an entry back, and derivation never blanks a title"
-      status: passing
+      status: active
       features: [FEAT-0022]
       tasks: [TASK-0082, TASK-0083]
     TST-0002:
       file: docs/tests/TST-0002-Status-Table-Consistency.md
       title: "Status table consistency: no status table in the validator can drift from the allowed taxonomy"
-      status: passing
+      status: active
       issues: [ISS-0011]
       tests: [TST-0002]
   releases: {}
@@ -1407,15 +1407,15 @@ items:
 metrics:
   counts:
     features_total: 28
-    features_done: 24
+    features_done: 25
     phases_total: 4
     phases_done: 2
     tasks_total: 109
-    tasks_done: 98
-    tests_total: 8
-    tests_passing: 7
+    tasks_done: 102
+    tests_total: 4
+    tests_passing: 0
     tests_failing: 0
-    issues_open: 27
+    issues_open: 26
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0

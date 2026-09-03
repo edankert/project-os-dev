@@ -4,109 +4,73 @@ id: INSTR-LIFECYCLE
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-01-27
+updated: 2026-09-03
 tags: [instructions, lifecycle]
 ---
 
 # Lifecycle rules (LLM-maintained documentation system)
 
-This documentation system is designed to be maintained by an LLM across the full lifecycle of work: intake → plan → implement → verify → close.
+Rules for the lifecycle of work: intake, plan, implement, verify, close. Each is stated once here, with a reason and a link (project-os-dev REQ-0026).
 
 ## Source of truth
-- `../../SNAPSHOT.yaml` is the **canonical, machine-readable active context** for agents/LLMs.
-- Notes under `../../docs/` are the durable human-readable record; keep their frontmatter consistent with the snapshot.
-- Bases views are for human consumption: they render views over note frontmatter and are not canonical for agents.
+- `../../SNAPSHOT.yaml` is the canonical, machine-readable active context for agents. Notes under `../../docs/` are the durable human record, and the snapshot's derived fields follow them ("Mandatory Automated Documentation" below). Bases views are for people and are not canonical for agents.
 
 ## Test storage (hybrid)
-- Feature-scoped tests belong under the feature they verify:
-  - `docs/features/<feature-slug>/plan/tests/TST-####-*.md`
-- System-wide or cross-feature tests belong under:
-  - `docs/tests/TST-####-*.md`
+- Feature-scoped: `docs/features/<feature-slug>/plan/tests/TST-####-*.md`, an acceptance check for the feature included; system-wide: `docs/tests/TST-####-*.md`, with a system-wide acceptance suite under `docs/tests/acceptance/`.
 
 ## Statuses
-- Allowed statuses and transitions are defined in `STATUSES.md`.
+- Statuses and transitions are stated once, in `STATUSES.md`.
 
-## The inbox — external material, before it is documentation
-
-`inbox/` at the repo root is **staging**: a place to drop a screenshot, an export, a page of notes, anything that has arrived but has not been decided about. It is **gitignored**, because an item is either filed — at which point the *filed* artefact is what gets committed — or discarded.
-
-Its success condition is **being empty**. Anything sitting there is an unmade decision, not an archive.
-
-- Triage it with `../skills/inbox-triage/SKILL.md`: read every item, decide, act, **remove it**.
-- A non-empty inbox is itself the trigger; no one has to ask.
-- An item is **not a record**. It is unreviewed external material until you decide otherwise, and a fresh clone sees an empty inbox.
-
-Deliberately *not* under `docs/`: that directory is the curated record, walked by the validator and read as the truth. Untriaged material does not belong in it.
+## The inbox
+- `inbox/` at the repo root is gitignored staging for external material nobody has decided about. An item there is an unmade decision, not a record; triage it with `../skills/inbox-triage/SKILL.md` whenever the directory is not empty. Reason: `docs/` is the curated record the validator walks.
 
 ## Preflight (must happen before code changes)
-When a prompt implies work (bugfix, feature, refactor, behavior change):
-1. **Classify** the prompt as one (or more) of: issue, feature, requirement, risk, chore/docs-only. Run the spec-ambiguity check from `../skills/issue-intake/SKILL.md` (step 1) before allocating IDs — ambiguity is upstream of documentation and cannot be fixed by tracking.
-2. **Orchestration check**:
-   - If Codex or another orchestration layer assigns a specific task, verify it exists in `../../SNAPSHOT.yaml` and that its status allows work (for example, `backlog` or `doing`, not already `done`).
-   - If working without an assigned item, select work based on `focus` and item statuses.
-3. **Update `../../SNAPSHOT.yaml` first**:
-   - allocate IDs (increment `counters`)
-   - create/update `items.*` entries and relationships
-   - set `focus` to the active work
-4. **Create/update the relevant notes (from templates)**:
-   - Phase: `../../docs/phases/PHASE-####-*.md` when phase-gated work needs durable scope/exit criteria
-   - Issue: `../../docs/issues/ISS-####-*.md`
-   - Requirement: `../../docs/requirements/REQ-####-*.md`
-   - Feature: `../../docs/features/<slug>/FEAT-####-*.md` plus `plan/PLAN.md`
-   - Task: `../../docs/features/<slug>/plan/tasks/TASK-####-*.md` (must have `parent`)
-   - Risk: `../../docs/risks/RISK-####-*.md`
-5. **Impact analysis**:
-   - Run `../skills/impact-analysis/SKILL.md` when creating or materially changing requirements.
-   - Also run it for new features or issues that touch existing constrained areas.
-   - If conflicts are found, stop and present resolution options before implementation.
-6. Ensure note frontmatter is consistent with the snapshot (IDs/statuses/links) so Bases views reflect reality.
+When a prompt implies work (bugfix, feature, refactor, behaviour change):
+1. **Classify** it as issue, feature, requirement, risk, or chore/docs-only, and run the spec-ambiguity check in `../skills/issue-intake/SKILL.md` step 1 before allocating any ID.
+2. **Orchestration check**: an assigned task must be in the snapshot at a status that allows work (`backlog`, `doing`); otherwise pick work from `focus` and item statuses.
+3. **Update `../../SNAPSHOT.yaml` first**: allocate IDs, create or update `items.*` entries and relationships, set `focus`.
+4. **Create or update the notes** from `../../docs/__templates__/`: `docs/phases/PHASE-####-*.md`, `docs/issues/ISS-####-*.md`, `docs/requirements/REQ-####-*.md`, `docs/features/<slug>/FEAT-####-*.md` with `plan/PLAN.md`, `docs/features/<slug>/plan/tasks/TASK-####-*.md` (must have `parent`), `docs/risks/RISK-####-*.md`.
+5. **Impact analysis**: run `../skills/impact-analysis/SKILL.md` for a new or materially changed requirement, and for work touching a constrained area. A conflict is the user's decision; present the options and continue with what does not depend on them ("When to pause for the user" below).
+6. Keep note frontmatter consistent with the snapshot.
 
-If the prompt is purely a question/explanation (no work requested), you may skip preflight.
+A prompt that is only a question needs no preflight.
 
 ## Phase alignment (optional gating)
-When the project uses phase-gated development (see `../../docs/PHASES.md`):
-1. **Verify phase**: Check the `phase` property in the task/feature frontmatter before starting work. Prefer `[[PHASE-####]]` links where first-class phase notes exist.
-2. **Consult registry**: Review `../../docs/PHASES.md` and the relevant `../../docs/phases/PHASE-*.md` note to understand the boundaries and context of that phase.
-3. **Prevent phase bleeding**: Do not introduce implementations from future phases prematurely.
-   - Example: Don't build Phase 4 export logic while working on a Phase 2 core engine task.
-4. **Flag scope concerns**: If a task requires future-phase dependencies, document it and discuss before proceeding.
-5. **Track active phase**: Keep `focus.phase` in `../../SNAPSHOT.yaml` aligned with the current development milestone (`PHASE-*` ID preferred).
+When the project uses phases (`../../docs/PHASES.md`):
+1. **Verify phase**: read the task's or feature's `phase` before starting, and what that `PHASE-*` note bounds.
+2. **No phase bleeding**: do not build a later phase's work inside an earlier phase's task.
+3. **Flag scope concerns**: a task that needs a future-phase dependency is a scope change the user decides ("When to pause for the user" below).
+4. Keep `focus.phase` on the current milestone.
 
 ## Mandatory Automated Documentation
-Agents are REQUIRED to automatically keep the documentation system in sync with code changes.
-- **No Orphaned Code:** Every functional code change must have a corresponding Task under `../../docs/features/<slug>/plan/tasks/`.
-  - Functional code changes include: new features, bug fixes, refactors that alter behavior, API changes, and dependency updates.
-  - Excluded: typo fixes, comment-only edits, formatting changes, and pure documentation updates (these may be tracked via `CHG-*` notes if significant).
-- **Notes are the authored source of state** (ADR-0009). Write a status once, in the note. `tools/scripts/sync-snapshot.py` propagates it — plus `counters` and `metrics.counts` — into `../../SNAPSHOT.yaml` at pre-commit, and CI verifies it with `--check`. Do **not** hand-copy a status into the snapshot; that dual-write is what this replaced.
-- **Counter Integrity is automatic:** `counters` is the maximum observed ID, raised by the sync script. Allocating an ID means creating a note. (Counters only ever rise — an ID is allocated, not owned, so deleting a note never frees its number for reuse.)
-- **Membership is still yours:** which items the snapshot carries, and the `goal:`/`note:` prose on them, are curation the script deliberately leaves alone. `--report-unregistered` lists notes it can see but the snapshot does not.
+- **No orphaned code**: every functional code change (feature, bug fix, behaviour-altering refactor, API change, dependency update) has a task under `docs/features/<slug>/plan/tasks/`. Typo, comment, formatting and documentation-only changes are exempt.
+- **Notes are the authored source of state** (ADR-0009): write a status once, in the note. `tools/scripts/sync-snapshot.py` propagates statuses, `counters` and `metrics.counts` into the snapshot at pre-commit; CI checks it with `--check`. Never hand-copy a status into the snapshot.
+- **Counters rise on their own**: allocating an ID means creating a note, and a deleted note never frees its number.
+- **Membership is still yours**: which items the snapshot carries, and their `goal:` and `note:` prose, are curation the script leaves alone.
 
 ## Execution (implementation phase)
-- Only start code changes once planning artifacts exist (issue/feature/tasks as appropriate).
-- Keep snapshot `focus` aligned with what is actually being worked.
+- Start code changes only once the planning artifacts exist, and keep `focus` on what is actually being worked.
+
+### When to pause for the user
+Pause for the user only when the work genuinely requires them: a destructive or irreversible action, a real scope change, or input that only they can provide. Everything else is your judgment call. First do everything that does not depend on the answer; then put the question at the end of a turn that also delivers that progress. Reason: an early question hands the task back unfinished. Every other file that names a pause links here and says only which decision the user owns (project-os-dev ADR-0024).
+
+### Scope of a change
+A bug, a cleanup or a missing abstraction the task did not ask for is an `ISS-*` at `triage` or a follow-up in your summary, not a change in this diff, unless the requested behaviour cannot work without it. Reason: the document-first gate blocks an edit with no focus item, and widening the task is the bypass. When the wording admits two readings, implement the one it most directly supports and state the assumption; the threshold for asking is `../skills/issue-intake/SKILL.md` step 1.
 
 ## Close-out (must happen after work)
-After completing a task/issue/feature:
-1. Update the Markdown note status (task `done`, issue `fixed`, requirement `implemented`, feature `done`). `fixed` is the single terminal issue status since ADR-0008 — there is no second `closed` step.
-2. Update `../../SNAPSHOT.yaml` to reflect:
-   - updated statuses
-   - new/changed relationships (links)
-   - updated focus/metrics
-3. Add a change note (`../../docs/changes/CHG-YYYYMMDD-Short-Description.md`) when repo behavior/paths change.
-4. If new hazards were introduced (new dependency, env var, contract), add/update a `RISK-*` and link it.
-5. Do not delete completed notes; use status + links to preserve history.
-6. Apply verification gating (see `QUALITY.md`): only close/verify/done when required `[[test]]` notes are `status: passing`.
-7. Run `bash tools/scripts/validate-docs.sh` and fix anything it reports — the same validator runs at pre-commit and in CI, so drift left behind here becomes a build failure there.
-8. If the work created/updated a `TST-*` or `CHG-*` note, or transitions a requirement to `implemented` / feature to `done`, run the independent review pass (`../skills/independent-review/SKILL.md`).
+1. Set the note status: task `done`, issue `fixed`, requirement `implemented`, feature `done` (`STATUSES.md`).
+2. Update the snapshot's curated fields: focus, membership, relationships; statuses and metrics follow ("Mandatory Automated Documentation" above).
+3. Add a change note, `docs/changes/CHG-YYYYMMDD-Short-Description.md`, when behaviour, paths or contracts change. A document written for a person (a review, a report, a design) is a `reference` note under `docs/reference/`; a page published elsewhere is a copy, its URL in `source:`.
+4. Add or update a `RISK-*` for a new hazard: a dependency, an env var, a contract.
+5. Never delete a completed note; status and links preserve history.
+6. Apply the verification gate in `QUALITY.md`: a terminal status needs its required `[[test]]` notes `passing`.
+7. Run `bash tools/scripts/validate-docs.sh` and fix what it reports.
+8. Before pushing, run `bash tools/scripts/validate-docs.sh --as-committed`. Reason: local checks read the working tree and CI reads the commit, so an ignored or unstaged file passes here and is absent there.
+9. After pushing, confirm the run went green (`gh run list --limit 1`). A change is not landed until you have seen that.
+10. At the review gates `QUALITY.md` states ("Independent review"), run `../skills/independent-review/SKILL.md`.
 
 ## Snapshot retention (active + recent)
-- Keep `../../SNAPSHOT.yaml` focused on active + recent items.
-- Do not keep the entire history in the snapshot; the notes are the long-term record.
-- Retention details live in `SNAPSHOT.md`.
+- Keep the snapshot to active and recent items (`SNAPSHOT.md`); the notes are the archive.
 
 ## Risk scan triggers (create/update a `RISK-*`)
-- New external toolchain/runtime dependency or version constraint
-- New required env var or configuration surface
-- Directory layout / artifact path changes
-- Performance/runtime increase, new long-running steps
-- Security/credential/license exposure risk
+- A new external dependency or version constraint; a new required env var or configuration surface; a directory layout or artifact path change; a runtime increase or new long-running step; a security, credential or licence exposure.

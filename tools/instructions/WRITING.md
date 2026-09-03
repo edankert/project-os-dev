@@ -4,7 +4,7 @@ id: INSTR-WRITING
 status: active
 owner: group:maintainers
 created: 2026-08-31
-updated: 2026-08-31
+updated: 2026-09-03
 tags: [instructions, writing, clarity, prose]
 ---
 
@@ -23,11 +23,19 @@ Steven Pinker calls this the *curse of knowledge*: once you have chunked an idea
 ## Rules
 
 1. **Point first.** The first sentence says what changed and who notices it. Background comes after. This is the military "bottom line up front" convention, and it applies to a commit subject, a note heading, and the opening line of a reply.
-2. **One idea per sentence.** Split at every em-dash and at every "which". A sentence over about 25 words is two sentences wearing one hat.
+2. **One idea per sentence.** Split at every em-dash and at every "which". A sentence over about 25 words is two sentences.
 3. **Concrete subject, real verb.** Something a reader can point at does something. Not "the platform scoping stops at the derived view" but "the release page still lists platforms nobody tested on". Watch for abstract nouns built out of verbs — *scoping, migration, filtering, declaration, enforcement*. They eat the verb and hide who is acting.
 4. **Gloss every invented term on first use**, in six words or fewer. "Mutation testing (break the code on purpose, check that a test fails)". If a compound word was coined for this project, it needs a gloss or a plain replacement.
 5. **Name what the reader sees before the code symbol.** "The checks page reloaded twice" and then `repaintChecksPage`, never the reverse. A function name is evidence, not narration.
 6. **No slogans as headings.** A heading like "Discriminating, not merely red" only parses for someone who already knows the point. State the fact, then the rule.
+7. **Say what you mean.** Mannered prose substitutes metaphor and flourish for direct statement: "a dial worth turning" for "a parameter worth varying", "a badge that never empties" for "a status nobody clears", and until 2026-09-03 rule 2 above said "two sentences wearing one hat". When a literal phrase is available, use it. The instruction files are what a model reads before it writes, so a figure of speech there is taught, not merely tolerated.
+8. **The final message re-grounds a reader who did not watch the work.** After a long run it is the reader's first look. Drop the working shorthand: no arrow chains, no hyphen-stacked compounds, no labels you invented while working. Name things by what they are, and say who wrote a message and what it said instead of pointing at it by number.
+9. **Short by selection, not compression.** Keep a message short by leaving out the details that do not change what the reader does next, not by packing the ones that do into fewer words.
+10. **Cadence.** Before starting, say in one line what you are about to do. Close with a recap that stands on its own: what was found, what was done, what is next. A reader who sees only the last message should have the whole picture.
+
+## Two kinds of message
+
+A line written between tool calls is for someone watching the work: one sentence, present tense, what is happening now, no recap. The final message is for someone who did not watch. Rules 8 to 10 apply to it in full; the one-line opener in rule 10 is the only thing the two share.
 
 ## Worked examples
 

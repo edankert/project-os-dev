@@ -13,6 +13,7 @@ source: []
 goal: "Replace monolithic CONTEXT.md with tool-specific adapters that deliver project-os rules via each tool's native instruction format"
 release: ""
 related: ["[[ADR-0001-Tool-Adapter-Architecture]]"]
+tasks: ["[[TASK-0001]]", "[[TASK-0002]]", "[[TASK-0003]]"]
 ---
 
 # Tool-specific adapter layer

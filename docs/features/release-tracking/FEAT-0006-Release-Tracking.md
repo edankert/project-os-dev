@@ -10,6 +10,7 @@ created: 2026-03-08
 updated: 2026-03-08
 goal: "Add REL-* note type for full release records plus a lightweight releases section in SNAPSHOT.yaml for agent access"
 tags: [release-tracking]
+tasks: ["[[TASK-0018]]", "[[TASK-0019]]", "[[TASK-0020]]", "[[TASK-0021]]", "[[TASK-0022]]"]
 ---
 
 # First-class release tracking

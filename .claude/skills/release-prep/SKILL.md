@@ -7,6 +7,10 @@ description: "project-os release preparation playbook. Use when: When the user d
 
 This operation is governed by the canonical project-os playbook.
 
-1. Read `tools/skills/release-prep/SKILL.md` in full — it is the source of truth for this skill.
-2. Execute its checklist exactly, honoring the preflight and close-out rules in `tools/instructions/LIFECYCLE.md` (document first, update `SNAPSHOT.yaml` and notes in the same turn as the work).
-3. Before finishing, run `bash tools/scripts/validate-docs.sh` and fix anything it reports.
+1. Read `tools/skills/release-prep/SKILL.md` in full; it is the source of truth for this skill.
+2. Follow its checklist, honouring the preflight and close-out rules in `tools/instructions/LIFECYCLE.md` (document first; update `SNAPSHOT.yaml` and the notes in the same turn as the work). Where the checklist and the repo disagree, say so and file an `ISS-*` rather than improvising.
+
+Use when:
+
+- When the user decides to prepare a release for deployment.
+- Before running `release-verification` (this skill prepares; that skill verifies).

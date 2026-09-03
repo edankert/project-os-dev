@@ -2,8 +2,9 @@
 """HC-003: Verification Gate (blocking).
 
 Claude Code PreToolUse hook for Write|Edit. Denies an edit that transitions an
-item to a terminal status (task done, issue closed/fixed->closed, requirement
-implemented, feature done) while any linked TST-* note is not `status: passing`.
+item to a terminal status (task done, issue fixed, requirement implemented,
+feature done; the list is HOOKS.md HC-003) while any linked TST-* note is not
+`status: passing`.
 
 Escape hatches (both are recorded artifacts, not silence):
   - the new content or the existing note carries `verification_waiver: <reason>`
@@ -20,7 +21,7 @@ import re
 import sys
 from pathlib import Path
 
-TERMINAL_RE = re.compile(r"status:\s*[\"']?(done|closed|implemented)[\"']?\b")
+TERMINAL_RE = re.compile(r"status:\s*[\"']?(done|fixed|implemented)[\"']?\b")
 ID_RE = re.compile(r"\b((?:TASK|ISS|REQ|FEAT))-(\d{2,})\b")
 TST_RE = re.compile(r"\bTST-\d{2,}\b")
 WAIVER_RE = re.compile(r"verification_waiver:\s*\S")

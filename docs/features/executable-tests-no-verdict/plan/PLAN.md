@@ -1,7 +1,7 @@
 ---
 type: "[[plan]]"
 title: "Delivery plan — the runner, the validator, the prose, then this repo"
-status: active
+status: done
 owner: user:edwin
 created: 2026-09-03
 updated: 2026-09-03

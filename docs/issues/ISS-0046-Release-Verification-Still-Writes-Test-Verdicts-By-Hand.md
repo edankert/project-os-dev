@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0046
 aliases: ["ISS-0046"]
 title: "Release verification still writes test verdicts by hand"
-status: "open"
+status: fixed
 phase: "[[PHASE-0003]]"
 severity: low
 owner: user:edwin
@@ -51,8 +51,8 @@ The skill describes a `last_run`-versus-task-date model with hand-written status
 
 ## Next Actions
 
-- [ ] Decide the model the skill describes: the current TESTING.md and ledger model, or a reduced one for repos without ledgers.
-- [ ] Rewrite steps 3, 4, 6 and 7 against that model; the vocabulary pass in ISS-0043 already fixed steps 5 and 9.
+- [x] Decide the model the skill describes: Edwin, 2026-09-03, "No verdict on the note" (ADR-0025); acceptance checks keep the ledger, manual tests a hand-written verdict with `last_verified:`.
+- [x] Rewrite steps 3, 4, 6 and 7 against that model; the vocabulary pass in ISS-0043 already fixed steps 5 and 9. Landed as template commit `87b64cf` (TASK-0108): step 3 settles each test by its kind, step 6 resets nothing by hand, step 7 writes a manual verdict with `last_verified:`, the matrix gains a Kind column and the final gate reads the ledger and CI.
 
 ## Sibling search
 

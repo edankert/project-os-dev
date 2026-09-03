@@ -10,7 +10,7 @@ updated: 2026-07-27
 source: ["session:2026-07-27", "QUALITY.md 'Independent review (different-model)'"]
 goal: "Give the independent-review gate a reviewer that is actually a different model family, by running an agent CLI with tool access in an isolated worktree and returning a verdict whose every finding carries a reproduction."
 requirements: []
-tasks: ["[[TASK-0075]]", "[[TASK-0076]]"]
+tasks: ["[[TASK-0075]]", "[[TASK-0076]]", "[[TASK-0077]]"]
 release: ""
 related: []
 tests: []

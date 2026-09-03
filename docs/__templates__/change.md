@@ -21,7 +21,7 @@ related: []
 # <Change Title>
 
 ## Summary
-<what changed and why>
+<Two or three sentences, point first: what changed and who notices it. The detail goes under Impact.>
 
 ## Impact
 - <affected areas/flows/workflows>

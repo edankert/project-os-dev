@@ -4,7 +4,7 @@ id: SKILL-DOCS-AUDIT
 status: active
 owner: group:maintainers
 created: 2026-07-05
-updated: 2026-07-05
+updated: 2026-09-03
 tags: [skills, audit, consistency]
 ---
 
@@ -33,7 +33,7 @@ Documentation-as-database systems accumulate cross-document defects — stale re
 3. **Cross-note contradiction**: two notes describing the same behavior differently (e.g. a `CHG-*` says a path moved, a `WF-*` still documents the old path; a feature note claims a capability its open `ISS-*` says is broken).
 4. **Schema/contract mismatch**: notes that reference each other's fields or artifacts inconsistently (a `TST-*` entrypoint that doesn't match the workflow it verifies; a `REQ-*` acceptance criterion no linked test actually checks).
 5. **Status semantics**: items whose status is technically allowed but semantically wrong (an `open` risk whose trigger condition disappeared; a `passing` test whose entrypoint no longer exists).
-6. **Instruction/template drift** (template repos): instruction files, templates, and `SCHEMAS.md` describing different shapes for the same note type.
+6. **Instruction/template drift** (template repos): instruction files, templates, and `SCHEMAS.md` describing different shapes for the same note type, and any normative rule stated in full in more than one file. The rule this dimension checks is project-os-dev ADR-0024, carried by REQ-0027: every normative rule is stated in exactly one file and every other document links to it. A restatement is a copy the next amendment can miss (four issues in fourteen months: ISS-0006, ISS-0041, ISS-0042, ISS-0043). The fix is always to delete the copy and link, never to correct the copy. This dimension runs to quiescence at each backlog-grooming pass and before each release.
 
 ## Checklist
 1. Run the mechanical validator; fix anything it reports first.
@@ -43,4 +43,4 @@ Documentation-as-database systems accumulate cross-document defects — stale re
 5. Record the audit in a `CHG-*` note if anything changed (rounds run, defects found/fixed per round).
 
 ## Independence recommendation
-Run the audit with a different model than the one maintaining the docs (see `../independent-review/SKILL.md` for why). The maintainer model normalized its own drift into the graph; a fresh model family reads the notes as they are, not as they were intended.
+Run the audit in a clean context: a session that has not been maintaining these docs. The rule is stated once, in `../../instructions/QUALITY.md` "Independent review (clean-context)", and `../independent-review/SKILL.md` explains why. The maintaining session normalised its own drift into the graph; a fresh context reads the notes as they are, not as they were intended.

@@ -8,23 +8,22 @@ created: 2026-01-27
 updated: 2026-01-27
 source: []
 scope: feature
-level: system
+level: system       # unit | integration | system | e2e | acceptance
 entrypoint: ""
 command: ""          # runnable check; when set, `status` is written by the runner, never by hand (ADR-0010)
 last_verified: ""    # manual tests only (no `command:`) — date the procedure was last performed; goes stale
-requirements: []
-features: []
-issues: []
+covers: []           # THE verification link (ADR-0032): [[FEAT-...]] / [[ISS-...]] / [[REQ-...]]. One direction, one encoding.
+issues: []           # context only — what this test VERIFIES goes in covers:
 tasks: []
 artifacts: []
-evidence: []
-last_run: ""
 adequacy: ""
 mutation_score: ""
 reviewed_by: ""
 review_date: ""
 review_verdict: ""
 related: []
+# level: acceptance only; delete on an executable test. Fields explained in SCHEMAS.md, test.md ("Acceptance fields").
+area: ""             # the human grouping, one walk's worth of related checks; the verdict lives in the release ledger, not here (ADR-0037)
 ---
 
 # <Test>
@@ -32,7 +31,7 @@ related: []
 ## Purpose
 <What does this test verify?>
 
-> **Status is evidence, not intent.** `ready` means defined but not yet executed — that is the state a new test note is created in. A test with a `command:` has its `status` written by `tools/scripts/run-tests.py` from the exit code; hand-editing it is a validator error. A test without one is manual: keep `last_verified:` current, because a stale manual test stops satisfying the verification gate.
+> **Status is evidence, not intent** (`tools/instructions/STATUSES.md` `[[test]]`). A test with a `command:` records no verdict: it rests at `active`, CI runs it on every push, and `python3 tools/scripts/run-tests.py` reproduces the run locally without writing anything (ADR-0025). A test without one is manual: it carries a hand-written `passing` or `failing`, `ready` means defined and not yet run, and `last_verified:` must stay current or the verification gate stops accepting it.
 
 ## Procedure
 - <step-by-step>

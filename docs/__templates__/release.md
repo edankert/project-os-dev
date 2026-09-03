@@ -31,7 +31,7 @@ tags: []
 ### Features NOT Included (deferred)
 | ID | Title | Status | Reason |
 |---|---|---|---|
-| FEAT-#### | Feature name | todo | Reason for deferral |
+| FEAT-#### | Feature name | backlog | Reason for deferral |
 
 ### Issues Fixed
 | ID | Title | Platform |
@@ -46,10 +46,10 @@ tags: []
 ## Verification
 
 ### Acceptance Tests
-- **Tier 1 (Feature Tests):** All passing / N exceptions
+- **Feature tests:** all settled / N exceptions
   - List any exceptions with justification
-- **Tier 2 (Regression Tests):** All passing
-- **Tier 3 (Verification Tests):** Status (passing / removed)
+- **Regression tests:** all settled
+- **Automated tests:** green in CI (no verdict is recorded here)
 
 ### Unit Tests
 - Platform A: N tests, all passing
@@ -69,7 +69,6 @@ tags: []
 <!-- Database migrations, breaking changes, upgrade steps -->
 
 ### Post-Release Actions
-- [ ] Remove Tier 3 acceptance tests (if verified by unit tests)
 - [ ] Update SNAPSHOT focus to next milestone
 - [ ] Tag repo: `git tag v<version>`
 - [ ] Push tag: `git push origin v<version>`

@@ -4,7 +4,7 @@ id: INSTR-MARKDOWN
 status: active
 owner: group:maintainers
 created: 2026-05-07
-updated: 2026-05-07
+updated: 2026-09-03
 tags: [instructions, markdown, formatting]
 ---
 
@@ -18,6 +18,7 @@ These rules define how agents and maintainers should format Markdown prose in re
 - Only introduce manual line breaks when Markdown syntax or readability requires them, such as YAML frontmatter lists, fenced code blocks, tables, deliberate hard breaks, long nested lists, or generated content that already has a required shape.
 - Do not reflow existing Markdown solely to change wrapping style; apply this policy to new or materially edited prose.
 - Preserve existing line breaks when they carry semantic meaning, command formatting, quoted output, or list hierarchy.
+- Change the lines that change. Rewriting a note to make a small edit loses frontmatter you did not mean to touch (`reviewed_by`, `review_verdict`, `verification_waiver`, `origin:`) and bumps `updated:` on prose that did not change.
 
 ## Formatter policy
 - Prettier, if used, should run with `proseWrap: "never"` — the repo ships this in `.prettierrc`, alongside `.markdownlint.jsonc` and `.yamllint.yml` for optional lint tooling.

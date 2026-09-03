@@ -13,6 +13,7 @@ source: []
 goal: "Relationship model for linking notes. NOTE: the semantic-named-field design was reverted in May 2026; the model in force is specified by REQ-0015"
 release: ""
 related: [REQ-0015, REQ-0010]
+tasks: ["[[TASK-0023]]", "[[TASK-0024]]", "[[TASK-0025]]", "[[TASK-0026]]", "[[TASK-0027]]", "[[TASK-0028]]", "[[TASK-0029]]"]
 ---
 
 # Named Relationship Fields

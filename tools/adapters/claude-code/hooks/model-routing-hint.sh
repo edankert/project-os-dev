@@ -1,12 +1,14 @@
 #!/bin/bash
-# HC-008: Model Routing Hint
+# HC-008: Delegation Hint
 # Claude Code UserPromptSubmit hook
 #
-# Emits an advisory hint that routes the prompt to the lifecycle-appropriate
-# model: preflight/planning to the `planner` subagent, implementation to the
-# session's main model, review to the `independent-reviewer` subagent. The
-# subagents carry the model pins (see tools/scripts/generate-adapters.py);
-# a hook cannot change the session model, so this only steers delegation.
+# Emits an advisory line stating where the work stands: the focus item, its
+# status and its phase. It recommends the `planner` subagent only for a
+# multi-item scaffold or an ambiguous ask (a single issue or task gets its note
+# written in the main loop), and the `independent-reviewer` only in review
+# states. The hint informs; the harness routes (project-os-dev ADR-0003). It
+# stays within 3 lines and 600 characters, asserted by tools/scripts/test-hooks.sh,
+# so it never grows into the SessionStart slice.
 #
 # Exit 0 = allow (always); stdout is injected as context and never blocks.
 
@@ -47,34 +49,41 @@ status_of() {
 TASK_ID=$(focus_id task)
 ISSUE_ID=$(focus_id issue)
 FEAT_ID=$(focus_id feature)
+PHASE_ID=$(focus_id phase)
 ACTIVE="${TASK_ID:-${ISSUE_ID:-$FEAT_ID}}"
 STATUS=$(status_of "$ACTIVE")
 
+WHERE="focus item $ACTIVE is '$STATUS'"
+[ -n "$PHASE_ID" ] && WHERE="$WHERE, phase $PHASE_ID"
+# The documentation requirement does not change: every change gets its note
+# before the code. What changes is who writes it.
+PREFLIGHT="A single issue or task gets its note written here before the code; a multi-item scaffold or an ambiguous ask goes to the 'planner' subagent with the user's prompt verbatim and one sentence on what the result enables, while you keep reading the code."
+
 # Status vocabulary per STATUSES.md (tasks, issues, features, requirements).
-# `deferred` is deliberately NOT terminal there — it is a parked state.
+# `deferred` is deliberately NOT terminal there; it is a parked state.
 case "$STATUS" in
-  backlog|next|triage|open|planned|draft|approved|proposed|reopened)
-    HINT="focus item $ACTIVE is '$STATUS' (planning) — delegate preflight (intake / scaffold / task breakdown / impact analysis) to the 'planner' subagent before writing code."
+  backlog|triage|open|planned|draft|approved|proposed)
+    HINT="$WHERE (planning). $PREFLIGHT"
     ;;
-  doing|in-progress|active)
-    HINT="focus item $ACTIVE is '$STATUS' (execution) — implement in the main loop. If this prompt starts unrelated NEW work, delegate its preflight to the 'planner' subagent first."
+  doing|active)
+    HINT="$WHERE (execution): implement here. For new work outside it: $PREFLIGHT"
     ;;
-  in-review|implemented)
-    HINT="focus item $ACTIVE is '$STATUS' (review) — delegate verification to the 'independent-reviewer' subagent."
+  review)
+    HINT="$WHERE (review): verification goes to the 'independent-reviewer' subagent, a clean context that starts from the notes and the diff."
     ;;
   blocked)
-    HINT="focus item $ACTIVE is 'blocked' — resolve or re-scope the blocker before implementing; do not quietly work around it."
+    HINT="$WHERE: resolve or re-scope the blocker (depends:) before implementing; do not work around it quietly."
     ;;
   deferred)
-    HINT="focus item $ACTIVE is 'deferred' (parked, not terminal) — re-adopt it per STATUSES.md before working it, or pick different work."
+    HINT="$WHERE (parked, not terminal): re-adopt it per STATUSES.md before working it, or pick other work."
     ;;
-  done|fixed|closed|cancelled|superseded|wont-fix|implemented|retired)
-    HINT="focus item $ACTIVE is '$STATUS' (terminal) — no active work in focus. If this prompt implies new work, delegate preflight to the 'planner' subagent before coding."
+  done|fixed|declined|cancelled|superseded|implemented|retired)
+    HINT="$WHERE (terminal): nothing in flight. $PREFLIGHT"
     ;;
   *)
-    HINT="no active focus item resolved — if this prompt implies new work, delegate preflight to the 'planner' subagent before coding."
+    HINT="no focus item resolved: nothing in flight. $PREFLIGHT"
     ;;
 esac
 
-echo "project-os model routing: $HINT Independent review goes to 'independent-reviewer'. Advisory, not a gate."
+echo "project-os: $HINT"
 exit 0

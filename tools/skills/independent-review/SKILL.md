@@ -4,7 +4,7 @@ id: SKILL-INDEPENDENT-REVIEW
 status: active
 owner: group:maintainers
 created: 2026-07-05
-updated: 2026-07-21
+updated: 2026-09-03
 tags: [skills, review, verification]
 ---
 
@@ -18,10 +18,8 @@ That is a change from what this skill used to say, and it is evidence-backed rat
 Two kinds of correlation were being conflated. Shared **weights** correlate capability. Shared **context** correlates commitment. This fleet's misses have consistently been the second kind: claims written wider than the code, surviving because everyone arrived already holding the claim.
 
 ## When to use
-- A change creates or updates any `TST-*` note (the author of a fix must not be the sole judge of the test that guards it).
-- A change carries a `CHG-*` note (behavior, paths, or contracts changed).
-- A close-out would transition a requirement to `implemented` or a feature to `done`.
-- Any time a `verification_waiver` is being recorded (the waiver itself deserves a second pair of eyes).
+- At the three review gates stated once in `../../instructions/QUALITY.md`, "Independent review (clean-context)"; a change note owes no review (ADR-0019).
+- Optionally, when a `verification_waiver` is being recorded: the waiver deserves a second pair of eyes, though no gate requires it.
 
 ## Inputs
 - The diff (or changed file list) for the work being reviewed.
@@ -42,15 +40,17 @@ Two kinds of correlation were being conflated. Shared **weights** correlate capa
 
 ## Checklist
 1. Identify the review scope: changed files + the `TST-*`/`CHG-*` notes involved.
-2. Launch the review with a different model (examples: a Claude Code subagent with a different-family model override, a Codex/Cursor session, or a human reviewer). Provide: the diff, the linked notes, and the acceptance criteria from any linked `REQ-*`.
+2. Launch the review in a clean context that is not the authoring session (examples: a fresh Claude Code subagent such as `independent-reviewer`, a separate Codex or Cursor session, or a human reviewer). The rule is stated once, in `../../instructions/QUALITY.md` "Independent review (clean-context)". Provide: the diff, the linked notes, and the acceptance criteria from any linked `REQ-*`.
 3. Ask the reviewer for three explicit judgments:
    - **Correctness**: does the change do what the task/issue note says, and is there a concrete input/state where it fails?
    - **Guarding**: would each linked `TST-*` actually fail if the change were reverted or subtly broken? (If tooling is available, run mutation testing — see `../../instructions/TESTING.md`, "Test adequacy".)
    - **Consistency**: do the notes (status, links, CHG impact list) match what the diff actually does?
+   - Ask for **every finding**, each labelled **reproduced** (a command the reviewer ran and what it printed) or **not reproduced**. Do not tell the reviewer to be conservative, to report only high severity, or to omit what it could not reproduce: a reviewer told that an unreproduced finding is not a finding drops the plausible ones itself, and nobody downstream ever sees them. The filter belongs in step 5.
 4. Record the verdict in the reviewed note frontmatter (`reviewed_by`, `review_date`, `review_verdict`).
-5. If `changes-requested`: file `ISS-*` notes for the findings, keep the item out of terminal status, and loop.
+5. If `changes-requested`: file `ISS-*` notes for the findings, keep the item out of terminal status, and loop. The repro filter applies here, at transcription, which is a separate pass by construction: a reproduced finding becomes an `ISS-*` at `triage` carrying its command and output; a finding the reviewer could not reproduce is recorded in the reviewed note's review section as a lead, and becomes an issue only once someone reproduces it.
 6. If `approved`: proceed with close-out per `../close-out/SKILL.md`.
 
 ## What NOT to do
 - Do not satisfy this skill by having the authoring model re-read its own diff — that is self-review wearing a badge.
 - Do not skip the review because tests pass: the review exists precisely because author-written tests share the author's blind spots.
+- Do not filter findings in the reviewer's prompt or output schema. Ask for everything; filter when transcribing.

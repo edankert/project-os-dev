@@ -102,11 +102,11 @@ Each rule has one home file; every other document links to it. The docs-audit dr
 
 ## Next Actions
 
-- [ ] Decide rows 1 and 3 with ISS-0046: does the acceptance verdict live on the note (`mark:`) or in the release ledger (ADR-0037)? The template says both.
-- [ ] Decide row 17: does the Codex path require a change note before every edit, or at close-out when behaviour changes, as LIFECYCLE.md says?
-- [ ] Decide row 11: which script owns `metrics.counts`.
-- [ ] Fix the fifteen disagreeing rows first (1, 3, 4, 8, 9, 10, 11, 12, 14, 16, 17, 18, 30, 31, 32), one commit per home file, deleting the copy and linking.
-- [ ] Then the twenty-one agreeing rows and the borderline six.
+- [x] Decide rows 1 and 3 with ISS-0046: Edwin, 2026-09-03, no verdict on the note for a `command:` test (ADR-0025); the acceptance verdict follows the newest decision, the ledger (ADR-0037). Fixed in template commits `87b64cf` and `09ae4dc`.
+- [x] Decide row 17: Edwin, 2026-09-03, at close-out when behaviour changes; the Codex helper warns instead of failing (`01ac917`).
+- [x] Decide row 11: Edwin, 2026-09-03, the sync script owns it and the repair flag stays; SNAPSHOT.md says both (`80a5b5c`).
+- [x] Fix the fifteen disagreeing rows first (1, 3, 4, 8, 9, 10, 11, 12, 14, 16, 17, 18, 30, 31, 32), one commit per home file, deleting the copy and linking. Template commits `ab94b0c`, `edec25d`, `80a5b5c`, `01ac917`, `09ae4dc`.
+- [x] Then the twenty-one agreeing rows and the borderline six. Same commits; pass 2 (at `5cf6ded`) found 26 rows gone, 10 still restated and 8 new sites, all taken up in `09ae4dc`.
 - [ ] Re-run the sweep until two consecutive passes find nothing (docs-audit quiescence rule), and record the passes in a change note.
 - [ ] Reconsider the RULE-ONCE check when the count reaches zero (ADR-0024, Acceptance).
 

@@ -4,7 +4,7 @@ id: SKILL-FEATURE-SCAFFOLD
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-07-21
+updated: 2026-09-03
 tags: [skills, features]
 ---
 
@@ -23,6 +23,7 @@ tags: [skills, features]
   - `FEAT-####-Short-Description.md`
   - `plan/PLAN.md`
   - `plan/tasks/TASK-####-*.md` (initial breakdown)
+  - `plan/tests/TST-####-*.md` — **one acceptance check, by rule** (see step 9)
 
 ## Checklist
 1. Decide whether new `REQ-*` notes are needed (acceptance criteria that should outlive tasks).
@@ -46,13 +47,18 @@ tags: [skills, features]
 6. **Impact analysis (mandatory for features with requirements):**
    - Run `../impact-analysis/SKILL.md` against new or linked requirements.
    - Check for conflicts with existing requirements on overlapping features.
-   - If conflicts are found, stop and present resolution options before implementation.
+   - If conflicts are found, how to resolve them is the user's decision; present the options and continue with what does not depend on them (`../../instructions/LIFECYCLE.md`, "When to pause for the user").
 7. **Requirement approval gate:**
-   - A feature may not move to `in-progress` while any linked requirement is still `draft` — approve it (or amend it first, then approve) so implementation works against agreed criteria.
+   - A feature may not move to `doing` while any linked requirement is still `draft` — approve it (or amend it first, then approve) so implementation works against agreed criteria.
    - Approval means the acceptance criteria are the ones you intend to build against; if the plan already departs from them, amend the requirement now rather than at close-out.
-   - The requirement is advanced again at close-out (`../close-out/SKILL.md`, "Requirement advancement").
+   - The requirement is advanced again at close-out (`../close-out/SKILL.md`, step 3 "Requirement advancement").
 8. **Risk scan:**
    - Review the feature against risk scan triggers in `../../instructions/LIFECYCLE.md`.
    - If any trigger applies, run `../risk-scan/SKILL.md` and create/update `RISK-*` notes.
    - If no trigger applies, record that no new risks were identified in the feature note or final summary — the negative result is part of the scan.
-9. If the feature requires verification, create `TST-*` notes (use `../test-authoring/SKILL.md`) and link them from the feature/requirements/tasks.
+9. **Emit one acceptance check beside the plan — by rule, not by judgement.**
+   - Create `plan/tests/TST-####-*.md` from `../../../docs/__templates__/test.md` with `level: acceptance` and `covers: ["[[FEAT-####]]"]`. No `command:` — a check somebody walks.
+   - **This is not conditional.** It used to read *"if the feature requires verification"*, and the answer was decided per feature, at the end, under time pressure. Measured across the twelve project-os repos on 2026-08-20: **236 features reached a terminal status with no acceptance check covering them** — 147 of those in the three repos that hold a suite at all. A rule applied when somebody remembers is not a rule.
+   - **The escape is `acceptance_exception:` on the feature**, and it is what makes the rule honest rather than a thing people disable. Some features never can have a check — an engine with no rider-facing surface, a phase of work, a repo that ships prose. Say so once, in the note, at scaffold time when the reason is actually known.
+   - `FEATURE-UNCOVERED` warns at close-out for anything that is neither covered nor excepted, so the scaffold and the validator ask the same question at the two ends of the work.
+   - For anything beyond the one acceptance check — unit, integration, regression — use `../test-authoring/SKILL.md` and link from the feature/requirements/tasks as before.

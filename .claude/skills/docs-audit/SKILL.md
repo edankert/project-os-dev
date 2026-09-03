@@ -7,6 +7,11 @@ description: "project-os docs audit (cross-document consistency, to quiescence) 
 
 This operation is governed by the canonical project-os playbook.
 
-1. Read `tools/skills/docs-audit/SKILL.md` in full — it is the source of truth for this skill.
-2. Execute its checklist exactly, honoring the preflight and close-out rules in `tools/instructions/LIFECYCLE.md` (document first, update `SNAPSHOT.yaml` and notes in the same turn as the work).
-3. Before finishing, run `bash tools/scripts/validate-docs.sh` and fix anything it reports.
+1. Read `tools/skills/docs-audit/SKILL.md` in full; it is the source of truth for this skill.
+2. Follow its checklist, honouring the preflight and close-out rules in `tools/instructions/LIFECYCLE.md` (document first; update `SNAPSHOT.yaml` and the notes in the same turn as the work). Where the checklist and the repo disagree, say so and file an `ISS-*` rather than improvising.
+
+Use when:
+
+- On a cadence: during backlog grooming, before a release (`../release-prep/SKILL.md`), and after any large import/merge/sync.
+- After running `../../scripts/sync-project-os.sh` (template sync can orphan references).
+- When `tools/scripts/validate-docs.sh` passes but behavior suggests the docs are lying (the validator checks structure, not meaning).

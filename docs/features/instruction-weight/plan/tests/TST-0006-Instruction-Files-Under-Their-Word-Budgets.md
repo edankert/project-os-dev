@@ -3,7 +3,7 @@ type: "[[test]]"
 id: TST-0006
 aliases: ["TST-0006"]
 title: "The always-loaded instruction files are under their word budgets"
-status: passing
+status: active
 owner: user:edwin
 created: 2026-09-03
 updated: 2026-09-03
@@ -12,7 +12,6 @@ scope: feature
 level: acceptance
 entrypoint: "../project-os/tools/scripts/test-word-budgets.sh"
 command: "bash ../project-os/tools/scripts/test-word-budgets.sh"
-last_run: "2026-09-03T16:41Z"
 requirements: ["[[REQ-0026-Instruction-Files-Carry-Rules-Not-History]]"]
 features: ["[[FEAT-0026-Trim-The-Instruction-Files-Loaded-Every-Session]]"]
 issues: []
@@ -23,7 +22,6 @@ reviewed_by: model:claude-opus-5[1m]
 review_date: 2026-09-03
 review_verdict: approved
 related: ["[[Prompting-Guide-Review-2026-09-03]]"]
-exit_code: 0
 
 ---
 
@@ -54,7 +52,7 @@ bash ../project-os/tools/scripts/test-word-budgets.sh
 
 The second and third assertions are the ones worth checking: with the trimmed source in place, the pre-trim `.cursor/rules/lifecycle.mdc` (1,663 words at commit `90920e5`; the note first said 1,374, the count at the review before FEAT-0024, and the review corrected it) put back must make the command fail. Inverted on 2026-09-03: `git show 90920e5:.cursor/rules/lifecycle.mdc > .cursor/rules/lifecycle.mdc` in the template, the command exits 1 on the size assertion and, since the review round added it, on the generator check as well; restored with `git checkout -- .cursor/rules/lifecycle.mdc`, exit 0. Without the generator check the test passed on a short but stale copy, which the review pointed out.
 
-**A note on this note's own status.** It carries `command:` together with `status: passing`, `last_run:` and `exit_code:`. The template's STATUSES.md, and this repo's vendored copy of it, say a test with a `command:` records no verdict (cockpit ADR-0038); this repo stamps the status by execution (ADR-0010), and its validator accepts what its instruction file forbids. The two models disagree, which is row 3 of [[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File|ISS-0048]] and the decision ISS-0046 needs; the status here follows this repo's rule until that is settled.
+**This note's own status.** It carries a `command:` and, since ADR-0025 landed on 2026-09-03, no verdict: `status: active`, no `last_run:`, no `exit_code:`. CI runs it; `python3 tools/scripts/run-tests.py --filter TST-0006` reproduces the run without writing. The paragraph that stood here recorded the contradiction ISS-0048 row 3 named; the decision resolved it.
 
 ## What this test deliberately does not check
 

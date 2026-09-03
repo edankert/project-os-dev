@@ -1,34 +1,13 @@
 #!/usr/bin/env python3
-"""Execute TST-* notes that declare a `command:` and stamp their status (ADR-0010).
+"""Run every TST-* note's `command:` and report the outcome.
 
-`QUALITY.md` builds its close-out rules on one gate: an item may not reach a
-terminal status while a linked TST-* is not `passing`. Across 10 repos and 5,890
-status writes that gate has never once observed a failure -- `failing` was
-written zero times, 78% of test notes are born `passing`, and 99% never change
-again. The mechanism is structural, not cultural: the status is written by the
-agent that wants the transition, at the moment it wants it, and nothing returns
-to the note when CI goes red three weeks later.
+A test that carries a `command:` records no verdict on its note (project-os-dev
+ADR-0025; STATUSES.md [[test]]): this script runs it, prints passing / failing /
+unrunnable per test, and exits 1 on any failure. In CI that exit code is the
+verdict. It never writes to a note. An unrunnable command (exit 127, a missing
+tool) is an environment gap, reported and not counted as a failure.
 
-This removes the conflict of interest. A note carrying a `command:` has its
-`status` written here, from the exit code, and nowhere else.
-
-Three outcomes, deliberately distinguished:
-
-  passing     exit 0
-  failing     non-zero exit -- the check ran and the system is wrong
-  unrunnable  the command could not execute at all (missing binary, missing
-              env, timeout). Reported, and the status is left ALONE.
-
-The third matters more than it looks. Stamping `failing` on a test that could
-not run conflates "the system is broken" with "my machine is missing a tool",
-and that is exactly the noise that teaches people to stop believing a status --
-the failure mode this whole change exists to end. It is also the `blocked` vs
-`failing` confusion ADR-0007's amendment called out one level up.
-
-Exit codes: 0 = no failures, 1 = at least one test failed, 2 = usage error.
-
-Stdlib only. Usage:
-    run-tests.py [--repo-root PATH] [--write] [--filter TST-0001] [--timeout N]
+Usage: run-tests.py [--repo-root DIR] [--filter TST-0001 ...] [--timeout SECONDS]
 """
 
 from __future__ import annotations
@@ -39,7 +18,6 @@ import re
 import shlex
 import subprocess
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
 DEFAULT_TIMEOUT = 600
@@ -59,13 +37,6 @@ def fm_get(fm, key):
     if not m:
         return ""
     return m.group(1).strip().strip('"').strip("'")
-
-
-def fm_set(fm, key, value):
-    line = "%s: %s" % (key, value)
-    if re.search(r"^%s:" % re.escape(key), fm, re.M):
-        return re.sub(r"^%s:.*$" % re.escape(key), line, fm, count=1, flags=re.M)
-    return fm.rstrip("\n") + "\n" + line + "\n"
 
 
 def discover(root, only=None):
@@ -116,9 +87,8 @@ def run_one(root, cmd, timeout):
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Run TST-* commands and stamp their status.")
+    ap = argparse.ArgumentParser(description="Run every TST-* command: and report; CI is the verdict (ADR-0025).")
     ap.add_argument("--repo-root", default=".")
-    ap.add_argument("--write", action="store_true", help="Stamp status/last_run (default: dry run)")
     ap.add_argument("--filter", action="append", default=None, help="Only these TST ids")
     ap.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT)
     args = ap.parse_args(argv)
@@ -133,26 +103,18 @@ def main(argv=None):
         print("run-tests: %s — no TST-* notes declare a `command:`" % root.name)
         return 0
 
-    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
+    # ADR-0025 (project-os-dev): the runner never writes to a note. A test
+    # with a command: records no verdict; this exit code, in CI, is the verdict.
     counts = {"passing": 0, "failing": 0, "unrunnable": 0}
-    print("== %s  %s ==" % ("RUN" if args.write else "DRY RUN", root.name))
-    for path, tid, cmd in tests:
-        outcome, code, detail = run_one(root, cmd, args.timeout)
+    print("== RUN  %s ==" % root.name)
+    for _path, tid, cmd in tests:
+        outcome, _code, detail = run_one(root, cmd, args.timeout)
         counts[outcome] += 1
         print("   %-12s %-10s %s%s" % (tid, outcome, cmd[:48], ("  — " + detail[:60]) if detail else ""))
-        if not args.write or outcome == "unrunnable":
-            continue
-        text = path.read_text(encoding="utf-8")
-        pre, fm, post = split_frontmatter(text)
-        fm = fm_set(fm, "status", outcome)
-        fm = fm_set(fm, "last_run", '"%s"' % stamp)
-        fm = fm_set(fm, "exit_code", str(code))
-        fm = fm_set(fm, "updated", stamp[:10])
-        path.write_text(pre + fm + post, encoding="utf-8")
 
     print("   passing=%(passing)d failing=%(failing)d unrunnable=%(unrunnable)d" % counts)
     if counts["unrunnable"]:
-        print("   note: unrunnable tests keep their previous status — an environment gap is not a failure")
+        print("   note: an unrunnable test is an environment gap, not a failure")
     return 1 if counts["failing"] else 0
 
 

@@ -3,7 +3,8 @@
 # Claude Code PreToolUse hook for Write/Edit tools
 #
 # Checks that focus.task or focus.issue is set in SNAPSHOT.yaml
-# before allowing code file edits (excludes docs/, tools/, SNAPSHOT.yaml, CLAUDE.md).
+# before allowing code file edits (the exempt paths are listed once in
+# tools/instructions/HOOKS.md HC-001).
 #
 # Exit 0 = allow (no output or empty output)
 # To block: exit 0 with JSON containing permissionDecision: "deny"
@@ -21,7 +22,8 @@ if [ -z "$FILE_PATH" ]; then
   exit 0
 fi
 
-# Allow edits to documentation and config files
+# Allow edits to documentation and config files. The list is stated once in
+# tools/instructions/HOOKS.md HC-001; tools/agents/check-docs-first.sh cites it too.
 case "$FILE_PATH" in
   */docs/*|*/tools/*|*SNAPSHOT.yaml|*CLAUDE.md|*CONTEXT.md|*README.md|*AGENTS.md|*LLM_BRIEF.md|*.cursor/*|*/.claude/*|*/.github/*|*.prettierrc|*.markdownlint*|*.yamllint*|*.gitignore|*.project-os-sync)
     exit 0
@@ -40,7 +42,20 @@ while [ -n "$DIR" ] && [ "$DIR" != "/" ] && [ "$DIR" != "." ]; do
   DIR=$(dirname "$DIR")
 done
 if [ -z "$PROJECT_DIR" ]; then
-  PROJECT_DIR="${CLAUDE_PROJECT_DIR:-.}"
+  # The walk found no SNAPSHOT.yaml. Fall back to the session repo only for a
+  # relative path (src/main.py resolves there) or a path under it; an absolute
+  # path outside every project-os repo, such as a scratchpad or another repo,
+  # is not gated (project-os-dev ISS-0003, point 3).
+  SESSION_DIR="${CLAUDE_PROJECT_DIR:-.}"
+  case "$FILE_PATH" in
+    /*)
+      case "$FILE_PATH" in
+        "$SESSION_DIR"/*) PROJECT_DIR="$SESSION_DIR" ;;
+        *) exit 0 ;;
+      esac
+      ;;
+    *) PROJECT_DIR="$SESSION_DIR" ;;
+  esac
 fi
 SNAPSHOT="$PROJECT_DIR/SNAPSHOT.yaml"
 if [ ! -f "$SNAPSHOT" ]; then

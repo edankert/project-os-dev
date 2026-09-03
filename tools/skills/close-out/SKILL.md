@@ -4,7 +4,7 @@ id: SKILL-CLOSE-OUT
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-07-21
+updated: 2026-09-03
 tags: [skills, closeout]
 ---
 
@@ -23,39 +23,36 @@ tags: [skills, closeout]
 1. **Verification gating (mandatory first):**
    - List all `TST-*` IDs linked to the task/issue/requirement/feature being closed.
    - Verify each linked test is `status: passing` in the snapshot and note.
-   - If any linked test is not passing, stop before applying terminal statuses and report the blocker.
+   - If any linked test is not passing, the terminal status waits and the blocker is reported. Complete every other part of the close-out in full, then say exactly what was left out and why (`../../instructions/LIFECYCLE.md`, "When to pause for the user").
    - If no tests are linked and the work is a functional code change, flag that verification may be missing and create test notes when appropriate.
 2. Update notes:
    - task `status: done` (and `updated`)
-   - issue `status: fixed/closed` if resolved
-   - feature progress if milestones were reached; a feature may only go `done` when every task in its `tasks:` list is `done` or `cancelled` — a `deferred` ID in the list blocks the transition until descoped via `../status-transition/SKILL.md`, "Deferral procedure" (never flip a parked task to `done` or drop it silently)
-   - phase `status: done` only when its exit criteria and linked work are complete
-   - **plan** `status` follows its feature: `active` while building, `done` when the feature closes, `superseded` if the delivery sequence was replaced. A plan left `active` under a shipped feature claims work is in flight that finished weeks ago (ISS-0010)
+   - issue `status: fixed` if resolved
+   - feature `status: done` only when its gate in `../../instructions/STATUSES.md` `[[feature]]` holds; a `deferred` ID in `tasks:` must first be descoped via `../status-transition/SKILL.md`, "Deferral procedure"
+   - phase `status: done` only when its gate in `STATUSES.md` `[[phase]]` holds
+   - **plan** `status` follows its feature (`STATUSES.md` `[[plan]]`); a plan left `active` under a shipped feature claims work is in flight that finished weeks ago (ISS-0010)
 3. **Requirement advancement (mandatory when closing a feature):**
-   - List every requirement linked to the closing feature (`requirements:` on the feature, `implements:` on the requirement — note the direction: a requirement's `implements` names the feature that implements *it*, at most one per ADR-0007).
-   - **This walk gates the close-out, it does not follow it.** A feature may not reach `done` while any requirement naming it has an unresolved criterion (validator FEATURE-REQ); the requirement's status flip below is the *consequence* of that walk, not a precondition for it.
+   - List every requirement linked to the closing feature (`requirements:` on the feature, `implements:` on the requirement; note the direction: a requirement's `implements` names the feature that implements *it*).
+   - **This walk gates the close-out, it does not follow it.** The gate is `STATUSES.md` `[[feature]]`; this walk is how it is satisfied, and the requirement's status flip below is the consequence of the walk, not a precondition for it.
    - Walk that requirement's acceptance criteria one by one. Tick each satisfied criterion in the note body with an evidence pointer (repo path, `path:line`, command, or note ID). A criterion with no evidence does not get ticked.
    - If the delivered work deliberately departed from a criterion, **reconcile it — never tick it to fit**: amend, narrow, or supersede it via `../impact-analysis/SKILL.md` and record what changed and why in an `## Amendments` section of the note. Silently rewriting or dropping a criterion destroys the audit trail.
    - Keep frontmatter `acceptance:` (criteria of record) and the body checkboxes (verification record) describing the same criteria; frontmatter wins where they disagree.
-   - Set the requirement to `implemented` once the feature named in its `implements:` is `done`. (`implements:` names at most one feature — ADR-0007.) A requirement naming no feature is not advanced by any feature's close-out.
-   - If the implementing feature ends `cancelled` or `superseded` rather than `done`, the requirement is not implemented — supersede it (link the successor) or cancel it. Leaving it at `draft`/`approved` is a validator error (REQ-STALE), which treats every terminal feature status as resolved.
-   - `implemented` is the terminal requirement status (ADR-0007); there is no `verified` step. Advancing to it requires every acceptance criterion ticked-with-evidence or reconciled — do not shortcut that.
-4. `../../../SNAPSHOT.yaml` — **do not re-type the statuses.** `tools/scripts/sync-snapshot.py` propagates each item's status from its note, along with `counters` and `metrics.counts`, at pre-commit (ADR-0009). What still needs a decision:
+   - Set the requirement to `implemented` once the feature named in its `implements:` is `done`. A requirement naming no feature is not advanced by any feature's close-out. The transitions themselves, including what happens when the feature ends `cancelled` or `superseded`, are stated once in `STATUSES.md` `[[requirement]]`.
+4. `../../../SNAPSHOT.yaml`: the derived fields follow the notes (`../../instructions/LIFECYCLE.md`, "Mandatory Automated Documentation"). What still needs a decision:
    - add entries for genuinely new items, and prune per `retention` — membership is curation, not derivation
    - update relationships if new tasks/issues/risks were created
    - clear or move `focus` to the next task (`focus` is intent, and stays hand-authored)
 5. If user-facing behavior/paths/contracts changed:
    - create `../../../docs/changes/CHG-YYYYMMDD-Short-Description.md`
    - link it to `issues`/`features` in note + snapshot
+   - A document written for a person (a review, a report, a design) is filed as a `reference` note under `docs/reference/` in Markdown, from `../../../docs/__templates__/reference.md`; a page published outside the repo is a copy, and its URL goes in the note's `source:`. Reason: the cockpit lists reference notes and nothing lists a page on another host, so a deliverable that lives only there is invisible to the next session (project-os-dev ISS-0045).
 6. **Risk scan:**
    - Review the completed work against risk scan triggers in `../../instructions/LIFECYCLE.md`.
    - If any trigger applies, run `../risk-scan/SKILL.md` and create/update `RISK-*` notes.
    - If no trigger applies, record that no new risks were identified in the relevant task/issue note or final summary.
 7. **Mechanical validation:**
-   - Run `bash tools/scripts/validate-docs.sh` and fix every reported error before finishing — the same validator gates pre-commit and CI.
+   - Run `bash tools/scripts/validate-docs.sh` and fix every reported error before finishing.
+   - Before pushing and after, follow `../../instructions/LIFECYCLE.md` close-out steps 8 and 9 (`--as-committed`, then confirm the CI run went green).
 8. **Independent review:**
-   - If this close-out created/updated a `TST-*` or `CHG-*` note, or sets a requirement to `implemented` / feature to `done`, run `../independent-review/SKILL.md` before applying the terminal status.
-9. **Retention enforcement** (still manual — the sync script does not prune, because which completed work stays in active context is a judgement no count-based rule reproduced):
-   - Apply `retention` settings from `../../../SNAPSHOT.yaml`.
-   - Preserve notes under `../../../docs/`; prune only snapshot entries when policy says to keep the snapshot active/recent.
-   - Update `metrics` after pruning.
+   - At the review gates stated once in `../../instructions/QUALITY.md` ("Independent review (clean-context)"), run `../independent-review/SKILL.md` before applying the terminal status.
+9. **Retention enforcement**: apply the policy in `../../instructions/SNAPSHOT.md` "Retention policy"; membership is curation the sync script leaves alone.

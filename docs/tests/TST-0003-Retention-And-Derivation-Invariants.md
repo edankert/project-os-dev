@@ -3,7 +3,7 @@ type: "[[test]]"
 id: TST-0003
 aliases: ["TST-0003"]
 title: "Retention and derivation invariants: every prune condition holds an entry back, and derivation never blanks a title"
-status: passing
+status: active
 owner: user:edwin
 created: 2026-08-04
 updated: 2026-08-04
@@ -12,8 +12,6 @@ scope: system
 level: unit
 entrypoint: "tools/scripts/test-retention.py"
 command: "python3 tools/scripts/test-retention.py"
-last_run: "2026-08-04T12:55Z"
-exit_code: 0
 requirements: []
 features: [FEAT-0022]
 issues: []

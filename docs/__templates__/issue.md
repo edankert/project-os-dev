@@ -18,7 +18,10 @@ tests: []
 # <Title>
 
 ## Problem
-<What is wrong?>
+<Two or three sentences, point first: what is wrong and who sees it. The detail goes under Repro and Evidence.>
+
+> [!quote] As reported — <YYYY-MM-DD> (<user:name or the source>)
+> <The reporter's own words, verbatim, quoted line by line. Your paraphrase stays above this callout. Delete the callout when there is no verbatim source.>
 
 ## Repro
 <How to reproduce; commands; inputs>

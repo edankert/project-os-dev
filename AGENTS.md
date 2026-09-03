@@ -13,13 +13,9 @@ This repository is project-os enabled. Follow this startup sequence before doing
 Do not skip or reorder these steps.
 
 ## Mandatory Docs-First Gate
-Before any code edit, start documentation intake first:
-1. Run `bash tools/agents/start-change.sh "<short title>"`.
-2. Update the generated `docs/changes/CHG-*.md` note so every documentation type is explicitly marked.
-3. Update `SNAPSHOT.yaml` for active work state.
-4. Only then implement code changes.
+The rule is stated once in `tools/instructions/LIFECYCLE.md`: preflight before code (a task or issue in `SNAPSHOT.yaml` focus), and a change note at close-out when behaviour, paths or contracts change. On the Codex and generic paths: `bash tools/agents/start-change.sh "<short title>"` scaffolds the change note when one is due, and `bash tools/agents/check-docs-first.sh` checks the documentation state after edits.
 
-After edits, run `bash tools/agents/check-docs-first.sh` and `bash tools/scripts/validate-docs.sh`, and fix any failures — the validator also runs at git pre-commit (`bash tools/scripts/install-git-hooks.sh` to install) and in CI, so drift becomes a build failure.
+After edits, run `bash tools/agents/check-docs-first.sh` and `bash tools/scripts/validate-docs.sh`, and fix what they report; the validator also runs at pre-commit and in CI (`tools/instructions/QUALITY.md`, "Documentation Fidelity").
 
 All documentation types must be considered on every behavior/path change:
 - features
@@ -34,8 +30,8 @@ All documentation types must be considered on every behavior/path change:
 - snapshot
 
 ## Canonical State
-- `SNAPSHOT.yaml` is the canonical current-work state.
-- If note files and `SNAPSHOT.yaml` disagree, trust `SNAPSHOT.yaml` and report the mismatch.
+- `SNAPSHOT.yaml` is the canonical current-work state; its statuses, counters and metrics are derived from the notes by `tools/scripts/sync-snapshot.py` (`tools/instructions/LIFECYCLE.md`, "Mandatory Automated Documentation").
+- If note files and `SNAPSHOT.yaml` disagree, the notes are authored and the snapshot is derived: run the sync script and report what it changed.
 
 ## Primary Work Entrypoints
 - Replace with project-specific commands after initialization.
@@ -47,6 +43,6 @@ All documentation types must be considered on every behavior/path change:
 - Agent/tool operating instructions are not project documentation: `tools/**`.
 
 ## Output Expectations
-- Provide a short project summary before edits: purpose, active feature/task/issue, intended files.
+- Prose written for a person follows `tools/instructions/WRITING.md`: one line before starting on what you are about to do, a recap at the end that stands on its own, and evidence for every claim of progress (`tools/instructions/QUALITY.md`, "Verification expectations").
 - After edits, report changed files and validation commands run.
 - If blocked by missing dependencies or external repos, state exact missing path/tool.

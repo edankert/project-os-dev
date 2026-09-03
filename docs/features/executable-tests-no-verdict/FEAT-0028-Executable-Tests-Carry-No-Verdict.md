@@ -3,7 +3,7 @@ type: "[[feature]]"
 id: FEAT-0028
 aliases: ["FEAT-0028"]
 title: "Executable tests carry no verdict"
-status: doing
+status: done
 phase: "[[PHASE-0003]]"
 owner: user:edwin
 created: 2026-09-03
@@ -40,10 +40,10 @@ A test note with a `command:` stops carrying a verdict. The runner runs it and r
 
 ## Acceptance
 
-- [ ] `run-tests.py` has no `--write` and leaves every note byte-identical after a run — evidence: [[TST-0008]]
-- [ ] A task or feature whose linked test carries a `command:` and sits at `active` passes the verification gate; the same test with `status: passing` draws the dated warning — evidence: [[TST-0008]]
-- [ ] The test template, SCHEMAS.md, test-authoring and release-verification describe the one model, and ISS-0046 is fixed — evidence: the diffs, and the release-verification skill's steps 3, 4, 6 and 7
-- [ ] This repo's seven automated tests carry `status: active` and no `last_run:` or `exit_code:`, and its validator is the template's — evidence: `git grep` over `docs/`, and `validate-docs.sh` clean after the sync
+- [x] `run-tests.py` has no `--write` and leaves every note byte-identical after a run — evidence: [[TST-0008]] assertions 8 to 11, 2026-09-03; template commit `3d67f11`
+- [x] A task or feature whose linked test carries a `command:` and sits at `active` passes the verification gate; the same test with `status: passing` draws the dated warning — evidence: [[TST-0008]] assertions 1 to 5; template commit `a8694f0`
+- [x] The test template, SCHEMAS.md, test-authoring and release-verification describe the one model, and ISS-0046 is fixed — evidence: template commit `87b64cf`; release-verification steps 3, 4, 6 and 7 settle each test by its kind and reset nothing by hand
+- [x] This repo's seven automated tests carry `status: active` and no `last_run:` or `exit_code:`, and its validator is the template's — evidence: `git grep -l "^last_run" docs/` returns nothing, `validate-docs.sh` OK after the sync from `09ae4dc`, `run-tests.py` 8 of 8 (TST-0008 included)
 
 ## Risk scan
 

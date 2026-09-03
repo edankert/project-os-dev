@@ -13,6 +13,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate SNAPSHOT.yaml <-> docs consistency
         run: bash tools/scripts/validate-docs.sh --repo-root "$GITHUB_WORKSPACE"
+      - name: Run every TST-* command (an executable test records no verdict; this run is the verdict, ADR-0025)
+        run: |
+          if [ -f tools/scripts/run-tests.py ]; then
+            python3 tools/scripts/run-tests.py --repo-root "$GITHUB_WORKSPACE"
+          fi
       - name: Verify SNAPSHOT.yaml derived fields match the notes
         run: |
           if [ -f tools/scripts/sync-snapshot.py ]; then

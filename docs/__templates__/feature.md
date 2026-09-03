@@ -12,14 +12,14 @@ goal: ""
 requirements: []
 tasks: []
 release: ""
+acceptance_exception: ""   # leave empty and write the check; fill only where a check can never exist (SCHEMAS.md, feature.md)
 related: []
-tests: []
 ---
 
 # <Feature>
 
 ## Goal
-<What capability is delivered?>
+<Two or three sentences, point first: what capability is delivered and for whom. The detail goes under Scope.>
 
 ## Scope
 <In/out of scope>

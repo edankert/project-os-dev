@@ -13,6 +13,7 @@ source: []
 goal: "Simplify SNAPSHOT.yaml by removing session/claimed_by fields and positioning it as project context only"
 release: ""
 related: ["[[ADR-0003-Delegate-Orchestration]]", "[[FEAT-0003-Team-Model]]"]
+tasks: ["[[TASK-0010]]", "[[TASK-0011]]", "[[TASK-0012]]"]
 ---
 
 # Remove orchestration fields from SNAPSHOT.yaml

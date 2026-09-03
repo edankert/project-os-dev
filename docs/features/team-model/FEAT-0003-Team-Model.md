@@ -13,6 +13,7 @@ source: []
 goal: "Replace session/claimed_by orchestration in SNAPSHOT.yaml with a team model that delegates coordination to native tool orchestration"
 release: ""
 related: ["[[ADR-0003-Delegate-Orchestration]]", "[[FEAT-0004-Snapshot-Simplification]]"]
+tasks: ["[[TASK-0007]]", "[[TASK-0008]]", "[[TASK-0009]]"]
 ---
 
 # Team model replacing agent orchestration

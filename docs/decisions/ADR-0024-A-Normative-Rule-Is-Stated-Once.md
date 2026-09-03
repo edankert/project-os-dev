@@ -39,11 +39,11 @@ Nothing detects any of this, because no check compares prose to prose. Each was 
 
 ## Options
 
-**Option 1 — widen REQ-0018.** Amend it to cover every normative rule, not only state rules. Cheapest, and keeps one statement of the rule. Costs: it reopens an `implemented` requirement, and a requirement is a thing to build, whereas this is a standing constraint on how the corpus is written.
+1. **Widen REQ-0018.** Amend it to cover every normative rule, not only state rules. Cheapest, and keeps one statement of the rule. Costs: it reopens an `implemented` requirement, and a requirement is a thing to build, whereas this is a standing constraint on how the corpus is written.
 
-**Option 2 — a rule-ADR (this note).** Record it as a quantified rule under [[ADR-0023-A-Quantified-Rule-Is-A-Decision]], leaving REQ-0018 as the delivered state-rule case. Costs: a second document about one subject, which is the thing the rule itself objects to, unless REQ-0018 explicitly defers to it.
+2. **A rule-ADR (this note).** Record it as a quantified rule under [[ADR-0023-A-Quantified-Rule-Is-A-Decision]], leaving REQ-0018 as the delivered state-rule case. Costs: a second document about one subject, which is the thing the rule itself objects to, unless REQ-0018 explicitly defers to it.
 
-**Option 3 — file the fifth one-off when it happens.** Honest baseline. Costs: the four above took a reader with two files open; the fifth needs the same luck.
+3. **File the fifth one-off when it happens.** Honest baseline. Costs: the four above took a reader with two files open; the fifth needs the same luck.
 
 ## Rule
 

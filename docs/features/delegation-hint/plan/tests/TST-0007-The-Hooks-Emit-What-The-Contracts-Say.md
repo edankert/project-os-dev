@@ -3,7 +3,7 @@ type: "[[test]]"
 id: TST-0007
 aliases: ["TST-0007"]
 title: "The hooks emit what their contracts now say they emit"
-status: passing
+status: active
 owner: user:edwin
 created: 2026-09-03
 updated: 2026-09-03
@@ -12,7 +12,6 @@ scope: feature
 level: acceptance
 entrypoint: "../project-os/tools/scripts/test-hooks.sh"
 command: "bash ../project-os/tools/scripts/test-hooks.sh"
-last_run: "2026-09-03T16:36Z"
 requirements: []
 features: ["[[FEAT-0027-The-Hint-Serves-Focus-State-Instead-Of-Pushing-Delegation]]"]
 issues: ["[[ISS-0003-Document-First-Hook-Fragile-Focus-Parsing]]"]
@@ -20,7 +19,6 @@ tasks: ["[[TASK-0102]]", "[[TASK-0103]]", "[[TASK-0104]]"]
 artifacts: []
 adequacy: "Round 2, 2026-09-03, against the template at f264cb7 (34 assertions after review finding 9): (A) the sentence Send it to the independent-reviewer subagent appended to the terminal arm, 1 failure; (B) the blocked arm padded with PREFLIGHT three times, 2 failures (names a delegation; 909 chars); (C) both focus_value lines in the Stop hook replaced by the old echo-into-jq form, 4 failures (the hook never blocks: assertions 1, 2, 3 and 6); (D) both block reasons mid-flight sentence replaced by If work is ongoing, this is expected, acknowledge to continue, 3 failures; (E) the echo line tripled to HINT HINT HINT, 4 size-bound failures (empty 890, planning 953, doing 1,073, terminal 1,001 chars; review at 539 stays under). Every mutation confirmed landed by diff against the copy and reverted by copying back. Pristine tree 34 of 34. Round 1 recorded counts of 3, 2 and 4 for C, D and E without naming the mutated text; the review could not reproduce them, and the round-2 record names the text."
 related: ["[[Prompting-Guide-Review-2026-09-03]]"]
-exit_code: 0
 reviewed_by: model:claude-opus-5[1m]
 review_date: 2026-09-03
 review_verdict: approved

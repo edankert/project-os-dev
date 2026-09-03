@@ -28,7 +28,7 @@
 
 ## Typical Commands
 - Bootstrap context: `bash tools/agents/bootstrap.sh`
-- Start docs-first intake: `bash tools/agents/start-change.sh "<short title>"`
+- Scaffold a change note, due at close-out when behaviour changes: `bash tools/agents/start-change.sh "<short title>"`
 - Validate docs-first gate: `bash tools/agents/check-docs-first.sh`
 - Validate docs invariants (snapshot/notes/links/verification): `bash tools/scripts/validate-docs.sh`
 - Browse docs cockpit: `bash tools/cockpit/run.sh docs --bind 127.0.0.1 --port 8765`

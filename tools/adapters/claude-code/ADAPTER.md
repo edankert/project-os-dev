@@ -25,8 +25,8 @@ Claude Code reads project instructions from `CLAUDE.md` in the repo root. It sup
 `python3 tools/scripts/generate-adapters.py --install-hooks` derives the full native adapter surface from the canonical playbooks in one idempotent step:
 
 - `.claude/skills/<name>/SKILL.md` — one native skill per `tools/skills/*/SKILL.md` playbook, auto-discovered by Claude Code and invocable as `/<name>` (e.g. `/close-out`, `/issue-intake`). Each generated skill's `description` carries the playbook's "When to use" triggers so Claude invokes it unprompted; its body directs execution back to the canonical playbook, which stays the single source of truth.
-- `.claude/agents/planner.md` — subagent implementing the LIFECYCLE.md preflight pass (classify, allocate IDs, update the snapshot, create notes), pinned to a fixed Claude model. See "Model routing" below.
-- `.claude/agents/independent-reviewer.md` — subagent implementing the QUALITY.md independent-review pass, pinned to a fixed Claude model so `reviewed_by` is deterministic. Subagents can only pin Claude models; when full cross-vendor independence is required, run the review in an external tool and record the frontmatter manually.
+- `.claude/agents/planner.md` — subagent implementing the LIFECYCLE.md preflight pass (classify, allocate IDs, update the snapshot, create notes), pinned to a fixed Claude model. See "Delegation and model pins" below.
+- `.claude/agents/independent-reviewer.md` — subagent implementing the QUALITY.md independent-review pass, pinned to a fixed Claude model so `reviewed_by` is deterministic. What makes the review independent is a clean context, not a different vendor (`QUALITY.md`, "Independent review (clean-context)"); an external tool or a human may still review, with the frontmatter recorded by hand.
 - `.claude/settings.json` hooks — installed by `--install-hooks` (copies `hooks.json` when the file is absent; merges the `hooks` key when other settings exist; never overwrites an existing `hooks` key unless `--force-hooks`).
 - `.cursor/rules/*.mdc` — the Cursor adapter's rule files, generated from the same sources (see `../cursor/ADAPTER.md`).
 
@@ -95,7 +95,7 @@ These files contain detailed rules. Read them when performing the related operat
 
 - The `@` imports inline the content of each file into Claude Code's context when the CLAUDE.md is loaded
 - Core rules (LIFECYCLE) are always imported because it governs every interaction
-- STATUSES and QUALITY are listed as reference instructions — Claude Code reads them on demand when relevant
+- STATUSES and QUALITY are imported too in the reference CLAUDE.md below; the other instruction files are listed as references and read on demand
 - Reference instructions are listed as paths (not imported) to keep context window lean
 - Skill playbooks are listed as paths for the same reason
 
@@ -130,36 +130,36 @@ Manual fallback: copy `hooks.json` from this adapter directory into `.claude/set
 | Event | Hooks | Type | Purpose |
 |---|---|---|---|
 | `PreToolUse` | HC-001 Document-First | `command` | Reads SNAPSHOT.yaml, blocks code edits without focus |
-| `PreToolUse` | HC-003 Verification Gate | `command` | **Blocking**: denies status→done/closed/verified while linked TST-* notes are not `passing` (recorded `verification_waiver` escapes; no linked test → `ask`) |
+| `PreToolUse` | HC-003 Verification Gate | `command` | **Blocking**: denies a transition to a terminal status while linked TST-* notes are not `passing` (the statuses are listed once in HOOKS.md HC-003) (recorded `verification_waiver` escapes; no linked test → `ask`) |
 | `PostToolUse` | HC-004 Phase Alignment | `command` | Detects status→doing, reminds about phase check |
 | `PostToolUse` | HC-005 Risk Scan Trigger | `command` | Detects package/env/CI file changes |
 | `Stop` | HC-006 Close-out Check + HC-007 Docs Validation | `command` | Runs `tools/scripts/validate-docs.sh` and blocks stop on violations; checks focus is cleared, forces close-out if not |
 | `SessionStart` | HC-002 Snapshot Freshness | `command` | Reminds agent to read SNAPSHOT.yaml |
-| `UserPromptSubmit` | HC-008 Model Routing Hint | `command` | Advisory: maps the focus item's status to the agent that should do the work (planner / main loop / independent-reviewer) |
+| `UserPromptSubmit` | HC-008 Delegation Hint | `command` | Advisory: states the focus item, its status and its phase, and who writes the note for new work; names the planner only for a multi-item scaffold or an ambiguous ask, the reviewer only in review states |
 
 **All hooks are `command` type** (fast shell scripts, no API calls). This avoids LLM cost/latency and 529 overload errors. Stop hooks use `{decision: "block", reason: "..."}` to force continuation. All scripts use `$CLAUDE_PROJECT_DIR` for path resolution. HC-003 and HC-007 need `python3` on PATH (stdlib only); they fail open with a note if it is missing, so a broken runtime never bricks edits — but treat that note as a setup error.
 
-Session hooks are the innermost of three enforcement layers: the same validator also runs at git pre-commit (`bash tools/scripts/install-git-hooks.sh` to install) and in CI (`.github/workflows/validate-docs.yml`). Session hooks and pre-commit can be bypassed; CI cannot — that layering is deliberate.
+Session hooks are the innermost of the three enforcement layers `tools/instructions/QUALITY.md` "Documentation Fidelity" names: the same validator also runs at git pre-commit (`bash tools/scripts/install-git-hooks.sh` to install) and in CI (`.github/workflows/validate-docs.yml`). Session hooks and pre-commit can be bypassed; CI cannot — that layering is deliberate.
 
 See `tools/instructions/HOOKS.md` for the full hook contract specifications and `hooks/` in this directory for the implementations.
 
-## Model routing (lifecycle phase → model)
+## Delegation and model pins (lifecycle phase → agent)
 
-Claude Code has no built-in "model A for planning, model B for execution" split for project-os phases; the only native combo alias is `opusplan` (Opus in plan mode → Sonnet for execution), and it governs the main loop only. project-os gets per-phase routing from the two generated subagents instead, since a subagent's `model` frontmatter is the one place a model can be pinned declaratively — and it takes precedence over the session model, so the pins hold whatever the session runs, `opusplan` included.
+Claude Code has no built-in "model A for planning, model B for execution" split for project-os phases; the only native combo alias is `opusplan` (Opus in plan mode → Sonnet for execution), and it governs the main loop only. project-os routes by lifecycle phase through the two generated subagents instead, since a subagent's `model` frontmatter is the one place a model can be pinned declaratively — and it takes precedence over the session model, so the pins hold whatever the session runs.
 
 | Lifecycle phase | Runs in | Model |
 |---|---|---|
-| Preflight / planning (LIFECYCLE preflight) | `planner` subagent | pinned — `PLANNER_MODEL` in `tools/scripts/generate-adapters.py` |
+| Preflight / planning (LIFECYCLE preflight) | the main loop for a single issue or task; the `planner` subagent for a multi-item scaffold or an ambiguous ask | pinned — `PLANNER_MODEL` in `tools/scripts/generate-adapters.py` |
 | Implementation | main session loop | the session model (`model` in `.claude/settings.json`, or `/model`) |
 | Independent review (LIFECYCLE close-out, QUALITY gate) | `independent-reviewer` subagent | pinned — `REVIEWER_MODEL` in the same file |
 
-Both pins default to the strongest available Claude model, because planning and adversarial review are the phases where capability pays off most.
+The pins are a choice revisited at each model release, not a standing claim about the strongest model available. As of 2026-09-03 both are `claude-fable-5-1`. Planning and adversarial review reward capability; the model guides also say review quality holds at lower effort, so the reviewer does not need the highest effort the harness allows. Measure on your own work before raising it.
 
-**These pins do not make the review independent.** `QUALITY.md` and `../../skills/independent-review/SKILL.md` require a *different model family* or a human; Claude Code subagents can only pin Claude models, so every pinned reviewer is same-family with every Claude session that authored the work. Setting the session model to something other than `REVIEWER_MODEL` is still worth doing — it avoids the strictly worse case where the reviewer is literally the authoring model — but it buys less same-model overlap, not independence. A cross-vendor or human pass, recorded manually, is what closes the QUALITY.md gate. The generated reviewer is briefed to disclose this rather than let a differing pin pass for the guarantee. Note also that `PLANNER_MODEL` and `REVIEWER_MODEL` default to the same value, so planning artifacts reviewed by this subagent are same-model reviewed — escalate those.
+**What makes the review independent is stated once, in `QUALITY.md` "Independent review (clean-context)"** (ADR-0013): a session that starts from the notes and the diff and did not author the work. A subagent provides that by construction. The pinned model being the same as the authoring model is expected and is not a defect; what must never happen is the authoring session reviewing its own work. `reviewed_by` records the model as provenance, not as a compliance token.
 
-`HC-008` (`hooks/model-routing-hint.sh`) injects a per-prompt hint derived from the focus item's status so the delegation actually happens; a hook cannot change the session model, so the hint is advisory and the pins do the routing.
+`HC-008` (`hooks/model-routing-hint.sh`) injects a per-prompt line stating the focus item, its status and its phase, and who writes the note for new work; it recommends the planner only for a multi-item scaffold or an ambiguous ask and the reviewer only in review states. A hook cannot change the session model, so the hint is advisory and the pins do the routing. The script keeps its filename so existing `.claude/settings.json` files keep resolving.
 
-Two Claude Code behaviours to know when relying on this. A **resumed** session keeps the model its transcript was saved with, regardless of the `model` key in `.claude/settings.json` — so the "keep the session model off `REVIEWER_MODEL`" advice above silently stops holding after a resume; check `/model`, or start a fresh session. And the agent-file watcher only covers directories that **existed at session start**: creating `.claude/agents/` for the first time needs a new session before the subagents resolve (edits to files in an already-present directory hot-reload within seconds).
+Two Claude Code behaviours to know when relying on this. A **resumed** session keeps the model its transcript was saved with, regardless of the `model` key in `.claude/settings.json`; check `/model` if it matters, or start a fresh session. And the agent-file watcher only covers directories that **existed at session start**: creating `.claude/agents/` for the first time needs a new session before the subagents resolve (edits to files in an already-present directory hot-reload within seconds).
 
 To retarget the pins, edit `PLANNER_MODEL`/`REVIEWER_MODEL` and re-run the generator. Downstream repos inherit both the hook and the pins through the template sync plus a generator run (`tools/skills/adapter-sync/SKILL.md`).
 

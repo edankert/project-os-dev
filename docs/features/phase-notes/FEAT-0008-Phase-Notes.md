@@ -13,6 +13,7 @@ source: []
 goal: "Promote phases from a single registry file to individual navigable notes with contextual dashboards"
 release: ""
 related: ["[[FEAT-0007-Relationship-Model]]"]
+tasks: ["[[TASK-0030]]", "[[TASK-0031]]", "[[TASK-0032]]", "[[TASK-0033]]", "[[TASK-0034]]", "[[TASK-0035]]"]
 ---
 
 # Phases as First-Class Note Type

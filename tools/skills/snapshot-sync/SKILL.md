@@ -4,7 +4,7 @@ id: SKILL-SNAPSHOT-SYNC
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-01-27
+updated: 2026-09-03
 tags: [skills, snapshot]
 ---
 
@@ -16,7 +16,7 @@ tags: [skills, snapshot]
 
 ## First: most of this is automatic now
 
-`tools/scripts/sync-snapshot.py` syncs the **derived** snapshot fields from note frontmatter — each item's `status`, `counters`, and `metrics.counts`. It runs at pre-commit (writing, and re-staging the file) and in CI with `--check`. So a status authored in a note reaches the snapshot without anyone copying it (ADR-0009).
+`tools/scripts/sync-snapshot.py` syncs the **derived** snapshot fields (`../../instructions/LIFECYCLE.md`, "Mandatory Automated Documentation"). It runs at pre-commit (writing, and re-staging the file) and in CI with `--check`.
 
 ```bash
 python3 tools/scripts/sync-snapshot.py            # sync derived fields
@@ -46,6 +46,4 @@ A whole-file generator was built first and rejected on evidence: shadow-run agai
 
 ## Gates that still apply
 
-- A feature may not be `done` while a task in its `tasks:` list is not scope-resolved (`done`/`cancelled`/`superseded` — never `deferred`).
-- An issue `fixed` (terminal since ADR-0008) requires linked tests to be `passing` and not stale.
-- See `../../instructions/STATUSES.md` for the vocabulary and `../../instructions/QUALITY.md` for the gates.
+- The gate on each terminal status is stated once in `../../instructions/STATUSES.md`, "The contract at a glance"; a sync never moves an item past a gate it does not meet.

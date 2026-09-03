@@ -13,6 +13,7 @@ source: []
 goal: "Three-pane Obsidian layout: left sidebar for navigation, center editor, right sidebar for dynamic context using this.file"
 release: ""
 related: ["[[FEAT-0007-Relationship-Model]]", "[[FEAT-0008-Phase-Notes]]"]
+tasks: ["[[TASK-0036]]", "[[TASK-0037]]", "[[TASK-0038]]", "[[TASK-0039]]", "[[TASK-0040]]"]
 ---
 
 # Obsidian Cockpit Layout

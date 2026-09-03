@@ -31,7 +31,7 @@ This directory contains **normative instructions** for how documentation and aut
 - Decisions/ADRs: `DECISIONS.md`
 - Quality/close-out: `QUALITY.md`
 - Hook contracts: `HOOKS.md`
-- Acceptance test tiers: `TESTING.md`
+- Acceptance test sections and release gating: `TESTING.md`
 - Handoff/recovery: `HANDOFF.md`
 - Importing existing projects: `IMPORTING.md`
 - Template syncing: `SYNCING.md`

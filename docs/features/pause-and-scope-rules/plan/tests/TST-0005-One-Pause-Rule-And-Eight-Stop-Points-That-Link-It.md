@@ -3,7 +3,7 @@ type: "[[test]]"
 id: TST-0005
 aliases: ["TST-0005"]
 title: "One pause rule stated once, and twelve stop-points in nine files that link it"
-status: passing
+status: active
 owner: user:edwin
 created: 2026-09-03
 updated: 2026-09-03
@@ -12,7 +12,6 @@ scope: feature
 level: acceptance
 entrypoint: "../project-os/tools/scripts/test-pause-rule.sh"
 command: "bash ../project-os/tools/scripts/test-pause-rule.sh"
-last_run: "2026-09-03T16:00Z"
 requirements: []
 features: ["[[FEAT-0024-One-Pause-Rule-And-The-Scope-Rules-The-Guides-State]]"]
 issues: []
@@ -23,7 +22,6 @@ related: ["[[Prompting-Guide-Review-2026-09-03]]"]
 reviewed_by: "model:claude-opus-5[1m]"
 review_date: 2026-09-03
 review_verdict: approved
-exit_code: 0
 
 ---
 

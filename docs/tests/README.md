@@ -28,6 +28,6 @@ Feature-scoped tests live under `docs/features/<feature-slug>/plan/tests/`.
 - An LLM can create a `[[test]]` note with a clear manual procedure and expected results.
 - A human runs it and reports outcomes (pass/fail + observations).
 - The LLM updates:
-  - the test note (`status`, evidence, `last_run`)
+  - the test note (`status` and evidence for a manual test; a test with a `command:` records no verdict, ADR-0025)
   - `../../SNAPSHOT.yaml` (`items.tests.*.status` + links)
   - any gated items (task done / issue closed / requirement verified)

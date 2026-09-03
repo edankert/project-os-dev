@@ -4,13 +4,15 @@ id: TOOLS-SKILLS-README
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-01-27
+updated: 2026-09-03
 tags: [tools, skills]
 ---
 
 # `tools/skills/`
 
 Reusable playbooks for an LLM (or other agents) to keep this documentation system consistent while doing work. These skills assume `SNAPSHOT.yaml` is the canonical agent state and must be kept in sync with notes.
+
+The numbers in a checklist are for reference, not an order. Steps that do not depend on each other can be done in one go; a step that must follow another says so.
 
 ## What goes here
 - One subdirectory per skill, each containing a `SKILL.md` describing:

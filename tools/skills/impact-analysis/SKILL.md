@@ -4,7 +4,7 @@ id: SKILL-IMPACT-ANALYSIS
 status: active
 owner: group:maintainers
 created: 2026-03-08
-updated: 2026-05-05
+updated: 2026-09-03
 tags: [skills, impact-analysis, requirements, conflict-detection]
 ---
 
@@ -48,4 +48,4 @@ tags: [skills, impact-analysis, requirements, conflict-detection]
    - Supersede or retire an older requirement.
    - Narrow the new requirement scope.
    - Document a deliberate trade-off with an ADR.
-   - Stop for user decision when the resolution is not obvious.
+   - When the resolution is not obvious it is the user's decision (`../../instructions/LIFECYCLE.md`, "When to pause for the user").

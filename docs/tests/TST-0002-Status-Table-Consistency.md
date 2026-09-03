@@ -3,7 +3,7 @@ type: "[[test]]"
 id: TST-0002
 aliases: ["TST-0002"]
 title: "Status table consistency: no status table in the validator can drift from the allowed taxonomy"
-status: passing
+status: active
 owner: user:edwin
 created: 2026-07-26
 updated: 2026-07-28
@@ -12,8 +12,6 @@ scope: system
 level: unit
 entrypoint: "tools/scripts/validate-docs.py"
 command: "python3 tools/scripts/validate-docs.py --self-check"
-last_run: "2026-07-28T17:11Z"
-exit_code: 0
 requirements: []
 features: []
 issues: [ISS-0011, ISS-0012, ISS-0013, ISS-0014, ISS-0015]
