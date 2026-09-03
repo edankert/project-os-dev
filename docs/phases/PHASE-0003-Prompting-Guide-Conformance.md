@@ -12,7 +12,7 @@ goal: "Bring the template's instructions, skills, hooks and subagents in line wi
 features: [FEAT-0024, FEAT-0025, FEAT-0026, FEAT-0027]
 requirements: [REQ-0026, REQ-0027]
 tasks: [TASK-0090, TASK-0091, TASK-0092, TASK-0093, TASK-0094, TASK-0095, TASK-0096, TASK-0097, TASK-0098, TASK-0099, TASK-0100, TASK-0101, TASK-0102, TASK-0103, TASK-0104, TASK-0105]
-issues: [ISS-0003, ISS-0041, ISS-0042, ISS-0043, ISS-0044, ISS-0045]
+issues: [ISS-0003, ISS-0041, ISS-0042, ISS-0043, ISS-0044, ISS-0045, ISS-0047]
 related: [ADR-0024, "[[Prompting-Guide-Review-2026-09-03]]"]
 tags: [phase, prompting-guides]
 ---
@@ -29,6 +29,7 @@ The items were first parked in PHASE-999. Edwin decided the same day that a cohe
 
 - **The four contradictions**, one commit each in the template: [[ISS-0041-Four-Files-Still-Require-A-Different-Model-Family|ISS-0041]], [[ISS-0042-Grandfathering-Is-Described-Two-Incompatible-Ways|ISS-0042]], [[ISS-0043-Release-Skills-And-Two-Templates-Use-Retired-Vocabulary|ISS-0043]], [[ISS-0044-The-Adapter-Calls-The-Pinned-Subagent-Model-The-Strongest|ISS-0044]].
 - **Two smaller gaps**: [[ISS-0045-Nothing-Says-A-Review-Or-Design-Deliverable-Is-Filed|ISS-0045]] (deliverables are filed in the repo) and [[ISS-0003-Document-First-Hook-Fragile-Focus-Parsing|ISS-0003]] (the document-first hook's fallback), whose fix is tested inside FEAT-0027's hook test.
+- **One regression found on the way**: [[ISS-0047-DECISION-RULE-Vanished-From-The-Template-Validator|ISS-0047]]. Running the template's own tests while landing the contradictions showed that the validator had lost the DECISION-RULE check on 2026-08-18. ADR-0024, this phase's own rule-ADR, relies on that check, so the restore belongs here rather than in the parking lot.
 - **Four features** carrying the other findings: FEAT-0024 (one pause rule and the scope rules), FEAT-0025 (writing rules for the final message and length limits), FEAT-0026 (trim the instruction files loaded every session), FEAT-0027 (the hint serves focus state instead of pushing delegation).
 - **Two requirements and one decision**: REQ-0026 (word budgets), REQ-0027 (every normative rule stated once, superseding REQ-0018), ADR-0024 (accepted with option 1).
 
@@ -40,7 +41,8 @@ The items were first parked in PHASE-999. Edwin decided the same day that a cohe
 
 ## Exit Criteria
 
-- [ ] ISS-0041 to ISS-0045 and ISS-0003 are fixed in the template — evidence: the template commits, and TST-0007 passing for the hook rows
+- [ ] ISS-0041 to ISS-0045 and ISS-0003 are fixed in the template — evidence: the template commits, and TST-0007 passing for the hook rows. ISS-0041 to ISS-0044 landed 2026-09-03 as template commits `1b5956e`, `685eef7`, `0049206`, `fda2e8a`
+- [x] ISS-0047 is fixed in the template and TST-0004 records a real pass — evidence: template commit `66cd2a4`, TST-0004 stamped passing by the runner at 2026-09-03T15:31Z
 - [ ] FEAT-0024 to FEAT-0027 are done, each with its acceptance check passing or its exception recorded
 - [ ] REQ-0026 and REQ-0027 are implemented, every criterion ticked with evidence
 - [ ] ADR-0024's two acceptance threads are closed: REQ-0018 superseded by REQ-0027, and a mechanical RULE-ONCE check decided or declined

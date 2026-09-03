@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0043
 aliases: ["ISS-0043"]
 title: "Release skills and two templates use vocabulary the taxonomy retired"
-status: open
+status: fixed
 phase: "[[PHASE-0003]]"
 severity: medium
 owner: user:edwin
@@ -57,12 +57,16 @@ Every row above re-verified in the template on 2026-09-03.
 
 ## Next Actions
 
-- [ ] One sweep of `release-prep/SKILL.md` and `release-verification/SKILL.md` against STATUSES.md and TESTING.md as they stand.
-- [ ] Drop `tier` from `SCHEMAS.md` and `release.md`, and from the acceptance block in `docs/__templates__/test.md`.
-- [ ] Remove the `check.md` lines from `docs/__templates__/README.md` and `acceptance-tests.md`.
-- [ ] Move the `kind` heading in TAXONOMY.md to the retired list.
-- [ ] Fix `feature-scaffold/SKILL.md:52` (`in-progress` to `doing`) in the same commit.
+- [x] One sweep of `release-prep/SKILL.md` and `release-verification/SKILL.md` against STATUSES.md and TESTING.md as they stand.
+- [x] Drop `tier` from `SCHEMAS.md` and `release.md`, and from the acceptance block in `docs/__templates__/test.md`.
+- [x] Remove the `check.md` lines from `docs/__templates__/README.md` and `acceptance-tests.md`.
+- [x] Move the `kind` heading in TAXONOMY.md to the retired list.
+- [x] Fix `feature-scaffold/SKILL.md:52` (`in-progress` to `doing`) in the same commit.
 - [ ] Run the docs-audit skill afterwards; its "instruction/template drift" dimension is what would have caught all eight.
+
+## Resolution
+
+Fixed in the template by commit `0049206` on 2026-09-03 (CHG-20260903-Prompting-Guide-Contradictions there). The sweep found a second problem underneath the vocabulary: the release-verification skill's verdict model still resets tests by hand and judges staleness from `last_run`. That is a model change, not a word change, so it is split out as [[ISS-0046-Release-Verification-Still-Writes-Test-Verdicts-By-Hand|ISS-0046]]. The docs-audit run is still owed; it is the one action left unticked.
 
 ## Sibling search
 

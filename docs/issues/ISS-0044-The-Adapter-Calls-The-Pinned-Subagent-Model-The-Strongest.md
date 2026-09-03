@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0044
 aliases: ["ISS-0044"]
 title: "The adapter calls the pinned subagent model the strongest available"
-status: open
+status: fixed
 phase: "[[PHASE-0003]]"
 severity: low
 owner: user:edwin
@@ -46,15 +46,19 @@ Verified in the template on 2026-09-03. `.claude/settings.json` sets the session
 
 ## Next Actions
 
-- [ ] Retarget `PLANNER_MODEL` and `REVIEWER_MODEL` in `tools/scripts/generate-adapters.py` to `claude-fable-5-1` (decided 2026-09-03, record below).
-- [ ] Re-run the generator and check the regenerated `.claude/agents/*.md` into the same commit.
-- [ ] Reword ADAPTER.md: the pins are a choice revisited per model release, not "the strongest available", and the reviewer does not need the highest effort the harness allows.
-- [ ] Downstream repos pick the pins up at the next template sync plus generator run; note that in the change note.
+- [x] Retarget `PLANNER_MODEL` and `REVIEWER_MODEL` in `tools/scripts/generate-adapters.py` to `claude-fable-5-1` (decided 2026-09-03, record below).
+- [x] Re-run the generator and check the regenerated `.claude/agents/*.md` into the same commit.
+- [x] Reword ADAPTER.md: the pins are a choice revisited per model release, not "the strongest available", and the reviewer does not need the highest effort the harness allows.
+- [x] Downstream repos pick the pins up at the next template sync plus generator run; note that in the change note.
 
 ## Decision record
 
 > [!note] Decide — 2026-09-03 (user:edwin)
 > Retarget the sub-agent.
+
+## Resolution
+
+Fixed in the template by commit `fda2e8a` on 2026-09-03 (CHG-20260903-Prompting-Guide-Contradictions there). Both pins are `claude-fable-5-1`, the regenerated `.claude/agents/*.md` are in the same commit, and ADAPTER.md describes the pins as a choice revisited at each model release. The change note records that downstream repos pick the pins up at the next sync plus generator run.
 
 ## Sibling search
 
@@ -63,3 +67,5 @@ No sibling found (searched `docs/issues/` for: model, pin, adapter, subagent, op
 ## Risk scan
 
 Run against the LIFECYCLE.md triggers. One trigger fires if the pins are retargeted: the pinned model is an external dependency and a version constraint, and every downstream repo inherits it through the sync plus a generator run. No `RISK-*` yet, because the retarget is not decided; if it is taken, the risk scan runs again at that point.
+
+Run again on 2026-09-03 when the retarget landed. Still no `RISK-*`: the pin was already an external dependency at `claude-opus-5`, and only its value changed. The hazard, a model ID that a future release retires, is the same one the adapter now says to revisit at each model release.

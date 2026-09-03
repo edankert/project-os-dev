@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0042
 aliases: ["ISS-0042"]
 title: "Grandfathering is described two incompatible ways"
-status: open
+status: fixed
 phase: "[[PHASE-0003]]"
 severity: medium
 owner: user:edwin
@@ -47,8 +47,12 @@ Two statements, describing two different mechanisms, in the two files an agent i
 
 ## Next Actions
 
-- [ ] Delete the QUALITY.md paragraph and link to STATUSES.md "Grandfathering".
-- [ ] Confirm the validator still implements the ID-list mechanism only, so the deletion removes a false statement rather than an unimplemented one.
+- [x] Delete the QUALITY.md paragraph and link to STATUSES.md "Grandfathering".
+- [x] Confirm the validator still implements the ID-list mechanism only, so the deletion removes a false statement rather than an unimplemented one.
+
+## Resolution
+
+Fixed in the template by commit `685eef7` on 2026-09-03 (CHG-20260903-Prompting-Guide-Contradictions there). The QUALITY.md paragraph is replaced by one sentence linking STATUSES.md "Grandfathering", and the generated Cursor rule follows. Confirmed before deleting: the template validator reads `tools/GRANDFATHERED.yaml` and has no date cutover, so the paragraph described a mechanism that no longer existed.
 
 ## Sibling search
 

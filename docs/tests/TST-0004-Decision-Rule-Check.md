@@ -6,13 +6,13 @@ title: "DECISION-RULE holds its contract: a `## Rule` heading demands non-empty 
 status: passing
 owner: user:edwin
 created: 2026-08-12
-updated: 2026-08-12
+updated: 2026-09-03
 source: ["[[TASK-0089]]", "[[REQ-0025]]", "[[ADR-0023]]"]
 scope: system
 level: unit
 entrypoint: "../project-os/tools/scripts/test-decision-rule.py"
 command: "python3 ../project-os/tools/scripts/test-decision-rule.py"
-last_run: "2026-08-12T18:17Z"
+last_run: "2026-09-03T15:31Z"
 exit_code: 0
 requirements: [REQ-0025]
 features: [FEAT-0023]

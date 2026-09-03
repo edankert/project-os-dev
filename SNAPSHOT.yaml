@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 27
-  ISS: 45
+  ISS: 47
   PHASE: 3
   REL: 0
   REQ: 27
@@ -42,8 +42,8 @@ focus:
   task: ""
   feature: "FEAT-0024"
   phase: "PHASE-0003"
-  issue: "ISS-0041"
-  note: "PHASE-0003 opened 2026-09-03 from the prompting-guide review; the four contradictions ISS-0041 to ISS-0044 come first, then FEAT-0024. Nothing is implemented yet, and every fix lands in ~/Dev/repos/project-os except the second half of TASK-0095."
+  issue: ""
+  note: "PHASE-0003 opened 2026-09-03. ISS-0041 to ISS-0044 are fixed as template commits 1b5956e, 685eef7, 0049206, fda2e8a (CHG-20260903-Prompting-Guide-Contradictions); ISS-0047, the lost DECISION-RULE check, is fixed as 66cd2a4 and TST-0004 is stamped passing again. None of it is pushed yet. Next: FEAT-0024, and the downstream sync plus generator run."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -597,14 +597,14 @@ items:
   issues:
     ISS-0044:
       file: "docs/issues/ISS-0044-The-Adapter-Calls-The-Pinned-Subagent-Model-The-Strongest.md"
-      status: open
+      status: fixed
       severity: low
       phase: "[[PHASE-0003]]"
       component: adapters-hooks
       note: "Prompting-guide review finding 1.4. Decided 2026-09-03: retarget PLANNER_MODEL and REVIEWER_MODEL to claude-fable-5-1 and reword ADAPTER.md; downstream repos pick it up at the next sync plus generator run."
     ISS-0043:
       file: "docs/issues/ISS-0043-Release-Skills-And-Two-Templates-Use-Retired-Vocabulary.md"
-      status: open
+      status: fixed
       severity: medium
       phase: "[[PHASE-0003]]"
       component: docs
@@ -612,12 +612,28 @@ items:
       related: [ISS-0009, ADR-0008]
     ISS-0042:
       file: "docs/issues/ISS-0042-Grandfathering-Is-Described-Two-Incompatible-Ways.md"
-      status: open
+      status: fixed
       severity: medium
       phase: "[[PHASE-0003]]"
       component: docs
       note: "Prompting-guide review finding 1.2. QUALITY.md describes the date heuristic ISS-0007 removed; STATUSES.md describes the ID list that replaced it."
       related: [ISS-0007]
+    ISS-0047:
+      file: "docs/issues/ISS-0047-DECISION-RULE-Vanished-From-The-Template-Validator.md"
+      status: fixed
+      severity: high
+      phase: "[[PHASE-0003]]"
+      component: tooling
+      note: "Template commit 57739c9 (2026-08-18) removed the DECISION-RULE check six days after FEAT-0023 landed it. Restored verbatim in template commit 66cd2a4 on 2026-09-03; TST-0004 stamped passing after the fix. Cockpit fork of the validator still lacks it (follow-up in the template change note)."
+      related: [FEAT-0023, REQ-0025, TST-0004, ADR-0023, ADR-0010]
+    ISS-0046:
+      file: "docs/issues/ISS-0046-Release-Verification-Still-Writes-Test-Verdicts-By-Hand.md"
+      status: triage
+      severity: low
+      phase: "[[PHASE-0003]]"
+      component: docs
+      note: "Split from ISS-0043: the release-verification skill's verdict model (hand-reset to ready, last_run staleness) predates ADR-0010 and ADR-0037. Needs a decision on which model it should describe."
+      related: [ISS-0043, ADR-0010]
     ISS-0045:
       file: "docs/issues/ISS-0045-Nothing-Says-A-Review-Or-Design-Deliverable-Is-Filed.md"
       status: open
@@ -628,7 +644,7 @@ items:
       related: [ISS-0040, FEAT-0025, FEAT-0019]
     ISS-0041:
       file: "docs/issues/ISS-0041-Four-Files-Still-Require-A-Different-Model-Family.md"
-      status: open
+      status: fixed
       severity: medium
       phase: "[[PHASE-0003]]"
       component: docs
@@ -1339,8 +1355,8 @@ metrics:
     tests_total: 7
     tests_passing: 4
     tests_failing: 0
-    issues_open: 31
-    issues_triage: 0
+    issues_open: 27
+    issues_triage: 1
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 27

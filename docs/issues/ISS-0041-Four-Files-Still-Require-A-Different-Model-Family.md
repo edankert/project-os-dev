@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0041
 aliases: ["ISS-0041"]
 title: "Four files still require a different model family for review"
-status: open
+status: fixed
 phase: "[[PHASE-0003]]"
 severity: medium
 owner: user:edwin
@@ -57,9 +57,13 @@ Four statements name model family. HC-008 is still called the "model routing hin
 
 ## Next Actions
 
-- [ ] Rewrite the four statements to the ADR-0013 rule, or replace them with a link to QUALITY.md "Independent review (clean-context)".
-- [ ] Rename HC-008 from "model routing hint" to "delegation hint" in HOOKS.md, the hook filename reference, and ADAPTER.md.
-- [ ] Sequence this before [[TASK-0103]], which rewrites the same HC-008 contract for a different reason.
+- [x] Rewrite the four statements to the ADR-0013 rule, or replace them with a link to QUALITY.md "Independent review (clean-context)".
+- [x] Rename HC-008 from "model routing hint" to "delegation hint" in HOOKS.md, the hook filename reference, and ADAPTER.md.
+- [x] Sequence this before [[TASK-0103]], which rewrites the same HC-008 contract for a different reason.
+
+## Resolution
+
+Fixed in the template by commit `1b5956e` on 2026-09-03 (CHG-20260903-Prompting-Guide-Contradictions there). The four statements now link to QUALITY.md "Independent review (clean-context)"; HC-008 is named "delegation hint" in HOOKS.md, ADAPTER.md and the hook's own header, and the script keeps its filename. The hook's status lists were brought back to the current taxonomy in the same commit. Landed before [[TASK-0103]], which is still backlog. The validator and the generator check passed at the commit; CI has not run because the commit is not pushed.
 
 ## Sibling search
 

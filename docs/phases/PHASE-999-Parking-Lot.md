@@ -24,7 +24,7 @@ tags: [phase, parking-lot]
 The sentinel phase every project-os repo uses as the destination for work that is real, tracked, and not scheduled. It has two distinct populations, and the distinction matters:
 
 1. **Deferred items** — descoped from a parent under the deferral procedure ([[ADR-0005-Deferral-As-Descoping|ADR-0005]], [[REQ-0013-Deferral-Semantics|REQ-0013]]). Deferral *requires* a forward home; where no real future phase exists, this is it. None currently in this repo.
-2. **Tracked-but-unplanned items** — open, belonging to no active phase. One currently. The 2026-09-03 prompting-guide review's items were parked here for a few hours and then adopted into [[PHASE-0003-Prompting-Guide-Conformance|PHASE-0003]] the same day, together with ISS-0003, whose remaining fix is scheduled there.
+2. **Tracked-but-unplanned items** — open, belonging to no active phase. One currently. The 2026-09-03 prompting-guide review's items were parked here for a few hours and then adopted into [[PHASE-0003-Prompting-Guide-Conformance|PHASE-0003]] the same day, together with ISS-0003, whose remaining fix is scheduled there. ISS-0047, found the same day, followed the same route within hours.
 
 ## Scope
 
@@ -49,4 +49,4 @@ This phase does not complete. Items leave it by being adopted into a real phase,
 
 **On the ID.** The note is `PHASE-999`, not `PHASE-0999`. The all-9s form is a documented sentinel that `validate-docs.py` exempts from counter integrity (`if set(str(num)) == {"9"}`), so it needs no `counters.PHASE` allocation and never collides with a real phase number. `PHASE-0999` would contain a `0` and lose that exemption, requiring `counters.PHASE` to be raised to 999 — which would then silently permit any phase ID up to 999 without counter discipline. The three-digit form is named explicitly in `STATUSES.md` and in `status-transition/SKILL.md` as the parking lot, so it is also the ID every other repo and skill already expects.
 
-**On not letting it fill up.** A parking lot is only honest if things leave it. The one current item is ADR-0007 residue; if it is still here after two grooming passes, the right answer is likely `wont-fix` with a recorded rationale rather than indefinite parking.
+**On not letting it fill up.** A parking lot is only honest if things leave it. ISS-0005 is ADR-0007 residue; if it is still here after two grooming passes, the right answer is likely `wont-fix` with a recorded rationale rather than indefinite parking.
