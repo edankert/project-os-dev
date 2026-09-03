@@ -18,7 +18,7 @@ globs: ["**/*"]
 | `feature` | `done` | every task scope-resolved (`done`/`cancelled`/`superseded`); linked tests `passing`; every requirement naming it has resolved criteria | agent, at close-out |
 | `requirement` | `implemented` | every acceptance criterion ticked-with-evidence or reconciled; never gated on tests (ADR-0007) | agent, at feature close-out |
 | `phase` | `done` | every exit criterion ticked-with-evidence or reconciled (PHASE-BOXES); every note naming it in `phase:` scope-resolved (PHASE-CHILDREN) | agent |
-| `test` | `passing` / `failing`, or `retired` | — | the author, and only for a manual test, which carries `last_verified:` and goes stale. A test carrying a `command:` holds no verdict (ADR-0038) |
+| `test` | `passing` / `failing`, or `retired` | — | the author, and only for a manual test, which carries `last_verified:` and goes stale. A test carrying a `command:` holds no verdict (project-os-dev ADR-0025, after cockpit ADR-0038) |
 | `test` at `level: acceptance` | `retired` | — | agent or human; it rests at `active` and the verdict is in the release ledger, not on the note (see `[[test]]`) |
 | `risk` | `closed` | — | agent |
 | `release` | `released` | release verification | agent |
@@ -128,7 +128,7 @@ If a project needs different states, update this file and the templates in `../.
   - `draft` → `active` → `retired` (the acceptance lifecycle, below)
   - anything → `retired` (the subject is gone, or the test was folded into another)
 - `ready` means defined but not yet executed: the state a test note is created in.
-- **`passing`/`failing` belong to manual tests only.** A test with no `command:` records a verdict, carries `last_verified:` and goes stale; a stale test does not satisfy the verification gate. **A test with a `command:` records no verdict**: not `ready`, not `passing`, not `failing`, and no `last_run:` or `exit_code:` (ADR-0038). CI is the verdict. See `command:` in `SCHEMAS.md`.
+- **`passing`/`failing` belong to manual tests only.** A test with no `command:` records a verdict, carries `last_verified:` and goes stale; a stale test does not satisfy the verification gate. **A test with a `command:` records no verdict**: not `ready`, not `passing`, not `failing`, and no `last_run:` or `exit_code:` (project-os-dev ADR-0025, after cockpit ADR-0038). CI is the verdict. See `command:` in `SCHEMAS.md`.
 - **`retired` is the only removal** (`TESTING.md`); deleting a test is forbidden by `LIFECYCLE.md`.
 
 ### `level: acceptance` — the acceptance half of the type

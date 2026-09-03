@@ -7,10 +7,8 @@ status: active
 owner: unassigned
 created: 2026-01-26
 updated: 2026-01-26
-# The place in the product this names — a screen, a flow, a subsystem a person
-# can point at. NOT a grouping of tests: `area:` on a check names one of these,
-# and the whole point of the type is that the name is written once, here,
-# instead of retyped on every check that touches it.
+# The place in the product this names; what a surface is and is not is stated
+# once in tools/instructions/TAXONOMY.md, "`kind` (surfaces)".
 kind: screen        # screen | flow | subsystem | surface-less
 # Which platforms this surface exists on. Empty means all of them — the same
 # opt-in rule release contents and the acceptance gate use.
