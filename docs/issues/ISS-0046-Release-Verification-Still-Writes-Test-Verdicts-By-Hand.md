@@ -3,12 +3,12 @@ type: "[[issue]]"
 id: ISS-0046
 aliases: ["ISS-0046"]
 title: "Release verification still writes test verdicts by hand"
-status: triage
+status: "open"
 phase: "[[PHASE-0003]]"
 severity: low
 owner: user:edwin
 created: 2026-09-03
-updated: 2026-09-03
+updated: "2026-09-03"
 component: docs
 source: ["Found while fixing [[ISS-0043-Release-Skills-And-Two-Templates-Use-Retired-Vocabulary]] in the template, 2026-09-03", "project-os CHG-20260903-Prompting-Guide-Contradictions, follow-up 1"]
 related: ["[[ISS-0043-Release-Skills-And-Two-Templates-Use-Retired-Vocabulary]]", "[[ADR-0010-Test-Status-Stamped-By-Execution]]"]
@@ -61,3 +61,11 @@ No sibling found (searched `docs/issues/` for: release-verification, last_run, s
 ## Risk scan
 
 No new risks: prose only.
+
+## Decision record
+
+> [!note] Accept — 2026-09-03 (user:edwin)
+> If it is possible to automate this let's do so but otherwise we leave it at writing this by hand (either me or you)
+
+> [!note] Decide — 2026-09-03 (user:edwin)
+> Asked where the verdict of a test with a `command:` lives, runner-stamps recommended: "No verdict on the note". Recorded as [[ADR-0025-An-Executable-Test-Records-No-Verdict|ADR-0025]]; the skill rewrite is [[TASK-0108]] under [[FEAT-0028-Executable-Tests-Carry-No-Verdict|FEAT-0028]].

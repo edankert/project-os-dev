@@ -9,11 +9,11 @@ owner: user:edwin
 created: 2026-09-03
 updated: 2026-09-03
 goal: "Bring the template's instructions, skills, hooks and subagents in line with the Claude 5 prompting guides: remove the contradictions, state each rule once, trim what every session loads, and stop the hooks and hints from teaching bypasses"
-features: [FEAT-0024, FEAT-0025, FEAT-0026, FEAT-0027]
+features: [FEAT-0024, FEAT-0025, FEAT-0026, FEAT-0027, FEAT-0028]
 requirements: [REQ-0026, REQ-0027]
-tasks: [TASK-0090, TASK-0091, TASK-0092, TASK-0093, TASK-0094, TASK-0095, TASK-0096, TASK-0097, TASK-0098, TASK-0099, TASK-0100, TASK-0101, TASK-0102, TASK-0103, TASK-0104, TASK-0105]
+tasks: [TASK-0090, TASK-0091, TASK-0092, TASK-0093, TASK-0094, TASK-0095, TASK-0096, TASK-0097, TASK-0098, TASK-0099, TASK-0100, TASK-0101, TASK-0102, TASK-0103, TASK-0104, TASK-0105, TASK-0106, TASK-0107, TASK-0108, TASK-0109]
 issues: [ISS-0003, ISS-0041, ISS-0042, ISS-0043, ISS-0044, ISS-0045, ISS-0046, ISS-0047, ISS-0048]
-related: [ADR-0024, "[[Prompting-Guide-Review-2026-09-03]]"]
+related: [ADR-0024, ADR-0025, "[[Prompting-Guide-Review-2026-09-03]]"]
 tags: [phase, prompting-guides]
 ---
 

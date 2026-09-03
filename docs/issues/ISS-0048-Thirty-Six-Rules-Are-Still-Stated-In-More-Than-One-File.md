@@ -3,12 +3,12 @@ type: "[[issue]]"
 id: ISS-0048
 aliases: ["ISS-0048"]
 title: "Thirty-six rules are still stated in more than one file"
-status: triage
+status: "open"
 phase: "[[PHASE-0003]]"
 severity: medium
 owner: user:edwin
 created: 2026-09-03
-updated: 2026-09-03
+updated: "2026-09-03"
 component: docs
 source: ["The docs-audit drift sweep (dimension 6) run over the template on 2026-09-03 at the close of PHASE-0003, pass 1, in a clean context"]
 related: ["[[ADR-0024-A-Normative-Rule-Is-Stated-Once]]", "[[REQ-0027-Every-Normative-Rule-Is-Stated-Once]]", "[[ISS-0006-Status-Transition-Test-Gates-Requirements]]", "[[ISS-0041-Four-Files-Still-Require-A-Different-Model-Family]]", "[[ISS-0042-Grandfathering-Is-Described-Two-Incompatible-Ways]]", "[[ISS-0043-Release-Skills-And-Two-Templates-Use-Retired-Vocabulary]]", "[[ISS-0046-Release-Verification-Still-Writes-Test-Verdicts-By-Hand]]"]
@@ -117,3 +117,11 @@ Siblings found: [[ISS-0006-Status-Transition-Test-Gates-Requirements]], [[ISS-00
 ## Risk scan
 
 No new risks: prose and two hook scripts, already covered by TST-0007's shape of test. The fixes touch merge-owned files (`docs/PHASES.md`, `SCHEMAS.md`) that downstream repos keep their own copies of; the sync reports them and does not overwrite, so each repo hand-merges those two.
+
+## Decision record
+
+> [!note] Accept — 2026-09-03 (user:edwin)
+> Ask me for each of these decisions in plain language.
+
+> [!note] Decide — 2026-09-03 (user:edwin)
+> Rows 1, 3 and 30, asked in plain language: "No verdict on the note" (ADR-0025). Row 17: "At close-out, when behaviour changes". Row 11: "sync script owns it, keep the repair flag".

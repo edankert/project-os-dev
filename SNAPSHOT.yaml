@@ -25,22 +25,22 @@ docs_system:
     - docs/PHASES.md
 
 counters:
-  ADR: 24
+  ADR: 25
   CHG:
     last_date: 20260726
-  FEAT: 27
+  FEAT: 28
   ISS: 48
   PHASE: 3
   REL: 0
   REQ: 27
   RISK: 2
-  TASK: 105
-  TST: 7
+  TASK: 109
+  TST: 8
   WF: 3
 
 focus:
-  task: ""
-  feature: "FEAT-0027"
+  task: "TASK-0107"
+  feature: "FEAT-0028"
   phase: "PHASE-0003"
   issue: ""
   note: "PHASE-0003 implemented 2026-09-03: FEAT-0024 to FEAT-0027, ISS-0003, ISS-0041 to ISS-0045 and ISS-0047 fixed in 40-odd template commits, every test reviewed and approved; ten downstream repos synced, uncommitted. Open: ISS-0048 (36 restatements, REQ-0027 waits on it), ISS-0046, and this repo's own sync behind 47 pre-existing validator errors."
@@ -78,6 +78,16 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0028:
+      file: "docs/features/executable-tests-no-verdict/FEAT-0028-Executable-Tests-Carry-No-Verdict.md"
+      status: doing
+      phase: "[[PHASE-0003]]"
+      goal: "Make the template and this repo follow one verdict model: a test with a command: is run and reported, never stamped; CI gates it; the validator treats it as settled."
+      requirements: []
+      tasks: [TASK-0106, TASK-0107, TASK-0108, TASK-0109]
+      issues: [ISS-0046]
+      tests: [TST-0008]
+      related: [ADR-0025, ADR-0010, ADR-0024]
     FEAT-0027:
       file: "docs/features/delegation-hint/FEAT-0027-The-Hint-Serves-Focus-State-Instead-Of-Pushing-Delegation.md"
       title: "The hint serves focus state instead of pushing delegation"
@@ -272,6 +282,34 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0106:
+      file: "docs/features/executable-tests-no-verdict/plan/tasks/TASK-0106-The-Runner-Reports-And-Exits.md"
+      status: backlog
+      parent: FEAT-0028
+      phase: "[[PHASE-0003]]"
+      effort: S
+      tests: [TST-0008]
+    TASK-0107:
+      file: "docs/features/executable-tests-no-verdict/plan/tasks/TASK-0107-The-Validator-Treats-A-Command-Test-As-Settled.md"
+      status: doing
+      parent: FEAT-0028
+      phase: "[[PHASE-0003]]"
+      effort: M
+      tests: [TST-0008]
+    TASK-0108:
+      file: "docs/features/executable-tests-no-verdict/plan/tasks/TASK-0108-One-Verdict-Model-In-The-Templates-And-Skills.md"
+      status: backlog
+      parent: FEAT-0028
+      phase: "[[PHASE-0003]]"
+      effort: M
+      tests: []
+    TASK-0109:
+      file: "docs/features/executable-tests-no-verdict/plan/tasks/TASK-0109-This-Repo-Follows-Sync-Debt-And-Seven-Tests.md"
+      status: backlog
+      parent: FEAT-0028
+      phase: "[[PHASE-0003]]"
+      effort: M
+      tests: [TST-0008]
     TASK-0105:
       file: "docs/features/delegation-hint/plan/tasks/TASK-0105-The-Issue-Template-Quotes-The-Prompt.md"
       title: "The issue template quotes the prompt under 'As reported'"
@@ -628,7 +666,7 @@ items:
       related: [FEAT-0002, FEAT-0027, TST-0007]
     ISS-0048:
       file: "docs/issues/ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File.md"
-      status: triage
+      status: open
       severity: medium
       phase: "[[PHASE-0003]]"
       component: docs
@@ -644,7 +682,7 @@ items:
       related: [FEAT-0023, REQ-0025, TST-0004, ADR-0023, ADR-0010]
     ISS-0046:
       file: "docs/issues/ISS-0046-Release-Verification-Still-Writes-Test-Verdicts-By-Hand.md"
-      status: triage
+      status: open
       severity: low
       phase: "[[PHASE-0003]]"
       component: docs
@@ -1124,6 +1162,14 @@ items:
       related: [FEAT-0015, TASK-0060, ADR-0009, REQ-0019]
 
   tests:
+    TST-0008:
+      file: "docs/features/executable-tests-no-verdict/plan/tests/TST-0008-The-Runner-Writes-Nothing-And-The-Gate-Accepts-Active.md"
+      status: draft
+      scope: feature
+      level: acceptance
+      entrypoint: "../project-os/tools/scripts/test-verdict-model.sh"
+      features: [FEAT-0028]
+      tasks: [TASK-0106, TASK-0107, TASK-0109]
     TST-0007:
       file: "docs/features/delegation-hint/plan/tests/TST-0007-The-Hooks-Emit-What-The-Contracts-Say.md"
       title: "The hooks emit what their contracts now say they emit"
@@ -1218,6 +1264,11 @@ items:
       status: merged
 
   decisions:
+    ADR-0025:
+      file: "docs/decisions/ADR-0025-An-Executable-Test-Records-No-Verdict.md"
+      status: accepted
+      decision: "A test with a command: holds no status verdict, no last_run and no exit_code; the runner reports and CI gates. Manual tests keep a hand-written verdict; acceptance checks keep the ledger."
+      related: [ADR-0010, ADR-0024, FEAT-0028, ISS-0046, ISS-0048]
     ADR-0024:
       file: "docs/decisions/ADR-0024-A-Normative-Rule-Is-Stated-Once.md"
       title: "A normative rule is stated in one file and linked everywhere else"
@@ -1355,21 +1406,21 @@ items:
 
 metrics:
   counts:
-    features_total: 27
+    features_total: 28
     features_done: 24
     phases_total: 4
     phases_done: 2
-    tasks_total: 105
+    tasks_total: 109
     tasks_done: 98
-    tests_total: 7
+    tests_total: 8
     tests_passing: 7
     tests_failing: 0
-    issues_open: 25
-    issues_triage: 2
+    issues_open: 27
+    issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 27
     requirements_implemented: 24
     risks_open: 0
     releases_total: 0
-    decisions_total: 24
+    decisions_total: 25
