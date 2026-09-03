@@ -39,8 +39,8 @@ counters:
   WF: 3
 
 focus:
-  task: "TASK-0107"
-  feature: "FEAT-0028"
+  task: ""
+  feature: ""
   phase: "PHASE-0003"
   issue: ""
   note: "PHASE-0003 implemented 2026-09-03: FEAT-0024 to FEAT-0027, ISS-0003, ISS-0041 to ISS-0045 and ISS-0047 fixed in 40-odd template commits, every test reviewed and approved; ten downstream repos synced, uncommitted. Open: ISS-0048 (36 restatements, REQ-0027 waits on it), ISS-0046, and this repo's own sync behind 47 pre-existing validator errors."
