@@ -49,7 +49,7 @@ When the project uses phases (`../../docs/PHASES.md`):
 - Start code changes only once the planning artifacts exist, and keep `focus` on what is actually being worked.
 
 ### When to pause for the user
-Pause for the user only when the work genuinely requires them: a destructive or irreversible action, a real scope change, or input that only they can provide. Everything else is your judgment call. First do everything that does not depend on the answer; then put the question at the end of a turn that also delivers that progress. Reason: an early question hands the task back unfinished. Every other file that names a pause links here and says only which decision the user owns (project-os-dev ADR-0024).
+Pause for the user only when the work genuinely requires them: a destructive or irreversible action, a real scope change, or input that only they can provide. Everything else is your judgment call. First do everything that does not depend on the answer; then put the question at the end of a turn that also delivers that progress. Reason: an early question hands the task back unfinished.
 
 ### Scope of a change
 A bug, a cleanup or a missing abstraction the task did not ask for is an `ISS-*` at `triage` or a follow-up in your summary, not a change in this diff, unless the requested behaviour cannot work without it. Reason: the document-first gate blocks an edit with no focus item, and widening the task is the bypass. When the wording admits two readings, implement the one it most directly supports and state the assumption; the threshold for asking is `../skills/issue-intake/SKILL.md` step 1.
