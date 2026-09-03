@@ -1,7 +1,7 @@
 ---
 type: "[[plan]]"
 title: "Delivery plan — trim the always-loaded file first, then the rest"
-status: draft
+status: done
 owner: user:edwin
 created: 2026-09-03
 updated: 2026-09-03

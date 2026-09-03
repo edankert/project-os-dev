@@ -270,7 +270,7 @@ None of the reasons should go. The pattern the guide endorses is rule, one-line 
 
 - **Reasons everywhere.** Fable 5's "give the reason" is the house style. Finding 4.1 is about volume, not the principle.
 - **No show-your-thinking instructions.** The Fable 5 audit item on reasoning extraction finds nothing; the reviewer is told never to see the author's reasoning.
-- **Fresh-context reviewer.** ADR-0013 and the generated reviewer prompt are the guide's "fresh-context verifier subagents outperform self-critique", stated more carefully than the guide does.
+- **Fresh-context reviewer.** ADR-0013 and the generated reviewer prompt are the guide's "fresh-context verifier subagents outperform self-critique", stated more carefully than the guide does. (Corrected 2026-09-03: the sentence is in the Fable 5.1 migration guide's long-running-agent recommendations, "separate fresh-context verifier sub-agents tend to outperform self-critique", not only in the Fable 5 guide. The Opus 5 guide says the opposite, "do not use subagents to review, verify or double-check your work"; the two guides disagree on this point.)
 - **Evidence before status.** Ticked-with-evidence criteria, tests that must fail when the fix is broken, "not landed until CI is green".
 - **Docs audit to quiescence.** Two clean passes before convergence is the guide's periodic self-verification with a stopping rule.
 - **Inbox triage on images.** "Do not paraphrase an image into a note and throw the image away" matches the vision guidance.

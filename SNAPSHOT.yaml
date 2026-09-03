@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 27
-  ISS: 47
+  ISS: 48
   PHASE: 3
   REL: 0
   REQ: 27
@@ -40,10 +40,10 @@ counters:
 
 focus:
   task: ""
-  feature: "FEAT-0024"
+  feature: "FEAT-0027"
   phase: "PHASE-0003"
   issue: ""
-  note: "PHASE-0003 opened 2026-09-03. ISS-0041 to ISS-0044 are fixed as template commits 1b5956e, 685eef7, 0049206, fda2e8a (CHG-20260903-Prompting-Guide-Contradictions); ISS-0047, the lost DECISION-RULE check, is fixed as 66cd2a4 and TST-0004 is stamped passing again. None of it is pushed yet. Next: FEAT-0024, and the downstream sync plus generator run."
+  note: "PHASE-0003 implementation 2026-09-03: FEAT-0024 to FEAT-0027 landed as 30-odd template commits with four change notes; TST-0005 to TST-0007 pass. Waiting on the independent reviews of FEAT-0025 to FEAT-0027, the drift sweep for REQ-0027, then the fleet sync."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -81,7 +81,7 @@ items:
     FEAT-0027:
       file: "docs/features/delegation-hint/FEAT-0027-The-Hint-Serves-Focus-State-Instead-Of-Pushing-Delegation.md"
       title: "The hint serves focus state instead of pushing delegation"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       owner: user:edwin
       tasks: [TASK-0102, TASK-0103, TASK-0104, TASK-0105]
@@ -91,7 +91,7 @@ items:
     FEAT-0026:
       file: "docs/features/instruction-weight/FEAT-0026-Trim-The-Instruction-Files-Loaded-Every-Session.md"
       title: "Trim the instruction files an agent loads every session"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       owner: user:edwin
       requirements: [REQ-0026]
@@ -101,7 +101,7 @@ items:
     FEAT-0025:
       file: "docs/features/writing-and-length/FEAT-0025-Writing-Rules-For-The-Final-Message-And-Length-Limits.md"
       title: "Writing rules for the final message, and length limits on notes"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       owner: user:edwin
       tasks: [TASK-0096, TASK-0097]
@@ -109,7 +109,7 @@ items:
     FEAT-0024:
       file: "docs/features/pause-and-scope-rules/FEAT-0024-One-Pause-Rule-And-The-Scope-Rules-The-Guides-State.md"
       title: "One pause rule, and the scope rules the guides state"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       owner: user:edwin
       tasks: [TASK-0090, TASK-0091, TASK-0092, TASK-0093, TASK-0094, TASK-0095]
@@ -275,14 +275,14 @@ items:
     TASK-0105:
       file: "docs/features/delegation-hint/plan/tasks/TASK-0105-The-Issue-Template-Quotes-The-Prompt.md"
       title: "The issue template quotes the prompt under 'As reported'"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0027
       effort: S
     TASK-0104:
       file: "docs/features/delegation-hint/plan/tasks/TASK-0104-Delegation-Carries-The-Prompt-And-The-Reason.md"
       title: "Delegation carries the user's prompt verbatim and the reason"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0027
       effort: S
@@ -290,7 +290,7 @@ items:
     TASK-0103:
       file: "docs/features/delegation-hint/plan/tasks/TASK-0103-HC-008-Serves-State.md"
       title: "HC-008 serves focus state and recommends the planner selectively"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0027
       effort: M
@@ -299,7 +299,7 @@ items:
     TASK-0102:
       file: "docs/features/delegation-hint/plan/tasks/TASK-0102-Close-Out-Hook-Names-The-Two-Actions.md"
       title: "The close-out Stop hook names the two real actions"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0027
       effort: S
@@ -307,21 +307,21 @@ items:
     TASK-0101:
       file: "docs/features/instruction-weight/plan/tasks/TASK-0101-Generated-Skill-Bodies-Stop-Repeating-Close-Out.md"
       title: "Generated skill bodies stop repeating the close-out steps"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0026
       effort: S
     TASK-0100:
       file: "docs/features/instruction-weight/plan/tasks/TASK-0100-Template-Frontmatter-Comments.md"
       title: "Template frontmatter comments: one line per field, plus a pointer"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0026
       effort: S
     TASK-0099:
       file: "docs/features/instruction-weight/plan/tasks/TASK-0099-The-Same-Pass-Over-Four-More-Files.md"
       title: "The same pass over STATUSES, TESTING, QUALITY and DECISIONS"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0026
       effort: L
@@ -329,8 +329,8 @@ items:
       note: "One commit per file. Sequence after ISS-0042 and ISS-0043, which delete text from two of these four."
     TASK-0098:
       file: "docs/features/instruction-weight/plan/tasks/TASK-0098-Lifecycle-Under-800-Words.md"
-      title: "LIFECYCLE.md under 800 words: rule, reason, link"
-      status: backlog
+      title: "LIFECYCLE.md under its word budget: rule, reason, link"
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0026
       effort: M
@@ -339,21 +339,21 @@ items:
     TASK-0097:
       file: "docs/features/writing-and-length/plan/tasks/TASK-0097-Length-Limits-In-Snapshot-And-Three-Templates.md"
       title: "Length limits in SNAPSHOT.md and three templates"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0025
       effort: S
     TASK-0096:
       file: "docs/features/writing-and-length/plan/tasks/TASK-0096-Writing-Gains-Five-Rules-And-Agents-Links-Them.md"
-      title: "WRITING.md gains five rules; AGENTS.md links them"
-      status: backlog
+      title: "WRITING.md gains four rules; AGENTS.md links them"
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0025
       effort: S
     TASK-0095:
       file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0095-The-Reviewer-Reports-Every-Finding.md"
       title: "The reviewer reports every finding; the repro filter moves downstream"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0024
       effort: S
@@ -361,21 +361,21 @@ items:
     TASK-0094:
       file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0094-Test-Authoring-Says-What-A-Test-Note-Is.md"
       title: "test-authoring says what a TST note is and is not"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0024
       effort: S
     TASK-0093:
       file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0093-Four-One-Sentence-Rules-In-Four-Files.md"
       title: "Four one-sentence rules: QUALITY, HANDOFF, MARKDOWN, skills README"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0024
       effort: S
     TASK-0092:
       file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0092-Give-The-Ambiguity-Check-A-Threshold.md"
       title: "Give the spec-ambiguity check a threshold; the planner allocates what is settled"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0024
       effort: S
@@ -383,7 +383,7 @@ items:
     TASK-0091:
       file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0091-Eight-Stop-Points-Shorten-To-A-Decision-Plus-A-Link.md"
       title: "Eight stop-points shorten to the decision plus a link"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0024
       effort: M
@@ -391,7 +391,7 @@ items:
     TASK-0090:
       file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0090-State-The-Pause-Rule-And-The-Scope-Rule-In-Lifecycle.md"
       title: "State the pause rule and the scope rule in LIFECYCLE.md"
-      status: backlog
+      status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0024
       effort: S
@@ -618,6 +618,22 @@ items:
       component: docs
       note: "Prompting-guide review finding 1.2. QUALITY.md describes the date heuristic ISS-0007 removed; STATUSES.md describes the ID list that replaced it."
       related: [ISS-0007]
+    ISS-0003:
+      file: "docs/issues/ISS-0003-Document-First-Hook-Fragile-Focus-Parsing.md"
+      status: fixed
+      severity: low
+      phase: "[[PHASE-0003]]"
+      component: adapters-hooks
+      note: "Point 3, a file outside every project-os repo denied on the session repo's empty focus, fixed in template commit 7b6890f (2026-09-03); assertions 31 to 34 of TST-0007. Points 1 and 2 were fixed upstream in July."
+      related: [FEAT-0002, FEAT-0027, TST-0007]
+    ISS-0048:
+      file: "docs/issues/ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File.md"
+      status: triage
+      severity: medium
+      phase: "[[PHASE-0003]]"
+      component: docs
+      note: "The first drift sweep under ADR-0024 (2026-09-03, clean context) found 36 restatements, 15 disagreeing, and 6 borderline. Three rows need a decision first (the acceptance verdict model with ISS-0046, the Codex change-note timing, the metrics owner)."
+      related: [ADR-0024, REQ-0027, ISS-0046]
     ISS-0047:
       file: "docs/issues/ISS-0047-DECISION-RULE-Vanished-From-The-Template-Validator.md"
       status: fixed
@@ -636,7 +652,7 @@ items:
       related: [ISS-0043, ADR-0010]
     ISS-0045:
       file: "docs/issues/ISS-0045-Nothing-Says-A-Review-Or-Design-Deliverable-Is-Filed.md"
-      status: open
+      status: fixed
       severity: low
       phase: "[[PHASE-0003]]"
       component: docs
@@ -835,13 +851,6 @@ items:
       severity: medium
       phase: "[[PHASE-999]]"
       note: "Found by TASK-0077's two-arm experiment. Clean-context Opus 3 findings, gpt-5-codex 1, one run each."
-    ISS-0003:
-      file: docs/issues/ISS-0003-Document-First-Hook-Fragile-Focus-Parsing.md
-      title: "Stale vendored hooks in project-os-dev: fragile focus parsing and wrong-repo gating already fixed upstream, plus an unfixed non-repo path case"
-      status: open
-      severity: low
-      owner: user:edwin
-      phase: "[[PHASE-0003]]"
     ISS-0005:
       file: docs/issues/ISS-0005-Feature-Less-Requirement-Triage.md
       title: "Feature-less requirement triage (ADR-0007 follow-up): 14 of 23 resolved mechanically; 9 are a real residue — 5 policies, 3 conventions, 1 unscheduled deliverable"
@@ -1078,12 +1087,12 @@ items:
     REQ-0026:
       file: "docs/requirements/REQ-0026-Instruction-Files-Carry-Rules-Not-History.md"
       title: "An always-loaded instruction file carries rules and reasons, not history"
-      status: draft
+      status: implemented
       owner: user:edwin
       priority: medium
       phase: "[[PHASE-0003]]"
       implements: [FEAT-0026]
-      note: "LIFECYCLE.md under 800 words is the firm criterion. Budgets for the other four files were added 2026-09-03 as provisional stopping rules for the trim, not gates; Edwin is unsure how useful they are."
+      note: "Word budgets for the five instruction files loaded every session. Amended twice on 2026-09-03: LIFECYCLE.md 800 to 1,000 (the file gained 289 words of new rules first) and the other four to the next round number above the measured trim, with the method change disclosed; the shape criterion narrowed to what the budget allows."
 
     REQ-0027:
       file: "docs/requirements/REQ-0027-Every-Normative-Rule-Is-Stated-Once.md"
@@ -1118,7 +1127,7 @@ items:
     TST-0007:
       file: "docs/features/delegation-hint/plan/tests/TST-0007-The-Hooks-Emit-What-The-Contracts-Say.md"
       title: "The hooks emit what their contracts now say they emit"
-      status: draft
+      status: passing
       features: [FEAT-0027]
       issues: [ISS-0003]
       tasks: [TASK-0102, TASK-0103]
@@ -1126,15 +1135,15 @@ items:
     TST-0006:
       file: "docs/features/instruction-weight/plan/tests/TST-0006-Instruction-Files-Under-Their-Word-Budgets.md"
       title: "The always-loaded instruction files are under their word budgets"
-      status: draft
+      status: passing
       requirements: [REQ-0026]
       features: [FEAT-0026]
       tasks: [TASK-0098]
       note: "Draft until TASK-0098 lands what it measures; not run before then, so it is never recorded as failing."
     TST-0005:
       file: "docs/features/pause-and-scope-rules/plan/tests/TST-0005-One-Pause-Rule-And-Eight-Stop-Points-That-Link-It.md"
-      title: "One pause rule stated once, and eight stop-points that link it"
-      status: draft
+      title: "One pause rule stated once, and twelve stop-points in nine files that link it"
+      status: passing
       features: [FEAT-0024]
       tasks: [TASK-0090, TASK-0091]
       note: "Draft until TASK-0091 lands what it measures; not run before then, so it is never recorded as failing."
@@ -1347,20 +1356,20 @@ items:
 metrics:
   counts:
     features_total: 27
-    features_done: 20
+    features_done: 24
     phases_total: 4
     phases_done: 2
     tasks_total: 105
-    tasks_done: 82
+    tasks_done: 98
     tests_total: 7
-    tests_passing: 4
+    tests_passing: 7
     tests_failing: 0
-    issues_open: 27
-    issues_triage: 1
+    issues_open: 25
+    issues_triage: 2
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 27
-    requirements_implemented: 23
+    requirements_implemented: 24
     risks_open: 0
     releases_total: 0
     decisions_total: 24

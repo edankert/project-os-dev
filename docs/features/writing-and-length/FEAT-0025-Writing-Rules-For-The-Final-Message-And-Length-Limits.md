@@ -3,7 +3,7 @@ type: "[[feature]]"
 id: FEAT-0025
 aliases: ["FEAT-0025"]
 title: "Writing rules for the final message, and length limits on notes"
-status: backlog
+status: done
 phase: "[[PHASE-0003]]"
 owner: user:edwin
 created: 2026-09-03
@@ -22,7 +22,7 @@ acceptance_exception: "The deliverable is how prose reads, and no command distin
 
 ## Goal
 
-WRITING.md answers the 2026-08-31 feedback well for note prose, and stops there. It says nothing about the message a user reads after a long run, and the instruction corpus the model reads before writing is full of the mannered phrasing the guide warns about — "the load-bearing sentence", "a badge that never empties", "a one-way door", "two sentences wearing one hat", the last of those in WRITING.md itself. A model learns the style from the prompt.
+WRITING.md answers the 2026-08-31 feedback well for note prose, and stops there. It says nothing about the message a user reads after a long run. The instruction corpus the model reads before writing is full of the mannered phrasing the guide warns about: "the load-bearing sentence", "a badge that never empties", "a one-way door", "two sentences wearing one hat". The last of those was in WRITING.md itself. A model learns the style from the prompt.
 
 The second half is length. `SNAPSHOT.md` defines `title` as "Short human title" and `goal` as a short outcome statement, with no number. The template's own `focus.note` is 266 words, this repo's 136, and FEAT-0021's title is a 30-word sentence. The narrative is worth having; the snapshot field is the wrong container, because the snapshot is the first thing every session reads.
 
@@ -36,16 +36,16 @@ The second half is length. `SNAPSHOT.md` defines `title` as "Short human title" 
 ## Out of scope
 
 - **Rewriting the existing mannered sentences.** The rule lands here; applying it to the six named files is [[FEAT-0026-Trim-The-Instruction-Files-Loaded-Every-Session]], which is rewriting those files anyway.
-- **A validator check on title length.** Worth doing, and it needs a counted violation set first ([[ADR-0011-No-Permanent-Warning-Tier]]: a check arriving over undismantled debt is a check that gets disabled). Not this feature.
+- **A validator check on title length.** Worth doing, and it needs a counted violation set first ([[ADR-0011-No-Permanent-Warning-Tier]]: a check that lands while many notes still violate it is a check that gets disabled). Not this feature.
 - **Rewriting the existing long titles and notes.** Same reason: the rule first, the backfill when someone has measured how many there are.
 
 ## Acceptance
 
-- [ ] WRITING.md carries the four missing rules and the mannered-prose definition, numbered so nothing is displaced — evidence: the diff
-- [ ] `AGENTS.md` "Output expectations" links those rules instead of prescribing a fixed-format preamble — evidence: the diff
-- [ ] `SNAPSHOT.md` states a number for `title`, `goal` and `note`, and says where the longer text goes — evidence: the diff
-- [ ] Three templates ask for a two-or-three-sentence, point-first summary — evidence: the diff
-- [ ] The first notes written after this reads as the rules describe — evidence: the independent-review pass named in `acceptance_exception`
+- [x] WRITING.md carries the four missing rules and the mannered-prose definition, numbered so nothing is displaced — evidence: template commit `e490420`, rules 7 to 10 appended after rule 6
+- [x] `AGENTS.md` "Output expectations" links those rules instead of prescribing a fixed-format preamble — evidence: template commit `e490420`, `AGENTS.md` line 50
+- [x] `SNAPSHOT.md` states a number for `title`, `goal` and `note`, and says where the longer text goes — evidence: template commit `e4d0688`: twelve words, two sentences, and the note's own Goal, Notes or Next Actions section
+- [x] Three templates ask for a two-or-three-sentence, point-first summary — evidence: template commit `e4d0688`, `change.md` Summary, `issue.md` Problem, `feature.md` Goal
+- [x] The first notes written after this read as the rules describe — evidence: the independent review of 2026-09-03 read the two template change notes and the FEAT-0025 and FEAT-0026 task notes against rules 1 to 10 and found rules 3 to 6 followed and rules 2, 7 and the twelve-word title broken; the breaks it named are fixed in template commit `491afa8` (both titles under twelve words, the Instruction-Weight summary point-first) and in this repo's close-out commit (four rule-7 phrases replaced, the long sentences split). Partly met at first reading, met after the fixes it prompted
 
 ## Risk scan
 

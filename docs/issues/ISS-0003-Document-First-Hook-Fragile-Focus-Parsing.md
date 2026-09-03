@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0003
 aliases: ["ISS-0003"]
 title: "Stale vendored hooks in project-os-dev: fragile focus parsing and wrong-repo gating already fixed upstream, plus an unfixed non-repo path case"
-status: open
+status: fixed
 phase: "[[PHASE-0003]]"
 severity: low
 owner: user:edwin
@@ -50,12 +50,16 @@ Repro, from the repo root:
 printf '{"tool_input":{"file_path":"<path>"}}' | CLAUDE_PROJECT_DIR="$PWD" bash tools/adapters/claude-code/hooks/document-first-gate.sh
 ```
 
-## Remaining work
+## Resolution
+
+Fixed in the template by commit `7b6890f` on 2026-09-03 (CHG-20260903-Hooks-Serve-State there): when the walk finds no `SNAPSHOT.yaml`, the gate falls back to the session repo only for a relative path or a path under it, and allows anything else. HC-001 in HOOKS.md says so. The four-path table above is assertions 31 to 34 of [[TST-0007]] (22 to 25 before the review round added nine), passing; reverting the fix fails the first two. Points 1 and 2 were already fixed upstream. This repo picks the fix up at the next template sync.
+
+## Remaining work (as planned before the fix; every item below landed in `7b6890f`)
 
 The earlier proposal (exit 0 whenever the walk finds nothing) is too broad. The fallback has one legitimate job: a relative path such as `src/main.py`, where the walk cannot find anything and the session repo is the right guess. The fix keeps that case and drops the rest.
 
 - Template, `tools/adapters/claude-code/hooks/document-first-gate.sh` line 43: when the walk finds no `SNAPSHOT.yaml`, fall back to `CLAUDE_PROJECT_DIR` only if the target path is relative or lies under `CLAUDE_PROJECT_DIR`. Otherwise allow. About four lines.
 - `verification-gate.py` has the same fallback shape but only fires on `docs/` and `SNAPSHOT.yaml` paths, so it cannot misfire this way. No change needed.
 - `tools/instructions/HOOKS.md`, HC-001: add one sentence saying a file outside every project-os repo is not gated.
-- Verification: the four-path table above is the test. After the fix the first two rows are allowed and the last two stay denied. It is assertion 7 of [[TST-0007]], whose harness is written by [[TASK-0102]], so this fix and the two hook rewrites in [[FEAT-0027-The-Hint-Serves-Focus-State-Instead-Of-Pushing-Delegation]] share one test run.
+- Verification: the four-path table above is the test. After the fix the first two rows are allowed and the last two stay denied. It is assertions 31 to 34 of [[TST-0007]] (22 to 25 before the harness grew), whose harness is written by [[TASK-0102]], so this fix and the two hook rewrites in [[FEAT-0027-The-Hint-Serves-Focus-State-Instead-Of-Pushing-Delegation]] share one test run.
 - project-os-dev picks the fix up through the normal template sync; the pending `tools/` sync mentioned in [[CHG-20260721-Requirement-Lifecycle-Closure]] has since landed for the hooks.

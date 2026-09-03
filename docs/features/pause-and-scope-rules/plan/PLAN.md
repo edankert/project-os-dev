@@ -1,7 +1,7 @@
 ---
 type: "[[plan]]"
 title: "Delivery plan — one pause rule, then the six one-sentence rules"
-status: draft
+status: done
 owner: user:edwin
 created: 2026-09-03
 updated: 2026-09-03

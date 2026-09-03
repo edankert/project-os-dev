@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0100
 aliases: ["TASK-0100"]
 title: "Template frontmatter comments: one line per field, plus a pointer"
-status: backlog
+status: done
 phase: "[[PHASE-0003]]"
 owner: user:edwin
 created: 2026-09-03
@@ -19,15 +19,17 @@ tests: []
 # Template frontmatter comments: one line per field, plus a pointer
 
 ## Definition of Done
-- [ ] `docs/__templates__/feature.md:15-22` is one line on `acceptance_exception` plus a pointer to `SCHEMAS.md`, which already carries the full explanation.
-- [ ] `docs/__templates__/test.md:26-33` is one line per acceptance field plus the same pointer.
-- [ ] A note scaffolded from either template carries no paragraph of rule text that the author has to decide whether to delete.
+- [x] `docs/__templates__/feature.md:15-22` is one line on `acceptance_exception` plus a pointer to `SCHEMAS.md`, which already carries the full explanation.
+- [x] `docs/__templates__/test.md:26-33` is one line per acceptance field plus the same pointer.
+- [x] A note scaffolded from either template carries no paragraph of rule text that the author has to decide whether to delete.
 
 ## Steps
-- [ ] Check that `SCHEMAS.md` really does explain each field before shortening the comment; if it does not, move the text there rather than deleting it.
+- [x] Check that `SCHEMAS.md` really does explain each field before shortening the comment; if it does not, move the text there rather than deleting it.
 
 ## Notes
 
 Every scaffolded feature and test inherits these comments unless the agent deletes them, and mostly they are not deleted — so the explanation is copied into the repo once per note, forever.
 
 Overlaps [[ISS-0043-Release-Skills-And-Two-Templates-Use-Retired-Vocabulary]], which removes `tier:` from the same acceptance block in `test.md`. Do the issue first.
+
+Landed as template commit `74753d1` on 2026-09-03. SCHEMAS.md was checked first: `acceptance_exception` is explained under feature.md and the acceptance fields under test.md "Acceptance fields", so both comments could shrink to a pointer without moving text.

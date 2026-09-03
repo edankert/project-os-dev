@@ -62,7 +62,7 @@ A mechanical `RULE-ONCE` validator check over a registry of rule phrases is the 
 ## Acceptance
 
 - [x] **REQ-0018 widened:** [[REQ-0027-Every-Normative-Rule-Is-Stated-Once]] approved and REQ-0018 superseded by it — evidence: both notes, 2026-09-03, this commit
-- [ ] **`RULE-ONCE`:** a mechanical check is decided or declined, with the violation count that decided it
+- [x] **`RULE-ONCE`:** declined for now, on a count of 36 — evidence: the first drift sweep at the close of PHASE-0003 (2026-09-03, [[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File|ISS-0048]]) found 36 confirmed restatements. Under ADR-0011 a check over that debt could only land warning-first with a dated cutover and a 36-entry grandfather list, and it would need a registry of rule phrases that does not exist. The docs-audit drift dimension is the discharge, and it found the 36 without a registry. Reconsider when ISS-0048 closes: a corpus at zero is when an error-from-day-one check can land. Recorded by the implementing session, not by the owner; the owner may overturn it on ISS-0048.
 
 ## Consequences
 
@@ -74,3 +74,6 @@ A mechanical `RULE-ONCE` validator check over a registry of rule phrases is the 
 
 > [!note] Accept — 2026-09-03 (user:edwin)
 > Let's go for option 1.
+
+> [!note] Decline `RULE-ONCE` for now — 2026-09-03 (model:claude-fable-5-1, implementing PHASE-0003)
+> The first sweep counted 36 restatements. A mechanical check over that debt would be a permanent warning tier in all but name, and the sweep found the 36 without a registry. Declined until ISS-0048 brings the count to zero; the owner may overturn this.

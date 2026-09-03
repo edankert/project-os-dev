@@ -34,11 +34,11 @@ This widens [[REQ-0018-State-Rules-Stated-Once|REQ-0018]] from state and transit
 
 ## Acceptance Criteria
 
-- [ ] Every normative rule in the scope has exactly one home file; every other document links to it — evidence: the docs-audit drift sweep at the close of PHASE-0003
-- [ ] ISS-0041, ISS-0042 and ISS-0043 are resolved by deletion and linking — evidence: the three template commits, each removing the restated text
-- [ ] The six criteria of REQ-0018 remain satisfied — evidence: REQ-0018's ticked criteria, re-checked in the same sweep
-- [ ] The docs-audit skill names this rule and the audit runs on cadence — evidence: `tools/skills/docs-audit/SKILL.md` "Audit dimensions", and the CHG note of the first audit run under this rule
-- [ ] RULE-ONCE decided or declined — evidence: ADR-0024 "Acceptance", the second box
+- [ ] Every normative rule in the scope has exactly one home file; every other document links to it — evidence: the docs-audit drift sweep at the close of PHASE-0003, run 2026-09-03 in a clean context: **not met**, 36 confirmed restatements filed as [[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File|ISS-0048]]. Ticks when that issue closes on two clean passes
+- [x] ISS-0041, ISS-0042 and ISS-0043 are resolved by deletion and linking — evidence: template commits `1b5956e`, `685eef7`, `0049206` (2026-09-03), each deleting the copy and linking the home
+- [ ] The six criteria of REQ-0018 remain satisfied — evidence: REQ-0018's ticked criteria, re-checked in the same sweep: the status value lists are still only in STATUSES.md (sweep, "checked and clean"), but ISS-0048 rows 4, 8, 13 and 14 are state and transition rules restated, so the re-check is owed with that issue
+- [x] The docs-audit skill names this rule and the audit runs on cadence — evidence: template commit `c5dc296` (2026-09-03), dimension 6 names ADR-0024, the four issues, the fix and the cadence; the first run under it is ISS-0048
+- [x] RULE-ONCE decided or declined — evidence: ADR-0024 "Acceptance", the second box: declined for now on a count of 36, 2026-09-03, with the reasons and the condition for reconsidering
 
 ## Why a requirement and not only the ADR
 

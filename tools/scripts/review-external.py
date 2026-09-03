@@ -28,10 +28,17 @@ Design notes, in the order they matter:
    makes the gate self-certifying through a longer pipe. It emits JSON; a human
    reads it and records the outcome.
 
-4. A FINDING WITHOUT A REPRO IS NOT A FINDING. Enforced in the schema.
-   Cross-family review buys DEcorrelation, not accuracy -- a reviewer weaker at
-   this task produces plausible findings that cost real time to refute. The
-   filter is what keeps that cost below the benefit.
+4. EVERY FINDING, LABELLED. The reviewer reports everything it found, each
+   entry marked `reproduced` true (a command it ran, and what that printed)
+   or false. The repro filter is NOT in the reviewer's schema any more: a
+   reviewer told "a finding without a repro is not a finding" drops the
+   plausible-but-unreproduced ones itself, and nobody sees them
+   (independent-review/SKILL.md step 3; project-os-dev TASK-0095, from the
+   Opus 5 guide on review prompts). The filter applies at transcription,
+   when a human moves findings into ISS-* notes: reproduced ones become
+   issues, unreproduced ones are recorded as leads. Cross-family review
+   still buys DEcorrelation, not accuracy, which is why the human pass keeps
+   the leads out of the triage queue until someone reproduces them.
 
 Usage:
   review-external.py --repo ~/Dev/repos/project-os-dev \\
@@ -133,8 +140,9 @@ VERDICT_SCHEMA = """{
       "title": "<one line>",
       "severity": "high" | "medium" | "low",
       "claim_refuted": "<the exact sentence or behaviour you are refuting>",
-      "repro": "<a command, runnable from the repo root, that demonstrates it>",
-      "observed": "<what that command actually printed when you ran it>"
+      "reproduced": true | false,
+      "repro": "<when reproduced: a command, runnable from the repo root, that demonstrates it; else what you would run>",
+      "observed": "<when reproduced: what that command actually printed; else why you could not run it and what you expect it would show>"
     }
   ],
   "attacks_that_failed": ["<things you tried that did NOT break it>"]
@@ -220,11 +228,15 @@ def build_prompt(worktree, notes, diff, task_text, skill_text):
         "and find guards that would still pass if the thing they guard were "
         "broken. A test that cannot fail does not guard.",
         "",
-        "**A finding without a reproduction is not a finding.** Every entry in "
-        "`findings` must carry a `repro` command you actually ran and the "
-        "`observed` output you actually saw. If you cannot produce one, leave "
-        "it out. Report the attacks that failed too -- those are evidence that "
-        "the thing holds, and they are worth as much as a finding.",
+        "**Report every finding, and label each one.** Set `reproduced: true` "
+        "when `repro` is a command you actually ran and `observed` is what it "
+        "printed; set it false when you could not run one, and say in "
+        "`observed` what you would run and what you expect. Do not leave a "
+        "finding out because you could not reproduce it, and do not soften "
+        "the list: the filter is applied downstream, when findings are "
+        "transcribed into issues. Report the attacks that failed too -- those "
+        "are evidence that the thing holds, and they are worth as much as a "
+        "finding.",
         "",
         "## The review contract (project-os QUALITY.md / independent-review)",
         "",
@@ -364,27 +376,35 @@ def main() -> int:
                   % out.with_suffix(".raw.txt"), file=sys.stderr)
             return 5
 
-        # The filter. A decorrelated but weaker reviewer costs more than it
-        # saves if unreproduced findings reach a human's triage queue.
-        kept, dropped = [], []
-        for f in verdict.get("findings") or []:
-            ok = (f.get("repro") or "").strip() and (f.get("observed") or "").strip()
-            (kept if ok else dropped).append(f)
-        verdict["findings"] = kept
-        if dropped:
-            verdict["dropped_unreproduced"] = dropped
+        # No filter here (design note 4). Every finding is kept; the label is
+        # derived when the reviewer omitted it, from whether a repro and its
+        # output are both present. The human transcribing the verdict applies
+        # the filter: reproduced findings become ISS-* notes, the rest leads.
+        findings = verdict.get("findings") or []
+        for f in findings:
+            has_evidence = bool((f.get("repro") or "").strip()
+                                and (f.get("observed") or "").strip())
+            # The label is checked against its evidence, not taken on trust:
+            # `reproduced: true` with no command and no output is a claim, and
+            # the transcriber would file it as an issue (review finding 6).
+            f["reproduced"] = has_evidence and f.get("reproduced", True) is not False
+        reproduced = [f for f in findings if f.get("reproduced")]
+        leads = [f for f in findings if not f.get("reproduced")]
 
         out.write_text(json.dumps(verdict, indent=2), encoding="utf-8")
-        print("\nverdict: %s | reviewer: %s | findings: %d kept, %d dropped"
+        print("\nverdict: %s | reviewer: %s | findings: %d reproduced, %d not"
               % (verdict.get("verdict"), verdict.get("reviewer"),
-                 len(kept), len(dropped)), file=sys.stderr)
-        for f in kept:
+                 len(reproduced), len(leads)), file=sys.stderr)
+        for f in reproduced:
             print("  [%s] %s" % (f.get("severity", "?"), f.get("title")),
                   file=sys.stderr)
-        for f in dropped:
-            print("  (dropped, no repro) %s" % f.get("title"), file=sys.stderr)
+        for f in leads:
+            print("  [%s] (not reproduced) %s" % (f.get("severity", "?"), f.get("title")),
+                  file=sys.stderr)
         print("\nverdict is NOT stamped into any note -- transcribe it by hand "
-              "(independent-review SKILL.md rule 2).", file=sys.stderr)
+              "(independent-review SKILL.md rule 2). Reproduced findings become "
+              "ISS-* notes; unreproduced ones are leads (SKILL.md step 5).",
+              file=sys.stderr)
         return 0
     finally:
         if args.keep_worktree:

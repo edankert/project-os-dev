@@ -3,7 +3,7 @@ type: "[[feature]]"
 id: FEAT-0027
 aliases: ["FEAT-0027"]
 title: "The hint serves focus state instead of pushing delegation"
-status: backlog
+status: done
 phase: "[[PHASE-0003]]"
 owner: user:edwin
 created: 2026-09-03
@@ -46,11 +46,11 @@ Finding 2.4, the document-first gate blocking files outside any project-os repo,
 
 ## Acceptance
 
-- [ ] The hint states the focus item, its status and its phase, and recommends the planner only for a multi-item scaffold or an ambiguous ask — evidence: [[TST-0007]]
-- [ ] The review sentence appears only in review states — evidence: [[TST-0007]]
-- [ ] The Stop hook's block names two actions: close out now, or write the handoff and stop — evidence: [[TST-0007]]
-- [ ] A delegation to the planner carries the user's prompt verbatim and one sentence on what the result enables — evidence: the diff of the hint and the planner prompt
-- [ ] A verbatim prompt in an issue note reads as a quotation, under a labelled blockquote — evidence: the diff of `issue.md` and the two intake skills
+- [x] The hint states the focus item, its status and its phase, and recommends the planner only for a multi-item scaffold or an ambiguous ask — evidence: [[TST-0007]] passing 2026-09-03, assertions 7 to 13 and 15 to 17; template commits `3e5c1b3` and `f264cb7`
+- [x] The review sentence appears only in review states — evidence: [[TST-0007]] assertions 14 and 18 to 23 (all six non-review states, after the review round), and inversions A and 1
+- [x] The Stop hook's block names two actions: close out now, or write the handoff and stop — evidence: [[TST-0007]] assertions 1 to 6; template commit `80a4a85`, which also made the hook block for the first time
+- [x] A delegation to the planner carries the user's prompt verbatim and one sentence on what the result enables — evidence: [[TST-0007]] assertion 12; template commits `3e5c1b3` (hint) and `f6ac538` (planner rule 6)
+- [x] A verbatim prompt in an issue note reads as a quotation, under a labelled blockquote — evidence: template commit `8d35297`, `issue.md` "As reported" callout and the two intake skills
 
 ## Risk scan
 

@@ -1,7 +1,7 @@
 ---
 type: "[[plan]]"
 title: "Delivery plan — the hooks, and their overlap with FEAT-0021"
-status: draft
+status: done
 owner: user:edwin
 created: 2026-09-03
 updated: 2026-09-03

@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0045
 aliases: ["ISS-0045"]
 title: "Nothing says a review or design deliverable is filed in the repo"
-status: open
+status: fixed
 phase: "[[PHASE-0003]]"
 severity: low
 owner: user:edwin
@@ -55,9 +55,9 @@ The rule is absent. This repo already follows the practice by hand: `docs/refere
 
 ## Next Actions
 
-- [ ] Add the one-sentence rule to `tools/instructions/LIFECYCLE.md` "Close-out" and to `tools/skills/close-out/SKILL.md`, beside the change-note step. Sequence it with [[TASK-0090]] and [[TASK-0098]], which edit the same file.
-- [ ] Decide whether the cockpit should frame HTML assets on reference notes. If yes, file it in `project-os-cockpit` and link the issue here.
-- [ ] Add `docs/reference/` to the docs-audit stale-reference sweep so filed deliverables are checked like other notes (relates to [[ISS-0040-Standing-Documents-Have-No-Manifest-And-No-Freshness-Signal]]).
+- [x] Add the one-sentence rule to `tools/instructions/LIFECYCLE.md` "Close-out" and to `tools/skills/close-out/SKILL.md`, beside the change-note step. Sequence it with [[TASK-0090]] and [[TASK-0098]], which edit the same file. Landed as template commit `2b6ef10` on 2026-09-03, after both; LIFECYCLE.md step 3 and the close-out skill's step 5 carry it, and LIFECYCLE.md stays under its budget (986 words at `6730eb4`).
+- [ ] Decide whether the cockpit should frame HTML assets on reference notes. If yes, file it in `project-os-cockpit` and link the issue here. Not decided here; the rule works without it because Markdown is the record.
+- [ ] Add `docs/reference/` to the docs-audit stale-reference sweep so filed deliverables are checked like other notes (relates to [[ISS-0040-Standing-Documents-Have-No-Manifest-And-No-Freshness-Signal]]). Left with ISS-0040, which owns the freshness question.
 
 ## Sibling search
 
