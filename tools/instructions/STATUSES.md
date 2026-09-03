@@ -121,7 +121,7 @@ If a project needs different states, update this file and the templates in `../.
   - `proposed` → `cancelled` (abandoned without a replacement)
   - any → `superseded` (a later design replaces it; link it with `superseded_by:`)
 - Every value here already existed in the vocabulary; a new type is not a reason to add statuses (ADR-0008).
-- A design records what a surface should look like and carries a rendered `asset:`; revisions are commits against the asset, not new notes. `implemented` means the design still describes the built surface; `superseded` means a newer design took over.
+- `implemented` means the design still describes the built surface; `superseded` means a newer design took over. How designs link, revise and supersede each other is `TRACEABILITY.md`, "`[[design]]` links".
 
 ## `[[test]]`
 - Allowed: `draft`, `active`, `ready`, `passing`, `failing`, `retired`

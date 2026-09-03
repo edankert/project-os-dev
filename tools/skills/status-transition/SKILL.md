@@ -22,7 +22,7 @@ tags: [skills, statuses]
 ## Checklist
 1. Confirm the transition is allowed. **`../../instructions/STATUSES.md` is normative** — allowed values, the gate on each terminal transition, and who writes the value. Do not rely on a restatement anywhere else; there are none by design (ISS-0006).
 2. **Pre-transition gates:**
-   - Terminal gates: the gate on each terminal status is stated once in `../../instructions/STATUSES.md`, "The contract at a glance"; check it before the transition, and remember that a requirement is never test-gated and a phase carries no test gate.
+   - Terminal gates: the gate on each terminal status is stated once in `../../instructions/STATUSES.md`, "The contract at a glance"; check it before the transition.
    - Phase alignment gate: before transitioning a task to `doing`, check the task `phase` (or inherited parent feature phase) against `focus.phase` in `../../../SNAPSHOT.yaml`. If the task is ahead of the active phase, whether it runs now is the user's decision (`../../instructions/LIFECYCLE.md`, "When to pause for the user").
    - Deferral gate: transitioning to `deferred` is a **descoping operation**, not a plain status flip — run the deferral procedure below, all steps in the same turn.
 3. The snapshot follows the note: `tools/scripts/sync-snapshot.py` propagates the status at pre-commit (`../../instructions/LIFECYCLE.md`, "Mandatory Automated Documentation"). Set `focus` by hand if this becomes the active item.

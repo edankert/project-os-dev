@@ -53,8 +53,7 @@ ISS-0023.>
 
 ## Revisions
 
-<Each revision is a commit against the asset, not a new note. Record the reason
-here so it survives the conversation that produced it.>
+<Revisions are commits against the asset, not new notes (`tools/instructions/TRACEABILITY.md`, "[[design]] links"); the reason for each lives in the commit message.>
 
 - YYYY-MM-DD — <what changed and why>
 

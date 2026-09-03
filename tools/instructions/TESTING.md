@@ -37,7 +37,7 @@ A check is not filed into a section. Its section is computed from two fields it 
 
 ### When to invalidate (mark for re-check)
 - Feature tests only, and only those whose scope the change overlaps: a change to `WorkoutViewModel` invalidates workout checks, not Bluetooth checks.
-- **Say which change did it, in the same action**: `invalidated_by:` carries the change id, the reason and the date, and is refused without a change id. Reason: clearing a tick otherwise destroys the only record the check ever passed, and the re-check never happens (measured in project-os CHG-20260903-Instruction-Weight).
+- **Say which change did it, in the same action**: the invalidation is a dated event in the release ledger naming the check and the change (`TAXONOMY.md`, "Acceptance outcomes (the ledger's vocabulary)"), and it is refused without a change id; no field on the note records it (ADR-0037). Reason: clearing a tick otherwise destroys the only record the check ever passed, and the re-check never happens (measured in project-os CHG-20260903-Instruction-Weight).
 - Best done at the close-out of the work that caused it, as one sweep over the areas touched.
 - A regression test is not invalidated by a later change; a returned defect files a new issue.
 

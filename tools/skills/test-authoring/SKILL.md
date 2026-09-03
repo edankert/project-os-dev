@@ -40,4 +40,4 @@ A `TST-*` note is the record of verification: the procedure, the verdict, and th
    - For a test with a **`command:`**:
      - set `command:` and `entrypoint` (repo path) and the expected artifacts
      - leave `status: active` and record no verdict; CI is the verdict (`../../instructions/STATUSES.md` `[[test]]`, ADR-0025), and `python3 tools/scripts/run-tests.py --filter TST-####` reproduces the run without writing
-4. Apply the gates in `../../instructions/STATUSES.md`, "The contract at a glance": a task, issue or feature does not reach its terminal status until the tests it links are `passing`, and a requirement is never test-gated.
+4. Apply the gates in `../../instructions/STATUSES.md`, "The contract at a glance", before any terminal status.
