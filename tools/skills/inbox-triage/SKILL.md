@@ -4,7 +4,7 @@ id: SKILL-INBOX-TRIAGE
 status: active
 owner: group:maintainers
 created: 2026-07-28
-updated: 2026-07-28
+updated: 2026-09-04
 tags: [skills, intake, inbox, triage]
 ---
 
@@ -17,9 +17,7 @@ tags: [skills, intake, inbox, triage]
 That is the whole trigger. The inbox is **staging, and its success condition is being empty**, so a non-empty inbox is itself the reason to run this.
 
 ## What the inbox is
-- **Pre-documentation.** Material that has arrived but has not yet been decided about.
-- **Gitignored.** It is local staging, not a record. An agent in a fresh clone sees an empty inbox, and that is correct.
-- **Not a filing cabinet.** Anything still sitting there is an unmade decision, not an archive.
+Stated once in `../../instructions/LIFECYCLE.md`, "The inbox": gitignored staging for material nobody has decided about, whose success condition is being empty.
 
 ## Inputs
 - The files in `inbox/`.

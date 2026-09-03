@@ -75,4 +75,4 @@ A guarding test that cannot fail does not guard, and LLM-authored tests share th
 - `TST-*` notes, stored per `LIFECYCLE.md` "Test storage", are individual test specifications with frontmatter, procedure and evidence.
 - **An acceptance check is a `TST-*` note at `level: acceptance`** (ADR-0031; the retired `check` type is `TAXONOMY.md`, "`check` — retired").
 - `level:` is a spectrum: a `unit` test is a pytest module, an `acceptance` test is a thing a person does, and a `command:` moves a note along it.
-- An acceptance test rests at `active` (`STATUSES.md` `[[test]]`). **The review of an acceptance test is doing it.**
+- An acceptance test rests at `active` (`STATUSES.md` `[[test]]`) and owes no separate review (`QUALITY.md`, "Independent review (clean-context)").

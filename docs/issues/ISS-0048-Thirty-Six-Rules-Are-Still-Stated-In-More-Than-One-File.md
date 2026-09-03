@@ -125,7 +125,8 @@ Each pass is a full read of the domain in a clean context, as the docs-audit ski
 | 7 | `1afc71e` | 0 confirmed, 0 dangling citations; the first clean pass | |
 | 8 | `1afc71e` | read fresh without the earlier tables: 21 confirmed (enum values in the test template and SCHEMAS.md, the no-verdict and clean-context rules restated in skills, the close-out steps in QUALITY.md, the edit boundaries in AGENTS.md, the pause clause quoted at two sites, the negative-result convention with no home, and one contradiction in enforcement: HC-003 test-gated requirements), 2 mis-citations | fixed in `277c46d` |
 | 9 | `653f9c6` | 2 at the pointer-gloss boundary, both in the Claude Code adapter (the enforcement mechanics beside the QUALITY.md pointer; the definition of independence beside its pointer) | fixed in `bb6f8f7` |
-| 10 | `bb6f8f7` | the first quiescence pass, read fresh; recorded when it returns | |
+| 10 | `bb6f8f7` | 5 (TESTING.md restating the review-is-the-walk rule; CONTEXT.md the feature links; README.md the project-owned path list; the plan template comment; inbox-triage) | fixed in `19ba330` |
+| 11 | `19ba330` | recorded when it returns | |
 
 ## Sibling search
 

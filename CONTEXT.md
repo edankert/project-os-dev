@@ -52,7 +52,7 @@ Keep the content split explicit:
 2. Notes are the durable record for humans: keep note frontmatter (`id`, `status`, links) consistent with the snapshot so Bases views reflect reality.
 3. Notes are typed via `type: [[...]]` (e.g. `[[task]]`, `[[feature]]`, `[[issue]]`, `[[workflow]]`, `[[change]]`).
 4. Every task note (`type: [[task]]`) has exactly one `parent`, with the deferred exception `tools/instructions/TRACEABILITY.md` states.
-5. Every feature note (`type: [[feature]]`) links to its `requirements` and `tasks`.
+5. Every feature note links its `requirements` and `tasks` (`tools/instructions/TRACEABILITY.md`).
 6. A change note (`type: [[change]]`) is added when behaviour, paths or contracts change (`tools/instructions/LIFECYCLE.md`, "Close-out"), linked to the relevant issues/features.
 7. Prefer **links to real repo files** over paraphrase.
 8. Keep structured project-os lifecycle notes in their established `docs/` lifecycle directories, keep non-lifecycle project documentation under purpose-specific `docs/` subdirectories such as `docs/reference/` or `docs/research/`, and keep agent/tool operating detail under `tools/`.
