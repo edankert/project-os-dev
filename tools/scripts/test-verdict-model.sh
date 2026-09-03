@@ -120,6 +120,19 @@ fixture "$TMP/manual" $'status: ready' 'entrypoint: ""'
 out="$(validate "$TMP/manual")"; code=$?
 check "a manual test at ready under a done task still fails the gate" "$([[ $code -ne 0 ]]; echo $?)"
 check "the failure is the VERIFY gate" "$(printf '%s' "$out" | grep -q 'VERIFY\].*TST-0001'; echo $?)" "$(printf '%s' "$out" | grep ERROR | head -2 | tr '\n' ' ')"
+# 3b. the template's default is `command: ""`; an empty command is no command
+# (a skip keyed on the key's presence passed 12 of 12: review finding 3)
+fixture "$TMP/manual-empty" $'status: ready' 'command: ""'
+out="$(validate "$TMP/manual-empty")"; code=$?
+check "an empty command: is a manual test; at ready it still fails the gate" "$( { [[ $code -ne 0 ]] && printf '%s' "$out" | grep -q 'VERIFY\].*TST-0001'; }; echo $?)"
+# 3c. a manual test at passing with a fresh last_verified: passes; a stale one fails
+fixture "$TMP/manual-fresh" "status: passing
+last_verified: \"$(date -u +%Y-%m-%d)\"" 'entrypoint: ""'
+out="$(validate "$TMP/manual-fresh")"; code=$?
+check "a manual test at passing with a fresh last_verified passes the gate" "$code" "$(printf '%s' "$out" | grep ERROR | head -1)"
+fixture "$TMP/manual-stale" $'status: passing\nlast_verified: "2025-01-01"' 'entrypoint: ""'
+out="$(validate "$TMP/manual-stale")"; code=$?
+check "a manual test at passing but stale still fails the gate" "$( { [[ $code -ne 0 ]] && printf '%s' "$out" | grep -q 'stale'; }; echo $?)"
 
 # 4. the runner writes nothing and exits 1 on a failure
 fixture "$TMP/run" $'status: active' 'command: "false"'
@@ -130,8 +143,17 @@ check "the runner leaves the note byte-identical" "$([[ "$before" == "$(cat "$TM
 python3 "$RUNNER" --repo-root "$TMP/run" --write >/dev/null 2>&1; code=$?
 check "the runner rejects --write" "$([[ $code -eq 2 ]]; echo $?)" "exit $code"
 fixture "$TMP/run-ok" $'status: active' 'command: "true"'
+before="$(cat "$TMP/run-ok/docs/tests/TST-0001-X.md")"
 python3 "$RUNNER" --repo-root "$TMP/run-ok" >/dev/null 2>&1; code=$?
 check "the runner exits 0 when every command passes" "$code"
+check "the runner leaves a passing test's note byte-identical too" "$([[ "$before" == "$(cat "$TMP/run-ok/docs/tests/TST-0001-X.md")" ]]; echo $?)"
+# 4b. in CI an unrunnable command is a red build, because nothing else will
+# notice (review finding 4); locally it stays an environment gap
+fixture "$TMP/run-missing" $'status: active' 'command: "bash ../nonexistent/x.sh"'
+CI=1 python3 "$RUNNER" --repo-root "$TMP/run-missing" >/dev/null 2>&1; code=$?
+check "in CI an unrunnable test fails the run" "$([[ $code -eq 1 ]]; echo $?)" "exit $code"
+env -u CI python3 "$RUNNER" --repo-root "$TMP/run-missing" >/dev/null 2>&1; code=$?
+check "locally an unrunnable test is an environment gap" "$code" "exit $code"
 
 echo "test-verdict-model: $assertions assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]

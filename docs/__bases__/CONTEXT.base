@@ -26,8 +26,6 @@ properties:
     displayName: Priority
   due:
     displayName: Due
-  last_run:
-    displayName: Last run
   file.mtime:
     displayName: Updated
 views:
@@ -96,7 +94,6 @@ views:
     order:
       - file.name
       - status
-      - last_run
       - file.mtime
   - type: table
     name: All (Open)

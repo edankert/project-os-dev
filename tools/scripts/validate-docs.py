@@ -778,11 +778,13 @@ PROMOTIONS = {
     # shipped the same way.
     "VERIFY-ACCEPTANCE": "2026-11-20",
     # ADR-0025 (project-os-dev): a test that carries a command: records no
-    # verdict; CI is the verdict. Measured the day it shipped, 2026-09-03: 33
-    # command: tests across the fleet still carried passing/failing (7 here,
-    # 19 your-health, 4 your-sudoku, 2 your-trainer, 1 project-os-cockpit)
-    # and 5 sat at ready. Erroring on day one would take five repos red for a
-    # rule their notes were written before -- ADR-0011 clause 3.
+    # verdict; CI is the verdict. Measured by the independent review the day it
+    # shipped, 2026-09-03, with this check over the fleet's trees: 98 notes
+    # draw it (your-trainer 69, of which 67 are `active` carrying only an
+    # exit_code:; your-health 21; your-sudoku 4; project-os-dev 4 before it
+    # stripped them; project-os-cockpit 0). By status alone 29 carried
+    # passing/failing and 2 sat at ready. Erroring on day one would take four
+    # repos red for a rule their notes were written before -- ADR-0011 clause 3.
     "COMMAND-VERDICT": "2026-12-02",
     "REVIEW": "2026-10-23",
     # Plans went unvalidated entirely until PLAN-STATE existed, so the
@@ -2247,9 +2249,9 @@ def validate(root, report):
         # while the badge went 3 -> 4. A bulk automation pass (TASK-0485's
         # shape, 203+ notes) would have walked straight into it.
         #
-        # `passing`/`failing` stay exempt with a command:, because those are the
-        # runner's own output and the runner is exactly what a command: hands
-        # the note over to.
+        # `passing`/`failing` stay exempt with a command: until the COMMAND-VERDICT
+        # cutover (ADR-0025: a command: test records no verdict at all); erroring
+        # here first would promote that rule over its counted debt.
         forbidden = (ACCEPTANCE_FORBIDDEN_STATUSES if not command
                      else tuple(s for s in ACCEPTANCE_FORBIDDEN_STATUSES
                                 if s not in TEST_RUNNER_STATUSES))
@@ -2259,7 +2261,7 @@ def validate(root, report):
                 "%s is at level: acceptance and status: '%s' -- it rests at `active` and its verdict is "
                 "`mark:` (ADR-0031). Holding '%s' puts it in front of the review gate and/or the Run "
                 "obligation, which is what ADR-0027 forbids for this population. A command: exempts "
-                "`passing`/`failing` (the runner writes those) but never `ready`, which is the status the "
+                "`passing`/`failing` here until the COMMAND-VERDICT cutover, but never `ready`, which is the status the "
                 "Run obligation counts (%s)" % (the_id, status, status, rel))
 
         if command:

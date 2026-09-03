@@ -5,7 +5,9 @@ A test that carries a `command:` records no verdict on its note (project-os-dev
 ADR-0025; STATUSES.md [[test]]): this script runs it, prints passing / failing /
 unrunnable per test, and exits 1 on any failure. In CI that exit code is the
 verdict. It never writes to a note. An unrunnable command (exit 127, a missing
-tool) is an environment gap, reported and not counted as a failure.
+tool, a timeout) is an environment gap locally, reported and not counted as a
+failure; in CI (the `CI` variable set) it fails the run, because a test CI
+cannot run has no verdict, unless PROJECT_OS_ALLOW_UNRUNNABLE=1 accepts that.
 
 Usage: run-tests.py [--repo-root DIR] [--filter TST-0001 ...] [--timeout SECONDS]
 """
@@ -113,9 +115,18 @@ def main(argv=None):
         print("   %-12s %-10s %s%s" % (tid, outcome, cmd[:48], ("  — " + detail[:60]) if detail else ""))
 
     print("   passing=%(passing)d failing=%(failing)d unrunnable=%(unrunnable)d" % counts)
+    # Locally an unrunnable command (a missing sibling checkout, a missing
+    # tool, a timeout) is an environment gap and not a failure. In CI it is a
+    # red build, because CI is the verdict and a test CI cannot run has none;
+    # set PROJECT_OS_ALLOW_UNRUNNABLE=1 to accept the gap deliberately.
+    in_ci = bool(os.environ.get("CI")) and not os.environ.get("PROJECT_OS_ALLOW_UNRUNNABLE")
     if counts["unrunnable"]:
-        print("   note: an unrunnable test is an environment gap, not a failure")
-    return 1 if counts["failing"] else 0
+        if in_ci:
+            print("   CI cannot run these tests, so they have no verdict; check out what they need "
+                  "(a sibling ../project-os for cross-repo commands) or set PROJECT_OS_ALLOW_UNRUNNABLE=1")
+        else:
+            print("   note: an unrunnable test is an environment gap, not a failure")
+    return 1 if counts["failing"] or (in_ci and counts["unrunnable"]) else 0
 
 
 if __name__ == "__main__":

@@ -38,7 +38,7 @@ grep -n "last_run" tools/skills/release-verification/SKILL.md
 
 ## Expected
 
-The skill describes the verdict model the instructions state: manual tests carry an author-written verdict with `last_verified:`; tests with a `command:` are stamped by `tools/scripts/run-tests.py`; acceptance checks are settled per release and platform in the ledger, and invalidated by a named change.
+The skill describes the verdict model the instructions state: manual tests carry an author-written verdict with `last_verified:`; tests with a `command:` record no verdict and are settled by CI (ADR-0025, decided after this issue was filed; the first version of this section said the runner stamps them); acceptance checks are settled per release and platform in the ledger, and invalidated by a named change.
 
 ## Actual
 
