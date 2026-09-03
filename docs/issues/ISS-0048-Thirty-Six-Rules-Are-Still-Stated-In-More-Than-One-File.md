@@ -119,7 +119,8 @@ Each pass is a full read of the domain in a clean context, as the docs-audit ski
 | 1 | `5494c9f` | 36 confirmed restatements, 15 disagreeing, 6 borderline | the table above |
 | 2 | `5cf6ded` | 26 rows gone, 10 still restated (2, 10, 11, 13, 20, 27, 28, 32, 33, 40), 3 waiting on a decision (1, 3, 30), 8 new sites (backlog-grooming, HANDOFF.md, LIFECYCLE.md close-out step 2 and its first section, snapshot-sync, close-out, impact-analysis, release-verification's citation, SCHEMAS.md's ledger README), 4 citations to bold labels | taken up in `09ae4dc`, and ADR-0025 settled rows 1, 3 and 30 |
 | 3 | `09ae4dc` | 2 confirmed (`test.md` line 13's command: comment; SNAPSHOT.md's Metrics section), 0 dangling citations, 5 borderline judged acceptable | fixed in `c7d7bfd` |
-| 4 | `c7d7bfd` | the quiescence check; recorded below when it returns | |
+| 4 | `c7d7bfd` | 3 confirmed (the test template's body callout restating the verdict rule; the design rules in both STATUSES.md and TRACEABILITY.md; TESTING.md's `invalidated_by:` note field, which ADR-0037 moved into the ledger), 1 borderline fragment in two skills | fixed in `ae33478` |
+| 5 | `ae33478` | the first quiescence pass; recorded when it returns | |
 
 ## Sibling search
 
