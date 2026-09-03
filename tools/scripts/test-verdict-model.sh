@@ -102,6 +102,12 @@ out="$(validate "$TMP/active")"; code=$?
 check "a done task with a command: test at active passes the gate" "$code" "$(printf '%s' "$out" | grep ERROR | head -2 | tr '\n' ' ')"
 check "no VERIFY error names the command: test" "$(printf '%s' "$out" | grep -q 'VERIFY\].*TST-0001'; [[ $? -ne 0 ]]; echo $?)"
 
+# 1b. the same, at level: acceptance: automated by its command:, so no mark is owed
+fixture "$TMP/acceptance" $'status: active'
+sed -i.bak 's/^level: unit$/level: acceptance/' "$TMP/acceptance/docs/tests/TST-0001-X.md" "$TMP/acceptance/SNAPSHOT.yaml"; rm -f "$TMP/acceptance"/*.bak "$TMP/acceptance"/docs/tests/*.bak
+out="$(validate "$TMP/acceptance")"; code=$?
+check "an acceptance-level command: test at active owes no mark" "$(printf '%s' "$out" | grep -q 'VERIFY-ACCEPTANCE'; [[ $? -ne 0 ]]; echo $?)" "$(printf '%s' "$out" | grep VERIFY | head -1)"
+
 # 2. the same test stamped passing with last_run: COMMAND-VERDICT warns, exit 0
 fixture "$TMP/stamped" $'status: passing\nlast_run: "2026-09-03T00:00Z"\nexit_code: 0'
 out="$(validate "$TMP/stamped")"; code=$?

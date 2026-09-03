@@ -2096,6 +2096,15 @@ def validate(root, report):
                         # would have fired on every note in a suite. Skipping
                         # them was right for a day and is exactly the
                         # special-case ADR-0034 removes.
+                        # ADR-0025 (project-os-dev): a test that carries a command: is
+                        # settled by CI, which runs it on every push, whatever its
+                        # level; the note holds no verdict for this gate to read, so
+                        # it asks nothing of it. Checked before the acceptance branch,
+                        # because an acceptance check with a command: is automated
+                        # (TESTING.md, "When to create", rule 3) and has no mark to
+                        # settle. A manual test is still held to `passing` and freshness.
+                        if tst in note_index and has_value((note_index[tst][1] or {}).get("command")):
+                            continue
                         if _is_acceptance_test(tst, note_index):
                             if not _acceptance_is_settled(tst, note_index):
                                 promotion_emit(
@@ -2114,12 +2123,6 @@ def validate(root, report):
                             tst_status = str((note_index[tst][1] or {}).get("status", ""))
                         else:
                             emit_for("VERIFY", item_id)("VERIFY", "%s is %s but linked test %s was not found" % (item_id, terminal, tst))
-                            continue
-                        # ADR-0025 (project-os-dev): a test that carries a command: is
-                        # settled by CI, which runs it on every push; the note holds
-                        # no verdict for this gate to read, so it asks nothing of it.
-                        # A manual test is still held to `passing` and freshness.
-                        if tst in note_index and has_value((note_index[tst][1] or {}).get("command")):
                             continue
                         if tst_status != "passing":
                             emit_for("VERIFY", item_id)("VERIFY", "%s is %s but linked test %s is '%s', not passing" % (item_id, terminal, tst, tst_status))
