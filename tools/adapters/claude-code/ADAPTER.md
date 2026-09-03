@@ -139,7 +139,7 @@ Manual fallback: copy `hooks.json` from this adapter directory into `.claude/set
 
 **All hooks are `command` type** (fast shell scripts, no API calls). This avoids LLM cost/latency and 529 overload errors. Stop hooks use `{decision: "block", reason: "..."}` to force continuation. All scripts use `$CLAUDE_PROJECT_DIR` for path resolution. HC-003 and HC-007 need `python3` on PATH (stdlib only); they fail open with a note if it is missing, so a broken runtime never bricks edits — but treat that note as a setup error.
 
-Session hooks are the innermost of the three enforcement layers `tools/instructions/QUALITY.md` "Documentation Fidelity" names: the same validator also runs at git pre-commit (`bash tools/scripts/install-git-hooks.sh` to install) and in CI (`.github/workflows/validate-docs.yml`). Session hooks and pre-commit can be bypassed; CI cannot — that layering is deliberate.
+Session hooks are the innermost of the three enforcement layers `tools/instructions/QUALITY.md` "Documentation Fidelity" names; `bash tools/scripts/install-git-hooks.sh` installs the pre-commit one.
 
 See `tools/instructions/HOOKS.md` for the full hook contract specifications and `hooks/` in this directory for the implementations.
 
@@ -155,7 +155,7 @@ Claude Code has no built-in "model A for planning, model B for execution" split 
 
 The pins are a choice revisited at each model release, not a standing claim about the strongest model available. As of 2026-09-03 both are `claude-fable-5-1`. Planning and adversarial review reward capability; the model guides also say review quality holds at lower effort, so the reviewer does not need the highest effort the harness allows. Measure on your own work before raising it.
 
-**What makes the review independent is stated once, in `QUALITY.md` "Independent review (clean-context)"** (ADR-0013): a session that starts from the notes and the diff and did not author the work. A subagent provides that by construction. The pinned model being the same as the authoring model is expected and is not a defect; what must never happen is the authoring session reviewing its own work. `reviewed_by` records the model as provenance, not as a compliance token.
+**What makes the review independent is stated once, in `QUALITY.md` "Independent review (clean-context)"** (ADR-0013), and a subagent provides it by construction. The pinned model being the same as the authoring model is expected and is not a defect; what must never happen is the authoring session reviewing its own work. `reviewed_by` records the model as provenance, not as a compliance token.
 
 `HC-008` (`hooks/model-routing-hint.sh`) injects a per-prompt line stating the focus item, its status and its phase, and who writes the note for new work; it recommends the planner only for a multi-item scaffold or an ambiguous ask and the reviewer only in review states. A hook cannot change the session model, so the hint is advisory and the pins do the routing. The script keeps its filename so existing `.claude/settings.json` files keep resolving.
 
