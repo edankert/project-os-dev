@@ -85,7 +85,7 @@ The `goal` and `note` prose on any item is at most two sentences each. It is the
 
 ## Metrics (`metrics.counts`)
 
-`metrics.counts` values are **computed, not hand-maintained**: `tools/scripts/validate-docs.py` recomputes them from all notes under `docs/` (the archive) plus snapshot items, reports discrepancies as errors, and rewrites them with `--fix-metrics`. Definitions (only keys present in the repo's `metrics.counts` are checked):
+`metrics.counts` values are **computed, not hand-maintained**: `tools/scripts/sync-snapshot.py` derives them from the notes at pre-commit, with `counters` and each item's status (`LIFECYCLE.md`, "Mandatory Automated Documentation"), and `bash tools/scripts/validate-docs.sh --fix-metrics` rewrites the block on demand when it has drifted. Definitions (only keys present in the repo's `metrics.counts` are checked):
 
 - `features_total` / `features_done`: all `FEAT-*`; done = status `done`.
 - `phases_total` / `phases_done`: all `PHASE-*`; done = status `done`.

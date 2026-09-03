@@ -10,7 +10,7 @@ source: []
 scope: feature
 level: system       # unit | integration | system | e2e | acceptance
 entrypoint: ""
-command: ""          # runnable check; when set, `status` is written by the runner, never by hand (ADR-0010)
+command: ""         # a runnable check; when set, the note records no verdict (tools/instructions/STATUSES.md, [[test]]; ADR-0025)
 last_verified: ""    # manual tests only (no `command:`) — date the procedure was last performed; goes stale
 covers: []           # THE verification link (ADR-0032): [[FEAT-...]] / [[ISS-...]] / [[REQ-...]]. One direction, one encoding.
 issues: []           # context only — what this test VERIFIES goes in covers:
