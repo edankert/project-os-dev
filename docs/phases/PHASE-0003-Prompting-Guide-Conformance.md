@@ -69,7 +69,26 @@ The items were first parked in PHASE-999. Edwin decided the same day that a cohe
 | your-trainer | OK | 0 | 239 | 8 |
 | yourtrainer-mcp | FAIL | 16 | 46 | 0 |
 
-The five failures are not caused by today's changes. The fleet script runs the template's validator over each repo's notes, and every error is from a check that landed after those repos last synced: PARENT-BACKLINK (edankert.com 40, project-os-dev 41, your-applications.com 50), SNAPSHOT-MEMBERSHIP (7, 3, 13, and 6 in yourtrainer-mcp), VERIFY (project-os-cockpit 77, yourtrainer-mcp 10), plus METRICS 2 and DECISION-OPTIONS 1 here. Clearing that debt is its own work in each repo; this repo's 47 are the next thing to do here before its own sync.
+**Second rollout, 2026-09-04 (early hours), from template `1afc71e`.** The same ten repos re-synced after FEAT-0028 and the eight drift-pass commits (34 to 45 files updated each, uncommitted). `validate-fleet.sh` afterwards:
+
+| repo | result | errors | warnings | waivers |
+|---|---|---|---|---|
+| articles | OK | 0 | 0 | 0 |
+| edankert.com | FAIL | 47 | 12 | 0 |
+| obsidian-supernote-sync | OK | 0 | 21 | 0 |
+| project-os-bench | OK | 0 | 0 | 0 |
+| project-os-cockpit | OK | 0 | 271 | 22 |
+| project-os-dev | OK | 0 | 51 | 19 |
+| project-os | OK | 0 | 1 | 0 |
+| your-applications.com | FAIL | 63 | 30 | 0 |
+| your-health | OK | 0 | 123 | 0 |
+| your-sudoku | OK | 0 | 134 | 3 |
+| your-trainer | OK | 0 | 304 | 8 |
+| yourtrainer-mcp | FAIL | 16 | 46 | 0 |
+
+Two repos moved from FAIL to OK between the tables: project-os-cockpit (77 VERIFY errors) and this repo (47), because the verification gate now treats a test with a `command:` as settled by CI (ADR-0025) and this repo cleared its back-link debt. The warning counts in your-health and your-trainer rose by the COMMAND-VERDICT warnings on their stamped tests, due before 2026-12-02. The three failures left are the pre-existing PARENT-BACKLINK and SNAPSHOT-MEMBERSHIP debt in edankert.com and your-applications.com and VERIFY in yourtrainer-mcp.
+
+The five failures in the first table are not caused by today's changes. The fleet script runs the template's validator over each repo's notes, and every error is from a check that landed after those repos last synced: PARENT-BACKLINK (edankert.com 40, project-os-dev 41, your-applications.com 50), SNAPSHOT-MEMBERSHIP (7, 3, 13, and 6 in yourtrainer-mcp), VERIFY (project-os-cockpit 77, yourtrainer-mcp 10), plus METRICS 2 and DECISION-OPTIONS 1 here. Clearing that debt is its own work in each repo; this repo's 47 are the next thing to do here before its own sync.
 
 ## Notes
 
