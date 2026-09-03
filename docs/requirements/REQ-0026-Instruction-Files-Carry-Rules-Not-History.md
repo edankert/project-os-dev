@@ -30,7 +30,7 @@ tests: ["[[TST-0006]]"]
 
 ## Statement
 
-An instruction file that an agent loads on every session must state its rules, the reason for each, and a link to the decision that took it. The history of how a rule came to be worded that way belongs in the ADR's Context section or in the change note, not in the file that is paid for on every session.
+An instruction file that an agent loads on every session must state its rules, and, for a rule that retired a behaviour or that a validator check enforces, the reason or the check name, with a link to the decision that took it. The history of how a rule came to be worded that way belongs in the ADR's Context section or in the change note, not in the file that is paid for on every session. (Amended 2026-09-03 from "the reason for each": a reason on every rule line would double STATUSES.md, which the word budget forbids; see Amendments.)
 
 `tools/instructions/README.md:17` already says "avoid narrative prose where possible". This requirement gives that sentence a number to hold it to, on the one file every Claude Code and Cursor session loads.
 
