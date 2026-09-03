@@ -43,7 +43,7 @@ focus:
   feature: "FEAT-0027"
   phase: "PHASE-0003"
   issue: ""
-  note: "PHASE-0003 implementation 2026-09-03: FEAT-0024 to FEAT-0027 landed as 30-odd template commits with four change notes; TST-0005 to TST-0007 pass. Waiting on the independent reviews of FEAT-0025 to FEAT-0027, the drift sweep for REQ-0027, then the fleet sync."
+  note: "PHASE-0003 implemented 2026-09-03: FEAT-0024 to FEAT-0027, ISS-0003, ISS-0041 to ISS-0045 and ISS-0047 fixed in 40-odd template commits, every test reviewed and approved; ten downstream repos synced, uncommitted. Open: ISS-0048 (36 restatements, REQ-0027 waits on it), ISS-0046, and this repo's own sync behind 47 pre-existing validator errors."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.

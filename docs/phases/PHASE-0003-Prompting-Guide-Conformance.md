@@ -46,7 +46,30 @@ The items were first parked in PHASE-999. Edwin decided the same day that a cohe
 - [x] FEAT-0024 to FEAT-0027 are done, each with its acceptance check passing or its exception recorded — evidence: TST-0005 (14 of 14), TST-0006 (3 of 3) and TST-0007 (34 of 34) passing on 2026-09-03, each approved by an independent review after one round of changes; FEAT-0025 carries its acceptance exception and its fifth criterion is ticked on the review of the first notes written under the new rules
 - [ ] REQ-0026 and REQ-0027 are implemented, every criterion ticked with evidence — REQ-0026 implemented 2026-09-03 after two amendments recorded on the note; REQ-0027 stays `approved`: its first criterion is not met, the drift sweep at the close of the phase found 36 restatements (ISS-0048), and its third is owed with that issue
 - [x] ADR-0024's two acceptance threads are closed: REQ-0018 superseded by REQ-0027, and a mechanical RULE-ONCE check decided or declined — evidence: ADR-0024 Acceptance, both boxes ticked 2026-09-03; RULE-ONCE declined for now on the drift sweep's count of 36 (ISS-0048), recorded by the implementing session for the owner to overturn
-- [ ] The template changes are synced to the downstream repos with the generator re-run — evidence: the validate-fleet.sh summary after the rollout
+- [x] The template changes are synced to the downstream repos with the generator re-run — evidence: the validate-fleet.sh summary after the rollout, recorded under "Fleet rollout, 2026-09-03" below; ten repos synced and regenerated, this repo's own sync deferred for the reason given there
+
+## Fleet rollout, 2026-09-03
+
+`tools/scripts/sync-project-os.sh ~/Dev/repos/project-os` ran in the ten other downstream repos, each followed by the generator the script runs itself. Between 60 and 95 files changed per repo, all template-owned; no note under `docs/` was touched. The changes are in each repo's working tree, uncommitted, for the owner to review and commit. Files the sync left alone because both sides changed since the baseline, to hand-merge: `AGENTS.md` and `tools/instructions/WRITING.md` in the four repos synced in August (obsidian-supernote-sync, your-health, your-sudoku, your-trainer), `ROADMAP.md` in articles and project-os-bench, `tools/scripts/validate-docs.py` in your-trainer, and the merge-owned `docs/PHASES.md` and `docs/__templates__/SCHEMAS.md` nearly everywhere. This repo's own sync is deferred: its vendored validator is a sync behind, and the template's validator reports 47 errors here that pre-date today (below), so syncing it would block every commit until those are cleared.
+
+`bash tools/scripts/validate-fleet.sh` from the template after the rollout:
+
+| repo | result | errors | warnings | waivers |
+|---|---|---|---|---|
+| articles | OK | 0 | 0 | 0 |
+| edankert.com | FAIL | 47 | 12 | 0 |
+| obsidian-supernote-sync | OK | 0 | 21 | 0 |
+| project-os-bench | OK | 0 | 0 | 0 |
+| project-os-cockpit | FAIL | 77 | 271 | 22 |
+| project-os-dev | FAIL | 47 | 52 | 19 |
+| project-os | OK | 0 | 1 | 0 |
+| your-applications.com | FAIL | 63 | 30 | 0 |
+| your-health | OK | 0 | 102 | 0 |
+| your-sudoku | OK | 0 | 130 | 3 |
+| your-trainer | OK | 0 | 239 | 8 |
+| yourtrainer-mcp | FAIL | 16 | 46 | 0 |
+
+The five failures are not caused by today's changes. The fleet script runs the template's validator over each repo's notes, and every error is from a check that landed after those repos last synced: PARENT-BACKLINK (edankert.com 40, project-os-dev 41, your-applications.com 50), SNAPSHOT-MEMBERSHIP (7, 3, 13, and 6 in yourtrainer-mcp), VERIFY (project-os-cockpit 77, yourtrainer-mcp 10), plus METRICS 2 and DECISION-OPTIONS 1 here. Clearing that debt is its own work in each repo; this repo's 47 are the next thing to do here before its own sync.
 
 ## Notes
 
