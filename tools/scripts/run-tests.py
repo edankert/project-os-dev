@@ -119,7 +119,8 @@ def main(argv=None):
     # tool, a timeout) is an environment gap and not a failure. In CI it is a
     # red build, because CI is the verdict and a test CI cannot run has none;
     # set PROJECT_OS_ALLOW_UNRUNNABLE=1 to accept the gap deliberately.
-    in_ci = bool(os.environ.get("CI")) and not os.environ.get("PROJECT_OS_ALLOW_UNRUNNABLE")
+    ci_value = (os.environ.get("CI") or "").strip().lower()
+    in_ci = ci_value not in ("", "0", "false", "no") and not os.environ.get("PROJECT_OS_ALLOW_UNRUNNABLE")
     if counts["unrunnable"]:
         if in_ci:
             print("   CI cannot run these tests, so they have no verdict; check out what they need "
