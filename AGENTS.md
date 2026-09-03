@@ -17,17 +17,7 @@ The rule is stated once in `tools/instructions/LIFECYCLE.md`: preflight before c
 
 After edits, run `bash tools/agents/check-docs-first.sh` and `bash tools/scripts/validate-docs.sh`, and fix what they report; the validator also runs at pre-commit and in CI (`tools/instructions/QUALITY.md`, "Documentation Fidelity").
 
-All documentation types must be considered on every behavior/path change:
-- features
-- requirements
-- tasks
-- issues
-- tests
-- workflows
-- decisions (ADRs)
-- risks
-- changes
-- snapshot
+Every documentation type is considered on a behaviour or path change; the list is the "Documentation Coverage" checklist in `docs/__templates__/change.md`.
 
 ## Canonical State
 - `SNAPSHOT.yaml` is the canonical current-work state; its statuses, counters and metrics are derived from the notes by `tools/scripts/sync-snapshot.py` (`tools/instructions/LIFECYCLE.md`, "Mandatory Automated Documentation").

@@ -121,7 +121,8 @@ Each pass is a full read of the domain in a clean context, as the docs-audit ski
 | 3 | `09ae4dc` | 2 confirmed (`test.md` line 13's command: comment; SNAPSHOT.md's Metrics section), 0 dangling citations, 5 borderline judged acceptable | fixed in `c7d7bfd` |
 | 4 | `c7d7bfd` | 3 confirmed (the test template's body callout restating the verdict rule; the design rules in both STATUSES.md and TRACEABILITY.md; TESTING.md's `invalidated_by:` note field, which ADR-0037 moved into the ledger), 1 borderline fragment in two skills | fixed in `ae33478` |
 | 5 | `ae33478` | 2 confirmed (the surface template's comment restating TAXONOMY.md "kind (surfaces)"; STATUSES.md citing cockpit ADR-0038 where six files cite ADR-0025), 0 dangling citations | fixed in `de6e89b` |
-| 6 | `de6e89b` | the first quiescence pass; recorded when it returns | |
+| 6 | `de6e89b` | 2 confirmed (AGENTS.md restating the change template's coverage checklist; design-authoring restating TRACEABILITY.md's revisions rule), 0 dangling citations | fixed in `1afc71e` |
+| 7 | `1afc71e` | the first quiescence pass; recorded when it returns | |
 
 ## Sibling search
 

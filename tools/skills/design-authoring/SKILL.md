@@ -4,7 +4,7 @@ id: SKILL-DESIGN-AUTHORING
 status: active
 owner: user:edwin
 created: 2026-07-27
-updated: 2026-07-27
+updated: 2026-09-03
 tags: [skills, design]
 ---
 
@@ -69,7 +69,7 @@ This distinction is the artifact's, not the project's. Do not encode the platfor
 
 ## Revisions are commits
 
-One artifact per commit, with the reason in the message. Not a note per revision, and not six edits and one commit at the end — that is the loss the whole phase exists to prevent.
+The rule is `../../instructions/TRACEABILITY.md`, "`[[design]]` links": one artifact per commit, with the reason in the message. Not six edits and one commit at the end, which is the loss the whole phase exists to prevent.
 
 Two regenerated HTML files diff as a wall of noise, so the commit message and the note's `## Revisions` line are the only readable record of *why* anything changed.
 
