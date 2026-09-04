@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 28
-  ISS: 51
+  ISS: 52
   PHASE: 3
   REL: 0
   REQ: 27
@@ -42,8 +42,8 @@ focus:
   task: ""
   feature: ""
   phase: "PHASE-0003"
-  issue: "ISS-0048"
-  note: "ISS-0048 is the one thing left in PHASE-0003, and REQ-0027 cannot tick its first and third criteria until it closes. Pass 11 (2026-09-04, template 19ba330) read wider than passes 9 and 10 and found 25 restatements plus 10 bad citations, so no clean pass stands. The Obsidian views the template ships filter on statuses the state model retired, which is a defect a reader sees rather than prose drift. Everything else in PHASE-0003 is done: ISS-0046 is fixed and this repo's own 47 validator errors were cleared in a66dab7."
+  issue: ""
+  note: "PHASE-0003 is done. ISS-0048 closed 2026-09-04 on a recorded residue rather than a clean pass, under ADR-0026: a docs audit is now one bounded round of three parallel passes, unioned and verified, not a loop waiting for two clean passes that twelve rounds never produced. REQ-0027 is implemented. Open next: ISS-0052 (three more drift classes become checks; BASE-STATUS is built), ISS-0049 (two validators disagree about what they refuse), ISS-0050 (surface statuses), and the fourteen-row residue on ISS-0048 -- rows 1, 3, 6, 7, 8 and 12 are documents that describe behaviour the code does not have."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -664,6 +664,14 @@ items:
       component: adapters-hooks
       note: "Point 3, a file outside every project-os repo denied on the session repo's empty focus, fixed in template commit 7b6890f (2026-09-03); assertions 31 to 34 of TST-0007. Points 1 and 2 were fixed upstream in July."
       related: [FEAT-0002, FEAT-0027, TST-0007]
+    ISS-0052:
+      file: "docs/issues/ISS-0052-Three-More-Drift-Classes-Should-Be-Checks.md"
+      status: open
+      severity: medium
+      phase: "[[PHASE-0003]]"
+      component: tooling
+      note: "ADR-0026 acceptance criterion 1: four drift classes become checks, BASE-STATUS is built, these three remain -- undocumented enforced fields, unresolvable citations, stale indexes. Checks 1 and 2 need a fleet measurement before they error rather than warn."
+      related: [ADR-0026, ADR-0024, ISS-0048]
     ISS-0051:
       file: "docs/issues/ISS-0051-The-Verification-Hook-Blocks-Every-Feature-That-Follows-The-Acceptance-Rule.md"
       status: fixed
@@ -690,7 +698,7 @@ items:
       related: [ISS-0048, ADR-0024, ADR-0025]
     ISS-0048:
       file: "docs/issues/ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File.md"
-      status: open
+      status: fixed
       severity: medium
       phase: "[[PHASE-0003]]"
       component: docs
@@ -1159,7 +1167,7 @@ items:
     REQ-0027:
       file: "docs/requirements/REQ-0027-Every-Normative-Rule-Is-Stated-Once.md"
       title: "Every normative rule is stated in exactly one file"
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: high
       phase: "[[PHASE-0003]]"
@@ -1290,7 +1298,7 @@ items:
   decisions:
     ADR-0026:
       file: "docs/decisions/ADR-0026-When-A-Drift-Sweep-Stops.md"
-      status: proposed
+      status: accepted
       decision: "Proposed, undecided: five options for how a drift sweep terminates. Twelve passes never produced two consecutive clean ones, because a clean-context pass samples the corpus rather than converging on it. Option 5 proposed -- bounded rounds, three parallel passes at one commit kept on two-of-three agreement, a reproduction per finding, and the human checkpoint moved onto decisions."
       related: [ADR-0024, ADR-0013, REQ-0027, ISS-0048, ISS-0049, ISS-0051]
     ADR-0025:
@@ -1449,7 +1457,7 @@ metrics:
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 27
-    requirements_implemented: 24
+    requirements_implemented: 25
     risks_open: 0
     releases_total: 0
     decisions_total: 26

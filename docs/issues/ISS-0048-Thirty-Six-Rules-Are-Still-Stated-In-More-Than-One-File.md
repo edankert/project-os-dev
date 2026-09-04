@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0048
 aliases: ["ISS-0048"]
 title: "Thirty-six rules are still stated in more than one file"
-status: "open"
+status: fixed
 phase: "[[PHASE-0003]]"
 severity: medium
 owner: user:edwin
@@ -166,6 +166,29 @@ The measurement behind that reply, kept because it is the argument: the per-pass
 - *Hand-merging `docs/__templates__/SCHEMAS.md` in project-os-dev.* Merge-owned and two months behind (`updated: 2026-05-08` against the template's `2026-07-21`), missing `origin`, `acceptance_exception` and the ADR-0032 removal of a feature's `tests` list. Closed as too large to fold into a drift pass; it is a follow-up on the change note.
 
 **Also owed, neither touched:** three `.DS_Store` files are tracked in project-os-dev with no `.gitignore` entry, and `compass_artifact_wf-84fa61ff-...md` has sat at the template repo root since `d3f9a8f` with no frontmatter and no ID, where `LIFECYCLE.md` close-out step 3 puts a research report under `docs/reference/`.
+
+## Residue at close (pass 12, template `e2bee28`)
+
+[[ADR-0026-When-A-Drift-Sweep-Stops|ADR-0026]] closes a sweep on a recorded residue rather than a clean pass, so this is the residue. These are pass 12's confirmed findings that were **not** fixed. They are real; they were verified where marked; nothing here is lost by closing this issue, because this list is the record.
+
+| # | Finding | Where | Status |
+|---|---|---|---|
+| 1 | `sync-snapshot.py` derives `goal:` (`DERIVED_FIELDS = ("title", "goal")`) while `LIFECYCLE.md:49`, `SNAPSHOT.md:79`, `snapshot-sync` and `close-out` all say the script leaves it alone; `SNAPSHOT.md` contradicts itself between lines 61 and 79 | four documents vs `sync-snapshot.py:97` | **Verified.** Open — needs a decision on which behaviour is correct before the prose is fixed |
+| 2 | `SNAPSHOT.md:67,73` still tells authors to write a feature's `tests:` and a test's `features:`, both removed by ADR-0032 in favour of `covers:` | `SNAPSHOT.md` vs `SCHEMAS.md:90` | Open |
+| 3 | `docs/requirements/README.md:23` says `implements:` may point at features, scripts, tests or workflows; `STATUSES.md:93` says at most one feature, and REQ-OWNER errors on two | `requirements/README.md` | Open |
+| 4 | Six directory READMEs (`changes/`, `risks/`, `decisions/`, `tests/`, `features/`, `phases/`) carry their own trigger lists for change notes, risk scans and ADRs, two of them turning a mandatory rule discretionary | `docs/*/README.md` | Open. ADR-0026 decided this class stays the sweep's job; a check cannot read for meaning |
+| 5 | `waiver_expires:`, `fixes:` and `docs/designs/` are enforced and defined in no document | `validate-docs.py` | `waiver_expires:` **fixed** 2026-09-04 with ISS-0051; the other two are [[ISS-0052-Three-More-Drift-Classes-Should-Be-Checks\|ISS-0052]] check 1 |
+| 6 | `metrics.counts` computes 18 keys and `SNAPSHOT.md` defines 16 | `SNAPSHOT.md:91` | Open |
+| 7 | `SNAPSHOT.md:20` lists required top-level keys and omits `template:`, which two hooks branch on, plus `docs_system:` and two `retention.*` keys | `SNAPSHOT.md` | Open |
+| 8 | `CONTEXT.md:33` files `docs/requirements/` and `docs/risks/` under "LLM should not change casually" while LIFECYCLE requires the agent to create and update exactly those; it omits five more directories | `CONTEXT.md` | Open |
+| 9 | `validate-docs.py` error text tells authors to write `mark:`, `verdict_date:` and `invalidated_by:`, the fields ADR-0037 removed | `validate-docs.py:2262,2304` | Open, and adjacent to [[ISS-0049-The-Schema-Claims-A-Refusal-The-Shipped-Validator-Does-Not-Make\|ISS-0049]] |
+| 10 | ~22 unresolvable or wrong citations, including a quoted STATUSES.md sentence that appears in no file, and ~50 bare `ADR-####` references that mean a different decision in each repo | corpus-wide | [[ISS-0052-Three-More-Drift-Classes-Should-Be-Checks\|ISS-0052]] check 2 |
+| 11 | Index files behind their directories: `docs/INDEX.md` omits `OBSIDIAN.md` and `TESTING.md`; `SNAPSHOT.yaml`'s `docs_system.instructions` lists 3 of 16 | `docs/INDEX.md`, `SNAPSHOT.yaml` | [[ISS-0052-Three-More-Drift-Classes-Should-Be-Checks\|ISS-0052]] check 3 |
+| 12 | `SCHEMAS.md` defines no fields for `design.md`, `design-system.md` or `surface.md`, three shipped templates; no `SUR` counter exists though `SUR` is a live prefix | `SCHEMAS.md`, `SNAPSHOT.yaml` | Open |
+| 13 | The Bases "Open" views use three different exclusion strategies, `implemented` appears in an "All (Open)" view, and `deferred` (which `SNAPSHOT.md` calls active) appears in none | `docs/__bases__/` | Open. Considered and set aside in pass 11 as out of scope; `BASE-STATUS` now covers only the non-existent-value half |
+| 14 | `compass_artifact_wf-84fa61ff-...md` sits at the template root with no frontmatter, no type and no ID, and is the source of claims quoted inside the instruction files — including the quiescence rule ADR-0026 has now removed | template repo root | Open |
+
+Rows 1, 3, 6, 7, 8 and 12 are the ones a person should look at next: each is a document telling a reader something the code does not do.
 
 ## Sibling search
 

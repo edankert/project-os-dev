@@ -38,7 +38,7 @@ tags: [skills, release]
 - If a check cannot be run, recording a **release exception** with justification is the user's decision (`TESTING.md`, "Release gating"; pause rule: `../../instructions/LIFECYCLE.md`, "When to pause for the user").
 
 ### 2b. Docs consistency audit
-- Run `bash tools/scripts/validate-docs.sh` (mechanical) and `../docs-audit/SKILL.md` (cross-document, to quiescence) before drafting the release note — releases are the last chance to catch stale references before they ship as documentation.
+- Run `bash tools/scripts/validate-docs.sh` (mechanical) and `../docs-audit/SKILL.md` (cross-document, one bounded round) before drafting the release note — releases are the last chance to catch stale references before they ship as documentation.
 
 ### 3. Create release note
 1. Allocate `REL-####` from `counters.REL` in SNAPSHOT.

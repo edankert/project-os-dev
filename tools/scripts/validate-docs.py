@@ -1556,6 +1556,59 @@ def validate_decision_rule(root, items, note_index, report):
                 )
 
 
+def validate_base_status_filters(root, report):
+    """Every status literal in a shipped Obsidian view is a status that exists.
+
+    The defect this catches shipped for seven weeks and nobody saw it, because
+    a Bases view that matches nothing looks the same as a project with nothing
+    in flight: PHASE-0002 renamed the feature statuses `in-progress` and
+    `in-review` to `doing` and `review`, and `NAVIGATION.base` kept filtering on
+    the old names, so "Features (Open)" was empty in every repo in the fleet.
+
+    Mechanised under ADR-0026 because the drift sweep kept rediscovering this
+    class and a check can state it exactly: the filters hold quoted literals in
+    a known position, and the allowed set is the same one `load_allowed_status`
+    already reads out of STATUSES.md. Union across all types -- a view spans
+    types, so a value legal for any note type is legal here.
+    """
+    bases = root / "docs" / "__bases__"
+    if not bases.is_dir():
+        return
+    allowed = load_allowed_status(root)
+    every = set()
+    for values in allowed.values():
+        every |= set(values)
+    if not every:
+        return
+    for path in sorted(bases.glob("*.base")):
+        rel = path.relative_to(root)
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        for lineno, line in enumerate(text.splitlines(), 1):
+            if "status" not in line:
+                continue
+            # `status.containsAny("a", "b")` and `status != "a"` / `status == "a"`
+            literals = []
+            m = re.search(r"status(?:\.\w+)?\.containsAny\(([^)]*)\)", line)
+            if m:
+                literals += re.findall(r'"([\w-]+)"', m.group(1))
+            m = re.search(r"status\s*[!=]=\s*\"([\w-]+)\"", line)
+            if m:
+                literals.append(m.group(1))
+            unknown = [v for v in literals if v not in every]
+            if unknown:
+                report.error(
+                    "BASE-STATUS",
+                    "%s:%d filters on %s, which %s does not allow for any note type; "
+                    "a view filtering on a status that does not exist silently matches "
+                    "nothing (ADR-0026)"
+                    % (rel, lineno, ", ".join("`%s`" % u for u in unknown),
+                       "tools/instructions/STATUSES.md"),
+                )
+
+
 def validate_brief(root, report):
     """BRIEF-PLACEHOLDER — the project says what it is, or says nothing.
 
@@ -1923,6 +1976,7 @@ def validate(root, report):
                 "%s is done and no acceptance check covers it; add one, or "
                 "record why it needs none in `acceptance_exception:`" % _fid)
 
+    validate_base_status_filters(root, report)
     validate_brief(root, report)
     validate_decision_options(root, report)
     validate_decision_rule(root, items, note_index, report)
