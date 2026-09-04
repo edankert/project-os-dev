@@ -4,14 +4,14 @@ id: SKILL-DOCS-AUDIT
 status: active
 owner: group:maintainers
 created: 2026-07-05
-updated: 2026-09-03
+updated: 2026-09-04
 tags: [skills, audit, consistency]
 ---
 
 # Skill: Docs audit (cross-document consistency, one bounded round)
 
 ## Why this exists
-Documentation-as-database systems accumulate cross-document defects — stale references, schema mismatches between notes, statuses that drifted apart — and single-file review cannot detect them *by construction*: each file looks fine on its own. Empirically, systems of this class needed multiple full-scope audit rounds before converging. This skill is the periodic full-graph sweep that catches what per-edit checks miss.
+Documentation-as-database systems accumulate cross-document defects — stale references, schema mismatches between notes, statuses that drifted apart — and single-file review cannot detect them *by construction*: each file looks fine on its own. This skill is the periodic full-graph sweep that catches what per-edit checks miss. It used to claim such systems converge after several rounds; twelve rounds over this template did not converge, which is why the audit is now one bounded round on a cadence rather than a loop (ADR-0026).
 
 ## When to use
 - On a cadence: during backlog grooming, before a release (`../release-prep/SKILL.md`), and after any large import/merge/sync.

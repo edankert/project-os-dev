@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 28
-  ISS: 52
+  ISS: 54
   PHASE: 3
   REL: 0
   REQ: 27
@@ -43,7 +43,7 @@ focus:
   feature: ""
   phase: "PHASE-0003"
   issue: ""
-  note: "PHASE-0003 is done. ISS-0048 closed 2026-09-04 on a recorded residue rather than a clean pass, under ADR-0026: a docs audit is now one bounded round of three parallel passes, unioned and verified, not a loop waiting for two clean passes that twelve rounds never produced. REQ-0027 is implemented. Open next: ISS-0052 (three more drift classes become checks; BASE-STATUS is built), ISS-0049 (two validators disagree about what they refuse), ISS-0050 (surface statuses), and the fourteen-row residue on ISS-0048 -- rows 1, 3, 6, 7, 8 and 12 are documents that describe behaviour the code does not have."
+  note: "The REQ-0027 independent review returned changes-requested on 2026-09-04 and it was right on every count. REQ-0027 is held at approved, not implemented: criterion 1 says every normative rule has one home, and ISS-0048's own residue lists rules that still do not. Narrowing that criterion is Edwin's call. Also owed: he has not confirmed ADR-0026's amendment (union instead of two-of-three), whose first justification was withdrawn as invalid. Open: ISS-0053 (a note with unparseable frontmatter passes silently -- this is how ISS-0048 sat corrupted through eight green runs), ISS-0054 (nine residue rows with no open item), ISS-0052, ISS-0049, ISS-0050. Neither repo is pushed."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -664,6 +664,22 @@ items:
       component: adapters-hooks
       note: "Point 3, a file outside every project-os repo denied on the session repo's empty focus, fixed in template commit 7b6890f (2026-09-03); assertions 31 to 34 of TST-0007. Points 1 and 2 were fixed upstream in July."
       related: [FEAT-0002, FEAT-0027, TST-0007]
+    ISS-0054:
+      file: "docs/issues/ISS-0054-Nine-Residue-Findings-Have-No-Open-Item.md"
+      status: triage
+      severity: medium
+      phase: "[[PHASE-0003]]"
+      component: docs
+      note: "ISS-0048 closed on a 14-row residue; nine rows are real, unfixed and recorded only inside a closed note. Triage: fix, split out, or decline with a reason."
+      related: [ISS-0048, ADR-0026]
+    ISS-0053:
+      file: "docs/issues/ISS-0053-A-Note-With-Unparseable-Frontmatter-Passes-Silently.md"
+      status: triage
+      severity: high
+      phase: "[[PHASE-0003]]"
+      component: tooling
+      note: "A note whose YAML frontmatter does not parse drops out of every frontmatter-driven check and the validator stays silent. ISS-0048 sat corrupted through eight green runs. Found by the REQ-0027 review."
+      related: [ISS-0052, ISS-0049, ADR-0026]
     ISS-0052:
       file: "docs/issues/ISS-0052-Three-More-Drift-Classes-Should-Be-Checks.md"
       status: open
@@ -1167,7 +1183,7 @@ items:
     REQ-0027:
       file: "docs/requirements/REQ-0027-Every-Normative-Rule-Is-Stated-Once.md"
       title: "Every normative rule is stated in exactly one file"
-      status: implemented
+      status: approved
       owner: user:edwin
       priority: high
       phase: "[[PHASE-0003]]"
@@ -1453,11 +1469,11 @@ metrics:
     tests_passing: 0
     tests_failing: 0
     issues_open: 26
-    issues_triage: 2
+    issues_triage: 4
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 27
-    requirements_implemented: 25
+    requirements_implemented: 24
     risks_open: 0
     releases_total: 0
     decisions_total: 26

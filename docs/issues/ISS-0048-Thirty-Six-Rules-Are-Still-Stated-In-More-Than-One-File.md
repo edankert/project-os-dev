@@ -11,7 +11,7 @@ created: 2026-09-03
 updated: "2026-09-04"
 component: docs
 source: ["The docs-audit drift sweep (dimension 6) run over the template on 2026-09-03 at the close of PHASE-0003, pass 1, in a clean context"]
-elated: ["[[ISS-0049-The-Schema-Claims-A-Refusal-The-Shipped-Validator-Does-Not-Make]]", "[[ISS-0050-Surface-Statuses-Live-Outside-The-File-That-Enforces-Them]]", "[[ADR-0024-A-Normative-Rule-Is-Stated-Once]], "[[REQ-0027-Every-Normative-Rule-Is-Stated-Once]]", "[[ISS-0006-Status-Transition-Test-Gates-Requirements]]", "[[ISS-0041-Four-Files-Still-Require-A-Different-Model-Family]]", "[[ISS-0042-Grandfathering-Is-Described-Two-Incompatible-Ways]]", "[[ISS-0043-Release-Skills-And-Two-Templates-Use-Retired-Vocabulary]]", "[[ISS-0046-Release-Verification-Still-Writes-Test-Verdicts-By-Hand]]"]
+related: ["[[ISS-0049-The-Schema-Claims-A-Refusal-The-Shipped-Validator-Does-Not-Make]]", "[[ISS-0050-Surface-Statuses-Live-Outside-The-File-That-Enforces-Them]]", "[[ISS-0051-The-Verification-Hook-Blocks-Every-Feature-That-Follows-The-Acceptance-Rule]]", "[[ISS-0052-Three-More-Drift-Classes-Should-Be-Checks]]", "[[ADR-0024-A-Normative-Rule-Is-Stated-Once]]", "[[ADR-0026-When-A-Drift-Sweep-Stops]]", "[[REQ-0027-Every-Normative-Rule-Is-Stated-Once]]", "[[ISS-0006-Status-Transition-Test-Gates-Requirements]]", "[[ISS-0041-Four-Files-Still-Require-A-Different-Model-Family]]", "[[ISS-0042-Grandfathering-Is-Described-Two-Incompatible-Ways]]", "[[ISS-0043-Release-Skills-And-Two-Templates-Use-Retired-Vocabulary]]", "[[ISS-0046-Release-Verification-Still-Writes-Test-Verdicts-By-Hand]]"]
 tasks: []
 tests: []
 ---

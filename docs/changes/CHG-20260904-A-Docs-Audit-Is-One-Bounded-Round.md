@@ -30,7 +30,7 @@ A docs audit used to end only when two consecutive passes found nothing. It now 
 **What an agent running the audit does differently.** Three passes instead of one, in parallel instead of in sequence, and then it stops. Three rules in the skill each replace something that failed:
 
 - *Each pass is briefed with the domain and the rule, never with what an earlier pass found.* A primed pass confirms its priming. That is why pass 7 looked clean and pass 8, reading the same corpus without the table, found 21.
-- *Findings are unioned, not filtered by agreement.* This is an amendment to the option as accepted, recorded in ADR-0026's decision record. Passes 11 and 12 ran at adjacent commits, found 25 each, and shared almost nothing; a two-of-three rule would have discarded both severe defects — the Obsidian views filtering on retired statuses, and the hook denying `done` to every feature with an acceptance check.
+- *Findings are unioned, not filtered by agreement.* This is an amendment to the option as accepted, recorded in ADR-0026's decision record and **not yet confirmed by the owner**. Its first justification — that passes 11 and 12 overlapped on almost nothing — was withdrawn on independent review: those passes ran at different commits with pass 11's findings already fixed, so non-overlap was guaranteed and proves nothing about parallel passes. Union stands provisionally, on the reason that discarding a true finding costs more than verifying a false one, and ADR-0026 criterion 4 turns it into a measurement.
 - *Each finding is verified against a reproduction before it is fixed.* This is what controls false positives, since agreement cannot. Done by hand across passes 11 and 12 it held 17 of 17.
 
 **What reaches a person.** The skill now says a sweep hands back two lists — what was fixed, and what decisions are owed as `ISS-*` notes — and that only the second is a human queue. A reviewer reporting 25 items a pass exhausts the reader long before the corpus.
@@ -42,9 +42,9 @@ A docs audit used to end only when two consecutive passes found nothing. It now 
 ## Documentation Coverage (All Types Considered)
 
 - features: not-applicable
-- requirements: updated — REQ-0027 `implemented`, criteria 1 and 3 reworded off the clean-pair test
+- requirements: updated — REQ-0027 held at `approved`, not `implemented`. It was advanced and then reverted on independent review: criterion 1 ("every normative rule has exactly one home") is contradicted by ISS-0048's own residue, and narrowing it is the owner's call. Criterion 4's frontmatter text, which named the deleted quiescence rule, was corrected
 - tasks: not-applicable
-- issues: updated — ISS-0048 `fixed` on a 14-row recorded residue; new — ISS-0052
+- issues: updated — ISS-0048 `fixed` on a 14-row recorded residue, its corrupted frontmatter repaired; new — ISS-0052, ISS-0053 (unparseable frontmatter passes silently), ISS-0054 (nine residue rows with no open item)
 - tests: not-applicable — `BASE-STATUS` was negative-tested by reintroducing the original filter, which is recorded on ADR-0026 rather than as a `TST-*`
 - workflows: not-applicable
 - decisions: updated — ADR-0026 accepted with one amendment; ADR-0024's `RULE-ONCE` box gains the reconsideration it asked for
@@ -52,8 +52,16 @@ A docs audit used to end only when two consecutive passes found nothing. It now 
 - changes: new — this note
 - snapshot: updated — focus cleared, ISS-0052 added
 
+## Independent review
+
+`changes-requested` (model:claude-fable-5-1, 2026-09-04), and the gate earned its place. It found that REQ-0027 had been ticked to fit, that `BASE-STATUS` was described in template commit `17edc84` but not contained in it (the check was uncommitted in the template while committed downstream, so "both repos are clean" was false), that ISS-0048's frontmatter had been corrupted by a bad string edit and no validator run reported it, and that the amendment's evidence was invalid. All four were reproduced and are fixed or filed above.
+
+Two findings it raised are worth keeping visible: `BASE-STATUS` has known false negatives (single-quoted literals, `status.contains(...)`, `["x"].contains(status)`, `status in [...]`, a second `==` on one line, and a wrapped `containsAny(`), and only `docs/__bases__/` is scanned. Neither is a false positive, so the check is sound where it fires; it is narrower than its name suggests.
+
 ## Follow-ups
 
 - [ ] ISS-0052: the other three checks. Two need a fleet measurement before they error rather than warn.
 - [ ] The 14-row residue on ISS-0048. Rows 1, 3, 6, 7, 8 and 12 are documents describing behaviour the code does not have.
 - [ ] Re-measure whether the drift dimension still earns a cadence slot once the checks exist. That is ADR-0026's real acceptance test.
+- [ ] Widen `BASE-STATUS` to the filter forms and literal styles it currently misses, listed above.
+- [ ] Neither repo is pushed, so no CI run has confirmed any of this (LIFECYCLE step 9).
