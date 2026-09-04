@@ -11,3 +11,6 @@
 # no error anywhere (project-os-cockpit ISS-0070 — a whole feature and three
 # tasks were missing from a fresh clone, which then failed the validator).
 /inbox/
+
+# macOS Finder metadata: window position and icon layout, not project state.
+.DS_Store
