@@ -129,6 +129,24 @@ Each pass is a full read of the domain in a clean context, as the docs-audit ski
 | 11 | `19ba330` | 25 restatements and 10 bad citations, read wider than any pass since 8: the shipped Bases views and five more files still filtering on statuses PHASE-0002 retired; `SYNCING.md` contradicting `MANIFEST.yaml` on sync ownership; `SCHEMAS.md` contradicting itself on `tier` and claiming a refusal no shipped validator makes; `docs/OWNERSHIP.md` restating the rules its instruction file owns; the staleness window and HC-005's trigger list with no home; four index files behind their directories | fixed in `acdcccb`, `7c13209`, `e2bee28`; two decisions split out as [[ISS-0049-The-Schema-Claims-A-Refusal-The-Shipped-Validator-Does-Not-Make|ISS-0049]] and [[ISS-0050-Surface-Statuses-Live-Outside-The-File-That-Enforces-Them|ISS-0050]] |
 | 12 | `e2bee28` | recorded when it returns | |
 
+## In flight (handoff, 2026-09-04)
+
+**Where this stands.** Pass 12 is running in a clean context against template `e2bee28` and its result is not recorded yet. Row 12 of the sweep table below says "recorded when it returns"; fill it in when it does. Nothing else is in flight, and both working trees are clean.
+
+**What pass 11 changed**, all committed: template `acdcccb` (retired statuses out of the shipped Obsidian views and six documents and two hooks), `7c13209` (SYNCING.md, docs/OWNERSHIP.md and SCHEMAS.md stop restating what other files own), `e2bee28` (four bad citations, four stale indexes, and homes for the staleness window and HC-005's trigger list). Synced into project-os-dev as `00b4fd8` with [[CHG-20260904-Views-Stop-Filtering-On-Retired-Statuses]].
+
+**Neither repo is pushed.** project-os is 26 commits ahead of origin, project-os-dev 22. That has been the pattern across this whole issue; a successor should ask before pushing rather than assume.
+
+**Quiescence is further away than the pass numbers suggest.** Pass 7 was clean, but pass 8 re-read the corpus *without* the earlier findings tables and found 21. That is the lesson worth keeping: a pass primed with the previous table confirms the previous table. Passes 9, 10 and 11 found 2, 5 and 25, and pass 11's jump is domain, not regression — it was the first to open the `.base` views, `docs/STYLEGUIDE.md`, `docs/releases/README.md`, `tools/sync/MANIFEST.yaml` and the rule-bearing regions of `validate-docs.py`. Brief each new pass to enumerate with `find` rather than work from a list, and do not hand it this table.
+
+**Approaches set aside.**
+
+- *Fixing the two decision rows in pass 11 rather than filing them.* Both change enforcement — [[ISS-0049-The-Schema-Claims-A-Refusal-The-Shipped-Validator-Does-Not-Make|ISS-0049]] would start erroring on unmigrated downstream notes, [[ISS-0050-Surface-Statuses-Live-Outside-The-File-That-Enforces-Them|ISS-0050]] on surface notes. Closed as the user's call, not the sweep's.
+- *Tightening `Phases (Open)` in `NAVIGATION.base` from `status != "done"` to an explicit list.* It shows `deferred` and `superseded` phases under "Open", which is the same class of defect as the retired filters. Closed as scope: no retired value is involved, so it is not an ADR-0024 instance. Worth a separate issue if it bothers a reader.
+- *Hand-merging `docs/__templates__/SCHEMAS.md` in project-os-dev.* Merge-owned and two months behind (`updated: 2026-05-08` against the template's `2026-07-21`), missing `origin`, `acceptance_exception` and the ADR-0032 removal of a feature's `tests` list. Closed as too large to fold into a drift pass; it is a follow-up on the change note.
+
+**Also owed, neither touched:** three `.DS_Store` files are tracked in project-os-dev with no `.gitignore` entry, and `compass_artifact_wf-84fa61ff-...md` has sat at the template repo root since `d3f9a8f` with no frontmatter and no ID, where `LIFECYCLE.md` close-out step 3 puts a research report under `docs/reference/`.
+
 ## Sibling search
 
 Siblings found: [[ISS-0006-Status-Transition-Test-Gates-Requirements]], [[ISS-0041-Four-Files-Still-Require-A-Different-Model-Family]], [[ISS-0042-Grandfathering-Is-Described-Two-Incompatible-Ways]], [[ISS-0043-Release-Skills-And-Two-Templates-Use-Retired-Vocabulary]]. Searched `docs/issues/` for: restate, drift, stated once, contradict. The family already has its rule, [[ADR-0024-A-Normative-Rule-Is-Stated-Once]]; this issue is the measured debt under it.
