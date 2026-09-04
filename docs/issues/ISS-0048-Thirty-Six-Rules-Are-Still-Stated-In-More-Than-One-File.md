@@ -141,6 +141,18 @@ Each pass is a full read of the domain in a clean context, as the docs-audit ski
 
 **Quiescence is further away than the pass numbers suggest.** Pass 7 was clean, but pass 8 re-read the corpus *without* the earlier findings tables and found 21. That is the lesson worth keeping: a pass primed with the previous table confirms the previous table. Passes 9, 10 and 11 found 2, 5 and 25, and pass 11's jump is domain, not regression — it was the first to open the `.base` views, `docs/STYLEGUIDE.md`, `docs/releases/README.md`, `tools/sync/MANIFEST.yaml` and the rule-bearing regions of `validate-docs.py`. Brief each new pass to enumerate with `find` rather than work from a list, and do not hand it this table.
 
+**Paused on a decision, 2026-09-04.** Edwin asked whether the clean-context review is worth what it costs, saying he cannot tell whether the reviewer checks the right things or steers the work wrong, and proposed capping the review cycles and putting a human acceptance test in the loop. The reply measured it and put five options to him; none is decided, and this issue should not resume until they are:
+
+1. Replace the quiescence rule with a bounded budget (run, fix, record, stop) instead of "two consecutive clean passes".
+2. Run passes in parallel at one commit and keep what two of three agree on, rather than sequentially after each fix.
+3. Require a reproduction command with every finding, and verify before fixing.
+4. Put the human checkpoint on decisions owed, not on findings.
+5. Convert recurring finding classes into mechanical checks, which reopens the RULE-ONCE question ADR-0024 declined at a count of 36.
+
+The measurement behind that reply, kept because it is the argument: the per-pass counts are 36, 26, 2, 3, 2, 2, 0, 21, 2, 5, 25, 25; 17 of 17 spot-checked findings across passes 11 and 12 were real; the recorded independent-review gate stands at 16 approved against 2 changes-requested. The reviewer is accurate and the termination rule is what does not work.
+
+**A defect found while stopping, not yet filed.** `close-out-check.sh` blocks whenever `focus.issue` is set and keeps no record of whether a handoff was written, so its own message -- "write the handoff ... then stop; this check lets that second stop through" -- describes behaviour it does not have. Same class as the rest of this issue: a message asserting an enforcement that is not implemented. Left unfiled deliberately while the question above is open, because filing a fourth issue mid-argument about volume would be answering the wrong question. Fold it into whichever option Edwin picks.
+
 **Approaches set aside.**
 
 - *Fixing the two decision rows in pass 11 rather than filing them.* Both change enforcement — [[ISS-0049-The-Schema-Claims-A-Refusal-The-Shipped-Validator-Does-Not-Make|ISS-0049]] would start erroring on unmigrated downstream notes, [[ISS-0050-Surface-Statuses-Live-Outside-The-File-That-Enforces-Them|ISS-0050]] on surface notes. Closed as the user's call, not the sweep's.
