@@ -10,7 +10,8 @@
 #   HC-001 document-first-gate.sh (PreToolUse)      allows paths outside every project-os
 #                                                    repo (project-os-dev ISS-0003)
 # Every hook file is also checked for the executable bit, which the assertions
-# below cannot detect on their own (project-os-dev ISS-0055).
+# below cannot detect on their own (project-os-dev ISS-0055), and the Stop
+# hook's write test is exercised against a session marker (ISS-0056).
 # Paths resolve from this script's location. Exit 0 = every assertion holds.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -176,6 +177,81 @@ for hook in "$HOOKS"/*; do
   [ -f "$hook" ] || continue
   check "$(basename "$hook") is executable" "$([ -x "$hook" ]; echo $?)" "mode is $(stat -f '%Sp' "$hook" 2>/dev/null || stat -c '%A' "$hook")"
 done
+
+# On disk is not enough. A repo with core.fileMode=false records a new hook as
+# 100644 whatever its mode here, so the checks above pass while a fresh clone
+# still gets "Permission denied" -- which is how ISS-0055 shipped, and how
+# session-touch.sh was added an hour after fixing it. Skipped outside a
+# repository, and outside one that tracks these files.
+# A hook file a downstream .gitignore swallows is invisible to every check
+# above: git ls-files never lists it, so its mode is never wrong, and a clone
+# simply does not have it. One repo ignored `lib/` and would have dropped the
+# marker helper (project-os-dev ISS-0056), which is why the directory is called
+# `shared`.
+if git -C "$HOOKS" rev-parse --show-toplevel >/dev/null 2>&1; then
+  for hook in "$HOOKS"/* "$HOOKS"/shared/*; do
+    [ -f "$hook" ] || continue
+    # --no-index, because check-ignore reports nothing for an already-tracked
+    # file: without it this passes here and only fails in the repo that has not
+    # committed the file yet, which is the one place nobody is looking.
+    check "$(basename "$hook") is not gitignored" "$(! git -C "$HOOKS" check-ignore -q --no-index "$hook"; echo $?)" "a .gitignore pattern hides it from the commit"
+  done
+fi
+
+if git -C "$HOOKS" rev-parse --show-toplevel >/dev/null 2>&1; then
+  while read -r mode _ _ path; do
+    [ -n "$path" ] || continue
+    case "$path" in *shared/*) continue ;; esac # sourced, never executed
+    check "$(basename "$path") is executable in git" "$([ "$mode" = "100755" ]; echo $?)" "index mode is $mode; record it with git update-index --chmod=+x"
+  done <<GITMODES
+$(git -C "$HOOKS" ls-files -s . 2>/dev/null)
+GITMODES
+fi
+
+# -- HC-006: the focus half blocks only a stop that follows a write -----------
+# Appended last, like the block above, so the ordinals TST-0007 documents by
+# number do not shift. A set focus is durable project state: before ISS-0056 the
+# hook read it as if it described the turn, and cost a forced continuation on
+# every stop -- questions included -- in any repo whose focus was parked.
+SESSION="test-hooks-$$-aaaa"
+. "$HOOKS/shared/session-marker.sh"
+MARKER=$(session_marker "$SESSION" "$TMP/doing")
+rm -f "$MARKER"
+# stop_with_session <project-dir> <session-id>
+stop_with_session() { printf '{"stop_hook_active": false, "session_id": "%s"}' "$2" | CLAUDE_PROJECT_DIR="$1" bash "$HOOKS/close-out-check.sh" 2>/dev/null; }
+touch_hook()        { printf '{"session_id": "%s", "tool_name": "Write"}' "$2" | CLAUDE_PROJECT_DIR="$1" bash "$HOOKS/session-touch.sh" 2>/dev/null; }
+
+out="$(stop_with_session "$TMP/doing" "$SESSION")"
+check "stop hook, nothing written this session: the stop goes through" "$([[ -z "$out" ]]; echo $?)" "got: $out"
+
+touch_hook "$TMP/doing" "$SESSION"
+check "the touch hook records the write" "$([ -e "$MARKER" ]; echo $?)" "expected $MARKER"
+
+out="$(stop_with_session "$TMP/doing" "$SESSION")"
+check "stop hook, a write happened: it still blocks on focus" "$(has "$out" '"decision": "block"'; echo $?)"
+check "the block spends the marker" "$([ ! -e "$MARKER" ]; echo $?)" "marker survived the block"
+
+out="$(stop_with_session "$TMP/doing" "$SESSION")"
+check "stop hook, quiet turn after a block: the stop goes through" "$([[ -z "$out" ]]; echo $?)" "got: $out"
+
+# A payload without session_id cannot answer the question, so it blocks: the
+# behaviour before ISS-0056. A check that disables itself when its input is
+# missing is worse than one that nags.
+out="$(stop_hook "$TMP/doing" false)"
+check "stop hook, no session_id: falls back to blocking" "$(has "$out" '"decision": "block"'; echo $?)"
+
+touch_hook "$TMP/doing" ""
+check "the touch hook records nothing without a session_id" "$([ ! -e "$MARKER" ]; echo $?)"
+
+# Two repos in one session must not share a marker, or work in one silences the
+# reminder in the other.
+fixture "$TMP/other" TASK-0001 doing FEAT-0001 doing ""
+OTHER=$(session_marker "$SESSION" "$TMP/other")
+check "the marker is per project, not per session" "$([ "$MARKER" != "$OTHER" ]; echo $?)" "both resolved to $MARKER"
+touch_hook "$TMP/other" "$SESSION"
+out="$(stop_with_session "$TMP/doing" "$SESSION")"
+check "a write in one repo does not arm the other repo's check" "$([[ -z "$out" ]]; echo $?)" "got: $out"
+rm -f "$MARKER" "$OTHER"
 
 echo "test-hooks: $assertions assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]

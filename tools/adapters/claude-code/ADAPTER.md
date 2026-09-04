@@ -136,7 +136,8 @@ Manual fallback: copy `hooks.json` from this adapter directory into `.claude/set
 | `PreToolUse` | HC-003 Verification Gate | `command` | **Blocking**: denies a transition to a terminal status while linked TST-* notes are not `passing` (the statuses are listed once in HOOKS.md HC-003) (recorded `verification_waiver` escapes; no linked test → `ask`) |
 | `PostToolUse` | HC-004 Phase Alignment | `command` | Detects status→doing, reminds about phase check |
 | `PostToolUse` | HC-005 Risk Scan Trigger | `command` | Detects package/env/CI file changes |
-| `Stop` | HC-006 Close-out Check + HC-007 Docs Validation | `command` | Runs `tools/scripts/validate-docs.sh` and blocks stop on violations; checks focus is cleared, forces close-out if not |
+| `PostToolUse` | HC-006 Session Touch | `command` | Records that the session wrote a file, so the Stop hook can tell a turn that did work from one that did not |
+| `Stop` | HC-006 Close-out Check + HC-007 Docs Validation | `command` | Runs `tools/scripts/validate-docs.sh` and blocks stop on violations every time; checks focus is cleared, and forces close-out if not — but only on a stop that follows a write |
 | `SessionStart` | HC-002 Snapshot Freshness | `command` | Reminds agent to read SNAPSHOT.yaml |
 | `UserPromptSubmit` | HC-008 Delegation Hint | `command` | Advisory: states the focus item, its status and its phase, and who writes the note for new work; names the planner only for a multi-item scaffold or an ambiguous ask, the reviewer only in review states |
 

@@ -8,6 +8,15 @@
 # stop_hook_active is true (we already forced one continuation), allow stopping
 # to prevent loops.
 #
+# The two halves have different strictness on purpose. The validator blocks
+# every stop: a broken docs invariant is a real failure, not a reminder. The
+# focus half blocks only a stop that follows a write, because a set focus is
+# durable project state and says nothing about what this turn did. Blocking on
+# it unconditionally cost a forced continuation on every turn -- including
+# questions -- in any repo whose focus item was legitimately parked
+# (project-os-dev ISS-0056). session-touch.sh records the write; this hook
+# consumes the marker, so the reminder comes once per burst of work.
+#
 # Exit 0 = allow stop (no output or JSON output)
 
 INPUT=$(cat)
@@ -23,6 +32,9 @@ SNAPSHOT="$PROJECT_DIR/SNAPSHOT.yaml"
 if [ ! -f "$SNAPSHOT" ]; then
   exit 0
 fi
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[ -r "$SCRIPT_DIR/shared/session-marker.sh" ] && . "$SCRIPT_DIR/shared/session-marker.sh"
 
 # Mechanical validation first: block stop while the docs invariants are broken (HC-007).
 VALIDATOR="$PROJECT_DIR/tools/scripts/validate-docs.sh"
@@ -40,6 +52,24 @@ EOF
   fi
 fi
 
+# Did this session write anything since the last reminder? An absent marker
+# means it did not, so there is no close-out owed and the stop goes through.
+#
+# Every path that cannot answer the question falls through to blocking, which is
+# the behaviour before ISS-0056: no session_id in the payload, no marker helper
+# on disk. A check that silently disables itself when its inputs are missing is
+# worse than one that nags.
+SESSION_MARKER=""
+if command -v session_marker >/dev/null 2>&1; then
+  SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty' 2>/dev/null)
+  if [ -n "$SESSION_ID" ]; then
+    SESSION_MARKER=$(session_marker "$SESSION_ID" "$PROJECT_DIR")
+    if [ ! -e "$SESSION_MARKER" ]; then
+      exit 0
+    fi
+  fi
+fi
+
 # Check if focus.task or focus.issue is still set (work in progress). Read the
 # whole focus block, so key order does not matter. This used to pipe the value
 # through `echo "" | jq -r --arg f ... '$f'`, which never runs the filter on an
@@ -52,7 +82,9 @@ FOCUS_TASK=$(focus_value task)
 FOCUS_ISSUE=$(focus_value issue)
 
 if [ -n "$FOCUS_TASK" ] && [ "$FOCUS_TASK" != "" ] && [ "$FOCUS_TASK" != "null" ]; then
-  # Focus task is still set — might need close-out
+  # Focus task is still set — might need close-out. Spend the marker: the next
+  # stop is silent until something is written again.
+  [ -n "$SESSION_MARKER" ] && rm -f "$SESSION_MARKER"
   cat <<EOF
 {
   "decision": "block",
@@ -63,6 +95,7 @@ EOF
 fi
 
 if [ -n "$FOCUS_ISSUE" ] && [ "$FOCUS_ISSUE" != "" ] && [ "$FOCUS_ISSUE" != "null" ]; then
+  [ -n "$SESSION_MARKER" ] && rm -f "$SESSION_MARKER"
   cat <<EOF
 {
   "decision": "block",

@@ -70,7 +70,7 @@ Contract IDs are `HC-001`..`HC-008`. (Earlier revisions of this file used `CHC-0
 
 ## HC-006: Close-out check
 
-- Trigger: before final response after implementation work.
+- Trigger: a stop that follows a write. The two halves differ on purpose: the HC-007 validation below runs on **every** stop, because a broken docs invariant is a failure and not a reminder; the focus half runs only when the session has written a file since its last block.
 - Rule: `LIFECYCLE.md` — "Close-out (must happen after work)"; `QUALITY.md` — "Minimum close-out for any implemented task".
 - The block names two actions: if the work is complete, set the status and clear focus now; if stopping mid-flight for the user, write the handoff into the task note (`HANDOFF.md`, "Before stopping work") and stop. The loop guard lets that second stop through.
 - Check logic:
@@ -78,7 +78,8 @@ Contract IDs are `HC-001`..`HC-008`. (Earlier revisions of this file used `CHC-0
   - `focus` is cleared or moved to the next active item.
   - Metrics and relationships are updated.
   - Required `CHG-*` and `RISK-*` notes exist when behavior, paths, contracts, or hazards changed.
-- Implementations: Claude Code `hooks/close-out-check.sh` (blocking Stop hook, also runs HC-007).
+- The write test: a `PostToolUse` hook records the session's first write; the Stop hook consumes that record when it blocks, so the reminder arrives once per burst of work rather than once per turn. `focus` is durable project state and says nothing about what a turn did, so reading it alone charged a forced continuation to every stop, questions included, in any repo whose focus item was parked (project-os-dev ISS-0056). Every path that cannot answer the question — no session identifier in the payload, no recorder on disk — blocks, because a check that disables itself when its input is missing is worse than one that nags. A session that writes through the shell rather than the editing tools records nothing and is not reminded; ISS-0056 holds the alternatives that were weighed.
+- Implementations: Claude Code `hooks/close-out-check.sh` (blocking Stop hook, also runs HC-007) with `hooks/session-touch.sh` (`PostToolUse`) as its recorder, sharing one path formula in `hooks/shared/session-marker.sh`. Tools without a per-session identifier implement the focus half unconditionally.
 - On failure: complete the missing close-out work before stopping.
 
 ## HC-007: Mechanical docs validation
