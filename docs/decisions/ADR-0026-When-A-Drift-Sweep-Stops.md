@@ -21,6 +21,11 @@ related: ["[[ADR-0024-A-Normative-Rule-Is-Stated-Once]]", "[[ADR-0013-Independen
 
 ## Context
 
+> [!quote] As raised — 2026-09-04 (user:edwin)
+> I am a bit concerned about the running of the independent reviewer, it seems to delay the task completion significantly and I cannot say if this is actually beneficial, since I don't know if the reviewer is actually reviewing the right things and pushes the implementer in the right direction or steers it in the wrong direction. Instead it might be better to limit the number of review cycles significantly and/or have a human acceptance test in the loop somehow/womewhere. Review this and push back if required and suggest solutions.
+
+Two mechanisms were in scope for that question and only one of them is expensive, so this ADR separates them. The **independent review gate** (`QUALITY.md`) fires on three status transitions and has produced 18 recorded verdicts across this project's history: 16 approved, 2 changes-requested. That is not where the time goes, and an 11% changes-requested rate is real signal rather than a rubber stamp, so this ADR proposes no change to it. The **docs-audit quiescence rule** is the expensive one, and it is what follows.
+
 The docs-audit skill ends with a quiescence rule: the audit is complete only after **two consecutive full passes find zero new defects**. That rule has now been tested harder than any other rule in this project, and it does not hold.
 
 Twelve clean-context passes have run over the template under [[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File|ISS-0048]]. The findings per pass:

@@ -131,6 +131,8 @@ Each pass is a full read of the domain in a clean context, as the docs-audit ski
 
 ## In flight (handoff, 2026-09-04)
 
+**Why focus is still set.** This issue is not resting; it is blocked on one decision, [[ADR-0026-When-A-Drift-Sweep-Stops|ADR-0026]]. Deciding it says how many more passes run, which is the only thing standing between here and a close. Do not resume sweeping before it is decided -- another pass would answer the question by fait accompli.
+
 **Where this stands.** Pass 12 has returned and is recorded below: 25 findings, four of four spot-checked confirmed real, and almost none of them the same findings as pass 11's. Its fixes are **not** applied -- the pass is recorded, the high-severity hook bug is filed as [[ISS-0051-The-Verification-Hook-Blocks-Every-Feature-That-Follows-The-Acceptance-Rule|ISS-0051]], and the rest await the decision below.
 
 **The quiescence rule looks unreachable and the evidence is now strong enough to say so.** Twelve passes have run. The per-pass counts are 36, 26, 2, 3, 2, 2, 0, 21, 2, 5, 25, 25. Pass 7 was clean and pass 8 found 21. Pass 11 found 25, every one was fixed, and pass 12 then found 25 more that pass 11 had not raised. A clean-context pass over ~130 files samples a different subset of the defect space each time; it does not converge on it. "Two consecutive passes find nothing" assumes convergence, and this corpus does not converge. Edwin raised exactly this concern on 2026-09-04; the options are in the reply and no decision is recorded yet.
@@ -154,6 +156,8 @@ Pass 12's remaining findings are unfixed and stay that way until the ADR is deci
 The measurement behind that reply, kept because it is the argument: the per-pass counts are 36, 26, 2, 3, 2, 2, 0, 21, 2, 5, 25, 25; 17 of 17 spot-checked findings across passes 11 and 12 were real; the recorded independent-review gate stands at 16 approved against 2 changes-requested. The reviewer is accurate and the termination rule is what does not work.
 
 **A retracted finding, 2026-09-04.** An earlier version of this handoff said `close-out-check.sh` keeps no record of whether a handoff was written and therefore blocks every stop, making its own message false. That was wrong, and it is corrected here rather than deleted because a retraction that leaves no trace is how a wrong finding gets re-filed. The hook reads `stop_hook_active` from the payload and exits 0 when it is true (`close-out-check.sh:16-19`), and `test-hooks.sh` asserts exactly that ("the loop guard lets the second stop through"). It blocked twice in that session because each stop followed new work and was a fresh stop, which is the intended behaviour. No defect; nothing to file.
+
+**Done since the pause, 2026-09-04.** Edwin asked for two things and both landed. [[ISS-0051-The-Verification-Hook-Blocks-Every-Feature-That-Follows-The-Acceptance-Rule|ISS-0051]] is `fixed` (template `ad61433`, synced here): the HC-003 hook gained the validator's two exemptions, HC-003 states them once for both gates to read, a waiver needs an expiry in both, and TST-0007 gained six assertions that fail against the old logic. [[ADR-0026-When-A-Drift-Sweep-Stops|ADR-0026]] is written and `proposed` at option 5, carrying Edwin's concern verbatim and three open acceptance criteria. Recorded as [[CHG-20260904-The-Verification-Gate-Stops-Blocking-Acceptance-Checks]].
 
 **Approaches set aside.**
 
