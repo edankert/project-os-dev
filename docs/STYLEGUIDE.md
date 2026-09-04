@@ -19,7 +19,4 @@ Markdown conventions:
 - Put “Next actions” at the end of work notes.
 - Prefer file links to real repo entrypoints and artifacts (scripts, configs, logs).
 
-Status conventions (canonical list lives in templates):
-- Tasks: `backlog|next|doing|blocked|done`
-- Issues: `triage|open|in-progress|blocked|fixed|closed`
-- Features: `backlog|planned|in-progress|in-review|done`
+Status values and transitions are stated once, in `../tools/instructions/STATUSES.md`.

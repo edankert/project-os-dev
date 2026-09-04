@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 28
-  ISS: 48
+  ISS: 50
   PHASE: 3
   REL: 0
   REQ: 27
@@ -42,8 +42,8 @@ focus:
   task: ""
   feature: ""
   phase: "PHASE-0003"
-  issue: ""
-  note: "PHASE-0003 implemented 2026-09-03: FEAT-0024 to FEAT-0027, ISS-0003, ISS-0041 to ISS-0045 and ISS-0047 fixed in 40-odd template commits, every test reviewed and approved; ten downstream repos synced, uncommitted. Open: ISS-0048 (36 restatements, REQ-0027 waits on it), ISS-0046, and this repo's own sync behind 47 pre-existing validator errors."
+  issue: "ISS-0048"
+  note: "ISS-0048 is the one thing left in PHASE-0003, and REQ-0027 cannot tick its first and third criteria until it closes. Pass 11 (2026-09-04, template 19ba330) read wider than passes 9 and 10 and found 25 restatements plus 10 bad citations, so no clean pass stands. The Obsidian views the template ships filter on statuses the state model retired, which is a defect a reader sees rather than prose drift. Everything else in PHASE-0003 is done: ISS-0046 is fixed and this repo's own 47 validator errors were cleared in a66dab7."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -664,14 +664,30 @@ items:
       component: adapters-hooks
       note: "Point 3, a file outside every project-os repo denied on the session repo's empty focus, fixed in template commit 7b6890f (2026-09-03); assertions 31 to 34 of TST-0007. Points 1 and 2 were fixed upstream in July."
       related: [FEAT-0002, FEAT-0027, TST-0007]
+    ISS-0050:
+      file: "docs/issues/ISS-0050-Surface-Statuses-Live-Outside-The-File-That-Enforces-Them.md"
+      status: triage
+      severity: low
+      phase: "[[PHASE-0003]]"
+      component: docs
+      note: "STATUSES.md says it is the single source for item state and has no surface section; the list is in TAXONOMY.md, where nothing enforces it. Moving it starts erroring in downstream repos, so the move is a decision."
+      related: [ISS-0048, ADR-0024]
+    ISS-0049:
+      file: "docs/issues/ISS-0049-The-Schema-Claims-A-Refusal-The-Shipped-Validator-Does-Not-Make.md"
+      status: triage
+      severity: high
+      phase: "[[PHASE-0003]]"
+      component: tooling
+      note: "SCHEMAS.md tells every repo the validator refuses seven removed acceptance fields. The validator pre-commit and CI run refuses none and still reads mark:; the cockpit's copy refuses twelve. Decide which way the two converge."
+      related: [ISS-0048, ADR-0024, ADR-0025]
     ISS-0048:
       file: "docs/issues/ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File.md"
       status: open
       severity: medium
       phase: "[[PHASE-0003]]"
       component: docs
-      note: "The first drift sweep under ADR-0024 (2026-09-03, clean context) found 36 restatements, 15 disagreeing, and 6 borderline. Three rows need a decision first (the acceptance verdict model with ISS-0046, the Codex change-note timing, the metrics owner)."
-      related: [ADR-0024, REQ-0027, ISS-0046]
+      note: "Eleven sweep passes since 2026-09-03; no clean pair yet. Pass 11 (2026-09-04) read the widest domain of any pass and found 25 restatements plus 10 bad citations, including Obsidian views filtering on retired statuses. Two rows split off as ISS-0049 and ISS-0050."
+      related: [ADR-0024, REQ-0027, ISS-0046, ISS-0049, ISS-0050]
     ISS-0047:
       file: "docs/issues/ISS-0047-DECISION-RULE-Vanished-From-The-Template-Validator.md"
       status: fixed
@@ -1416,7 +1432,7 @@ metrics:
     tests_passing: 0
     tests_failing: 0
     issues_open: 26
-    issues_triage: 0
+    issues_triage: 2
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 27

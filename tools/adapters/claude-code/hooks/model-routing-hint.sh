@@ -71,9 +71,6 @@ case "$STATUS" in
   review)
     HINT="$WHERE (review): verification goes to the 'independent-reviewer' subagent, a clean context that starts from the notes and the diff."
     ;;
-  blocked)
-    HINT="$WHERE: resolve or re-scope the blocker (depends:) before implementing; do not work around it quietly."
-    ;;
   deferred)
     HINT="$WHERE (parked, not terminal): re-adopt it per STATUSES.md before working it, or pick other work."
     ;;

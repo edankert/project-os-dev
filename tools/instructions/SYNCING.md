@@ -12,45 +12,15 @@ tags: [instructions, sync]
 
 Use this when the project-os template lives outside the dev repo and you want to pull updates safely.
 
-## Template-owned (safe to sync)
-- `tools/instructions/`
-- `tools/skills/`
-- `tools/agents/`
-- `tools/adapters/`
-- `tools/cockpit/`
-- `tools/scripts/`
-- `docs/__templates__/`
-- `docs/__bases__/`
-- `docs/phases/`
-- `docs/README.md`
-- `docs/INDEX.md`
-- `docs/PHASES.md`
-- `CONTEXT.md`
-- `AGENTS.md`
-- `LLM_BRIEF.md`
-- Optional: `SECURITY.md`, `ROADMAP.md`
-- Optional seed only: `docs/reference/README.md` when the downstream file does not already exist
-- Optional seed only: `.github/workflows/validate-docs.yml` when the downstream file does not already exist (downstream repos own their CI config; the seed just wires up the docs validator)
-- Optional seed only: `.github/workflows/link-check.yml` (weekly lychee external-URL check), `.prettierrc`, `.markdownlint.jsonc`, `.yamllint.yml` — lint/format configs are seeded once and owned downstream after that
-- Regenerated, not synced: `.claude/skills/`, `.claude/agents/`, `.cursor/rules/` are derived from the synced playbooks by `python3 tools/scripts/generate-adapters.py` (the sync script runs it automatically when `python3` is available). Treat them as template-owned build outputs; never hand-edit.
+## Who owns which path
 
-## Project-owned (do NOT overwrite)
-- `SNAPSHOT.yaml`
-- `docs/features/`
-- `docs/issues/`
-- `docs/requirements/`
-- `docs/tests/`
-- `docs/changes/`
-- `docs/decisions/`
-- `docs/workflows/` (except template updates you explicitly choose to merge)
-- `docs/reference/`
-- `docs/research/`
-- Other project-specific docs subdirectories
-- Runtime artifacts produced by `tools/cockpit/run.sh`, such as `tools/cockpit/.venv/`
+`../sync/MANIFEST.yaml` says, per path, whether the template owns a file or the project does. It is the only place that list lives, and the sync script reads it; a list repeated here is one the next path change forgets to update, which is how `.github/workflows/validate-docs.yml` stayed `seed` and stopped carrying validator changes downstream (TASK-0072).
 
-`docs/changes/` is intentionally project-owned: upstream template change notes describe the evolution of project-os itself, while downstream change notes describe the downstream project after init. Keep those histories separate unless a downstream project deliberately imports upstream template history for audit purposes.
+Two ownership choices need the reason kept with them, because the path alone does not explain them:
 
-`docs/reference/` and other non-lifecycle docs areas are intentionally project-owned: upstream may provide a starter README, but downstream projects use these areas for source, evidence, registry, background, research, and publication material. Template sync must not overwrite them.
+`docs/changes/` is project-owned on purpose. Upstream change notes describe the evolution of project-os itself; downstream ones describe the downstream project after init. Keeping the histories separate is the point, unless a downstream project deliberately imports upstream history for audit.
+
+`docs/reference/` and the other non-lifecycle docs areas are project-owned on purpose. Upstream seeds a starter README, and after that the downstream project uses the area for source, evidence, registry, background, research and publication material. A sync must not overwrite any of it.
 
 ## How sync decides what to touch (manifest + baseline)
 

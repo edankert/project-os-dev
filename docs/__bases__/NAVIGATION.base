@@ -77,7 +77,7 @@ views:
       and:
         - type == "[[issue]]"
         - status != "fixed"
-        - status != "closed"
+        - status != "declined"
     groupBy:
       property: parent
       direction: ASC
@@ -99,7 +99,7 @@ views:
     filters:
       and:
         - type == link("feature")
-        - status.containsAny("backlog", "planned", "in-progress", "in-review")
+        - status.containsAny("backlog", "planned", "doing", "review")
     groupBy:
       property: phase
       direction: ASC
@@ -123,7 +123,7 @@ views:
     filters:
       and:
         - type == link("issue")
-        - status.containsAny("triage", "open", "in-progress", "blocked", "reopened")
+        - status.containsAny("triage", "open")
     groupBy:
       property: parent
       direction: ASC

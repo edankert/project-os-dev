@@ -18,5 +18,4 @@ Use phase notes when a project needs durable milestone definitions with links to
 - `PHASE-####-Short-Name.md`
 
 ## Status lifecycle
-- `planned` -> `active` -> `done`
-- `planned` -> `deferred`
+Stated once, in `../../tools/instructions/STATUSES.md` `[[phase]]`.

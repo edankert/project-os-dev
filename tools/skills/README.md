@@ -49,3 +49,5 @@ The numbers in a checklist are for reference, not an order. Steps that do not de
 - Ad-hoc prompt intake: `ad-hoc-intake/SKILL.md`
 - Inbox triage: `inbox-triage/SKILL.md` — the same decision applied to an artefact someone left in `inbox/`
 - Adapter sync: `adapter-sync/SKILL.md`
+- Release preparation: `release-prep/SKILL.md`
+- Release verification: `release-verification/SKILL.md`

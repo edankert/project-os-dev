@@ -22,6 +22,7 @@ Primary entrypoints for this documentation system.
 - Reference note template: `__templates__/reference.md`
 - Lifecycle rules: `../tools/instructions/LIFECYCLE.md`
 - Markdown authoring rules: `../tools/instructions/MARKDOWN.md`
+- Writing clearly (prose, commit messages, replies): `../tools/instructions/WRITING.md`
 - Snapshot rules: `../tools/instructions/SNAPSHOT.md`
 - Status taxonomy: `../tools/instructions/STATUSES.md`
 - Taxonomy values: `../tools/instructions/TAXONOMY.md`

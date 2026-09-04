@@ -32,6 +32,7 @@ Map project-os instructions to scoped rule files:
 | SNAPSHOT.md | `.cursor/rules/snapshot.mdc` | `SNAPSHOT.yaml` |
 | TRACEABILITY.md | `.cursor/rules/traceability.mdc` | `docs/**/*.md` |
 | OBSIDIAN.md | `.cursor/rules/obsidian.mdc` | `docs/**/*.md` |
+| MARKDOWN.md | `.cursor/rules/markdown.mdc` | `**/*.md` |
 
 ### Generating .cursor/rules/
 

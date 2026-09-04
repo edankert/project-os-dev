@@ -29,6 +29,7 @@ These files contain detailed rules. Read them when performing the related operat
 ## Skill playbooks (read before performing these operations)
 
 - Issue intake: tools/skills/issue-intake/SKILL.md
+- Phase planning: tools/skills/phase-planning/SKILL.md
 - Feature scaffold: tools/skills/feature-scaffold/SKILL.md
 - Task breakdown: tools/skills/task-breakdown/SKILL.md
 - Close-out: tools/skills/close-out/SKILL.md
@@ -47,9 +48,11 @@ These files contain detailed rules. Read them when performing the related operat
 - Risk mitigation: tools/skills/risk-mitigation-planning/SKILL.md
 - Impact analysis: tools/skills/impact-analysis/SKILL.md
 - Adapter sync: tools/skills/adapter-sync/SKILL.md
+- Release preparation: tools/skills/release-prep/SKILL.md
 - Release verification: tools/skills/release-verification/SKILL.md
 - Project init: tools/skills/project-init/SKILL.md
 - Project derive: tools/skills/project-derive/SKILL.md
+- Design authoring: tools/skills/design-authoring/SKILL.md
 
 ## Key Files
 - `SNAPSHOT.yaml` — canonical project state

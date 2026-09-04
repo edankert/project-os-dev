@@ -30,7 +30,7 @@ Which snapshot fields are derived from the notes, and by what, is `LIFECYCLE.md`
 ## Two things that are not statuses
 
 - **Blocked-ness** is `depends: [ID]`; an item can be blocked while still `doing`, which a status cannot express.
-- **Staleness** is computed from `last_verified:` by the validator; a typed `stale` would reintroduce the assertion problem ADR-0010 removed.
+- **Staleness** is computed from `last_verified:` by the validator; a typed `stale` would reintroduce the assertion problem ADR-0010 removed. A manual verification goes stale after **90 days**, which a repo overrides with `verification.staleness_days` in `SNAPSHOT.yaml`.
 
 ## Grandfathering
 

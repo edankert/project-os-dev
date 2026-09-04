@@ -91,25 +91,24 @@ fixture "$TMP/review" "" done FEAT-0001 review ""
 h_rev="$(hint "$TMP/review")"
 check "hint, review state: sends verification to the reviewer" "$(has "$h_rev" "'independent-reviewer'"; echo $?)" "$h_rev"
 h_doing="$(hint "$TMP/doing")"
-# The three remaining arms of the case statement: blocked, deferred, and the
-# terminal list (a focused task at `done`). Review found them unguarded: a
-# review sentence inserted into the terminal arm, or a padded blocked arm,
-# passed every assertion (TST-0007 round 1, finding 9).
-fixture "$TMP/blocked" TASK-0001 blocked FEAT-0001 doing "";   h_blocked="$(hint "$TMP/blocked")"
+# The two remaining arms of the case statement: deferred and the terminal list
+# (a focused task at `done`). Review found them unguarded: a review sentence
+# inserted into the terminal arm passed every assertion (TST-0007 round 1,
+# finding 9). There is no `blocked` arm to cover -- `blocked` is not a status
+# in STATUSES.md, and blocked-ness is `depends:`.
 fixture "$TMP/deferred" TASK-0001 deferred FEAT-0001 doing ""; h_deferred="$(hint "$TMP/deferred")"
 fixture "$TMP/terminal" TASK-0001 done FEAT-0001 doing "";     h_terminal="$(hint "$TMP/terminal")"
 check "hint, terminal state: says nothing is in flight and who writes the next note" "$( { has "$h_terminal" 'nothing in flight' && has "$h_terminal" "'planner'"; }; echo $?)" "$h_terminal"
-check "hint, blocked state: names the blocker, not a delegation" "$( { has "$h_blocked" 'blocker' && hasnot "$h_blocked" "'planner'"; }; echo $?)" "$h_blocked"
 check "hint, deferred state: says to re-adopt first" "$(has "$h_deferred" 're-adopt'; echo $?)" "$h_deferred"
-for pair in "empty:$h_empty" "planning:$h_plan" "doing:$h_doing" "blocked:$h_blocked" "deferred:$h_deferred" "terminal:$h_terminal"; do
+for pair in "empty:$h_empty" "planning:$h_plan" "doing:$h_doing" "deferred:$h_deferred" "terminal:$h_terminal"; do
   name="${pair%%:*}"; text="${pair#*:}"
   check "hint, $name state: no review sentence" "$(hasnot "$text" 'independent-reviewer'; echo $?)" "$text"
 done
 
 # Size bound (TASK-0103): at most 3 lines and 600 characters in every one of
-# the seven states, so the hint never grows into the SessionStart slice
+# the six states, so the hint never grows into the SessionStart slice
 # FEAT-0021 serves.
-for pair in "empty:$h_empty" "planning:$h_plan" "doing:$h_doing" "review:$h_rev" "blocked:$h_blocked" "deferred:$h_deferred" "terminal:$h_terminal"; do
+for pair in "empty:$h_empty" "planning:$h_plan" "doing:$h_doing" "review:$h_rev" "deferred:$h_deferred" "terminal:$h_terminal"; do
   name="${pair%%:*}"; text="${pair#*:}"
   lines=$(printf '%s\n' "$text" | wc -l | tr -d ' '); chars=${#text}
   check "hint, $name state: within 3 lines and 600 characters" "$([[ "$lines" -le 3 && "$chars" -le 600 ]]; echo $?)" "$lines lines, $chars chars"

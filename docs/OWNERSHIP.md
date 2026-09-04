@@ -14,19 +14,8 @@ tags: [ownership, teams, groups, users]
 This file is the canonical registry for `owner:` identities used throughout `docs/`, `tools/`, and `SNAPSHOT.yaml`.
 
 ## Rules
-- Every `owner:` value used anywhere must be defined in this file (or be `unassigned`).
-- `team:*` and `group:*` must list membership (at minimum: maintainers/contacts).
-- If a note is owned by a group/rotation, define who maintains the membership list.
-- `system:*` owners are automation identities:
-  - Do not list `system:*` under team/group “Maintainers” or “Members”.
-  - Instead, list automation under an explicit “Automation” section for the owning team/group.
 
-## Owner ID formats
-- Teams: `team:<name>` (long-lived org units)
-- Groups: `group:<name>` (cross-team working groups / rotations)
-- Users: `user:<handle>` (individuals)
-- Systems: `system:<name>` (automation identities)
-- Unassigned: `unassigned`
+This file is a registry of values, not of rules. The allowed owner formats, what membership a `team:*` or `group:*` owes, and how `system:*` automation identities are recorded are stated once, in `../tools/instructions/OWNERSHIP.md`.
 
 ## Teams
 

@@ -21,7 +21,7 @@ import re
 import sys
 from pathlib import Path
 
-TERMINAL_RE = re.compile(r"status:\s*[\"']?(done|fixed|implemented)[\"']?\b")
+TERMINAL_RE = re.compile(r"status:\s*[\"']?(done|fixed)[\"']?\b")
 # REQ is not here: a requirement is never test-gated (STATUSES.md [[requirement]], ADR-0007).
 ID_RE = re.compile(r"\b((?:TASK|ISS|FEAT))-(\d{2,})\b")
 TST_RE = re.compile(r"\bTST-\d{2,}\b")

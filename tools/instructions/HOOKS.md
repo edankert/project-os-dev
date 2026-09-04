@@ -58,8 +58,8 @@ Contract IDs are `HC-001`..`HC-008`. (Earlier revisions of this file used `CHC-0
 
 ## HC-005: Risk-scan trigger
 
-- Trigger: after changes to dependency manifests, environment/configuration surfaces, CI definitions, or artifact paths.
-- Rule: `LIFECYCLE.md` — "Risk scan triggers"; `../skills/risk-scan/SKILL.md`.
+- Trigger: a changed path matching the risk-scan trigger list.
+- Rule: `LIFECYCLE.md` — "Risk scan triggers" (the list); `../skills/risk-scan/SKILL.md`.
 - Check logic: match the changed path against the risk-scan trigger list in `LIFECYCLE.md`; when it matches, a `RISK-*` note must be created or updated per `../skills/risk-scan/SKILL.md`.
 - Implementations: Claude Code `hooks/risk-scan-trigger.sh` (PostToolUse advisory).
 - On failure: warn; close-out (HC-006) verifies the `RISK-*` note exists when hazards changed.

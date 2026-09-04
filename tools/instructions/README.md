@@ -28,6 +28,7 @@ This directory contains **normative instructions** for how documentation and aut
 - Ownership: `OWNERSHIP.md`
 - Traceability: `TRACEABILITY.md`
 - Markdown authoring: `MARKDOWN.md`
+- Writing clearly (prose, commit messages, replies): `WRITING.md`
 - Decisions/ADRs: `DECISIONS.md`
 - Quality/close-out: `QUALITY.md`
 - Hook contracts: `HOOKS.md`

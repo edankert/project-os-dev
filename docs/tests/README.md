@@ -30,4 +30,4 @@ Feature-scoped tests live under `docs/features/<feature-slug>/plan/tests/`.
 - The LLM updates:
   - the test note (`status` and evidence for a manual test; a test with a `command:` records no verdict, ADR-0025)
   - `../../SNAPSHOT.yaml` (`items.tests.*.status` + links)
-  - any gated items (task done / issue closed / requirement verified)
+  - any gated items, at the terminal statuses `../../tools/instructions/STATUSES.md` allows

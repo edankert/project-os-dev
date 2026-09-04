@@ -55,12 +55,7 @@ Use the `phase` property in Obsidian Bases or queries to group items by mileston
 
 ## Operational rules for LLMs
 
-1. **Verify phase alignment**: check the item's `phase` against `focus.phase` before starting work.
-2. **Consult this registry** and the relevant `PHASE-*` note for the phase's boundaries.
-3. **Prevent phase bleeding**: do not introduce implementations from future phases prematurely.
-4. **Flag scope concerns**: if work requires future-phase dependencies, document it and discuss before proceeding.
-
-Full rules in `../tools/instructions/LIFECYCLE.md`, "Phase alignment".
+The phase-alignment rules are stated once in `../tools/instructions/LIFECYCLE.md`, "Phase alignment (optional gating)": verify the phase before starting, consult this registry, do not build a later phase's work early, and a task that needs a future-phase dependency is the user's decision (`../tools/instructions/LIFECYCLE.md`, "When to pause for the user").
 
 ## History
 

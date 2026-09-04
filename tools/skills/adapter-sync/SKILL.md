@@ -31,6 +31,6 @@ tags: [skills, adapters]
 2. Review changed files under `../../../tools/instructions/` and `../../../tools/skills/` for contract changes the generator cannot derive (startup order, docs-first rules, verification gates, close-out expectations).
 3. Update `../../../AGENTS.md` if any of those changed (it is the generic/Codex startup contract).
 4. Update `../../../LLM_BRIEF.md` if important paths, commands, or invariants changed.
-5. Update `../../../tools/instructions/HOOKS.md` if hook contracts (HC-*) changed, and keep `../claude-code/ADAPTER.md`'s hook table consistent with it.
+5. Update `../../../tools/instructions/HOOKS.md` if hook contracts (HC-*) changed, and keep `../../adapters/claude-code/ADAPTER.md`'s hook table consistent with it.
 6. Preserve project-specific sections in downstream repositories when regenerating root files; generated `.claude/`/`.cursor/` artifacts carry a do-not-edit header and may be overwritten freely.
 7. Confirm `CLAUDE.md`'s instruction imports and skill index still match `tools/instructions/` and `tools/skills/` contents.

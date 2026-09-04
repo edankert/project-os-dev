@@ -8,10 +8,10 @@ phase: "[[PHASE-0003]]"
 severity: medium
 owner: user:edwin
 created: 2026-09-03
-updated: "2026-09-03"
+updated: "2026-09-04"
 component: docs
 source: ["The docs-audit drift sweep (dimension 6) run over the template on 2026-09-03 at the close of PHASE-0003, pass 1, in a clean context"]
-related: ["[[ADR-0024-A-Normative-Rule-Is-Stated-Once]]", "[[REQ-0027-Every-Normative-Rule-Is-Stated-Once]]", "[[ISS-0006-Status-Transition-Test-Gates-Requirements]]", "[[ISS-0041-Four-Files-Still-Require-A-Different-Model-Family]]", "[[ISS-0042-Grandfathering-Is-Described-Two-Incompatible-Ways]]", "[[ISS-0043-Release-Skills-And-Two-Templates-Use-Retired-Vocabulary]]", "[[ISS-0046-Release-Verification-Still-Writes-Test-Verdicts-By-Hand]]"]
+elated: ["[[ISS-0049-The-Schema-Claims-A-Refusal-The-Shipped-Validator-Does-Not-Make]]", "[[ISS-0050-Surface-Statuses-Live-Outside-The-File-That-Enforces-Them]]", "[[ADR-0024-A-Normative-Rule-Is-Stated-Once]], "[[REQ-0027-Every-Normative-Rule-Is-Stated-Once]]", "[[ISS-0006-Status-Transition-Test-Gates-Requirements]]", "[[ISS-0041-Four-Files-Still-Require-A-Different-Model-Family]]", "[[ISS-0042-Grandfathering-Is-Described-Two-Incompatible-Ways]]", "[[ISS-0043-Release-Skills-And-Two-Templates-Use-Retired-Vocabulary]]", "[[ISS-0046-Release-Verification-Still-Writes-Test-Verdicts-By-Hand]]"]
 tasks: []
 tests: []
 ---
@@ -107,7 +107,7 @@ Each rule has one home file; every other document links to it. The docs-audit dr
 - [x] Decide row 11: Edwin, 2026-09-03, the sync script owns it and the repair flag stays; SNAPSHOT.md says both (`80a5b5c`).
 - [x] Fix the fifteen disagreeing rows first (1, 3, 4, 8, 9, 10, 11, 12, 14, 16, 17, 18, 30, 31, 32), one commit per home file, deleting the copy and linking. Template commits `ab94b0c`, `edec25d`, `80a5b5c`, `01ac917`, `09ae4dc`.
 - [x] Then the twenty-one agreeing rows and the borderline six. Same commits; pass 2 (at `5cf6ded`) found 26 rows gone, 10 still restated and 8 new sites, all taken up in `09ae4dc`.
-- [ ] Re-run the sweep until two consecutive passes find nothing (docs-audit quiescence rule), and record the passes in a change note.
+- [ ] Re-run the sweep until two consecutive passes find nothing (docs-audit quiescence rule), and record the passes in a change note. No clean pass currently stands: pass 7 was clean, pass 8 re-read the corpus without the earlier tables and found 21, and passes 9 to 11 found 2, 5 and 25. Pass 11's count is the widest domain any pass has read, not a regression -- it was the first to open the `.base` views, `docs/STYLEGUIDE.md`, `docs/releases/README.md`, `MANIFEST.yaml` and the rule-bearing regions of `validate-docs.py`.
 - [ ] Reconsider the RULE-ONCE check when the count reaches zero (ADR-0024, Acceptance).
 
 ## Sweep passes
@@ -126,7 +126,8 @@ Each pass is a full read of the domain in a clean context, as the docs-audit ski
 | 8 | `1afc71e` | read fresh without the earlier tables: 21 confirmed (enum values in the test template and SCHEMAS.md, the no-verdict and clean-context rules restated in skills, the close-out steps in QUALITY.md, the edit boundaries in AGENTS.md, the pause clause quoted at two sites, the negative-result convention with no home, and one contradiction in enforcement: HC-003 test-gated requirements), 2 mis-citations | fixed in `277c46d` |
 | 9 | `653f9c6` | 2 at the pointer-gloss boundary, both in the Claude Code adapter (the enforcement mechanics beside the QUALITY.md pointer; the definition of independence beside its pointer) | fixed in `bb6f8f7` |
 | 10 | `bb6f8f7` | 5 (TESTING.md restating the review-is-the-walk rule; CONTEXT.md the feature links; README.md the project-owned path list; the plan template comment; inbox-triage) | fixed in `19ba330` |
-| 11 | `19ba330` | recorded when it returns | |
+| 11 | `19ba330` | 25 restatements and 10 bad citations, read wider than any pass since 8: the shipped Bases views and five more files still filtering on statuses PHASE-0002 retired; `SYNCING.md` contradicting `MANIFEST.yaml` on sync ownership; `SCHEMAS.md` contradicting itself on `tier` and claiming a refusal no shipped validator makes; `docs/OWNERSHIP.md` restating the rules its instruction file owns; the staleness window and HC-005's trigger list with no home; four index files behind their directories | fixed in `acdcccb`, `7c13209`, `e2bee28`; two decisions split out as [[ISS-0049-The-Schema-Claims-A-Refusal-The-Shipped-Validator-Does-Not-Make|ISS-0049]] and [[ISS-0050-Surface-Statuses-Live-Outside-The-File-That-Enforces-Them|ISS-0050]] |
+| 12 | `e2bee28` | recorded when it returns | |
 
 ## Sibling search
 

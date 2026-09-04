@@ -55,8 +55,8 @@ Present the results as a table:
 | TST-0005 | acceptance | walked | active | (ledger) | FEAT-0008 | 2026-03-07 | BLOCKED |
 | TST-0012 | e2e | command: | active | (CI) | FEAT-0008 | 2026-03-07 | CI |
 | TST-0014 | system | manual | passing | 2026-03-01 | FEAT-0008 | 2026-03-07 | STALE |
-| TST-0018 | acceptance | ready | — | FEAT-0015 | 2026-03-06 | UNTESTED |
-| TST-0020 | acceptance | failing | 2026-03-05 | FEAT-0003 | 2026-03-04 | FAILING |
+| TST-0018 | acceptance | walked | active | (ledger: no entry) | FEAT-0015 | 2026-03-06 | UNTESTED |
+| TST-0020 | acceptance | walked | active | (ledger: fail) | FEAT-0003 | 2026-03-04 | FAILING |
 ```
 
 ### 5. Check the acceptance suite

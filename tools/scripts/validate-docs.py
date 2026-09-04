@@ -13,7 +13,7 @@ TRACEABILITY.md define by convention:
   5. Link-graph integrity: every ID referenced from snapshot relationship
      fields or note frontmatter resolves to a snapshot item or a note file.
   6. Verification invariant: no item may hold a terminal status
-     (task done, issue closed, feature done) unless
+     (task done, issue fixed, feature done) unless
      every linked TST-* is status: passing — or the note carries an explicit
      recorded waiver (frontmatter key: verification_waiver).
   7. Deferral invariants (STATUSES.md "Deferral and re-adoption"): deferred
@@ -126,8 +126,8 @@ ALLOWED_STATUS = {
     #               badge. That is the same construction the `check` type used,
     #               kept after the type itself is gone: the gates are keyed on
     #               statuses this population does not hold.
-    #   `retired` -- terminal, and the only removal (TESTING.md: acceptance
-    #               checks are "never removed, only deprecated"). It also closes
+    #   `retired` -- terminal, and the only removal (TESTING.md: "Nothing
+    #               removes a check"). It also closes
     #               ISS-0178, which sat `deferred` because a test whose subject
     #               was deleted had no honest status: leave it `passing` and it
     #               claims to verify a deleted surface; delete it and
@@ -821,7 +821,8 @@ def promotion_emit(report, gate, grandfathered, item_id):
     return report.error
 
 #: Default staleness window for MANUAL verification (ADR-0010 / REQ-0023).
-#: Overridable per repo via `verification.staleness_days` in SNAPSHOT.yaml.
+#: Stated for readers in tools/instructions/STATUSES.md, "Two things that are
+#: not statuses"; this is the implementation of that number.
 DEFAULT_STALENESS_DAYS = 90
 
 

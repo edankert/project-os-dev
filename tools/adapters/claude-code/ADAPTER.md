@@ -80,6 +80,7 @@ These files contain detailed rules. Read them when performing the related operat
 - Independent review: tools/skills/independent-review/SKILL.md
 - Docs audit: tools/skills/docs-audit/SKILL.md
 - Ad-hoc intake: tools/skills/ad-hoc-intake/SKILL.md
+- Inbox triage: tools/skills/inbox-triage/SKILL.md
 - Workflow authoring: tools/skills/workflow-authoring/SKILL.md
 - Backlog grooming: tools/skills/backlog-grooming/SKILL.md
 - Risk mitigation: tools/skills/risk-mitigation-planning/SKILL.md
@@ -89,13 +90,14 @@ These files contain detailed rules. Read them when performing the related operat
 - Adapter sync: tools/skills/adapter-sync/SKILL.md
 - Project init: tools/skills/project-init/SKILL.md
 - Project derive: tools/skills/project-derive/SKILL.md
+- Design authoring: tools/skills/design-authoring/SKILL.md
 ```
 
 ### Notes
 
 - The `@` imports inline the content of each file into Claude Code's context when the CLAUDE.md is loaded
 - Core rules (LIFECYCLE) are always imported because it governs every interaction
-- STATUSES and QUALITY are imported too in the reference CLAUDE.md below; the other instruction files are listed as references and read on demand
+- STATUSES and QUALITY are imported too in the reference CLAUDE.md above; the other instruction files are listed as references and read on demand
 - Reference instructions are listed as paths (not imported) to keep context window lean
 - Skill playbooks are listed as paths for the same reason
 
