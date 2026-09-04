@@ -61,19 +61,19 @@ Each item entry must include:
 
 Then type-specific fields, for example:
 - Phase: `order`, `goal`, `features` (FEAT IDs), `requirements` (REQ IDs), `tasks` (TASK IDs), `issues` (ISS IDs)
-- Feature: `goal`, `phase` (optional), `requirements` (REQ IDs), `tasks` (TASK IDs, current scope), `deferred` (TASK IDs descoped out of scope), `issues` (ISS IDs), `tests` (TST IDs), `workflows` (WF IDs), `release`
+- Feature: `goal`, `phase` (optional), `requirements` (REQ IDs), `tasks` (TASK IDs, current scope), `deferred` (TASK IDs descoped out of scope), `issues` (ISS IDs), `workflows` (WF IDs), `release`. A feature does not list its tests: the link is the test's `covers:`, in one direction (ADR-0032, `SCHEMAS.md`)
 - Task: `parent` (FEAT/ISS ID; empty while `deferred`), `origin` (former parent while parked), `phase` (optional, inherit from parent; required forward home while `deferred`), `effort`, `due`, `depends`, `blocks`, `related`
 - Task: (verification) `tests` (TST IDs) when applicable
 - Issue: `severity`, `component`, `phase` (optional), `features` (FEAT IDs), optional `tasks` (TASK IDs), optional `tests` (TST IDs)
 - Requirement: `priority`, `scope`, `phase` (optional), `features` (FEAT IDs), `verifies` (paths/links), optional `tests` (TST IDs)
 - Risk: `likelihood`, `impact`, `related` (IDs), optional `mitigation_tasks` (TASK IDs)
-- Test: `scope`, `level`, `entrypoint`, `requirements` (REQ IDs), optional `features`/`issues`/`tasks` (IDs), optional `artifacts`
+- Test: `scope`, `level`, `entrypoint`, `covers` (what it verifies), `requirements` (REQ IDs), optional `issues`/`tasks` (IDs), optional `artifacts`
 - Workflow: `entrypoints` (paths), optional `inputs`/`outputs`
 - Change: `commit`, `pr`, `issues` (ISS IDs), `features` (FEAT IDs)
 - Decision (ADR): `decision`, `context`, `supersedes`, `superseded`, `related` (IDs)
 - Release: `version`, `tag`, `date`, optional `platform`, `features` (FEAT IDs), `changes` (CHG IDs), `tests_verified` (TST IDs), `previous_release`
 
-The `goal` and `note` prose on any item is at most two sentences each. It is the curation the sync script leaves alone (`LIFECYCLE.md`, "Mandatory Automated Documentation"), and the longer text goes in the note's own Goal or Notes section.
+The `goal` and `note` prose on any item is at most two sentences each, and the longer text goes in the note's own Goal or Notes section. `note` is curation the sync script leaves alone; `goal` is derived from the note's `goal:` field where one exists (`LIFECYCLE.md`, "Mandatory Automated Documentation"), so change it on the note.
 
 ## Invariants
 - `file` must point to an existing note under `../../docs/`, and the note’s frontmatter `id` should match the snapshot key.

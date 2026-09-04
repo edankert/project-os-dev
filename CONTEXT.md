@@ -41,9 +41,13 @@ Keep the content split explicit:
 - `docs/changes/*.md`
 - `SNAPSHOT.yaml`
 
+**Lifecycle-owned (the LLM creates and updates these, under the rules that govern them)**
+- `docs/requirements/REQ-*.md` and `docs/risks/RISK-*.md` — required by `tools/instructions/LIFECYCLE.md` preflight step 4 and close-out step 4. Changing a requirement's acceptance criteria is a different matter and belongs to its owner (`tools/instructions/QUALITY.md`).
+- `docs/decisions/ADR-*.md` — created per `tools/instructions/DECISIONS.md`; an accepted decision is amended, never quietly rewritten.
+- `docs/tests/**`, `docs/phases/PHASE-*.md`, `docs/releases/REL-*.md`, `docs/designs/**`
+
 **Reference (LLM should not change casually)**
 - `docs/ARCHITECTURE.md`, `docs/DESIGN.md`, `docs/STYLEGUIDE.md`
-- `docs/requirements/*`, `docs/risks/*`, `docs/decisions/*`
 - `docs/reference/**/*`, `docs/research/**/*`
 - `tools/*` (operational scripts/instructions)
 

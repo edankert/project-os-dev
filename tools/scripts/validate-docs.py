@@ -163,7 +163,7 @@ ALLOWED_STATUS = {
     #
     # One value each, and that single value carries information: it is the
     # difference between "somebody maintains this" and a field left behind.
-    "reference": {"active"},
+    "reference": {"active", "deprecated"},
     "glossary": {"active"},
 }
 

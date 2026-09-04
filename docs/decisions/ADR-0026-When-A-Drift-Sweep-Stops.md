@@ -8,7 +8,7 @@ owner: user:edwin
 created: 2026-09-04
 updated: "2026-09-04"
 source: ["Edwin, 2026-09-04, asking whether the clean-context review is worth its cost", "[[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File]] passes 1 to 12", "arXiv 2603.16244, More Rounds More Noise", "arXiv 2608.18167, Adversarial Review"]
-decision: "Option 5. A sweep runs one round of three parallel clean-context passes at one commit, unions their findings, requires a reproduction with each, verifies those reproductions, fixes what survives, records the residue and stops. The human sees decisions owed, not findings. Amended at implementation: findings are unioned rather than kept on two-of-three agreement, provisionally, on the reason that discarding a true finding costs more than verifying a false one. Not yet confirmed by the owner, and the overlap it assumes is unmeasured (acceptance criterion 4)."
+decision: "Option 5. A sweep runs one round of three parallel clean-context passes at one commit, unions their findings, requires a reproduction with each, verifies those reproductions, fixes what survives, records the residue and stops. The human sees decisions owed, not findings. Amended at implementation: findings are unioned rather than kept on two-of-three agreement, provisionally, on the reason that discarding a true finding costs more than verifying a false one. Confirmed by the owner 2026-09-04; the overlap it assumes is still unmeasured (acceptance criterion 4)."
 context: "The docs-audit skill says an audit is complete only after two consecutive passes find zero defects. Twelve passes over the project-os template have never produced two clean passes in a row, and the evidence says they cannot: each clean-context pass samples a different part of the corpus rather than converging on it."
 alternatives: ["Keep the quiescence rule and run it less often", "Drop the sweep and rely on the validator", "Require a different model family (settled by ADR-0013)"]
 consequences: ["docs-audit SKILL.md replaces the quiescence rule with one bounded round", "release-prep stops asking for a sweep to quiescence", "REQ-0027 criteria 1 and 3 are reworded off the clean-pair test", "ISS-0048 closes on a recorded residue"]
@@ -90,7 +90,7 @@ Options 2, 3 and 4 are independent of each other and each is an improvement alon
 
 - [x] **The budget number: one round of three parallel passes** — evidence: the research this ADR cites scored single-pass above every multi-turn variant and a three-way ensemble above single-pass, and twelve sequential rounds here never terminated. Landed in `docs-audit/SKILL.md` (template `17edc84`). What one round misses is caught by the cadence, not by re-running.
 - [x] **REQ-0027 criteria 1 and 3 reworded** off the clean-pair test, which no longer exists — see that note. They now tick on a bounded round with its residue recorded.
-- [ ] **Union or agreement, measured rather than assumed:** on the first real ensemble run, record how many findings each of the three passes reported and how many two or more reported. High overlap makes two-of-three affordable and reverses this ADR's amendment; low overlap confirms union on evidence instead of on reasoning. Owner: user:edwin, who accepted option 5 as written and has not confirmed the amendment.
+- [x] **The amendment is confirmed by the owner** — user:edwin, 2026-09-04, "I am happy with that change". Union stands. The overlap rate it assumes is still unmeasured, and the first real ensemble run should record how many findings each pass reported and how many two or more reported: high overlap would make two-of-three affordable again. That is a cheap improvement, not an open question blocking anything.
 - [x] **The recurring finding classes: listed and decided below.** Four of five become mechanical checks; the first is built, the rest are [[ISS-0052-Three-More-Drift-Classes-Should-Be-Checks|ISS-0052]]. This is the RULE-ONCE reconsideration ADR-0024 asked for, and the count that decided it is not 36 but "~25 per pass, indefinitely".
 
 ### The recurring classes
@@ -113,5 +113,10 @@ Taken from passes 11 and 12, the two that read the widest domain. A class is wor
 > [!note] Amend — 2026-09-04 (model:claude-opus-5[1m], at implementation)
 > Option 5's "two of three agreement" is replaced by "union, then verify each reproduction". Recorded here rather than implemented silently, because it changes what was accepted.
 
+> [!note] Confirm — 2026-09-04 (user:edwin)
+> I am happy with that change.
+>
+> Confirming the amendment below: findings are unioned, not kept on two-of-three agreement.
+
 > [!note] Correct — 2026-09-04 (model:claude-fable-5-1, independent review)
-> The amendment's stated evidence was invalid: passes 11 and 12 ran at different commits with pass 11's findings already fixed, so their non-overlap was guaranteed and proves nothing about parallel passes at one commit. Union stands as a provisional default on a stated reason; criterion 4 turns it into a measurement. Whether to amend an accepted decision at all is still owed a confirmation from user:edwin.
+> The amendment's stated evidence was invalid: passes 11 and 12 ran at different commits with pass 11's findings already fixed, so their non-overlap was guaranteed and proves nothing about parallel passes at one commit. Union stands as a provisional default on a stated reason; criterion 4 turns it into a measurement. Whether to amend an accepted decision at all was owed a confirmation from user:edwin, given 2026-09-04.

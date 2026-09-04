@@ -15,7 +15,7 @@ Without Obsidian, the Markdown remains usable; Obsidian wiki-links (`[[...]]`) a
 
 ## How to add new docs
 - Start from a template in `__templates__/`.
-- Use stable IDs (`PHASE-####`, `ISS-####`, `FEAT-####`, `TASK-####`, `ADR-####`, `REQ-####`, `RISK-####`, `TST-####`, `CHG-YYYYMMDD-Short-Description`).
+- Use stable IDs; the prefixes and filename pattern are stated once in `../tools/instructions/OBSIDIAN.md`, "Naming".
 - Keep notes linked (issues → tasks → changes; requirements → features → verification).
 - If using Obsidian, follow the Obsidian-enabled conventions in `../tools/instructions/OBSIDIAN.md`.
 

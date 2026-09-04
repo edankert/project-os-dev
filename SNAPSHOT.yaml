@@ -43,7 +43,7 @@ focus:
   feature: ""
   phase: "PHASE-0003"
   issue: ""
-  note: "The REQ-0027 independent review returned changes-requested on 2026-09-04 and it was right on every count. REQ-0027 is held at approved, not implemented: criterion 1 says every normative rule has one home, and ISS-0048's own residue lists rules that still do not. Narrowing that criterion is Edwin's call. Also owed: he has not confirmed ADR-0026's amendment (union instead of two-of-three), whose first justification was withdrawn as invalid. Open: ISS-0053 (a note with unparseable frontmatter passes silently -- this is how ISS-0048 sat corrupted through eight green runs), ISS-0054 (nine residue rows with no open item), ISS-0052, ISS-0049, ISS-0050. Neither repo is pushed."
+  note: "REQ-0027 is implemented. Edwin narrowed criterion 1 on 2026-09-04: a rule stated twice is a defect only when the copies disagree. Every surviving duplicate was then classified; nine disagreed and are fixed in template ef1f29f, including two documents that claimed the sync script leaves goal: alone when it derives it. ADR-0026's amendment is confirmed. PHASE-0003 is done. Open: ISS-0053 (unparseable frontmatter passes silently -- highest value, it hides anything), ISS-0052 (three more drift classes become checks), ISS-0054 (one stray research report), ISS-0049, ISS-0050. Neither repo is pushed."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -666,11 +666,11 @@ items:
       related: [FEAT-0002, FEAT-0027, TST-0007]
     ISS-0054:
       file: "docs/issues/ISS-0054-Nine-Residue-Findings-Have-No-Open-Item.md"
-      status: triage
+      status: open
       severity: medium
       phase: "[[PHASE-0003]]"
       component: docs
-      note: "ISS-0048 closed on a 14-row residue; nine rows are real, unfixed and recorded only inside a closed note. Triage: fix, split out, or decline with a reason."
+      note: "Triaged 2026-09-04 under Edwin's rule: six rows disagreed and are fixed in template ef1f29f; three are incomplete lists that agree and are left; one remains, the stray research report at the template root."
       related: [ISS-0048, ADR-0026]
     ISS-0053:
       file: "docs/issues/ISS-0053-A-Note-With-Unparseable-Frontmatter-Passes-Silently.md"
@@ -1183,7 +1183,7 @@ items:
     REQ-0027:
       file: "docs/requirements/REQ-0027-Every-Normative-Rule-Is-Stated-Once.md"
       title: "Every normative rule is stated in exactly one file"
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: high
       phase: "[[PHASE-0003]]"
@@ -1468,12 +1468,12 @@ metrics:
     tests_total: 4
     tests_passing: 0
     tests_failing: 0
-    issues_open: 26
-    issues_triage: 4
+    issues_open: 27
+    issues_triage: 3
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 27
-    requirements_implemented: 24
+    requirements_implemented: 25
     risks_open: 0
     releases_total: 0
     decisions_total: 26

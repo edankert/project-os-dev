@@ -43,7 +43,7 @@ When the project uses phases (`../../docs/PHASES.md`):
 - **No orphaned code**: every functional code change (feature, bug fix, behaviour-altering refactor, API change, dependency update) has a task under `docs/features/<slug>/plan/tasks/`. Typo, comment, formatting and documentation-only changes are exempt.
 - **Notes are the authored source of state** (ADR-0009): write a status once, in the note. `tools/scripts/sync-snapshot.py` propagates statuses, `counters` and `metrics.counts` into the snapshot at pre-commit; CI checks it with `--check`. Never hand-copy a status into the snapshot.
 - **Counters rise on their own**: allocating an ID means creating a note, and a deleted note never frees its number.
-- **Membership is still yours**: which items the snapshot carries, and their `goal:` and `note:` prose, are curation the script leaves alone.
+- **Membership is still yours**: which items the snapshot carries, and their `note:` prose, are curation the script leaves alone. `goal:` is derived from the note (ADR-0018); edit it there.
 
 ## Execution (implementation phase)
 - Start code changes only once the planning artifacts exist, and keep `focus` on what is actually being worked.

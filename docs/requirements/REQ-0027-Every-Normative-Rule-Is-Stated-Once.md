@@ -3,7 +3,7 @@ type: "[[requirement]]"
 id: REQ-0027
 aliases: ["REQ-0027"]
 title: "Every normative rule is stated in exactly one file"
-status: approved
+status: implemented
 phase: "[[PHASE-0003]]"
 owner: user:edwin
 created: 2026-09-03
@@ -12,7 +12,7 @@ priority: high
 scope: "tools/instructions/, tools/skills/ and docs/__templates__/ in the project-os template, and the adapter outputs generated from them"
 source: ["[[ADR-0024-A-Normative-Rule-Is-Stated-Once]] option 1", "[[Prompting-Guide-Review-2026-09-03]] findings 1.1 to 1.3"]
 acceptance:
-  - "Every normative rule in the scope has exactly one home file; every other document links to it rather than restating it."
+  - "No normative rule in the scope is stated in two places that disagree. A rule with one home and links to it is the standard; a second copy that says the same thing is tolerated, and a second copy that says something different is a defect (user:edwin, 2026-09-04)."
   - "ISS-0041, ISS-0042 and ISS-0043 are resolved by deleting the restatement and linking, not by correcting another copy."
   - "The six criteria of REQ-0018 remain satisfied after the widening."
   - "The docs-audit skill names this rule as what its instruction/template-drift dimension checks, and the audit runs at each backlog-grooming pass and before each release."
@@ -37,11 +37,23 @@ This widens [[REQ-0018-State-Rules-Stated-Once|REQ-0018]] from state and transit
 
 ## Acceptance Criteria
 
-- [ ] Every normative rule in the scope has exactly one home file; every other document links to it — **not met**, and unticked on independent review 2026-09-04. Twelve sweep passes, 2026-09-03 to 2026-09-04, fixing 36 + 26 + 2 + 3 + 2 + 2 + 21 + 2 + 5 + 25 restatements across template commits `1b5956e` through `e2bee28`. It is not met: [[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File|ISS-0048]]'s own residue records rules still stated twice — six directory READMEs with their own trigger lists, `SNAPSHOT.md` on a feature's `tests:`, `requirements/README.md` on `implements:`. The criterion as written is an absolute over a corpus that keeps changing, so it has the same shape as the quiescence rule [[ADR-0026-When-A-Drift-Sweep-Stops|ADR-0026]] removed: nothing can ever tick it honestly. Narrowing it is a real change to what this requirement promises and belongs to the owner, not to the session that wants it green. Pass 12's residue is on [[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File|ISS-0048]], and the classes that keep recurring become checks ([[ISS-0052-Three-More-Drift-Classes-Should-Be-Checks|ISS-0052]], first one built)
+- [x] No normative rule in the scope is stated in two places that disagree — evidence: twelve sweep passes 2026-09-03/04 fixed 36 + 26 + 2 + 3 + 2 + 2 + 21 + 2 + 5 + 25 restatements (`1b5956e` to `e2bee28`), and the surviving duplicates were then classified one by one. Nine disagreed and are fixed in template `ef1f29f`: the sync script derives `goal:` where two documents said it does not (verified by rewriting a snapshot goal and watching the script restore it), `SNAPSHOT.md` on the two edges ADR-0032 removed, `requirements/README.md` on `implements:`, two READMEs turning a mandatory rule into a preference, `CONTEXT.md`'s edit policy against LIFECYCLE, two ID-prefix lists disagreeing with each other, the validator's `reference` default, and a terminal status inside an "Open" view. The copies that agree are left in place, which is what the narrowed criterion permits
+
 - [x] ISS-0041, ISS-0042 and ISS-0043 are resolved by deletion and linking — evidence: template commits `1b5956e`, `685eef7`, `0049206` (2026-09-03), each deleting the copy and linking the home
 - [x] The six criteria of REQ-0018 remain satisfied — evidence: rows 4, 8, 13 and 14 of ISS-0048 were the state and transition rules restated, and all four were fixed in template commits `ab94b0c` and `09ae4dc`. Re-checked on 2026-09-04 after passes 11 and 12: the status value lists live only in STATUSES.md, the three documents that had grown their own copies (`docs/STYLEGUIDE.md`, `docs/releases/README.md`, `docs/phases/README.md`) now link it, and `BASE-STATUS` enforces the same rule for the shipped views mechanically
 - [x] The docs-audit skill names this rule and the audit runs on cadence — evidence: template commit `c5dc296` (2026-09-03) named the rule; `17edc84` (2026-09-04) replaced "to quiescence" with one bounded round per ADR-0026, and the criterion text above follows it
 - [x] RULE-ONCE decided or declined — evidence: ADR-0024 "Acceptance", the second box: declined for now on a count of 36, 2026-09-03, with the reasons and the condition for reconsidering
+
+## Amendments
+
+**2026-09-04, criterion 1 narrowed by user:edwin (the owner).** It read "every normative rule has exactly one home file; every other document links to it rather than restating it". It now reads: no rule is stated in two places that *disagree*.
+
+> [!quote] As decided — 2026-09-04 (user:edwin)
+> How can we complete REQ-0027, do these duplicate rules contradict, if they do, that is definitely worth fixing if they don't then I am happy leaving them.
+
+Why the original could not be satisfied: it is an absolute over a corpus that keeps changing, so it has the same shape as the quiescence rule [[ADR-0026-When-A-Drift-Sweep-Stops|ADR-0026]] removed — twelve sweep passes fixed 124 restatements and the count never reached zero. An independent review on 2026-09-04 correctly refused a first attempt to tick it, because the residue on [[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File|ISS-0048]] listed rules still stated twice.
+
+What the narrowing keeps and what it gives up. It keeps the failure the rule exists to stop: an agent reading two files and being told two different things, which is what ISS-0006, ISS-0041, ISS-0042 and ISS-0043 all were. It gives up the tidiness argument — a second copy that agrees is now tolerated, and the risk is that it later drifts out of agreement unnoticed. That risk is what the cadence sweep and the checks under [[ISS-0052-Three-More-Drift-Classes-Should-Be-Checks|ISS-0052]] are for, and it is a smaller risk than a requirement nobody can ever satisfy.
 
 ## Why a requirement and not only the ADR
 

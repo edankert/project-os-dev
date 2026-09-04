@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0054
 aliases: ["ISS-0054"]
 title: "Nine residue findings have no open item carrying them"
-status: triage
+status: open
 phase: "[[PHASE-0003]]"
 severity: medium
 owner: user:edwin
@@ -48,9 +48,19 @@ Each surviving finding is carried by an item at an open status, or is explicitly
 
 They live in a table inside a `fixed` note, which no status check reaches and retention will eventually prune from the snapshot.
 
+## Resolution
+
+Triaged 2026-09-04 against user:edwin's rule — a duplicate is a defect when the copies disagree, and tolerated when they agree.
+
+**Fixed** (template `ef1f29f`), because they disagreed: row 1 (`goal:` derivation, the contradiction confirmed empirically), row 2 (`SNAPSHOT.md` on the edges ADR-0032 removed), row 3 (`implements:`), row 8 (`CONTEXT.md`'s edit policy against LIFECYCLE), row 13 (`implemented` inside an "Open" view), and the two READMEs that turned a mandatory rule into a preference.
+
+**Left in place**, because they agree: rows 6, 7 and 12 are incomplete lists rather than disagreements — `metrics.counts` defines 16 of 18 keys, `SNAPSHOT.md`'s required-keys list omits `template:`, `SCHEMAS.md` has no section for three shipped templates. Nothing states a rule twice and differently; a reader is under-served, not misled. Under the owner's rule these are not defects, and they are recorded here rather than fixed.
+
+**Still open**, one row: row 14, the `compass_artifact_...md` research report at the template root with no frontmatter, type or ID. Not a duplicated rule at all — a placement question, and the source of claims quoted inside the instruction files including the quiescence rule ADR-0026 removed.
+
 ## Next Actions
 
-- [ ] Triage the nine: fix outright, split into their own `ISS-*`, or decline with a reason. Row 1 needs a decision before its prose can be fixed either way.
+- [ ] Row 14: move the research report under `docs/reference/` as a `reference` note, or delete it if its claims are now carried by ADR-0026 and ADR-0013.
 - [ ] Consider whether closing a sweep should require its residue rows to be filed, not merely written down. This issue is the evidence that recording is not the same as carrying, and `docs-audit/SKILL.md` step 7 could say so.
 
 ## Sibling search
