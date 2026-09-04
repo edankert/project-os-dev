@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 28
-  ISS: 50
+  ISS: 51
   PHASE: 3
   REL: 0
   REQ: 27
@@ -664,6 +664,14 @@ items:
       component: adapters-hooks
       note: "Point 3, a file outside every project-os repo denied on the session repo's empty focus, fixed in template commit 7b6890f (2026-09-03); assertions 31 to 34 of TST-0007. Points 1 and 2 were fixed upstream in July."
       related: [FEAT-0002, FEAT-0027, TST-0007]
+    ISS-0051:
+      file: "docs/issues/ISS-0051-The-Verification-Hook-Blocks-Every-Feature-That-Follows-The-Acceptance-Rule.md"
+      status: triage
+      severity: high
+      phase: "[[PHASE-0003]]"
+      component: adapters-hooks
+      note: "The blocking HC-003 hook demands passing of every linked test, with none of the validator's exemptions, so it denies any feature carrying the acceptance check feature-scaffold requires. Found by sweep pass 12; verified against both implementations."
+      related: [ISS-0048, ISS-0049, ADR-0025]
     ISS-0050:
       file: "docs/issues/ISS-0050-Surface-Statuses-Live-Outside-The-File-That-Enforces-Them.md"
       status: triage
@@ -1432,7 +1440,7 @@ metrics:
     tests_passing: 0
     tests_failing: 0
     issues_open: 26
-    issues_triage: 2
+    issues_triage: 3
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 27
