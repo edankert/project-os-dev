@@ -52,4 +52,4 @@ Set each item to one of: `updated`, `new`, `not-applicable`, `deferred`.
 
 ## Follow-ups
 
-- [ ] Record the mode in the ten repos that still have it unstaged or untracked, so a clone is not broken again.
+- [x] Record the mode in the ten remaining repos, done 2026-09-04, one mode-only commit each; the commits are listed in [[ISS-0055-The-Delegation-Hint-Is-Not-Executable-In-Any-Repo]]. All 96 hook entries across the twelve repos are `100755`, and a fresh clone of `your-trainer` was checked end to end.

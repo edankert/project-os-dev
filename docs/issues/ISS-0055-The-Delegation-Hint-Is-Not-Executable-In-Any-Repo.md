@@ -52,7 +52,7 @@ The hook runs and prints its one advisory line, in every repo, straight after a 
 
 ## Actual
 
-Twelve of twelve repos print `Permission denied` on every prompt submission. The bit is missing on disk in all twelve and missing in git in all twelve.
+Before the fix, twelve of twelve repos printed `Permission denied` on every prompt submission. The bit is missing on disk in all twelve and missing in git in all twelve.
 
 Six of those repos — the template `project-os`, plus `edankert.com`, `your-applications.com`, `your-health`, `your-sudoku` and `your-trainer` — record **all eight** hooks as `100644`; a seventh, `obsidian-supernote-sync`, records five of the eight that way. Those repos are one clean `git clone` away from every hook failing, not just this one. They work today only because the on-disk bits were set by hand at install time and `core.fileMode = false` hides the divergence from git.
 
@@ -74,5 +74,5 @@ Sibling search: no sibling found (searched `docs/issues/` for chmod, executable,
 - [x] Make `generate-adapters.py --install-hooks` set the executable bit on every file in `hooks/`, including on the path that leaves an existing `hooks` key alone. This is the repair path for the existing repos, and `SYNCING.md` step 5 already calls for it after every sync.
 - [x] Assert in `test-hooks.sh` that every file in `hooks/` is executable: 37 assertions to 45, and verified to fail when the bit is removed.
 - [x] Drop the manual `chmod` line from `ADAPTER.md`, and say there what to do in a repo with `core.fileMode = false`.
-- [ ] `chmod +x` on disk across the ten repos still unfixed, to unblock them now.
-- [ ] Record the mode in each of those repos' indexes; six carry all eight hooks as `100644` and are one clean clone away from every hook failing, not just this one.
+- [x] `chmod +x` on disk across the ten repos still unfixed, to unblock them now.
+- [x] Record the mode in each of those repos' indexes. Done 2026-09-04, one commit per repo, each containing nothing but mode changes: `articles` 8ce40f2, `edankert.com` 3a38552, `obsidian-supernote-sync` 80226d3, `project-os-bench` e1e4711, `project-os-cockpit` f45db59, `your-applications.com` 9479b78, `your-health` e99eb27, `your-sudoku` 61922ee, `your-trainer` e847d253, `yourtrainer-mcp` 4f07369. All 96 hook entries across the twelve repos are now `100755`. Verified by cloning `your-trainer` fresh: all eight arrive executable and the hint runs.

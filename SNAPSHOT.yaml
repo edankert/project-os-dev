@@ -43,7 +43,7 @@ focus:
   feature: ""
   phase: "PHASE-0003"
   issue: ""
-  note: "ISS-0055 fixed in template e1c46bf and 2faa90f: the eight hook scripts are 100755 in the index, --install-hooks sets the bit on every run, and test-hooks.sh asserts it (37 assertions to 45). The bit is set on disk in all twelve repos, so the hint runs everywhere again. Left open as a follow-up: ten repos have not recorded the mode in git, six of them for all eight hooks, so a clean clone there breaks every hook. Earlier: REQ-0027 implemented, PHASE-0003 done. Open: ISS-0053, ISS-0052, ISS-0054, ISS-0049, ISS-0050. Neither repo is pushed."
+  note: "ISS-0055 is closed end to end. The template records the eight hook scripts as 100755, --install-hooks sets the bit on every run, and test-hooks.sh asserts it (37 assertions to 45). The ten remaining repos each got a mode-only commit on 2026-09-04, so all 96 hook entries across the twelve repos are 100755; a fresh clone of your-trainer was checked and runs the hint. Earlier: REQ-0027 implemented, PHASE-0003 done. Open: ISS-0053, ISS-0052, ISS-0054, ISS-0049, ISS-0050. Nothing is pushed."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -639,7 +639,7 @@ items:
       severity: medium
       phase: "[[PHASE-0003]]"
       component: adapters-hooks
-      note: "Reported by Edwin 2026-09-04 from a your-trainer session. The hook runs by bare path from .claude/settings.json, so a file without the executable bit fails. ADAPTER.md tells the installer to chmod once; every hook added after that install arrives without the bit."
+      note: "Reported by Edwin 2026-09-04 from a your-trainer session. The hook runs by bare path from .claude/settings.json, so a file without the executable bit fails. ADAPTER.md told the installer to chmod once; every hook added after that install arrived without the bit. Fixed in template e1c46bf and 2faa90f, then one mode-only commit in each of the ten other repos."
       related: [FEAT-0027, TST-0007, ISS-0003]
     ISS-0044:
       file: "docs/issues/ISS-0044-The-Adapter-Calls-The-Pinned-Subagent-Model-The-Strongest.md"
