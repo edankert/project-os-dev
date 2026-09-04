@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 28
-  ISS: 55
+  ISS: 56
   PHASE: 3
   REL: 0
   REQ: 27
@@ -43,7 +43,7 @@ focus:
   feature: ""
   phase: "PHASE-0003"
   issue: ""
-  note: "ISS-0055 is closed end to end. The template records the eight hook scripts as 100755, --install-hooks sets the bit on every run, and test-hooks.sh asserts it (37 assertions to 45). The ten remaining repos each got a mode-only commit on 2026-09-04, so all 96 hook entries across the twelve repos are 100755; a fresh clone of your-trainer was checked and runs the hint. Earlier: REQ-0027 implemented, PHASE-0003 done. Open: ISS-0053, ISS-0052, ISS-0054, ISS-0049, ISS-0050. Nothing is pushed."
+  note: "ISS-0056 filed at triage and awaiting Edwin: the HC-006 close-out hook blocks on every stop while focus.task is set, including turns that wrote nothing, costing one forced continuation per turn in any repo with a parked focus item. The note carries four options and a recommendation; the predicate is a contract change across twelve repos, so it is his call. ISS-0055 is closed end to end (all 96 hook entries 100755). Earlier: REQ-0027 implemented, PHASE-0003 done. Open: ISS-0053, ISS-0052, ISS-0054, ISS-0049, ISS-0050. Nothing is pushed."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -633,6 +633,14 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0056:
+      file: "docs/issues/ISS-0056-The-Close-Out-Hook-Fires-On-Stops-That-Did-No-Work.md"
+      status: triage
+      severity: medium
+      phase: "[[PHASE-0003]]"
+      component: adapters-hooks
+      note: "Reported by Edwin 2026-09-04 from a your-trainer session, three blocks in a row on a parked focus task. HC-006 reads only focus.task and stop_hook_active, so it costs one forced continuation on every turn including question-only turns. Distinct from the finding retracted inside ISS-0048, which was about the loop guard. Options are in the note; the predicate is Edwin's call."
+      related: [ISS-0048, TST-0007, ISS-0055]
     ISS-0055:
       file: "docs/issues/ISS-0055-The-Delegation-Hint-Is-Not-Executable-In-Any-Repo.md"
       status: fixed
@@ -1477,7 +1485,7 @@ metrics:
     tests_passing: 0
     tests_failing: 0
     issues_open: 27
-    issues_triage: 3
+    issues_triage: 4
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 27
