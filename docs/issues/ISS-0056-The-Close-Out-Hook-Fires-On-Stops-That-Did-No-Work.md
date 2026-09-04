@@ -2,7 +2,7 @@
 type: "[[issue]]"
 id: ISS-0056
 title: "The close-out hook blocks on every stop while focus.task is set, so a repo with a parked focus item pays a forced continuation on every turn, including turns that wrote nothing"
-status: triage
+status: fixed
 phase: "[[PHASE-0003]]"
 owner: user:edwin
 created: 2026-09-04
@@ -78,7 +78,24 @@ Sibling search: no sibling found (searched `docs/issues/` for HC-006, close-out-
 
 Whichever is chosen, two things go with it: keep the HC-007 validator branch blocking on **every** stop, since a broken docs invariant is a real failure and not advisory; and rewrite HC-006's trigger line in `HOOKS.md` so the stated contract matches what the hook can observe.
 
+## Resolution
+
+Edwin chose option 1 on 2026-09-04 and it is implemented across the fleet.
+
+`session-touch.sh`, a new `PostToolUse` hook on `Write|Edit|NotebookEdit`, records the session's first write as a zero-byte marker in the temp directory keyed by session and project. `close-out-check.sh` consumes that marker when it blocks. A question-only turn finds no marker and the stop goes through; a turn that wrote is reminded once. Both scripts read the path from `hooks/shared/session-marker.sh` rather than each spelling it out. The HC-007 validator half still blocks every stop, and every path that cannot answer "did this session write?" blocks as before.
+
+Template commits `b164e02`, `358b5a5`, `0f73f9e` and `1e0aef1`; propagated to all eleven downstream repos on 2026-09-04, one commit each containing only tooling paths. `HOOKS.md` HC-006 now states the trigger the hook actually has.
+
+**Two defects found while implementing, both fixed here.**
+
+`session-touch.sh` went into the template at mode `100644` — ISS-0055 recurring within the hour, because the guard added there reads the working tree and a repo with `core.fileMode = false` records a new file as `100644` regardless. The harness now asserts the **index** mode of every tracked hook as well.
+
+The shared helper was first written to `hooks/lib/`. `obsidian-supernote-sync/.gitignore` carries a bare `lib/`, which matches a directory of that name at any depth, so the file would never have been committed there — and a repo without it falls back to blocking every stop. It is `hooks/shared/` now, checked against all twelve `.gitignore` files rather than assumed, and the harness asserts that no hook file is gitignored. That assertion had to be written twice: the first version used `check-ignore` without `--no-index`, which reports nothing for an already-tracked file, so it passed under its own mutation.
+
+**The known limit stands.** Only `Write`, `Edit` and `NotebookEdit` set the marker. A session that edits through the shell records nothing and is not reminded. Guessing which shell commands write would be a string match that ages badly, and the fail-safe direction was chosen deliberately: what is lost is a reminder, not a check.
+
 ## Next Actions
 
-- [ ] Edwin picks the predicate. Option 1 is a change to the HC-006 contract, which propagates to twelve repos, so it is his call rather than a judgement to make here.
-- [ ] Implement in the template, extend [[TST-0007-The-Hooks-Emit-What-The-Contracts-Say]] with the question-only case, and correct HC-006's trigger line in `HOOKS.md`.
+- [x] Edwin picks the predicate — option 1, chosen 2026-09-04.
+- [x] Implement in the template, extend [[TST-0007-The-Hooks-Emit-What-The-Contracts-Say]] (45 to 74 assertions, three mutations run and killed), and correct HC-006's trigger line in `HOOKS.md`.
+- [x] Propagate to the eleven downstream repos, re-registering the hook set so `.claude/settings.json` gains the recorder.

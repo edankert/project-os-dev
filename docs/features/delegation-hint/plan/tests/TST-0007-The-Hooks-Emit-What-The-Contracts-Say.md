@@ -14,7 +14,7 @@ entrypoint: "../project-os/tools/scripts/test-hooks.sh"
 command: "bash ../project-os/tools/scripts/test-hooks.sh"
 requirements: []
 features: ["[[FEAT-0027-The-Hint-Serves-Focus-State-Instead-Of-Pushing-Delegation]]"]
-issues: ["[[ISS-0003-Document-First-Hook-Fragile-Focus-Parsing]]", "[[ISS-0051-The-Verification-Hook-Blocks-Every-Feature-That-Follows-The-Acceptance-Rule]]", "[[ISS-0055-The-Delegation-Hint-Is-Not-Executable-In-Any-Repo]]"]
+issues: ["[[ISS-0003-Document-First-Hook-Fragile-Focus-Parsing]]", "[[ISS-0051-The-Verification-Hook-Blocks-Every-Feature-That-Follows-The-Acceptance-Rule]]", "[[ISS-0055-The-Delegation-Hint-Is-Not-Executable-In-Any-Repo]]", "[[ISS-0056-The-Close-Out-Hook-Fires-On-Stops-That-Did-No-Work]]"]
 tasks: ["[[TASK-0102]]", "[[TASK-0103]]", "[[TASK-0104]]"]
 artifacts: []
 adequacy: "Round 2, 2026-09-03, against the template at f264cb7 (34 assertions after review finding 9): (A) the sentence Send it to the independent-reviewer subagent appended to the terminal arm, 1 failure; (B) the blocked arm padded with PREFLIGHT three times, 2 failures (names a delegation; 909 chars); (C) both focus_value lines in the Stop hook replaced by the old echo-into-jq form, 4 failures (the hook never blocks: assertions 1, 2, 3 and 6); (D) both block reasons mid-flight sentence replaced by If work is ongoing, this is expected, acknowledge to continue, 3 failures; (E) the echo line tripled to HINT HINT HINT, 4 size-bound failures (empty 890, planning 953, doing 1,073, terminal 1,001 chars; review at 539 stays under). Every mutation confirmed landed by diff against the copy and reverted by copying back. Pristine tree 34 of 34. Round 1 recorded counts of 3, 2 and 4 for C, D and E without naming the mutated text; the review could not reproduce them, and the round-2 record names the text."
@@ -42,14 +42,25 @@ Three hooks change behaviour in [[FEAT-0027-The-Hint-Serves-Focus-State-Instead-
 5. **Hint, review state** (14): names the `independent-reviewer`. **Blocked, deferred and terminal states** (15 to 17): say what their arm says (the blocker, re-adopt first, nothing in flight). **The six non-review states** (18 to 23): no review sentence.
 6. **Hint size** (24 to 30): all seven states within 3 lines and 600 characters, the bound [[TASK-0103]] set, so the hint cannot grow into the SessionStart slice.
 7. **Document-first gate, the four paths in [[ISS-0003-Document-First-Hook-Fragile-Focus-Parsing]]** (31 to 34): a scratchpad path with no repo above it is allowed, a path in a repo with no `SNAPSHOT.yaml` is allowed, a relative path inside the project is denied, an absolute path inside the project is denied.
-8. **Every hook file is executable** (38 to 45, one per file in `hooks/`): added 2026-09-04 for [[ISS-0055-The-Delegation-Hint-Is-Not-Executable-In-Any-Repo]]. Every assertion above runs its hook through `bash`, which executes a file whatever its mode, so none of them can see a missing executable bit — and settings register each hook by bare path, where a missing bit is `Permission denied` on every event. They run last so the ordinals above do not shift.
+8. **Every hook file is executable on disk** (38 to 46, one per file in `hooks/`): added 2026-09-04 for [[ISS-0055-The-Delegation-Hint-Is-Not-Executable-In-Any-Repo]]. Every assertion above runs its hook through `bash`, which executes a file whatever its mode, so none of them can see a missing executable bit — and settings register each hook by bare path, where a missing bit is `Permission denied` on every event. They run last so the ordinals above do not shift.
+9. **No hook file is gitignored** (47 to 56, `hooks/*` and `hooks/shared/*`): a file a downstream `.gitignore` swallows is invisible to every other check here, because `git ls-files` never lists it and a clone simply does not have it. One repo ignored `lib/`, which is why the shared directory is called `shared`. Uses `check-ignore --no-index`, since plain `check-ignore` reports nothing for a tracked file and would pass everywhere except the repo that has not committed it yet.
+10. **Every tracked hook is executable in git** (57 to 65): the disk check in 8 is not enough. A repo with `core.fileMode = false` records a new hook as `100644` whatever its mode locally, so a clone gets `Permission denied` while the harness is green. That is how `session-touch.sh` was added an hour after ISS-0055 was fixed.
+11. **The focus half blocks only a stop that follows a write** (66 to 74): added 2026-09-04 for [[ISS-0056-The-Close-Out-Hook-Fires-On-Stops-That-Did-No-Work]]. A stop with no marker goes through; the touch hook records a write; a stop after that write blocks and spends the marker; the next quiet stop goes through; a payload with no `session_id` falls back to blocking; the touch hook records nothing without a session; and a write in one repo does not arm another repo's check.
 
 ## Expected results
 
-- Exit 0: every assertion holds. First real run 2026-09-03 against template commit 3e5c1b3, 25 of 25; 34 of 34 at f264cb7 after the review round; 45 of 45 at 2faa90f, with the eight executable-bit assertions.
+- Exit 0: every assertion holds. First real run 2026-09-03 against template commit 3e5c1b3, 25 of 25; 34 of 34 at f264cb7 after the review round; 45 of 45 at 2faa90f, with the executable-bit assertions; 74 of 74 at 1e0aef1, with the gitignore, git-mode and write-test assertions.
 - Exit 1: at least one failed, each printed as `FAIL <name>: <detail>`.
 
 ## Adequacy (who verifies this test?)
+**Round 3, 2026-09-04, the ISS-0056 write test (template at `1e0aef1`, 74 assertions).** Three mutations against the new logic, each confirmed landed by running the harness and reverted by restoring the file:
+
+- (F) the write test deleted, so the hook consults no marker and blocks every stop as before: **3 failures** — the quiet stop, the quiet stop after a block, and the two-repos case.
+- (G) the blocking branch no longer removes the marker: **4 failures**, including the quiet-stop-after-a-block assertion that exists for exactly this.
+- (H) a payload with no `session_id` exits 0 instead of blocking: **5 failures**, four of them the pre-existing Stop-hook assertions, which is the check that the fail-safe did not quietly disable the hook for every caller that sends no session.
+
+Two more on the guards added the same day: adding `shared/` to `.gitignore` fails the gitignore group, and `git update-index --chmod=-x` on `session-touch.sh` fails the git-mode group. The first of those was written twice — the first version used `check-ignore` without `--no-index` and passed under its own mutation, because git reports nothing for a tracked file.
+
 
 **Round 2, after the first review (template at `f264cb7`, 34 assertions).** Review finding 9 showed three of the hint's seven arms were unguarded; fixtures for `blocked`, `deferred` and a terminal task now exist and the no-review-sentence and size assertions run over all seven states. Findings 6 to 8 showed the round-1 counts were not reproducible because the mutated text was not named. Each mutation below names its text, was confirmed landed by `diff` against the saved copy, and was reverted by copying the copy back:
 
