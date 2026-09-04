@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 28
-  ISS: 54
+  ISS: 55
   PHASE: 3
   REL: 0
   REQ: 27
@@ -43,7 +43,7 @@ focus:
   feature: ""
   phase: "PHASE-0003"
   issue: ""
-  note: "REQ-0027 is implemented. Edwin narrowed criterion 1 on 2026-09-04: a rule stated twice is a defect only when the copies disagree. Every surviving duplicate was then classified; nine disagreed and are fixed in template ef1f29f, including two documents that claimed the sync script leaves goal: alone when it derives it. ADR-0026's amendment is confirmed. PHASE-0003 is done. Open: ISS-0053 (unparseable frontmatter passes silently -- highest value, it hides anything), ISS-0052 (three more drift classes become checks), ISS-0054 (one stray research report), ISS-0049, ISS-0050. Neither repo is pushed."
+  note: "ISS-0055 fixed in template e1c46bf and 2faa90f: the eight hook scripts are 100755 in the index, --install-hooks sets the bit on every run, and test-hooks.sh asserts it (37 assertions to 45). The bit is set on disk in all twelve repos, so the hint runs everywhere again. Left open as a follow-up: ten repos have not recorded the mode in git, six of them for all eight hooks, so a clean clone there breaks every hook. Earlier: REQ-0027 implemented, PHASE-0003 done. Open: ISS-0053, ISS-0052, ISS-0054, ISS-0049, ISS-0050. Neither repo is pushed."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -633,6 +633,14 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0055:
+      file: "docs/issues/ISS-0055-The-Delegation-Hint-Is-Not-Executable-In-Any-Repo.md"
+      status: fixed
+      severity: medium
+      phase: "[[PHASE-0003]]"
+      component: adapters-hooks
+      note: "Reported by Edwin 2026-09-04 from a your-trainer session. The hook runs by bare path from .claude/settings.json, so a file without the executable bit fails. ADAPTER.md tells the installer to chmod once; every hook added after that install arrives without the bit."
+      related: [FEAT-0027, TST-0007, ISS-0003]
     ISS-0044:
       file: "docs/issues/ISS-0044-The-Adapter-Calls-The-Pinned-Subagent-Model-The-Strongest.md"
       status: fixed

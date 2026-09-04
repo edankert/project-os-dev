@@ -9,6 +9,8 @@
 #                                                    stays within a size bound
 #   HC-001 document-first-gate.sh (PreToolUse)      allows paths outside every project-os
 #                                                    repo (project-os-dev ISS-0003)
+# Every hook file is also checked for the executable bit, which the assertions
+# below cannot detect on their own (project-os-dev ISS-0055).
 # Paths resolve from this script's location. Exit 0 = every assertion holds.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -158,6 +160,22 @@ check "gate: a scratch path with no repo above it is allowed" "$([[ -z "$(gate "
 check "gate: a path in a repo with no SNAPSHOT.yaml is allowed" "$([[ -z "$(gate "$TMP/proj" "$TMP/other/src/main.py")" ]]; echo $?)"
 check "gate: a relative path inside the project is denied" "$(has "$(cd "$TMP/proj" && gate "$TMP/proj" "src/main.py")" '"deny"'; echo $?)"
 check "gate: an absolute path inside the project is denied" "$(has "$(gate "$TMP/proj" "$TMP/proj/src/main.py")" '"deny"'; echo $?)"
+
+# -- Every hook file is executable -------------------------------------------
+# Last, so the assertion ordinals TST-0007 documents do not shift.
+# Every assertion above invokes its hook as `bash "$HOOKS/<name>"`, which runs a
+# file whatever its mode. Claude Code does not: .claude/settings.json registers
+# every hook by bare path with no interpreter, so a hook missing the executable
+# bit fails with "Permission denied" on each event it is registered for. That is
+# how the delegation hint reached twelve repos unrunnable while this harness was
+# green (project-os-dev ISS-0055). A failure here is fixed by re-running
+# `python3 tools/scripts/generate-adapters.py --install-hooks`, and, in a repo
+# with core.fileMode=false, by recording the mode with
+# `git update-index --chmod=+x <path>` so it survives the next clone.
+for hook in "$HOOKS"/*; do
+  [ -f "$hook" ] || continue
+  check "$(basename "$hook") is executable" "$([ -x "$hook" ]; echo $?)" "mode is $(stat -f '%Sp' "$hook" 2>/dev/null || stat -c '%A' "$hook")"
+done
 
 echo "test-hooks: $assertions assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]

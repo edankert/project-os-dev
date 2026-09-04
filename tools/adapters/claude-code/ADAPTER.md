@@ -120,10 +120,11 @@ Preferred (installs hooks and regenerates the native skills/subagent/Cursor rule
 
 ```bash
 python3 tools/scripts/generate-adapters.py --install-hooks
-chmod +x tools/adapters/claude-code/hooks/*.sh
 ```
 
-Manual fallback: copy `hooks.json` from this adapter directory into `.claude/settings.json` (merge the `hooks` key if the file already has other settings).
+`--install-hooks` also sets the executable bit on every file in `hooks/`, and it does that even when it leaves an existing `hooks` key alone. Settings register each hook by bare path with no interpreter in front, so a hook without the bit fails with `Permission denied` on every event; re-run the command after any sync that brings in a new hook. If `git config core.fileMode` is `false` in your repo, git ignores the bit you just set, and a fresh clone gets an unexecutable hook again — record it once with `git update-index --chmod=+x tools/adapters/claude-code/hooks/*` and commit.
+
+Manual fallback: copy `hooks.json` from this adapter directory into `.claude/settings.json` (merge the `hooks` key if the file already has other settings), then `chmod +x tools/adapters/claude-code/hooks/*`.
 
 > **Note:** Hook commands use `$CLAUDE_PROJECT_DIR` for reliable path resolution. Claude Code does not guarantee hooks run from the project root, so relative paths are unreliable.
 

@@ -14,7 +14,7 @@ entrypoint: "../project-os/tools/scripts/test-hooks.sh"
 command: "bash ../project-os/tools/scripts/test-hooks.sh"
 requirements: []
 features: ["[[FEAT-0027-The-Hint-Serves-Focus-State-Instead-Of-Pushing-Delegation]]"]
-issues: ["[[ISS-0003-Document-First-Hook-Fragile-Focus-Parsing]]", "[[ISS-0051-The-Verification-Hook-Blocks-Every-Feature-That-Follows-The-Acceptance-Rule]]"]
+issues: ["[[ISS-0003-Document-First-Hook-Fragile-Focus-Parsing]]", "[[ISS-0051-The-Verification-Hook-Blocks-Every-Feature-That-Follows-The-Acceptance-Rule]]", "[[ISS-0055-The-Delegation-Hint-Is-Not-Executable-In-Any-Repo]]"]
 tasks: ["[[TASK-0102]]", "[[TASK-0103]]", "[[TASK-0104]]"]
 artifacts: []
 adequacy: "Round 2, 2026-09-03, against the template at f264cb7 (34 assertions after review finding 9): (A) the sentence Send it to the independent-reviewer subagent appended to the terminal arm, 1 failure; (B) the blocked arm padded with PREFLIGHT three times, 2 failures (names a delegation; 909 chars); (C) both focus_value lines in the Stop hook replaced by the old echo-into-jq form, 4 failures (the hook never blocks: assertions 1, 2, 3 and 6); (D) both block reasons mid-flight sentence replaced by If work is ongoing, this is expected, acknowledge to continue, 3 failures; (E) the echo line tripled to HINT HINT HINT, 4 size-bound failures (empty 890, planning 953, doing 1,073, terminal 1,001 chars; review at 539 stays under). Every mutation confirmed landed by diff against the copy and reverted by copying back. Pristine tree 34 of 34. Round 1 recorded counts of 3, 2 and 4 for C, D and E without naming the mutated text; the review could not reproduce them, and the round-2 record names the text."
@@ -42,10 +42,11 @@ Three hooks change behaviour in [[FEAT-0027-The-Hint-Serves-Focus-State-Instead-
 5. **Hint, review state** (14): names the `independent-reviewer`. **Blocked, deferred and terminal states** (15 to 17): say what their arm says (the blocker, re-adopt first, nothing in flight). **The six non-review states** (18 to 23): no review sentence.
 6. **Hint size** (24 to 30): all seven states within 3 lines and 600 characters, the bound [[TASK-0103]] set, so the hint cannot grow into the SessionStart slice.
 7. **Document-first gate, the four paths in [[ISS-0003-Document-First-Hook-Fragile-Focus-Parsing]]** (31 to 34): a scratchpad path with no repo above it is allowed, a path in a repo with no `SNAPSHOT.yaml` is allowed, a relative path inside the project is denied, an absolute path inside the project is denied.
+8. **Every hook file is executable** (38 to 45, one per file in `hooks/`): added 2026-09-04 for [[ISS-0055-The-Delegation-Hint-Is-Not-Executable-In-Any-Repo]]. Every assertion above runs its hook through `bash`, which executes a file whatever its mode, so none of them can see a missing executable bit — and settings register each hook by bare path, where a missing bit is `Permission denied` on every event. They run last so the ordinals above do not shift.
 
 ## Expected results
 
-- Exit 0: every assertion holds. First real run 2026-09-03 against template commit 3e5c1b3, 25 of 25; 34 of 34 at f264cb7 after the review round.
+- Exit 0: every assertion holds. First real run 2026-09-03 against template commit 3e5c1b3, 25 of 25; 34 of 34 at f264cb7 after the review round; 45 of 45 at 2faa90f, with the eight executable-bit assertions.
 - Exit 1: at least one failed, each printed as `FAIL <name>: <detail>`.
 
 ## Adequacy (who verifies this test?)

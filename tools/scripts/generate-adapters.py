@@ -225,22 +225,60 @@ def generate(root):
     return out
 
 
+def make_hooks_executable(hooks_dir):
+    """Set the executable bit on every hook script. Returns the names changed.
+
+    .claude/settings.json registers each hook by bare path, with no interpreter
+    in front of it, so a hook file without the bit fails with "Permission
+    denied" on every event it is registered for. The bit cannot be relied on to
+    arrive with the file: a repo with core.fileMode=false records the scripts as
+    100644 whatever their mode on disk, and sync-project-os.py copies the
+    upstream mode with shutil.copy2.
+
+    Doing it here rather than in a one-time install instruction is the point.
+    The instruction was run once, before the newest hook existed, and that hook
+    then reached twelve repos unexecutable (project-os-dev ISS-0055). This runs
+    every time the hooks are installed, so it covers hooks added later too.
+
+    The bit mirrors the read bits rather than being forced to 0o111, so the
+    caller's umask still decides who may run them.
+    """
+    if not hooks_dir.is_dir():
+        return []
+    changed = []
+    for path in sorted(hooks_dir.iterdir()):
+        if not path.is_file() or path.name.startswith("."):
+            continue
+        mode = path.stat().st_mode
+        wanted = mode | ((mode & 0o444) >> 2)
+        if wanted != mode:
+            path.chmod(wanted)
+            changed.append(path.name)
+    return changed
+
+
 def install_hooks(root, force=False):
-    hooks_src = root / "tools" / "adapters" / "claude-code" / "hooks.json"
+    adapter = root / "tools" / "adapters" / "claude-code"
+    hooks_src = adapter / "hooks.json"
     if not hooks_src.is_file():
         return "hooks.json not found; skipped"
+    # Before the settings write, and unconditionally: the common case is a repo
+    # whose hooks key is already correct and whose newest hook script is not
+    # executable, and an early return below must not skip it.
+    made = make_hooks_executable(adapter / "hooks")
+    note = "; made executable: %s" % ", ".join(made) if made else ""
     target = root / ".claude" / "settings.json"
     hooks = json.loads(hooks_src.read_text(encoding="utf-8"))
     if not target.is_file():
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(hooks_src.read_text(encoding="utf-8"), encoding="utf-8")
-        return "created .claude/settings.json"
+        return "created .claude/settings.json" + note
     settings = json.loads(target.read_text(encoding="utf-8"))
     if "hooks" in settings and not force:
-        return "existing hooks key left alone (use --force-hooks to replace)"
+        return "existing hooks key left alone (use --force-hooks to replace)" + note
     settings["hooks"] = hooks.get("hooks", {})
     target.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
-    return "merged hooks into .claude/settings.json"
+    return "merged hooks into .claude/settings.json" + note
 
 
 
