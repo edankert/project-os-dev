@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0051
 aliases: ["ISS-0051"]
 title: "The verification hook blocks every feature that follows the acceptance-check rule"
-status: triage
+status: fixed
 phase: "[[PHASE-0003]]"
 severity: high
 owner: user:edwin
@@ -13,7 +13,7 @@ component: adapters-hooks
 source: ["The ISS-0048 drift sweep, pass 12, run 2026-09-04 in a clean context over template e2bee28"]
 related: ["[[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File]]", "[[ADR-0025-An-Executable-Test-Records-No-Verdict]]"]
 tasks: []
-tests: []
+tests: ["[[TST-0007-The-Hooks-Emit-What-The-Contracts-Say]]"]
 ---
 
 # The verification hook blocks every feature that follows the acceptance-check rule
@@ -50,9 +50,16 @@ The hook exempts what the validator exempts: a test with `command:` (settled by 
 
 ## Next Actions
 
-- [ ] Give the hook the validator's two exemptions, and make HC-003 state the exemptions once so both implementations cite them rather than each carrying a copy.
-- [ ] Decide whether the hook should also check acceptance settledness (the validator's VERIFY-ACCEPTANCE) or stay out of the ledger's way.
-- [ ] Two further divergences pass 12 found in the same pair, worth folding in: the validator requires `waiver_expires:` and the hook accepts a bare waiver; the validator gates on the reverse `covers:` index and the hook on the subject's `tests:`.
+- [x] Give the hook the validator's two exemptions, and make HC-003 state them once — template commit `ad61433`. `tst_exemption()` skips a test carrying `command:` and a test at `level: acceptance`, in that order, and HC-003 now carries the list both programs read.
+- [x] Decide whether the hook checks acceptance settledness: **no**. Settledness is a release-ledger event and this hook reads frontmatter, so it cannot see one. `VERIFY-ACCEPTANCE` in the validator keeps it, and HC-003 says which gate owns which half.
+- [x] The waiver divergence, folded in: a `verification_waiver:` now needs `waiver_expires:` in both implementations. `QUALITY.md` also said "the validator reports the waiver as a warning", which was wrong for the case that actually fails; it now states that a missing, unparseable or past expiry is an error (ADR-0010).
+- [ ] **Still open**: the validator gates on the reverse `covers:` index and the hook on the subject's `tests:`, so the validator sees links the hook does not. HC-003 records the difference rather than claiming parity. Closing it means teaching the hook the reverse index, which is a bigger change than this fix.
+
+## Resolution
+
+Six assertions were added to `TST-0007`'s harness: an acceptance test at `active` and a test carrying `command:` no longer block `done`, a failing manual test still does, and a waiver is accepted only with an expiry. Removing the exemption again fails two of them with the original denial text, so the harness catches a regression rather than describing one.
+
+Verified: `test-hooks.sh` 37 assertions 0 failures, all four test scripts green, `generate-adapters --check` 35 artifacts current, `validate-docs.sh` OK on the template.
 
 ## Sibling search
 

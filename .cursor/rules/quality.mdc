@@ -24,7 +24,7 @@ These rules define what "done" means for work tracked in this documentation syst
 - Verification is an automated test linked and `passing`, or a manual `[[test]]` note with a clear procedure that a human has run and whose result the note records.
 - Do not tick an acceptance criterion the delivered system does not satisfy. If the work departed from a criterion, amend, narrow or supersede it with recorded rationale (`../skills/close-out/SKILL.md`, step 3 "Requirement advancement"); ticking to fit is a fake `done`.
 - A `deferred` task never resolves a feature's scope: descope it through the deferral procedure (`STATUSES.md`, "Deferral and re-adoption"); never flip it to `done` or drop it from the list.
-- If a terminal status must be set without passing tests (a docs-only or config-only change), record `verification_waiver: <reason>` in the note frontmatter. The validator reports the waiver as a warning; a silent skip is a build failure.
+- If a terminal status must be set without passing tests (a docs-only or config-only change), record `verification_waiver: <reason>` **and `waiver_expires: YYYY-MM-DD`** in the note frontmatter. A waiver with both is reported as a warning; one with no expiry, an unparseable expiry, or a past one is an **error**, because an open-ended waiver is a rule deletion written in the passive voice (ADR-0010). A silent skip is a build failure.
 
 ## Independent review (clean-context)
 - **The gate is keyed on a status, not on a note being touched**: a `TST-*` reaching `passing`, a requirement reaching `implemented`, a feature reaching `done`. Each requires an independent review pass per `../skills/independent-review/SKILL.md`.

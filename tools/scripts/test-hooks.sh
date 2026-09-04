@@ -58,6 +58,10 @@ YAML
 stop_hook() { printf '{"stop_hook_active": %s}' "$2" | CLAUDE_PROJECT_DIR="$1" bash "$HOOKS/close-out-check.sh" 2>/dev/null; }
 hint()      { printf '{"prompt":"x"}' | CLAUDE_PROJECT_DIR="$1" bash "$HOOKS/model-routing-hint.sh" 2>/dev/null; }
 gate()      { printf '{"tool_input":{"file_path":"%s"}}' "$2" | CLAUDE_PROJECT_DIR="$1" bash "$HOOKS/document-first-gate.sh" 2>/dev/null; }
+# vgate <project-dir> <file-path> <new-content>
+vgate()     { python3 -c 'import json,sys; print(json.dumps({"tool_input":{"file_path":sys.argv[1],"new_string":sys.argv[2]},"cwd":sys.argv[3]}))' "$2" "$3" "$1" | python3 "$HOOKS/verification-gate.py" 2>/dev/null; }
+# tstnote <project-dir> <id> <status> [extra frontmatter line]
+tstnote()   { mkdir -p "$1/docs/tests"; { printf -- '---\nid: %s\nstatus: %s\n' "$2" "$3"; [ -n "$4" ] && printf '%s\n' "$4"; printf -- '---\n'; } > "$1/docs/tests/$2-x.md"; }
 
 # -- HC-006: the Stop hook names two actions ---------------------------------
 fixture "$TMP/doing" TASK-0001 doing FEAT-0001 doing ""
@@ -113,6 +117,39 @@ for pair in "empty:$h_empty" "planning:$h_plan" "doing:$h_doing" "review:$h_rev"
   lines=$(printf '%s\n' "$text" | wc -l | tr -d ' '); chars=${#text}
   check "hint, $name state: within 3 lines and 600 characters" "$([[ "$lines" -le 3 && "$chars" -le 600 ]]; echo $?)" "$lines lines, $chars chars"
 done
+
+# -- HC-003: the two exemptions and the waiver expiry (ISS-0051) --------------
+# The hook and validate-docs.py both enforce this gate, and until ISS-0051 only
+# the validator carried the exemptions -- so the hook denied `done` to any
+# feature holding the acceptance check feature-scaffold requires.
+fixture "$TMP/vg" "" doing FEAT-0001 doing ""
+mkdir -p "$TMP/vg/docs/features/x"
+FEATNOTE="$TMP/vg/docs/features/x/FEAT-0001-X.md"
+
+tstnote "$TMP/vg" TST-0001 active "level: acceptance"
+out="$(vgate "$TMP/vg" "$FEATNOTE" 'status: done
+tests: ["TST-0001"]')"
+check "HC-003: an acceptance test at active does not block done" "$(hasnot "$out" '"deny"'; echo $?)" "$out"
+
+tstnote "$TMP/vg" TST-0002 ready "command: pytest -q"
+out="$(vgate "$TMP/vg" "$FEATNOTE" 'status: done
+tests: ["TST-0002"]')"
+check "HC-003: a test with command: does not block done" "$(hasnot "$out" '"deny"'; echo $?)" "$out"
+
+tstnote "$TMP/vg" TST-0003 failing ""
+out="$(vgate "$TMP/vg" "$FEATNOTE" 'status: done
+tests: ["TST-0003"]')"
+check "HC-003: a failing manual test still blocks done" "$(has "$out" '"deny"'; echo $?)" "$out"
+
+out="$(vgate "$TMP/vg" "$FEATNOTE" 'status: done
+verification_waiver: docs-only')"
+check "HC-003: a waiver with no expiry is denied" "$(has "$out" '"deny"'; echo $?)" "$out"
+check "HC-003: the denial names waiver_expires" "$(has "$out" 'waiver_expires'; echo $?)" "$out"
+
+out="$(vgate "$TMP/vg" "$FEATNOTE" 'status: done
+verification_waiver: docs-only
+waiver_expires: 2026-12-01')"
+check "HC-003: a waiver with an expiry is allowed" "$(hasnot "$out" '"deny"'; echo $?)" "$out"
 
 # -- HC-001: the four paths of ISS-0003 ---------------------------------------
 fixture "$TMP/proj" "" backlog FEAT-0001 backlog ""

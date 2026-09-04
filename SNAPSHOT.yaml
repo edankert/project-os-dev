@@ -25,7 +25,7 @@ docs_system:
     - docs/PHASES.md
 
 counters:
-  ADR: 25
+  ADR: 26
   CHG:
     last_date: 20260726
   FEAT: 28
@@ -666,7 +666,7 @@ items:
       related: [FEAT-0002, FEAT-0027, TST-0007]
     ISS-0051:
       file: "docs/issues/ISS-0051-The-Verification-Hook-Blocks-Every-Feature-That-Follows-The-Acceptance-Rule.md"
-      status: triage
+      status: fixed
       severity: high
       phase: "[[PHASE-0003]]"
       component: adapters-hooks
@@ -1288,6 +1288,11 @@ items:
       status: merged
 
   decisions:
+    ADR-0026:
+      file: "docs/decisions/ADR-0026-When-A-Drift-Sweep-Stops.md"
+      status: proposed
+      decision: "Proposed, undecided: five options for how a drift sweep terminates. Twelve passes never produced two consecutive clean ones, because a clean-context pass samples the corpus rather than converging on it. Option 5 proposed -- bounded rounds, three parallel passes at one commit kept on two-of-three agreement, a reproduction per finding, and the human checkpoint moved onto decisions."
+      related: [ADR-0024, ADR-0013, REQ-0027, ISS-0048, ISS-0049, ISS-0051]
     ADR-0025:
       file: "docs/decisions/ADR-0025-An-Executable-Test-Records-No-Verdict.md"
       status: accepted
@@ -1440,11 +1445,11 @@ metrics:
     tests_passing: 0
     tests_failing: 0
     issues_open: 26
-    issues_triage: 3
+    issues_triage: 2
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 27
     requirements_implemented: 24
     risks_open: 0
     releases_total: 0
-    decisions_total: 25
+    decisions_total: 26

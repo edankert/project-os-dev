@@ -43,8 +43,12 @@ Contract IDs are `HC-001`..`HC-008`. (Earlier revisions of this file used `CHC-0
 - Check logic:
   - Find linked `TST-*` IDs from the snapshot and note frontmatter.
   - Confirm every required test is `status: passing`.
+- **Two tests are not required tests.** Stated here because two programs enforce this gate and both must read the same list:
+  - a test carrying `command:` — it records no verdict and CI is the verdict (`STATUSES.md` `[[test]]`, ADR-0025). Checked first: an acceptance check that gains a `command:` is automated (`TESTING.md`, "When to create", rule 3).
+  - a test at `level: acceptance` — it rests at `active` and its verdict is a release-ledger event (`STATUSES.md` `[[test]]`, ADR-0037). Whether it is *settled* is the validator's `VERIFY-ACCEPTANCE`; the hook reads frontmatter and cannot see the ledger, so it does not check settledness.
+- A `verification_waiver:` requires `waiver_expires: YYYY-MM-DD` in both implementations; an open-ended waiver is a rule deletion written in the passive voice (ADR-0010).
 - On failure: block the terminal status transition unless a `verification_waiver` is recorded (`QUALITY.md`, "Verification gating").
-- Enforcement: this gate must be mechanical, not advisory. The Claude Code adapter implements it as a blocking PreToolUse hook (`../adapters/claude-code/hooks/verification-gate.py`); other adapters must run `tools/scripts/validate-docs.sh` before close-out and at pre-commit/CI, which enforces the same invariant repo-wide.
+- Enforcement: this gate must be mechanical, not advisory. The Claude Code adapter implements it as a blocking PreToolUse hook (`../adapters/claude-code/hooks/verification-gate.py`); other adapters must run `tools/scripts/validate-docs.sh` before close-out and at pre-commit/CI. The two agree on the exemptions and the waiver rule above. They still differ in reach: the validator gates on the reverse `covers:` index and the hook on the subject's `tests:`, so the validator sees links the hook does not (project-os-dev ISS-0051, follow-up).
 
 ## HC-004: Phase alignment
 
