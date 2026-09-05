@@ -42,13 +42,17 @@ CURSOR_RULES = [
 # across releases. The pins are revisited at each model release; they are not a
 # standing claim about the strongest model available.
 #
-# The planner is Fable 5.1; the reviewer is Opus 5. They were split on
-# 2026-09-05 (project-os-dev ISS-0057) because Opus 5 costs half of Fable 5.1
-# per token and ADR-0013 makes the reviewer's model a preference rather than a
-# gate, so the review pass takes the cheaper one. Whether it is cheaper *per
-# review* is unmeasured: a model that spends fewer tokens can win at a higher
-# price, which was ISS-0044's argument for Fable two days earlier. ISS-0057
-# carries that measurement as an open action.
+# Both are Opus 5 as of 2026-09-05 (project-os-dev ISS-0057 for the reviewer,
+# ISS-0058 for the planner, hours apart). Opus 5 lists at half of Fable 5.1 per
+# token; ADR-0013 makes the reviewer's model a preference rather than a gate,
+# and nothing about the planner is a gate at all, so both passes take the
+# cheaper model.
+#
+# Cheaper *per token* is not the same as cheaper *per task*: a model that
+# spends fewer tokens can win at a higher price, which was ISS-0044's argument
+# for Fable two days earlier. That comparison has never been run on this
+# fleet's work, and with no Fable pin left there is no longer a cheap way to
+# run it. ISS-0057 keeps it open as a deliberate debt.
 #
 # Both pins are deliberately the same model as the likely author. The pins used
 # to differ as a proxy for independence; that proxy is retired. Independence is
@@ -66,7 +70,7 @@ CURSOR_RULES = [
 # `reviewed_by` still records the model. That is provenance, not a compliance
 # token: a later reader needs to know who reviewed, and a future finding about a
 # specific model's blind spots needs the data.
-PLANNER_MODEL = "claude-fable-5-1"
+PLANNER_MODEL = "claude-opus-5"
 REVIEWER_MODEL = "claude-opus-5"
 
 PLANNER_AGENT = """---

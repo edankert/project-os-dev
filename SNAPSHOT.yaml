@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 28
-  ISS: 57
+  ISS: 58
   PHASE: 3
   REL: 0
   REQ: 27
@@ -42,8 +42,8 @@ focus:
   task: ""
   feature: ""
   phase: "PHASE-0003"
-  issue: "ISS-0057"
-  note: "ISS-0057 is fixed and live in all twelve repos: the independent-reviewer subagent runs on claude-opus-5 instead of claude-fable-5-1, halving the list price of every review gate. ADR-0013 already made the reviewer pin a preference rather than a gate, so nothing about the gate objects. PLANNER_MODEL is deliberately unchanged - the request named the reviewer only, and the planner is the larger spend, so that one is still on the table. It reverses half of ISS-0044, decided two days earlier on cost per task rather than list price; neither figure has been measured on a real review here, and ISS-0057 keeps that measurement open. Propagation was a two-file copy plus a generator run per repo rather than a template sync, proved equivalent by byte-identical inputs fleet-wide. CHG-20260905 records it. Earlier: ISS-0056 and ISS-0055 fixed; REQ-0027 implemented. Open: ISS-0053, ISS-0052, ISS-0054, ISS-0049, ISS-0050. Nothing is pushed."
+  issue: "ISS-0058"
+  note: "ISS-0058 is fixed and live in all twelve repos: the planner subagent joins the reviewer on claude-opus-5, so both pins are Opus and no Fable model remains in the adapter surface. This is the larger saving - preflight fires whenever a prompt implies work, review only at gates - and unlike the reviewer it touches no gate at all, since ADR-0013 governs review and the planner has no equivalent. Together ISS-0057 and ISS-0058 undo ISS-0044 from two days ago, which argued cost per task where these argued cost per token; the two measures can disagree and neither was ever run on this fleet, and with no Fable pin left the comparison now costs a deliberate experiment. That action stays open on ISS-0057. CHG-20260905 x2 record both moves. Earlier: ISS-0056 and ISS-0055 fixed; REQ-0027 implemented. Open: ISS-0053, ISS-0052, ISS-0054, ISS-0049, ISS-0050. Nothing is pushed."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -633,6 +633,14 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0058:
+      file: "docs/issues/ISS-0058-The-Planner-Pin-Is-The-Larger-Half-Of-The-Bill.md"
+      status: fixed
+      severity: low
+      phase: "[[PHASE-0003]]"
+      component: adapters-hooks
+      note: "Edwin, 2026-09-05, minutes after ISS-0057 landed: also change the planner to opus. The larger half of the bill - preflight fires whenever a prompt implies work, review only at gates. Separate note rather than a widened ISS-0057, so the record keeps the fact that the planner was deliberately held back and then released. No ADR-0013 equivalent applies: nothing about the planner is a gate, so this is a cost and capability question only. Leaves no Fable model in the adapter surface."
+      related: [ISS-0057, ISS-0044, ADR-0013]
     ISS-0057:
       file: "docs/issues/ISS-0057-The-Reviewer-Pin-Costs-Twice-What-The-Gate-Requires.md"
       status: fixed

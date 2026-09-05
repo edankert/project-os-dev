@@ -39,6 +39,8 @@ What settles it for now is that Edwin asked, having been given both prices. That
 
 The reviewer only. `PLANNER_MODEL` stays at `claude-fable-5-1` because the request named the reviewer, twice, and never the planner. This is worth revisiting on its own: the planner runs at every preflight and the reviewer only at gates, so the planner is almost certainly the larger share of the Fable spend, and moving the cheap half of a bill is a small result.
 
+**It was revisited the same day.** Edwin asked for the planner minutes after this landed, and [[ISS-0058]] moved it. This note is left as written because what it records - that the planner was deliberately held back at this point - is true and is the reason ISS-0058 exists.
+
 ## Repro
 
 ```bash
