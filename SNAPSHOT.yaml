@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 28
-  ISS: 56
+  ISS: 57
   PHASE: 3
   REL: 0
   REQ: 27
@@ -42,8 +42,8 @@ focus:
   task: ""
   feature: ""
   phase: "PHASE-0003"
-  issue: ""
-  note: "ISS-0056 is fixed and live in all twelve repos: the close-out hook blocks only a stop that follows a write, recorded by the new session-touch.sh PostToolUse hook and consumed by close-out-check.sh. A question costs nothing now. Two defects surfaced while implementing and both are fixed: session-touch.sh went in at mode 100644 (ISS-0055 recurring, since that guard read the working tree and not the index), and the shared helper was first put in hooks/lib/, which one repo gitignores. TST-0007 is at 74 assertions with five mutations killed. ISS-0055 is closed. Earlier: REQ-0027 implemented, PHASE-0003 done. Open: ISS-0053, ISS-0052, ISS-0054, ISS-0049, ISS-0050. Nothing is pushed."
+  issue: "ISS-0057"
+  note: "ISS-0057 is fixed and live in all twelve repos: the independent-reviewer subagent runs on claude-opus-5 instead of claude-fable-5-1, halving the list price of every review gate. ADR-0013 already made the reviewer pin a preference rather than a gate, so nothing about the gate objects. PLANNER_MODEL is deliberately unchanged - the request named the reviewer only, and the planner is the larger spend, so that one is still on the table. It reverses half of ISS-0044, decided two days earlier on cost per task rather than list price; neither figure has been measured on a real review here, and ISS-0057 keeps that measurement open. Propagation was a two-file copy plus a generator run per repo rather than a template sync, proved equivalent by byte-identical inputs fleet-wide. CHG-20260905 records it. Earlier: ISS-0056 and ISS-0055 fixed; REQ-0027 implemented. Open: ISS-0053, ISS-0052, ISS-0054, ISS-0049, ISS-0050. Nothing is pushed."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -633,6 +633,14 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0057:
+      file: "docs/issues/ISS-0057-The-Reviewer-Pin-Costs-Twice-What-The-Gate-Requires.md"
+      status: fixed
+      severity: low
+      phase: "[[PHASE-0003]]"
+      component: adapters-hooks
+      note: "Edwin, 2026-09-05: make the independent reviewer Opus by default, since it is significantly cheaper. True on list price - Fable 5.1 is $10/$50 per MTok, Opus 5 is $5/$25 - and ADR-0013 makes the reviewer pin a preference rather than a gate. Reverses half of ISS-0044 (2026-09-03), whose argument was cost per task at low effort, a different measure that nobody has run on a real review here. Reviewer only; PLANNER_MODEL stays Fable."
+      related: [ISS-0044, ADR-0013, FEAT-0027]
     ISS-0056:
       file: "docs/issues/ISS-0056-The-Close-Out-Hook-Fires-On-Stops-That-Did-No-Work.md"
       status: fixed

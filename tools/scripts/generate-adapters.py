@@ -42,12 +42,19 @@ CURSOR_RULES = [
 # across releases. The pins are revisited at each model release; they are not a
 # standing claim about the strongest model available.
 #
-# Both are Fable 5.1 as of 2026-09-03 (project-os-dev ISS-0044), and
-# deliberately the same as the likely authoring model. The pins used to differ as a proxy for independence; that
-# proxy is retired. Independence is now a clean context and a separate session
-# (QUALITY.md, "Independent review (clean-context)"), which subagents provide by
-# construction — they start from the notes and the diff, never the author's
-# reasoning trace.
+# The planner is Fable 5.1; the reviewer is Opus 5. They were split on
+# 2026-09-05 (project-os-dev ISS-0057) because Opus 5 costs half of Fable 5.1
+# per token and ADR-0013 makes the reviewer's model a preference rather than a
+# gate, so the review pass takes the cheaper one. Whether it is cheaper *per
+# review* is unmeasured: a model that spends fewer tokens can win at a higher
+# price, which was ISS-0044's argument for Fable two days earlier. ISS-0057
+# carries that measurement as an open action.
+#
+# Both pins are deliberately the same model as the likely author. The pins used
+# to differ as a proxy for independence; that proxy is retired. Independence is
+# now a clean context and a separate session (QUALITY.md, "Independent review
+# (clean-context)"), which subagents provide by construction — they start from
+# the notes and the diff, never the author's reasoning trace.
 #
 # The change is evidence-backed. Tested against the one case in the fleet with a
 # known answer, a clean-context session of the SAME model as the author caught
@@ -60,7 +67,7 @@ CURSOR_RULES = [
 # token: a later reader needs to know who reviewed, and a future finding about a
 # specific model's blind spots needs the data.
 PLANNER_MODEL = "claude-fable-5-1"
-REVIEWER_MODEL = "claude-fable-5-1"
+REVIEWER_MODEL = "claude-opus-5"
 
 PLANNER_AGENT = """---
 name: planner
