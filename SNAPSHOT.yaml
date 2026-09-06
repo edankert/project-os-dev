@@ -1352,6 +1352,11 @@ items:
       status: merged
 
   decisions:
+    ADR-0027:
+      file: "docs/decisions/ADR-0027-An-Acceptance-Check-Is-Walkable-By-A-Stranger.md"
+      status: proposed
+      decision: "Proposed, undecided: three options for making acceptance checks walkable by someone who did not write them. Option 3 proposed -- state the Setup/Steps/Expect/Not-this-check shape in TESTING.md, ship it in the test template, and add a grandfathered validator rule for the three mechanical failures. Existing corpora are rewritten ON CONTACT, never swept: rewriting from note text alone manufactures assertions nobody verified. Measured over your-trainer's 631 checks -- 165 under 30 words, 160 with no expected-result verb at all, 71 naming a code symbol with no observable anchor, 53 with migration provenance inside the procedure. The validator half lands in project-os-cockpit, not here."
+      related: [ADR-0023, ADR-0024, ADR-0025]
     ADR-0026:
       file: "docs/decisions/ADR-0026-When-A-Drift-Sweep-Stops.md"
       status: accepted
