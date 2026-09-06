@@ -25,11 +25,11 @@ docs_system:
     - docs/PHASES.md
 
 counters:
-  ADR: 26
+  ADR: 27
   CHG:
     last_date: 20260726
   FEAT: 28
-  ISS: 58
+  ISS: 59
   PHASE: 3
   REL: 0
   REQ: 27
@@ -633,6 +633,14 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0059:
+      file: "docs/issues/ISS-0059-A-New-Project-Starts-On-The-Pre-Ledger-Write-Path.md"
+      title: "A new project starts with no acceptance ledger, so its first verdict takes the pre-migration write path — the one kept for repositories that have not migrated, which a project created today has not"
+      status: triage
+      owner: user:edwin
+      severity: medium
+      component: templates
+      note: "The template ships docs/releases/ with a README and no ledgers/ directory, so a new project has nowhere to put an acceptance verdict and falls back to the write path kept for repos that have not migrated -- which a project created today has not. Measured on project-os-deck, initialised 2026-09-06: six acceptance notes, no ledger, every verdict refused, and Edwin lost a page of reasoning. The cockpit's half is project-os-cockpit ISS-0285 (the dialog offers verdicts that path refuses); this half is prior, that a new project should not start on a compatibility path. Recommended: ship an empty ledgers/ with a README, the way issues/ and tests/ are shipped. What the platform should be CALLED is project-os-cockpit ISS-0286."
     ISS-0058:
       file: "docs/issues/ISS-0058-The-Planner-Pin-Is-The-Larger-Half-Of-The-Bill.md"
       status: fixed
@@ -1501,11 +1509,11 @@ metrics:
     tests_passing: 0
     tests_failing: 0
     issues_open: 27
-    issues_triage: 3
+    issues_triage: 4
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 27
     requirements_implemented: 25
     risks_open: 0
     releases_total: 0
-    decisions_total: 26
+    decisions_total: 27
