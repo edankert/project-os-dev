@@ -29,7 +29,7 @@ counters:
   CHG:
     last_date: 20260726
   FEAT: 28
-  ISS: 59
+  ISS: 60
   PHASE: 3
   REL: 0
   REQ: 27
@@ -1514,7 +1514,7 @@ metrics:
     tests_passing: 0
     tests_failing: 0
     issues_open: 27
-    issues_triage: 4
+    issues_triage: 5
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 27
