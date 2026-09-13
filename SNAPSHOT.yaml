@@ -1,5 +1,5 @@
 version: 1
-updated: "2026-07-25T12:00Z"
+updated: "2026-09-10T12:00Z"
 
 template:
   replace_me: false
@@ -25,25 +25,26 @@ docs_system:
     - docs/PHASES.md
 
 counters:
-  ADR: 27
+  ADR: 29
   CHG:
-    last_date: 20260726
-  FEAT: 28
-  ISS: 60
-  PHASE: 3
+    last_date: 20260913
+  FEAT: 29
+  ISS: 65
+  PHASE: 4
   REL: 0
-  REQ: 27
+  REQ: 28
   RISK: 2
-  TASK: 109
-  TST: 8
+  TASK: 115
+  TST: 9
   WF: 3
 
 focus:
   task: ""
   feature: ""
-  phase: "PHASE-0003"
-  issue: "ISS-0058"
-  note: "ISS-0058 is fixed and live in all twelve repos: the planner subagent joins the reviewer on claude-opus-5, so both pins are Opus and no Fable model remains in the adapter surface. This is the larger saving - preflight fires whenever a prompt implies work, review only at gates - and unlike the reviewer it touches no gate at all, since ADR-0013 governs review and the planner has no equivalent. Together ISS-0057 and ISS-0058 undo ISS-0044 from two days ago, which argued cost per task where these argued cost per token; the two measures can disagree and neither was ever run on this fleet, and with no Fable pin left the comparison now costs a deliberate experiment. That action stays open on ISS-0057. CHG-20260905 x2 record both moves. Earlier: ISS-0056 and ISS-0055 fixed; REQ-0027 implemented. Open: ISS-0053, ISS-0052, ISS-0054, ISS-0049, ISS-0050. Nothing is pushed."
+  phase: ""
+  issue: ""
+  note: "PHASE-0004 is done. A release is now walked from one generated document: `python3 tools/scripts/walk-sheet.py --release REL-#### --platform <platform>` prints the screens the release changed, then every owed acceptance check in the project's authored order, each with its setup, steps and expected result on the page. Nothing is written by hand and no second list of what a release owes exists anywhere. ADR-0029 is accepted with four boxes closed, REQ-0028 implemented with three criteria amended rather than ticked to fit, FEAT-0029 done, TASK-0110 to TASK-0115 done, CHG-20260913 records the landing. The eight rules are stated once in TESTING.md, 'The walk'. Landed in the template and synced into the four repos that keep an acceptance suite (your-trainer, project-os-cockpit, project-os-deck, your-sudoku) plus this repo's vendored tools; the cockpit's diverged TESTING.md and test.md were hand-merged, your-trainer's diverged validator left untouched, and validate-fleet is byte-identical before and after. NOTHING IS COMMITTED, here or downstream, and the ISS-0061 work from 2026-09-10 is still uncommitted alongside it -- that is the first thing to do next. The review gate ran its two rounds and approved. It cost: round one reproduced ten findings, six of them real defects in the generator, and the sharpest was about the harness rather than the code -- its fixture had no sealed ledger, so the whole excuse-expiry layer was unexercised and fifteen mutations survived. The suite is now 73 assertions over four fixture repos and TST-0009 carries 26 mutations with one known survivor, which is unobservable on a sheet rather than untested. Three issues came out of it, all at triage: ISS-0063, the generator reads every acceptance note under docs/ and the cockpit reads docs/tests/acceptance/ alone, 649 against 431, which is two owed counts for one corpus waiting to happen; ISS-0064, 57 of 61 real rows say the note states no expected result and for twelve the note does say it under a heading nobody anticipated; ISS-0065, the template ships seven harnesses and its own CI runs none. Also open: ISS-0062, ISS-0053, ISS-0052, ISS-0054, ISS-0049, ISS-0050, ISS-0059, ISS-0060. Downstream and not this repo's: your-trainer FEAT-0119 authors WALK.md against a starting figure of 61 owed rows in 16 area groups and retires its 719-line run plan; project-os-cockpit FEAT-0149 builds the walk page and bundles this module."
+
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -69,6 +70,17 @@ items:
       order: 3
       owner: user:edwin
       goal: "Bring the template's instructions, skills, hooks and subagents in line with the Claude 5 prompting guides: remove the contradictions, state each rule once, trim what every session loads, and stop the hooks and hints from teaching bypasses"
+    PHASE-0004:
+      file: docs/phases/PHASE-0004-The-Walk.md
+      title: "The walk: a procedure over the owed checks"
+      status: done
+      order: 4
+      owner: user:edwin
+      goal: "Give a release walk the layer it has never had: a generated sheet that lists every owed acceptance check in an authored order, opens with the surfaces the release changed, and carries each check's setup, steps and expected result inline, so the person walking never opens another file and never writes a run plan by hand again"
+      features: [FEAT-0029]
+      requirements: [REQ-0028]
+      tasks: [TASK-0110, TASK-0111, TASK-0112, TASK-0113, TASK-0114, TASK-0115]
+      related: [ADR-0029, ADR-0027]
     PHASE-999:
       file: docs/phases/PHASE-999-Parking-Lot.md
       title: "Parking lot — future and unplanned work"
@@ -78,6 +90,16 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0029:
+      file: "docs/features/walk-sheet/FEAT-0029-The-Walk-Sheet.md"
+      status: done
+      phase: "[[PHASE-0004]]"
+      owner: user:edwin
+      requirements: [REQ-0028]
+      tasks: [TASK-0110, TASK-0111, TASK-0112, TASK-0113, TASK-0114, TASK-0115]
+      tests: [TST-0009]
+      related: [ADR-0029, ADR-0027, ADR-0025, ISS-0059, ISS-0060, ISS-0046]
+      note: "Documented 2026-09-13 from Edwin's question about what to do, in what order, to satisfy the outstanding acceptance checks. Every file changes in the template repo; the cockpit's page is project-os-cockpit FEAT-0149 and the first consumer is your-trainer FEAT-0119. Order inside the feature matters: TASK-0110 lands the headings a sheet row prints, TASK-0111 the normative text, TASK-0112 the WALK.md syntax, then the generator, the skills, the sync."
     FEAT-0028:
       file: "docs/features/executable-tests-no-verdict/FEAT-0028-Executable-Tests-Carry-No-Verdict.md"
       status: done
@@ -282,6 +304,60 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0110:
+      file: "docs/features/walk-sheet/plan/tasks/TASK-0110-ADR-0027s-Four-Headings-Land-In-The-Test-Template.md"
+      status: done
+      parent: FEAT-0029
+      phase: "[[PHASE-0004]]"
+      effort: S
+      depends: []
+      blocks: [TASK-0113]
+      tests: []
+    TASK-0111:
+      file: "docs/features/walk-sheet/plan/tasks/TASK-0111-TESTING-md-States-The-Walk-Once.md"
+      status: done
+      parent: FEAT-0029
+      phase: "[[PHASE-0004]]"
+      effort: M
+      depends: []
+      blocks: [TASK-0112, TASK-0113, TASK-0114]
+      tests: []
+    TASK-0112:
+      file: "docs/features/walk-sheet/plan/tasks/TASK-0112-The-WALK-md-Template.md"
+      status: done
+      parent: FEAT-0029
+      phase: "[[PHASE-0004]]"
+      effort: M
+      depends: [TASK-0111]
+      blocks: [TASK-0113]
+      tests: []
+    TASK-0113:
+      file: "docs/features/walk-sheet/plan/tasks/TASK-0113-The-Generator-And-Its-Fixture-Test.md"
+      status: done
+      parent: FEAT-0029
+      phase: "[[PHASE-0004]]"
+      effort: L
+      depends: [TASK-0110, TASK-0111, TASK-0112]
+      blocks: [TASK-0115]
+      tests: [TST-0009]
+    TASK-0114:
+      file: "docs/features/walk-sheet/plan/tasks/TASK-0114-The-Skills-And-Note-Templates-Hand-Over-The-Sheet.md"
+      status: done
+      parent: FEAT-0029
+      phase: "[[PHASE-0004]]"
+      effort: M
+      depends: [TASK-0111]
+      blocks: [TASK-0115]
+      tests: []
+    TASK-0115:
+      file: "docs/features/walk-sheet/plan/tasks/TASK-0115-Downstream-To-The-Consumers-And-The-Cockpit.md"
+      status: done
+      parent: FEAT-0029
+      phase: "[[PHASE-0004]]"
+      effort: M
+      depends: [TASK-0113, TASK-0114]
+      blocks: []
+      tests: []
     TASK-0106:
       file: "docs/features/executable-tests-no-verdict/plan/tasks/TASK-0106-The-Runner-Reports-And-Exits.md"
       status: done
@@ -633,6 +709,42 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0065:
+      file: "docs/issues/ISS-0065-The-Templates-Own-CI-Runs-None-Of-Its-Seven-Harnesses.md"
+      status: triage
+      severity: medium
+      component: tooling
+      note: "From the independent review of FEAT-0029. The template ships seven harnesses and its own CI runs run-tests.py --ci, which finds no command: note in its docs/ and runs nothing. They are not unrun -- each is the command: on a TST-* note here, and this repo's workflow checks the template out beside itself -- so a broken harness goes red in the wrong repo. The open question is whether the template declares its own TST notes, which every new project would then inherit, or names the scripts in a CI step."
+      related: [FEAT-0029, ADR-0025, TST-0009]
+    ISS-0064:
+      file: "docs/issues/ISS-0064-A-Walk-Row-Falls-Back-For-Steps-And-Not-For-Expect.md"
+      status: triage
+      severity: medium
+      component: tooling
+      note: "From the independent review of FEAT-0029. 57 of 61 rows on your-trainer's real sheet say the note states no expected result; for at least twelve the note does say it, under 'What a failure looks like' or 'What a rider still judges'. Steps gained a prose fallback because 53 rows would have been empty; Expect did not, and the asymmetry was decided without the measurement. The choice is a template that learns product vocabulary, or twelve notes rewritten on contact under ADR-0027's own rule."
+      related: [FEAT-0029, ADR-0027, ADR-0029]
+    ISS-0063:
+      file: "docs/issues/ISS-0063-The-Sheet-And-The-Cockpit-Scope-The-Acceptance-Suite-Differently.md"
+      status: triage
+      severity: medium
+      component: tooling
+      note: "Found while landing TASK-0113. The template's generator reads every level: acceptance note under docs/, which LIFECYCLE.md 'Test storage' allows; the cockpit reads docs/tests/acceptance/ alone. 649 notes against 431 on your-trainer, with every note both see resolving identically -- so no wrong number today, and two owed counts for one corpus as soon as somebody files an acceptance check beside its feature. Which scoping is the rule is the open question."
+      related: [ADR-0029, FEAT-0029, TASK-0113]
+    ISS-0062:
+      file: "docs/issues/ISS-0062-A-Reviews-Round-Count-Is-Recorded-Nowhere.md"
+      status: triage
+      severity: medium
+      component: docs
+      note: "A reviewed note records reviewed_by, review_date and review_verdict, and nothing anywhere records how many rounds the review took, so an eight-round review and a first-pass approval produce identical frontmatter. That blindness already changed a decision: ADR-0026 left the review gate alone on a changes-requested rate of about 10% computed from final verdicts, which cannot see a round. The open question, and why this sits at triage, is how a round gets recorded -- a hand-maintained counter is the ISS-0026 shape, a per-round list is verbose, and deriving it from the issues each round filed needs no new field but only works when a round files one. Landing it is what makes ADR-0028's two-round cap checkable, and it is the conformance ADR-0028 needs to become a rule-ADR."
+      related: [ADR-0028, ISS-0061, ADR-0026, ISS-0025]
+    ISS-0061:
+      file: "docs/issues/ISS-0061-A-Review-Gate-Has-No-Round-Cap-And-No-Severity-Bar.md"
+      status: fixed
+      severity: medium
+      phase: "[[PHASE-0003]]"
+      component: docs
+      note: "Edwin, 2026-09-10: another review cycle seems to be going on forever. The gate had no round cap and no severity bar, so any true finding a reviewer could defend held a terminal status shut for another round. One change was reviewed eight times; rounds four to seven found no code defect at all and blocked on stale figures in notes. The seven issues those rounds filed carry severities high, medium, medium, low, low, low, low -- a monotonic decay in which each low blocked exactly as hard as the high, and all seven are still open five weeks later. Fixed by ADR-0028 in QUALITY.md and independent-review/SKILL.md; the cap itself is unchecked until ISS-0062 lands."
+      related: [ADR-0028, ISS-0062, ISS-0033, ISS-0039, ADR-0026]
     ISS-0059:
       file: "docs/issues/ISS-0059-A-New-Project-Starts-On-The-Pre-Ledger-Write-Path.md"
       title: "A new project starts with no acceptance ledger, so its first verdict takes the pre-migration write path — the one kept for repositories that have not migrated, which a project created today has not"
@@ -1022,6 +1134,14 @@ items:
   # Pruned: ISS-0001 (closed, PHASE-0001). Note preserved under docs/issues/.
 
   requirements:
+    REQ-0028:
+      file: "docs/requirements/REQ-0028-A-Release-Presents-Its-Owed-Checks-As-A-Walk.md"
+      status: implemented
+      owner: user:edwin
+      priority: high
+      phase: "[[PHASE-0004]]"
+      implements: [FEAT-0029]
+      related: [ADR-0029, ADR-0027, ISS-0059, ISS-0060]
     REQ-0001:
       file: docs/requirements/REQ-0001-Tool-Agnostic-Rules.md
       title: "project-os rules must be maintainable in one place and deliverable to any LLM tool"
@@ -1250,6 +1370,15 @@ items:
       related: [FEAT-0015, TASK-0060, ADR-0009, REQ-0019]
 
   tests:
+    TST-0009:
+      file: "docs/features/walk-sheet/plan/tests/TST-0009-The-Sheet-Is-The-Ledgers-Owed-Set-In-The-Authored-Order.md"
+      status: active
+      scope: feature
+      level: acceptance
+      entrypoint: "../project-os/tools/scripts/test-walk-sheet.sh"
+      requirements: [REQ-0028]
+      features: [FEAT-0029]
+      tasks: [TASK-0113]
     TST-0008:
       file: "docs/features/executable-tests-no-verdict/plan/tests/TST-0008-The-Runner-Writes-Nothing-And-The-Gate-Accepts-Active.md"
       status: active
@@ -1311,6 +1440,10 @@ items:
   workflows: {}
 
   changes:
+    CHG-20260910-A-Review-Gate-Runs-Two-Rounds:
+      file: "docs/changes/CHG-20260910-A-Review-Gate-Runs-Two-Rounds.md"
+      status: merged
+      issues: [ISS-0061, ISS-0062]
     CHG-20260812-Rule-ADRs:
       file: "docs/changes/CHG-20260812-Rule-ADRs.md"
       title: "Rule-ADRs land in the template: `## Rule`/`## Domain`/`## Conformance` specified once in DECISIONS.md, taught by two skills, carried commented by the template, and enforced by DECISION-RULE as an error from day one"
@@ -1352,6 +1485,17 @@ items:
       status: merged
 
   decisions:
+    ADR-0029:
+      file: "docs/decisions/ADR-0029-The-Walk-Sheet-Is-Derived-And-Its-Order-Is-Authored-Once.md"
+      status: accepted
+      decision: "Option 3 proposed. A walk sheet is generated per release and platform from the ledger's owed set; it opens with a survey of the surfaces the release changed, derived from the ledger's invalidation events; its sittings follow one authored file per project, docs/tests/acceptance/WALK.md, and nothing about the order is inferred; each row prints the check's Setup, Steps and Expect inline. The rules are stated once in TESTING.md. The template ships the generator and the cockpit bundles it."
+      related: [ADR-0027, ADR-0025, ADR-0024, REQ-0028, FEAT-0029, ISS-0060]
+      note: "Answers two earlier attempts by name: the cockpit's cancelled TASK-0449 (order inferred from prose burden tags; here the order is authored) and the cockpit's ADR-0036 (the withdrawn close-out sweep; here the survey reads invalidation events the ledger already requires). Four acceptance boxes open: WALK.md syntax, the after: field, whether a generated sheet may be committed, bundle or import in the cockpit."
+    ADR-0028:
+      file: "docs/decisions/ADR-0028-A-Review-Gate-Runs-Two-Rounds.md"
+      status: accepted
+      decision: "Option 4, accepted 2026-09-10. A gate runs at most two rounds -- round one reviews, round two verifies round one's fixes and nothing else. A finding blocks a terminal status only when it refutes a claim about behaviour or an acceptance criterion; every other true finding is filed as an ISS-* at triage and the item closes. A second changes-requested goes to one adjudicated reviewer-versus-critic exchange with mandatory code citations, both positions presented side by side, never to a third round. The author never answers the reviewer in turns."
+      related: [ADR-0026, ADR-0013, ADR-0019, ISS-0061, ISS-0062]
     ADR-0027:
       file: "docs/decisions/ADR-0027-An-Acceptance-Check-Is-Walkable-By-A-Stranger.md"
       status: proposed
@@ -1504,21 +1648,21 @@ items:
 
 metrics:
   counts:
-    features_total: 28
-    features_done: 25
-    phases_total: 4
-    phases_done: 2
-    tasks_total: 109
-    tasks_done: 102
+    features_total: 29
+    features_done: 26
+    phases_total: 5
+    phases_done: 3
+    tasks_total: 115
+    tasks_done: 108
     tests_total: 4
     tests_passing: 0
     tests_failing: 0
     issues_open: 27
-    issues_triage: 5
+    issues_triage: 9
     tasks_deferred: 0
     issues_deferred: 0
-    requirements_total: 27
-    requirements_implemented: 25
+    requirements_total: 28
+    requirements_implemented: 26
     risks_open: 0
     releases_total: 0
-    decisions_total: 27
+    decisions_total: 29
