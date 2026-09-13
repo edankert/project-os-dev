@@ -33,9 +33,12 @@ tags: [skills, release]
 - For each: recommend **fix before release** (if severity ≥ medium) or **ship as known issue** (if low).
 - Which of them block the release is the user's decision (`../../instructions/LIFECYCLE.md`, "When to pause for the user"); present the list with the recommendations and carry on with the steps below that do not depend on it.
 
-### 2. Check acceptance tests
-- Read the acceptance suite (`TST-*` notes at `level: acceptance`, stored per `../../instructions/LIFECYCLE.md` "Test storage", or `docs/tests/ACCEPTANCE_TESTS.md` in a repo that has not migrated). Sections and gating are stated once, in `../../instructions/TESTING.md` "Release gating"; list every check it calls a blocker for this release and platform.
+### 2. Generate the walk sheet
+- For each platform the release note names, run `python3 tools/scripts/walk-sheet.py --release <REL-####> --platform <platform>`. That is what the person walking this release reads: the screens it changed, then every owed check in the project's order with its setup, steps and expected result on the page. The rules are stated once in `../../instructions/TESTING.md`, "The walk".
+- Report the owed row count and the sitting count per platform, and put the sheet where the walker can find it: `--out <path>` writes it, and the release note's Verification section carries the line "Walk sheet: `<path or command>`".
+- Rows under **Unplaced**, or a sheet saying its order is unauthored, are the walk order's worklist rather than a defect in the sheet: fix `docs/tests/acceptance/WALK.md` (`TESTING.md`, "The walk", rule 3).
 - If a check cannot be run, recording a **release exception** with justification is the user's decision (`TESTING.md`, "Release gating"; pause rule: `../../instructions/LIFECYCLE.md`, "When to pause for the user").
+- A repo that has not migrated to notes has no ledger and no sheet; read `docs/tests/ACCEPTANCE_TESTS.md` and list every check "Release gating" calls a blocker.
 
 ### 2b. Docs consistency audit
 - Run `bash tools/scripts/validate-docs.sh` (mechanical) and `../docs-audit/SKILL.md` (cross-document, one bounded round) before drafting the release note — releases are the last chance to catch stale references before they ship as documentation.

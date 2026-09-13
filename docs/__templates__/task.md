@@ -25,5 +25,10 @@ tests: []
 ## Steps
 - [ ] <implementation steps>
 
+<!-- Optional. Name the acceptance checks this change reopens and the screens to look at, or write "None" and why. The walk sheet's survey reads the ledger's invalidation events, not this section; this is the prose a walker reads beside them (tools/instructions/TESTING.md, "The walk", rule 2).
+## Acceptance checks reopened
+- <TST-#### — the screen it asserts against, and what moved on it.>
+-->
+
 ## Notes
 <observations, gotchas, links>

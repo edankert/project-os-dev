@@ -46,6 +46,7 @@ tags: []
 ## Verification
 
 ### Acceptance Tests
+- **Walk sheet:** `<path, or the command that regenerates it>` — `python3 tools/scripts/walk-sheet.py --release REL-#### --platform <platform>`, one per platform (`../../tools/instructions/TESTING.md`, "The walk")
 - **Feature tests:** all settled / N exceptions
   - List any exceptions with justification
 - **Regression tests:** all settled

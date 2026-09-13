@@ -50,14 +50,16 @@ The verdict model is stated once, in `../../instructions/STATUSES.md` `[[test]]`
 Present the results as a table:
 
 ```
-| Test | Level | Kind | Status | Last verified | Linked Feature | Latest Change | Verdict |
-|------|-------|------|--------|---------------|----------------|---------------|---------|
-| TST-0005 | acceptance | walked | active | (ledger) | FEAT-0008 | 2026-03-07 | BLOCKED |
-| TST-0012 | e2e | command: | active | (CI) | FEAT-0008 | 2026-03-07 | CI |
-| TST-0014 | system | manual | passing | 2026-03-01 | FEAT-0008 | 2026-03-07 | STALE |
-| TST-0018 | acceptance | walked | active | (ledger: no entry) | FEAT-0015 | 2026-03-06 | UNTESTED |
-| TST-0020 | acceptance | walked | active | (ledger: fail) | FEAT-0003 | 2026-03-04 | FAILING |
+| Test | Level | Kind | Status | Last verified | Sitting | Linked Feature | Latest Change | Verdict |
+|------|-------|------|--------|---------------|---------|----------------|---------------|---------|
+| TST-0005 | acceptance | walked | active | (ledger) | 2 — On the bench | FEAT-0008 | 2026-03-07 | BLOCKED |
+| TST-0012 | e2e | command: | active | (CI) | — | FEAT-0008 | 2026-03-07 | CI |
+| TST-0014 | system | manual | passing | 2026-03-01 | — | FEAT-0008 | 2026-03-07 | STALE |
+| TST-0018 | acceptance | walked | active | (ledger: no entry) | 1 — Fresh install | FEAT-0015 | 2026-03-06 | UNTESTED |
+| TST-0020 | acceptance | walked | active | (ledger: fail) | Unplaced | FEAT-0003 | 2026-03-04 | FAILING |
 ```
+
+Fill **Sitting** from the walk sheet, so the matrix and the sheet agree on the order rather than offering two. A row with no sitting is not an acceptance check.
 
 ### 5. Check the acceptance suite
 Sections and gating are stated once, in `../../instructions/TESTING.md` ("The three sections", "Release gating"); this step applies them.
@@ -72,17 +74,15 @@ Sections and gating are stated once, in `../../instructions/TESTING.md` ("The th
   - BLOCKED → walk the acceptance check and record it in the ledger
 - Do not reset a status by hand: a manual test's status is written when it is run (step 7), and a `command:` test has none.
 
-### 7. Re-run tests
-For each test that needs re-running:
-1. Read the test note's Preconditions and Procedure sections.
-2. If the test has no `command:` (a manual test): present the procedure to the user for execution. The user runs through the steps and reports PASS or FAIL.
-3. If the test carries a `command:`: nothing to record (`../../instructions/STATUSES.md` `[[test]]`).
-4. For a manual test, update the test note:
-   - `status: passing` or `status: failing`
-   - `last_verified: <today's date>`
-   - `updated: <today's date>`
-   - Add evidence to the Evidence section
-5. The snapshot follows the note (`../../instructions/LIFECYCLE.md`, "Mandatory Automated Documentation"); do not re-type the status.
+### 7. Walk the sheet, and re-run the other tests
+**Acceptance checks are walked from the sheet, in its order, one sitting at a time.** Generate it with `python3 tools/scripts/walk-sheet.py --release <REL-####> --platform <platform>` (`../release-prep/SKILL.md` step 2). Start with the survey: open the screens the release changed before walking a single scripted check. Then take the sittings in order — each names the state it needs and what must be on the bench, so a sitting is set up once and walked through.
+
+1. Every row carries its own Setup, Steps and Expect. Do not open the note to walk a row; open it only to fix its text.
+2. Record each verdict as a **ledger event** with `method: manual`, through the cockpit's mark dialog or the ledger write path. **Write nothing on the check's note**: an acceptance check rests at `active` and carries no verdict (`../../instructions/STATUSES.md` `[[test]]`; `TESTING.md`, "The walk", rule 6).
+3. A row whose text is wrong — an expired premise, a behaviour the platform never had, a setup sentence that makes a cheap check look expensive — gets its text fixed in the same action that records the verdict (`TESTING.md`, "A check is walkable by a stranger"). "Setup: not stated" on a row is that invitation.
+4. Regenerate the sheet to see what is left. It is derived, so it is never edited and never corrected by hand.
+
+For a **manual test that is not an acceptance check** (no `command:`, any other level): present the procedure to the user, then update the note with `status: passing` or `failing`, `last_verified:`, `updated:` and the evidence. A test carrying a `command:` records nothing (`../../instructions/STATUSES.md` `[[test]]`). The snapshot follows the note (`../../instructions/LIFECYCLE.md`, "Mandatory Automated Documentation"); do not re-type the status.
 
 ### 8. Final release gate
 - Re-check the matrix: every manual test **CURRENT**, every acceptance check settled in the ledger, and the CI run green.
