@@ -39,6 +39,8 @@ paths:
   ".prettierrc": seed
   ".markdownlint.jsonc": seed
   ".yamllint.yml": seed
+  # The JDK a Gradle repo targets, read by the validate-docs workflow. Per-repo.
+  ".java-version": project
   "SNAPSHOT.yaml": project
   "CLAUDE.md": project
   "docs/features/": project

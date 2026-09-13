@@ -41,6 +41,24 @@ Notes:
 - Downstream repos get these files from the template sync; per-feature or per-phase `.base` files are deliberately not used (one navigation view plus one context view covers both roles).
 - For a browser-based alternative that needs no Obsidian at all, see `tools/cockpit/README.md`.
 
+## Attachments — where a picture lives
+
+- **Put images in `__attachments__/` beside the note that shows them.** The name matches `__templates__` and `__bases__`, and the cockpit's resolver already looks there.
+- **Reference a picture with a relative path**: `![Plate 3 — the dial](__attachments__/plate-3.png)`. That form renders in Obsidian, in the cockpit and on GitHub.
+- **Obsidian's own `![[plate-3.png]]` also resolves**, by filename across the whole vault. It is what a person gets by pasting an image into a note, so it stays supported — but it means two files with the same name in different folders are one coin toss, which is why a relative path is the convention for anything an agent writes.
+- **Caption every picture.** The line under an image is what makes a review about the design rather than about what the reader assumed the design was.
+
+## HTML in a note
+
+HTML written plainly in a note body is rendered by Obsidian and by the cockpit. There is no marker and no fenced block: a fenced ```` ```html ```` block shows source, which is what a fence is for. Four rules, each of which will otherwise cost somebody an afternoon:
+
+1. **No blank line inside an HTML block.** A blank line ends the block, in Obsidian and in the cockpit's Markdown renderer alike, and the rest of your markup renders as text.
+2. **No Markdown inside HTML elements.** Obsidian does not parse it, deliberately. `<div>**bold**</div>` shows the asterisks.
+3. **Scripts never run.** Obsidian sanitises them away; the cockpit's page policy blocks them. Anything script-driven belongs in a separate `.html` file, which is cockpit-only — Obsidian cannot open one without a community plugin.
+4. **Pictures are Markdown images, never `<img>` tags.** Obsidian resolves paths only for wikilinks and Markdown image syntax, so a relative `src` inside raw HTML shows a broken image. This rule is why one design in this fleet grew to 4.6 MB: base64 was the only way an image inside raw HTML survived.
+
+There is also no style isolation. A `<style>` block in a note restyles the page around it, in both applications. Scope your class names, or use inline styles on the elements themselves.
+
 ## Callouts
 
 Obsidian's callout syntax is part of the record's vocabulary, not a rendering flourish:

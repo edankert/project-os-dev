@@ -9,7 +9,9 @@ owner: unassigned
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 source: []
-asset: ""          # rendered artifact beside this note, e.g. "overview-redesign.html"
+asset: ""          # OPTIONAL. An HTML page beside this note, e.g. "overview-redesign.html".
+                   # Most designs need none: put the pictures in the body below.
+                   # See `tools/skills/design-authoring/SKILL.md` for when a page earns its keep.
 implements: []     # the [[FEAT-...]] / [[PHASE-...]] this design specifies
 supersedes: ""
 superseded_by: ""
@@ -28,24 +30,19 @@ opens with its solution cannot be argued with.>
 
 ## Approach
 
-<The shape of the proposal, in prose. The artifact shows it; this says why it is
+<The shape of the proposal, in prose. The pictures show it; this says why it is
 that shape.>
 
-## Regions
+## The design
 
-<Every region the artifact declares with `data-design-region`, and what each is
-for. Annotations anchor to these IDs, so a region that is not named here cannot
-be commented on — and a design that cannot name its own parts has not been
-thought through.>
+<The pictures. This is the normal form of a design: images in `__attachments__/`
+beside this note, referenced by a relative path, which renders in Obsidian, in the
+cockpit and on GitHub alike.>
 
-- `<region-id>` — <what it is, and what question it answers for the reader>
+![<what this shows>](__attachments__/<file>.png)
 
-## Tokens
-
-<Colour, spacing and type-scale values the implementation must match. Declared
-here so the implementation can be checked against them rather than compared by
-eye — a token re-typed into a stylesheet is exactly the drift that produced
-ISS-0023.>
+<Caption each one. A picture nobody labels is a picture the reader has to guess
+at, and the guess is where a review goes wrong.>
 
 ## Out of scope
 
@@ -53,11 +50,14 @@ ISS-0023.>
 
 ## Revisions
 
-<Revisions are commits against the asset, not new notes (`tools/instructions/TRACEABILITY.md`, "[[design]] links"); the reason for each lives in the commit message.>
+<A revision is a commit against this note and its pictures; the reason for each
+lives in the commit message (`tools/instructions/TRACEABILITY.md`, "[[design]] links").
+This list is the short version a reader gets without leaving the note.>
 
 - YYYY-MM-DD — <what changed and why>
 
 ## Review
 
-<Region-anchored comments land here. Verdicts go in the frontmatter, transcribed
-from a review that actually happened — never anticipated.>
+<Comments land here, each naming what it is about in its own words. Verdicts go in
+the frontmatter, transcribed from a review that actually happened — never
+anticipated.>

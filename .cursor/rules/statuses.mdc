@@ -148,9 +148,10 @@ The retired `check` type is `TAXONOMY.md`, "`check` — retired".
 The steps, and re-adoption, are in `../skills/status-transition/SKILL.md` ("Deferral procedure", "Re-adoption"). Two status facts belong here: a deferred item is never pruned from the snapshot, and re-adoption sets the non-parked status for its type (`backlog`/`open`/`draft`/`planned`).
 
 ## `[[release]]`
-- Allowed: `draft`, `released`, `reverted`
+- Allowed: `draft`, `released`, `reverted`, `abandoned`
 - Typical transitions:
   - `draft` → `released` (`draft` covers prepared and verified, not yet live; `../skills/release-verification/SKILL.md`)
+  - `draft` → `abandoned` (prepared, and it will not ship; requires a reason, and keeps the note — it is the only record of why that version number was skipped. Name the successor in `superseded_by:` when one exists. The version stays taken: reusing it would erase the skip.)
   - `released` → `reverted` (rollback; keep the note and link the successor release)
 
 ## `[[plan]]`

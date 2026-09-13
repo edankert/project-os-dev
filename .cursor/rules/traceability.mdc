@@ -44,6 +44,6 @@ This documentation system relies on explicit link graphs so agents can follow re
 
 - A design **implements** the features or phases it specifies: `implements: ["[[FEAT-...]]", "[[PHASE-...]]"]`.
 - Those notes point back with `design: ["[[DES-...]]"]`. Both directions are written, as everywhere else in this system — a link that only exists one way is invisible from the side that needs it.
-- `asset:` names the rendered artifact beside the note. `DESIGN-ASSET` reports a note whose asset does not resolve; `DESIGN-ORPHAN` reports an artifact no note claims.
-- Revisions are **commits against the asset**, not new notes. A design that spawns a note per revision is being used as a changelog, and the reason for each revision belongs in the commit message where it survives the tool.
+- **A design past `draft` must have something to look at**: pictures in the note, or an HTML page in `asset:`. Pictures are the normal form (`../skills/design-authoring/SKILL.md`); `asset:` is optional. `DESIGN-ASSET` reports a design that shows nothing, and one whose declared `asset:` does not resolve; `DESIGN-ORPHAN` reports an HTML file no note claims, by `asset:` or by a link.
+- Revisions are **commits against the design** — the note and its pictures, or its page — not new notes. A design that spawns a note per revision is being used as a changelog, and the reason for each revision belongs in the commit message where it survives the tool.
 - Supersession is design-to-design: `supersedes:` / `superseded_by:`. What `implemented` and `superseded` mean for a design is `STATUSES.md` `[[design]]`.

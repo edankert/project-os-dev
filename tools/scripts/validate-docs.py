@@ -147,7 +147,15 @@ ALLOWED_STATUS = {
     # asserted by ACCEPTANCE-STATUS rather than left implicit: the gates are
     # keyed on statuses an acceptance test does not hold.
     "check": {"draft", "active", "retired"},
-    "release": {"draft", "released", "reverted"},
+    # `abandoned` is a release that was prepared and will not ship. The state
+    # existed before the word did: `your-trainer`'s REL-0013 held v2.1.7 at
+    # `draft` for 23 days (created 2026-08-16, measured 2026-09-08) with
+    # `superseded_by:` naming its successor, so
+    # every surface that counts open releases counted it and every reader had
+    # to work out from the successor link that it was over. Terminal, and the
+    # note is kept deliberately -- it is the only record of why a version
+    # number was skipped.
+    "release": {"draft", "released", "reverted", "abandoned"},
     # `plan` is consumed by validate_plan_notes through load_allowed_status(). It
     # belongs in the defaults like every other type: without it, a repo whose
     # STATUSES.md lacks a `[[plan]]` section gets an empty allowed set and
@@ -488,6 +496,9 @@ _NON_STATUS_COLLECTIONS = frozenset({
     "_SETTLED_MARKS",
     "_SETTLED_WORDS",
     "MANUAL_DECLARATION_KEYS",
+    # File suffixes a design may show (DESIGN-ASSET, 2026-09-12). Caught by
+    # this guard on the day it was added, like the four above it.
+    "DESIGN_IMAGE_SUFFIXES",
 })
 
 
@@ -1717,18 +1728,64 @@ def validate_release_contents(note_index, report):
                         % (note_id, target, fid, target_path.stem, path))
 
 
+#: Image suffixes a design may show. A note that embeds one of these HAS
+#: something to look at, which is what DESIGN-ASSET is really asking.
+DESIGN_IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".avif")
+
+#: A Markdown image (``![alt](path)``) or an Obsidian embed (``![[path]]``).
+#: Both are checked because both are normal: an agent writes the first, and
+#: Obsidian writes the second when a person pastes a picture into a note.
+DESIGN_IMAGE_RE = re.compile(r"!\[[^\]]*\]\(([^)\s]+)[^)]*\)|!\[\[([^\]|#]+)")
+
+
+def design_shows_something(path):
+    """True when a design note embeds at least one picture in its body.
+
+    Read as text rather than rendered: this script is the fleet's gate and
+    must not depend on a Markdown library. The suffix test is the whole of
+    it — a reference to `plate-3.png` is a picture whether or not the file
+    resolves, and whether the file EXISTS is a different question from
+    whether the design shows anything, deliberately not conflated here.
+    """
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:                                     # pragma: no cover
+        return False
+    body = text.split("\n---\n", 2)[-1] if text.startswith("---") else text
+    for match in DESIGN_IMAGE_RE.finditer(body):
+        target = (match.group(1) or match.group(2) or "").strip().lower()
+        if target.split("?")[0].split("#")[0].endswith(DESIGN_IMAGE_SUFFIXES):
+            return True
+    return False
+
+
 def validate_design_notes(root, docs_dir, report):
-    """DESIGN-ASSET — a design must point at an artifact that exists.
+    """DESIGN-ASSET — a design past ``draft`` must have something to look at.
 
-    A design note is a claim about a rendered surface, and the render is the
-    artifact named by ``asset:``. A note whose asset is missing, or an artifact
-    no note claims, is the design equivalent of a dangling link: nothing errors
-    today, the design surface renders an empty pane tomorrow, and the reason is
-    a typo committed weeks earlier.
+    A design note is a claim about something a person can look at. **That used
+    to mean an HTML artifact and now it usually means pictures in the note.**
 
-    Both directions are checked. The orphan direction matters as much as the
-    missing one: an unclaimed 139KB artifact sitting in ``docs/designs/`` is
-    either a design nobody wrote a note for, or a leftover from a rename.
+    *Amended 2026-09-12 (project-os-cockpit REQ-0065, ADR-0043).* This check
+    required ``asset:`` on every design past ``draft``, which made the normal
+    case fail: most designs are screenshots or mockups, and the honest place
+    for those is Markdown images in the note itself. Requiring an HTML file
+    taught authors to produce one — measured before the change, ``your-health``
+    DES-0002 was a 4.6 MB page carrying 51 base64 PNGs, because an artifact
+    could not reference an image file beside it.
+
+    So the rule is the one the check always meant: **something to look at**,
+    which is an ``asset:`` *or* an image embedded in the note. A design with
+    neither, past ``draft``, is still an error — that is the case the check
+    exists for, a note offered for review with nothing to review.
+
+    A declared ``asset:`` must still resolve to a file. That is a dangling
+    link and stays an error.
+
+    The orphan direction is a warning and now counts anything the note
+    references, not only ``asset:``: once pages and pictures live beside
+    notes, an HTML file a note merely links to is claimed as surely as one it
+    declares. What remains reportable is a file no note mentions at all —
+    a leftover from a rename, which is what this direction was for.
     """
     designs_dir = docs_dir / "designs"
     if not designs_dir.is_dir():
@@ -1749,8 +1806,11 @@ def validate_design_notes(root, docs_dir, report):
             # note is often written before its artifact exists -- this note's
             # first real use was exactly that -- and forcing an empty placeholder
             # file to satisfy a check is how a gate teaches people to fake it.
-            if status != "draft":
-                report.error("DESIGN-ASSET", "%s is '%s' and declares no asset:; a design offered for review needs a rendered artifact (draft is exempt) (%s)" % (the_id, status or "unset", rel))
+            #
+            # Pictures in the note are the OTHER way to have something to look
+            # at, and since 2026-09-12 they are the normal way.
+            if status != "draft" and not design_shows_something(note_path):
+                report.error("DESIGN-ASSET", "%s is '%s' and shows nothing: it declares no asset: and embeds no image; a design offered for review needs something to look at, which is pictures in the note or an HTML page in asset: (draft is exempt) (%s)" % (the_id, status or "unset", rel))
             continue
         target = (note_path.parent / asset).resolve()
         if not target.is_file():
@@ -1758,9 +1818,25 @@ def validate_design_notes(root, docs_dir, report):
             continue
         claimed.add(target)
 
+    # A note that merely LINKS a page claims it too. Before markdown-first,
+    # `asset:` was the only way to point at a page and this set was built from
+    # it alone; now a note may link one the way it links anything else, and
+    # reporting that as an orphan would report the new normal.
+    for note_path in sorted(designs_dir.rglob("*.md")):
+        fm = parse_frontmatter(note_path) or {}
+        if note_type(fm) != "design":
+            continue
+        try:
+            text = note_path.read_text(encoding="utf-8")
+        except OSError:                                 # pragma: no cover
+            continue
+        for ref in re.findall(r"\(([^)\s]+\.html)[^)]*\)|\[\[([^\]|#]+\.html)", text):
+            target = (ref[0] or ref[1]).strip()
+            claimed.add((note_path.parent / target).resolve())
+
     for artifact in sorted(designs_dir.rglob("*.html")):
         if artifact.resolve() not in claimed:
-            report.warn("DESIGN-ORPHAN", "%s is not claimed by any design note's asset:; it is either an unwritten design or a leftover from a rename" % artifact.relative_to(root))
+            report.warn("DESIGN-ORPHAN", "%s is claimed by no design note -- not by an asset:, and not by a link in any note's body; it is either an unwritten design or a leftover from a rename" % artifact.relative_to(root))
 
 
 def validate_plan_notes(root, docs_dir, allowed_status, grandfathered, report):

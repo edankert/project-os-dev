@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# project-os pre-push hook: run every TST-* command: before the push leaves.
+# Installed by tools/scripts/install-git-hooks.sh (do not edit the copy in .git/hooks;
+# edit this file and reinstall).
+#
+# Why here rather than in CI. A repo's test notes carry filtered commands -- 26 of
+# your-health's are the same Gradle task with different --tests filters -- and running
+# them one by one on a cold runner is 45 minutes a push for an answer one suite run
+# already gives. CI runs the declared ci.suite_command once; this runs the filtered
+# set locally, where the daemon is warm and the toolchain is already installed.
+#
+# It can be skipped with --no-verify, and PROJECT_OS_SKIP_PREPUSH=1 skips it without
+# skipping anything else. CI still holds the non-bypassable verdict over the suite.
+set -uo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+
+if [[ -n "${PROJECT_OS_SKIP_PREPUSH:-}" ]]; then
+  echo "pre-push: PROJECT_OS_SKIP_PREPUSH set; skipping the test commands." >&2
+  exit 0
+fi
+
+RUNNER="$ROOT/tools/scripts/run-tests.py"
+if [[ ! -f "$RUNNER" ]] || ! command -v python3 >/dev/null 2>&1; then
+  exit 0
+fi
+
+echo "pre-push: running every TST-* command: (PROJECT_OS_SKIP_PREPUSH=1 skips)." >&2
+if ! python3 "$RUNNER" --repo-root "$ROOT"; then
+  echo "pre-push: a test command failed; push refused. Fix it, or push with --no-verify" >&2
+  echo "          if you have a reason and are prepared to say what it was." >&2
+  exit 1
+fi

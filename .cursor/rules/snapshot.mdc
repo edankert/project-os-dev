@@ -24,6 +24,7 @@ globs: ["SNAPSHOT.yaml"]
 - `focus` (object): Current in-flight IDs and active phase (empty strings if none).
 - `items` (object): Canonical state for each tracked item type.
 - `releases` (object, optional): Lightweight latest-release context (`releases.latest`, `releases.history`) for agents; full history stays in `REL-*` notes. Ships commented out in the template and is uncommented at the first release by `../skills/release-verification/SKILL.md`.
+- `ci` (object, optional): `ci.suite_command` is the one command CI runs instead of every `TST-*` `command:` (`HOOKS.md` HC-009). Declare it where the test notes carry filtered commands that the suite already covers, e.g. `suite_command: "./gradlew test --rerun-tasks"`. Absent means CI runs every command.
 - `metrics` (object): Derived counts (optional but recommended).
 
 ## Required `items.*` collections

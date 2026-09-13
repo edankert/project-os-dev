@@ -8,7 +8,8 @@
 #   3. a manual test (no command:) at `ready` under a done task still fails the
 #      gate, so the change loosened nothing for manual tests;
 #   4. run-tests.py leaves every note byte-identical, exits 1 when a command
-#      fails, and rejects --write.
+#      fails, rejects --write, runs a repeated command: only once, and under
+#      --ci runs the declared ci.suite_command instead of every command.
 # Paths resolve from this script's location. Exit 0 = every assertion holds.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -154,6 +155,55 @@ CI=1 python3 "$RUNNER" --repo-root "$TMP/run-missing" >/dev/null 2>&1; code=$?
 check "in CI an unrunnable test fails the run" "$([[ $code -eq 1 ]]; echo $?)" "exit $code"
 env -u CI python3 "$RUNNER" --repo-root "$TMP/run-missing" >/dev/null 2>&1; code=$?
 check "locally an unrunnable test is an environment gap" "$code" "exit $code"
+
+# 4c. two notes carrying the same command: run it once and share the outcome.
+# A suite-wide command belongs on every test it verifies, and running it again
+# cannot reach a different verdict; nine repos ran one Gradle suite 29 times.
+fixture "$TMP/run-dup" $'status: active' 'command: "true"'
+cp "$TMP/run-dup/docs/tests/TST-0001-X.md" "$TMP/run-dup/docs/tests/TST-0002-Y.md"
+sed -i.bak 's/TST-0001/TST-0002/g' "$TMP/run-dup/docs/tests/TST-0002-Y.md"
+rm -f "$TMP/run-dup/docs/tests/TST-0002-Y.md.bak"
+out="$(python3 "$RUNNER" --repo-root "$TMP/run-dup" 2>&1)"; code=$?
+check "two notes with the same command still both report" \
+  "$(printf '%s' "$out" | grep -cq 'TST-0002' && echo 0 || echo 1)" "$out"
+check "the shared result names the note that ran it" \
+  "$(printf '%s' "$out" | grep -q 'same command as TST-0001' && echo 0 || echo 1)" "$out"
+check "the runner says how many notes shared a result" \
+  "$(printf '%s' "$out" | grep -q '1 command(s) ran; 1 note(s) shared a result' && echo 0 || echo 1)" "$out"
+check "sharing a result does not change the exit code" "$code" "exit $code"
+
+# 4d. --ci runs the declared ci.suite_command once instead of every command, and
+# a repo declaring none still runs them all, so nothing silently stops being run.
+fixture "$TMP/ci-suite" $'status: active' 'command: "false"'
+printf '\nci:\n  suite_command: "true"\n' >> "$TMP/ci-suite/SNAPSHOT.yaml"
+out="$(python3 "$RUNNER" --repo-root "$TMP/ci-suite" --ci 2>&1)"; code=$?
+check "--ci runs the declared suite and not the failing command" "$code" "exit $code: $out"
+check "--ci names the suite it ran" \
+  "$(printf '%s' "$out" | grep -q 'ci.suite' && echo 0 || echo 1)" "$out"
+check "--ci says how many notes the suite covers" \
+  "$(printf '%s' "$out" | grep -q 'covering 1 test note' && echo 0 || echo 1)" "$out"
+out="$(python3 "$RUNNER" --repo-root "$TMP/ci-suite" 2>&1)"; code=$?
+check "without --ci the note's own failing command still runs" "$([[ $code -eq 1 ]]; echo $?)" "exit $code"
+fixture "$TMP/ci-none" $'status: active' 'command: "false"'
+out="$(python3 "$RUNNER" --repo-root "$TMP/ci-none" --ci 2>&1)"; code=$?
+check "--ci with nothing declared still runs every command" "$([[ $code -eq 1 ]]; echo $?)" "exit $code"
+check "--ci with nothing declared says so" \
+  "$(printf '%s' "$out" | grep -q 'no ci.suite_command' && echo 0 || echo 1)" "$out"
+fixture "$TMP/ci-fail" $'status: active' 'command: "true"'
+printf '\nci:\n  suite_command: "false"\n' >> "$TMP/ci-fail/SNAPSHOT.yaml"
+python3 "$RUNNER" --repo-root "$TMP/ci-fail" --ci >/dev/null 2>&1; code=$?
+check "--ci fails the run when the declared suite fails" "$([[ $code -eq 1 ]]; echo $?)" "exit $code"
+
+# 4e. a failing command echoes its output, so CI says why rather than only that.
+# A run reported "failing  ./gradlew test" and the log held nothing else.
+fixture "$TMP/run-why" $'status: active' 'command: "echo the-reason-it-broke; exit 3"'
+out="$(python3 "$RUNNER" --repo-root "$TMP/run-why" 2>&1)"
+check "a failing command echoes its captured output" \
+  "$(printf '%s' "$out" | grep -q 'the-reason-it-broke' && echo 0 || echo 1)" "$out"
+fixture "$TMP/run-quiet" $'status: active' 'command: "echo fine"'
+out="$(python3 "$RUNNER" --repo-root "$TMP/run-quiet" 2>&1)"
+check "a passing command does not echo its output" \
+  "$(printf '%s' "$out" | grep -q '      | ' && echo 1 || echo 0)" "$out"
 
 echo "test-verdict-model: $assertions assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]
