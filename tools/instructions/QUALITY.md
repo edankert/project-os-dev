@@ -4,7 +4,7 @@ id: INSTR-QUALITY
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-09-03
+updated: 2026-09-10
 tags: [instructions, quality]
 ---
 
@@ -33,6 +33,9 @@ These rules define what "done" means for work tracked in this documentation syst
 - **The gate is keyed on a status, not on a note being touched**: a `TST-*` reaching `passing`, a requirement reaching `implemented`, a feature reaching `done`. Each requires an independent review pass per `../skills/independent-review/SKILL.md`.
 - **Independent means a clean context**: a session that starts from the notes and the diff alone, never the author's reasoning trace, and is not the session that authored the work. A human pass also satisfies this and remains the strongest option. Self-review is forbidden.
 - Model family is not the gate (ADR-0013 records the experiment). The boundary is session and context, not vendor.
+- **A gate runs at most two rounds** (ADR-0028). Round one reviews the work. Round two verifies the fixes to round one's blocking findings and nothing else — it is not a fresh sweep for new defects. Reason: past round two a reviewer produces more findings and fewer true ones per finding, and one change in this fleet was reviewed eight times, of which rounds four to seven found no code defect at all.
+- **Only a behavioural finding blocks.** A finding holds a terminal status shut when it refutes a claim about behaviour or an acceptance criterion; every other true finding is filed as an `ISS-*` at `triage` and the item closes. What the reviewer is asked for does not change — `../skills/independent-review/SKILL.md` step 3 still asks for every finding — and this bar applies at transcription, alongside the reproduction filter that already lives there.
+- **A third disagreement is adjudicated, not looped.** If round two still returns `changes-requested`, do not run round three. Run one exchange between the reviewer and a separate critic in which every disagreement cites specific code, put both positions in front of the adjudicator side by side rather than as a conversation, and hand the owner a decision. **The author never answers the reviewer in turns**: a reviewer facing a follow-up rebuttal abandons true findings, the more so when that rebuttal reasons at length and is wrong (ADR-0028 records the evidence).
 - **A `CHG-*` note does not owe a review** (ADR-0019): the change itself is reviewed at the three gates above while the work is live, and reviewing the note later reviews the prose.
 - **An acceptance test does not owe a review either.** It rests at `active` and never reaches `passing` (`STATUSES.md` `[[test]]`); the review of an acceptance test is the walk, and gating it would ask for the same evidence twice.
 - Record the outcome in the reviewed note's frontmatter (`reviewed_by`, `review_date`, `review_verdict`).
