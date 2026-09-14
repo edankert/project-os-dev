@@ -40,17 +40,18 @@ The template repo checked out beside this one. The fixture harness TASK-0120 wri
 3. Run it against the fixture where one owed part is cited by two steps.
 4. Run it against the fixture where a tag names a retired check.
 5. Run it against the fixture where a tag names step 9 of a check with 4 steps.
+5a. Run it against the fixture where one expectation line's quote differs from its check's Expect text by one word.
 6. Generate the sheet for the first fixture, where two of its checks have already passed.
 7. Generate the sheet for a fixture sitting that has no procedure.
 
 ## Expect
 
 - Step 1 passes.
-- Steps 2 to 5 each fail, and each message names the check id and step number involved.
+- Steps 2 to 5a each fail, and each message names the check id and step number involved.
 - Step 6 prints the setup once and leaves out every step whose tags are all for passed checks.
 - Step 7 prints the per-check rows the sheet prints today, unchanged.
 
 ## Not this check
 
-- Whether the procedure's wording matches the check. The validator checks coverage only (ADR-0045 decision 4).
+- Whether a procedure's own step wording (outside the quoted expectations) describes the check well. The validator checks coverage and the quotes, not the prose around them.
 - The survey. That is [[TST-0011-The-Survey-Lists-Changed-Screens-With-Before-And-After|TST-0011]].

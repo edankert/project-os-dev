@@ -27,11 +27,10 @@ Every file changes in `~/Dev/repos/project-os`, except TASK-0123, which syncs in
 
 ## Dependencies
 
-- **Hard:** ADR-0045 accepted, and its three open boxes answered (where a procedure lives, what it covers, whether an expectation quotes the check), before TASK-0119.
+- **Hard:** ADR-0045, accepted 2026-09-14 with its three open boxes answered: one file per sitting under `docs/tests/acceptance/walk/`, aiming to cover every live check, and expectation lines quoting the check's Expect text word for word. Nothing blocks TASK-0119.
 - **Soft:** the cockpit bundles `walk-sheet.py` byte for byte, so the validator should live in or beside that module rather than in `validate-docs.py`, or the cockpit needs a second bundle. Decide in TASK-0120.
-- **Downstream waits on this:** your-trainer TASK-0905 (sync) and TASK-0906 (procedures), project-os-cockpit TASK-0623 (procedure rendering).
+- **Downstream waits on this:** project-os-cockpit PHASE-044 starts once TASK-0119 fixes the format; your-trainer TASK-0905 (sync) and TASK-0906 (procedures) wait for TASK-0123.
 
 ## Open questions
 
 - Whether the validator runs inside `validate-docs.sh` (so pre-commit and CI refuse a bad procedure) or only as `walk-sheet.py --check`. A procedure goes stale when a ledger event lands, which is not a commit to the procedure, so a pre-commit check alone would miss it.
-- The tag spelling. `TST-0648·4` uses a middle dot, which is hard to type. `TST-0648#4` or `TST-0648.s4` are ASCII alternatives.

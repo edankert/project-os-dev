@@ -28,13 +28,13 @@ Edwin approved this wording on 2026-09-14: *"Before v2.2.0 ships, Edwin walks th
 Words used in this phase:
 
 - **procedure**: a written script for one sitting. It states the setup once, then numbered steps.
-- **expectation tag**: a label on a line of a procedure step, such as `TST-0648·4`, saying that line satisfies step 4 of check TST-0648.
+- **expectation tag**: an ASCII label on a line of a procedure step, such as `TST-0648.4`, saying that line satisfies step 4 of check TST-0648. The line quotes that check's Expect text word for word.
 - **owed part**: one numbered step of a check the release still owes. A check with no numbered steps is one part.
 - **gallery key**: the name a screenshot tool gives one captured screen, such as `equipment-hub-dataonly`.
 
 ## Scope
 
-- **Two decisions, both proposed.** [[ADR-0044-A-Surface-Is-A-Screen-By-Default|ADR-0044]]: a surface is a screen by default, with four rules for states, dialogs, checks that cross screens, and screens placed differently per platform. [[ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure|ADR-0045]]: it amends ADR-0029 so the survey comes from change notes and screenshots, and a sitting may be walked from an LLM-written procedure that a script holds to the owed set.
+- **Two decisions, both accepted by Edwin on 2026-09-14.** [[ADR-0044-A-Surface-Is-A-Screen-By-Default|ADR-0044]]: a surface is a screen by default, with four rules for states, dialogs, checks that cross screens, and screens placed differently per platform. [[ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure|ADR-0045]]: it amends ADR-0029 so the survey comes from change notes and screenshots, and a sitting may be walked from an LLM-written procedure that a script holds to the owed set.
 - **One requirement**: [[REQ-0029-A-Release-Walk-Reads-As-A-Script|REQ-0029]], what a person can observe on the result.
 - **[[FEAT-0030-A-Surface-Is-A-Screen-And-A-Change-Names-Its-Screens|FEAT-0030]]**: the surface rules (TASK-0116), a change note's Impact section naming screens (TASK-0117), and the survey built from change notes and before and after captures (TASK-0118).
 - **[[FEAT-0031-A-Sitting-Is-Walked-From-A-Written-Procedure|FEAT-0031]]**: the procedure format (TASK-0119), the validator (TASK-0120), the sheet printing only owed parts (TASK-0121), the skill that regenerates a procedure (TASK-0122), and the sync to the consumers and the cockpit (TASK-0123).
@@ -50,16 +50,39 @@ Words used in this phase:
 
 ## Exit Criteria
 
-- [ ] ADR-0044 and ADR-0045 are accepted, amended or declined by Edwin, and ADR-0029 carries a pointer to whichever amendment was accepted.
+- [x] ADR-0044 and ADR-0045 are accepted, amended or declined by Edwin, and ADR-0029 carries a pointer to whichever amendment was accepted. *(Both accepted 2026-09-14; ADR-0029 carries the pointer to ADR-0045.)*
 - [ ] REQ-0029 is implemented, each criterion ticked with evidence or amended with a recorded reason.
 - [ ] REQ-0028's survey criterion is amended in its `## Amendments` section, not reworded silently.
-- [ ] In the template, the fixture test proves the validator fails on an owed part no step cites, on a part two steps cite, on a tag naming a retired check, and on a tag naming a step the check does not have.
+- [ ] In the template, the fixture test proves the validator fails on an owed part no step cites, on a part two steps cite, on a tag naming a retired check, on a tag naming a step the check does not have, and on a quoted expectation that does not match the check's Expect text.
 - [ ] On your-trainer's REL-0017 Android sheet, the survey lists screens with no test id, and every sitting that has a procedure prints only steps that cite an owed part. That repo's own phase proves it; this criterion records the evidence.
 - [ ] TESTING.md "The walk" still states the rules once. The skills, templates, generator and cockpit link there.
 
+## Edwin's decisions, 2026-09-14
+
+> "v2.2.0 should wait. go with your recommendations for the others, will I start the project-os-dev and cockpit phase first?"
+
+"The recommendations" he accepted, recorded as his decisions:
+
+1. **The close-out step is accepted.** Change notes list the screens they changed, and an LLM drafts the sentence. ADR-0045 decision 2 stands and TASK-0117 goes ahead.
+2. **A procedure is written once per sitting for the whole product, not per release.** The validator decides what prints.
+3. **Each expectation line quotes the check's own Expect text word for word**, and the validator checks the quote. This keeps a pass from a procedure step within project-os-cockpit ADR-0041 (TASK-0119, TASK-0120).
+4. **The 12 to 15 surface target from project-os-cockpit FEAT-0130 applies to top-level screens only.** Children sit below them.
+5. **REL-0017 waits for PHASE-024** (your-trainer).
+
+Smaller points: procedures live in one file per sitting under `docs/tests/acceptance/walk/`, linked from WALK.md, and aim to cover every live check while the validator requires only the owed ones; the gallery-key map lives on the surface note as a `gallery:` list of `key` or `key:state`; captures are committed only for changed screens, as before and after pairs per release; cockpit step ticks live in per-workspace browser storage and the worst step mark decides the verdict; tags are ASCII, `TST-0648.4`; a check with unheaded prose steps is one part until the LLM writing its procedure numbers them.
+
+## Start order
+
+Edwin asked whether project-os-dev and the cockpit start first. The answer:
+
+1. **This phase goes first**: FEAT-0030's surface rules and FEAT-0031's procedure format and validator, TASK-0116 to TASK-0120.
+2. **In parallel**: your-trainer TASK-0900 (the mapping table), because it depends only on the accepted ADR-0044.
+3. **project-os-cockpit PHASE-044 starts once TASK-0119 has fixed the procedure format**, working against a fixture.
+4. **Then**: the template sync into your-trainer (TASK-0123 here, TASK-0905 there), then your-trainer's procedures (TASK-0906), then the end-to-end check (your-trainer TASK-0907, cockpit TASK-0626). TASK-0121 and TASK-0122 land before the sync.
+
 ## Notes
 
-- **Order.** ADR-0044 and ADR-0045 come first, because every task writes one of their rules. TASK-0116 and TASK-0119 land the text. TASK-0117 and TASK-0118 need TASK-0116. TASK-0120 and TASK-0121 need TASK-0119. TASK-0122 needs TASK-0120. TASK-0123 is last.
+- **Order inside this phase.** TASK-0116 and TASK-0119 land the text. TASK-0117 and TASK-0118 need TASK-0116. TASK-0120 and TASK-0121 need TASK-0119. TASK-0122 needs TASK-0120. TASK-0123 is last.
 - **Files change in the template repo** (`~/Dev/repos/project-os`). This repo holds the record, as in PHASE-0004. The template's own `SNAPSHOT.yaml` is a blank template and gets no planning items.
 - **Parallel work downstream.** your-trainer's screen mapping (its TASK-0900, which pauses for Edwin's approval) and the cockpit's step ticks (its TASK-0624, built against a fixture) can start before this phase finishes.
 - **Risk scan.** No new external dependency or environment variable. The generator gains one input (change notes since a git tag), which means it now runs `git` to find the last release tag. That is a new runtime dependency on git history being present, which a shallow CI clone does not have. Recorded on TASK-0118 as a design constraint rather than a `RISK-*`, because the fallback is stated there.

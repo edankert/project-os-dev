@@ -41,4 +41,4 @@ The template's `change.md` Impact section today says "affected areas/flows/workf
 
 ## Notes
 
-- This is a new close-out obligation. ADR-0029 rule 8 and project-os-cockpit ADR-0036 both argued against one. ADR-0045 records why this one is different: the survey's one input is recorded nowhere else. If Edwin declines ADR-0045 decision 2, this task is cancelled.
+- This is a new close-out obligation. ADR-0029 rule 8 and project-os-cockpit ADR-0036 both argued against one. ADR-0045 records why this one is different: the survey's one input is recorded nowhere else. Edwin accepted ADR-0045 decision 2 on 2026-09-14, so this task goes ahead.

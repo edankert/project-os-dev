@@ -26,10 +26,11 @@ A person writing a surface note reads, in one place, that a surface is a screen 
 
 ## Definition of Done
 
-- [ ] ADR-0044 is accepted (or amended) before this starts.
+- [x] ADR-0044 is accepted (or amended) before this starts. *(Accepted 2026-09-14.)*
 - [ ] `tools/instructions/TAXONOMY.md`, "`kind` (surfaces)", says `screen` is the default and states ADR-0044's four rules: a state is not a surface; a dialog, sheet or panel is a child with `parent:`; a check that walks several screens names their parent (or the screen it starts on); a screen placed differently per platform is one surface.
 - [ ] `docs/__templates__/surface.md` points at that section and restates none of it. Its "What it is" prompt asks where each platform places the screen.
-- [ ] If ADR-0044 puts the capture-key map on the surface note, `surface.md` and `SCHEMAS.md` gain the field (for example `captures: ["equipment-hub", "equipment-hub-dataonly: data-only"]`), and the validator accepts it. If it lives elsewhere, this box is cut with the reason.
+- [ ] `surface.md` and `SCHEMAS.md` gain the `gallery:` field Edwin chose on 2026-09-14: a list of `key` or `key:state` entries, for example `gallery: [equipment-hub, "equipment-hub-dataonly:data-only"]`. The validator accepts it.
+- [ ] TAXONOMY.md says the 12 to 15 surface target (from project-os-cockpit FEAT-0130) applies to top-level screens only, with children below.
 - [ ] `bash tools/scripts/validate-docs.sh` passes in the template.
 
 ## Steps

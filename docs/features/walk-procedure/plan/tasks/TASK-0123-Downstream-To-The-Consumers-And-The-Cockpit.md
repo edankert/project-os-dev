@@ -29,7 +29,7 @@ The template changes from FEAT-0030 and FEAT-0031 reach the two repos that use t
 - [ ] `tools/scripts/sync-project-os.sh` has run in your-trainer. Its diverged `validate-docs.py` is hand-merged, not overwritten, as in TASK-0115. This is your-trainer TASK-0905.
 - [ ] The same sync has run in project-os-cockpit, and `walk_sheet_bundled.py` is byte-identical to the template's `walk-sheet.py` again (its `tests/test_walk_bundle.py` passes).
 - [ ] The other repos with an acceptance suite (project-os-deck, your-sudoku) are synced, and `bash tools/scripts/validate-fleet.sh` shows no new errors against the pre-sync table.
-- [ ] REQ-0028's Amendments section records the survey change. ADR-0029 carries a one-line pointer to ADR-0045.
+- [ ] REQ-0028's Amendments section records the survey change. *(ADR-0029's pointer to ADR-0045 was added on 2026-09-14 when ADR-0045 was accepted.)*
 - [ ] This repo's vendored `tools/` is synced or its deferral is recorded.
 - [ ] Adapters regenerated in every synced repo.
 

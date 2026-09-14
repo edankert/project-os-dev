@@ -29,7 +29,7 @@ Today the survey groups invalidated checks by `area:` and quotes "Acceptance che
 
 In, all in the template repo:
 
-- **What a surface is** ([[TASK-0116-TAXONOMY-States-What-A-Surface-Is|TASK-0116]]). TAXONOMY.md and `surface.md` say a surface is a screen by default and state ADR-0044's four rules: states, dialogs as children, checks that cross screens, and per-platform placement. Plus where a gallery capture key maps to a surface and an optional state.
+- **What a surface is** ([[TASK-0116-TAXONOMY-States-What-A-Surface-Is|TASK-0116]]). TAXONOMY.md and `surface.md` say a surface is a screen by default and state ADR-0044's four rules: states, dialogs as children, checks that cross screens, and per-platform placement. Plus the `gallery:` field on a surface note: a list of `key` or `key:state` entries (decided 2026-09-14).
 - **What a change note records** ([[TASK-0117-A-Change-Note-Names-The-Screens-It-Changed|TASK-0117]]). `change.md`'s Impact section lists `SUR-*` ids, each with one rider-facing sentence. The change-note and close-out skills ask an LLM to draft it from the diff.
 - **How the survey is built** ([[TASK-0118-The-Survey-Comes-From-Change-Notes-And-Captures|TASK-0118]]). TESTING.md rule 2 and `walk-sheet.py`: change notes merged since the last release tag, grouped by the surfaces they name, with before and after captures.
 

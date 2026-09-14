@@ -25,10 +25,9 @@ Every file changes in `~/Dev/repos/project-os`. This repo holds the record. your
 
 ## Dependencies
 
-- **Hard:** ADR-0044 accepted before TASK-0116; ADR-0045 accepted before TASK-0117 and TASK-0118 change TESTING.md.
+- **Hard:** ADR-0044 and ADR-0045, both accepted 2026-09-14. Nothing blocks TASK-0116.
 - **Soft:** TASK-0121 in FEAT-0031 edits the same `render()` in `walk-sheet.py`; land TASK-0118 first or rebase deliberately.
 
 ## Open questions
 
-- Where the capture-key map lives: a `captures:` field on each surface note, or one file owned by the gallery tool (ADR-0044 acceptance box 2).
 - How the generator finds "the last release tag": the newest `REL-*` note at `status: released` and its `tag:`, or the newest git tag matching a pattern. your-trainer tags Android as `v2.1.8` and iOS as `ios/v0.1.0`, so it has to be per platform.

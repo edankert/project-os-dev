@@ -27,15 +27,15 @@ A script reads a sitting's procedure, the check notes and the ledger, and fails 
 ## Definition of Done
 
 - [ ] For a release and platform, the validator computes owed parts from the same owed set `walk-sheet.py` uses (one implementation, ADR-0029 rule 7).
-- [ ] It fails, naming the check and step, when: an owed part is cited by no step; an owed part is cited by more than one step; a tag names a check at `status: retired`; a tag names a step number the check does not have.
+- [ ] It fails, naming the check and step, when: an owed part is cited by no step; an owed part is cited by more than one step; a tag names a check at `status: retired`; a tag names a step number the check does not have; a quoted expectation does not match the check's Expect text (the check's own wording, compared after normalising whitespace only).
 - [ ] It also fails when a tag names a check that belongs to a different sitting, or say in this task why that is allowed.
-- [ ] It passes a procedure that cites every owed part exactly once, even when it also cites parts that are not owed.
+- [ ] It passes a procedure that cites every owed part exactly once, even when it also cites parts that are not owed, and does not fail on live checks the procedure does not yet cover. Coverage of every live check is the aim, reported as a count, not a failure.
 - [ ] A fixture harness proves each failure with its own fixture and proves the pass. It is the `command:` on [[TST-0010-A-Procedure-Covers-Every-Owed-Part-Exactly-Once|TST-0010]], and each assertion is shown to fail when its rule is removed (record the mutations in TST-0010's `adequacy:`).
-- [ ] Where it runs is decided (PLAN.md open question 1): `walk-sheet.py --check`, a `validate-docs.sh` rule, or both. Record why.
+- [ ] Where it runs is decided (PLAN.md, open questions): `walk-sheet.py --check`, a `validate-docs.sh` rule, or both. Record why.
 
 ## Steps
 
-- [ ] Write the four failing fixtures first.
+- [ ] Write the five failing fixtures first (four coverage defects and one quote mismatch).
 - [ ] Put the code where the cockpit's byte-identical bundle picks it up (PLAN.md soft dependency).
 
 ## Notes

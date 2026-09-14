@@ -21,7 +21,7 @@ related: ["[[ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure]]", "[[ADR-00
 
 ## Goal
 
-A person walking a sitting reads one procedure. It states the setup once. Each numbered step names the screen it happens on. Each line saying what should be seen carries a tag such as `TST-0648·4`, meaning it satisfies step 4 of check TST-0648. The walk sheet prints only the steps that cite something the release still owes. A validator refuses the procedure if an owed step is cited by nothing, cited twice, or cited from a retired check or a step that does not exist.
+A person walking a sitting reads one procedure. It states the setup once. Each numbered step names the screen it happens on. Each line saying what should be seen quotes the check's own Expect text word for word and carries an ASCII tag such as `TST-0648.4`, meaning it satisfies step 4 of check TST-0648. The procedure lives in one file per sitting under `docs/tests/acceptance/walk/`, linked from WALK.md, and is written once for the whole product, not per release. The walk sheet prints only the steps that cite something the release still owes. A validator refuses the procedure if an owed step is cited by nothing, cited twice, or cited from a retired check or a step that does not exist, or if a quoted expectation does not match the check.
 
 Today the sheet prints each check separately inside a sitting. On your-trainer's v2.2.0 sheet the fake-trainer setup is printed four times in one sitting and the drivable-trainer comparison four times across checks ([[ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure|ADR-0045]], Context).
 
@@ -44,13 +44,13 @@ Out:
 
 ## What an owed part is
 
-The validator needs a unit to count. The planning assumption, to be confirmed in TASK-0119: an **owed part** is one numbered item under a check's `## Steps` heading (or `## Procedure` where Steps is absent), for a check the ledger says this platform owes. A check whose steps are not numbered is one part, cited by its bare id. This matches the way the review counted repetition ("TST-0648 steps 12 to 15").
+The validator needs a unit to count. Decided by Edwin on 2026-09-14: an **owed part** is one numbered item under a check's `## Steps` heading (or `## Procedure` where Steps is absent), for a check the ledger says this platform owes. A check whose steps are not numbered is one part, cited by its bare id. This matches the way the review counted repetition ("TST-0648 steps 12 to 15").
 
-It depends on how many owed checks have numbered steps. [[ISS-0064-A-Walk-Row-Falls-Back-For-Steps-And-Not-For-Expect|ISS-0064]] measured that most your-trainer rows keep their procedure in unheaded prose, so many will be one part each until they are rewritten.
+It depends on how many owed checks have numbered steps. [[ISS-0064-A-Walk-Row-Falls-Back-For-Steps-And-Not-For-Expect|ISS-0064]] measured that most your-trainer rows keep their procedure in unheaded prose, so many will be one part each. The LLM writing a sitting's procedure numbers those steps in the check note when it gets to them, and the check then has one part per step.
 
 ## Acceptance
 
-- The fixture test fails the validator on each of the four defects, one fixture each, and passes a procedure that cites every owed part once. [[TST-0010-A-Procedure-Covers-Every-Owed-Part-Exactly-Once|TST-0010]].
+- The fixture test fails the validator on each of the five defects (the four coverage defects and a quoted expectation that does not match), one fixture each, and passes a procedure that cites every owed part once. [[TST-0010-A-Procedure-Covers-Every-Owed-Part-Exactly-Once|TST-0010]].
 - On a fixture sitting with a procedure and some checks already passed, the sheet prints the setup once and only the steps that cite an owed part.
 - On a fixture sitting with no procedure, the sheet prints exactly what it prints today.
 - The procedure skill exists and tells the agent to rerun the validator before keeping a regenerated procedure.

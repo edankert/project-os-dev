@@ -22,7 +22,7 @@ tests: []
 
 ## What
 
-When the validator reports that a sitting's procedure no longer covers its owed parts, an agent follows one skill to rewrite it. The skill gives the LLM the sitting's state and bench from WALK.md, each check's Setup, Steps and Expect, and the surface notes. It asks for setup once, a surface on every step, one shared step where checks share an action, and tags on every expectation. It reruns the validator and keeps the procedure only when it passes.
+When the validator reports that a sitting's procedure no longer covers its owed parts, an agent follows one skill to rewrite it. The skill gives the LLM the sitting's state and bench from WALK.md, each check's Setup, Steps and Expect, and the surface notes. It asks for setup once, a surface on every step, one shared step where checks share an action, and expectation lines that quote each check's Expect text word for word with ASCII tags. Where a check's steps are unheaded prose, the agent numbers them in the check note first, then cites them. It reruns the validator and keeps the procedure only when it passes.
 
 ## Definition of Done
 

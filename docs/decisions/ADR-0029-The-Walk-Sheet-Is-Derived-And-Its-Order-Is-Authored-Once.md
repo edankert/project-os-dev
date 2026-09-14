@@ -19,6 +19,8 @@ related: ["[[ADR-0027-An-Acceptance-Check-Is-Walkable-By-A-Stranger]]", "[[ADR-0
 
 # The walk sheet is derived, and its order is authored once
 
+> [!note] Amended 2026-09-14 by [[ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure|ADR-0045]], accepted by Edwin the same day. Rules 2, 5 and 8 changed: the survey comes from change notes and before and after captures, a sitting may be walked from a written procedure that a validator holds to the owed set, and change notes now list the screens they changed at close-out. Rules 1, 3, 4, 6 and 7 stand. The text below is left as it was decided.
+
 ## Rule
 
 Every release walk in a project-os repo is presented as a walk sheet whose rows are exactly the ledger's owed manual checks for that release and platform, whose sittings follow the project's `docs/tests/acceptance/WALK.md` in file order, and whose first section is the survey of the surfaces the release changed.

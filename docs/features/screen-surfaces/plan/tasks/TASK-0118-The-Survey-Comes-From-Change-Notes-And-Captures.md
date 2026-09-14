@@ -36,7 +36,7 @@ The first section of the walk sheet lists the screens changed since the last rel
 
 ## Steps
 
-- [ ] Settle the tag lookup (PLAN.md open question 2) before writing code.
+- [ ] Settle the tag lookup (PLAN.md, the release-tag open question) before writing code.
 - [ ] Write the fixture first, watch the survey assertions fail, then change the generator.
 - [ ] Rerun the 28 existing TST-0009 mutations that touch the survey; record which ones no longer apply.
 
