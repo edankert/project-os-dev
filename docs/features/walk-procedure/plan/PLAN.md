@@ -1,7 +1,7 @@
 ---
 type: "[[plan]]"
 title: "Delivery plan — a written procedure per sitting, a validator, and the sheet that prints owed steps"
-status: draft
+status: done
 owner: user:edwin
 created: 2026-09-14
 updated: 2026-09-14
@@ -31,6 +31,10 @@ Every file changes in `~/Dev/repos/project-os`, except TASK-0123, which syncs in
 - **Soft:** the cockpit bundles `walk-sheet.py` byte for byte, so the validator should live in or beside that module rather than in `validate-docs.py`, or the cockpit needs a second bundle. Decide in TASK-0120.
 - **Downstream waits on this:** project-os-cockpit PHASE-044 starts once TASK-0119 fixes the format; your-trainer TASK-0905 (sync) and TASK-0906 (procedures) wait for TASK-0123.
 
-## Open questions
+## Answered questions
 
-- Whether the validator runs inside `validate-docs.sh` (so pre-commit and CI refuse a bad procedure) or only as `walk-sheet.py --check`. A procedure goes stale when a ledger event lands, which is not a commit to the procedure, so a pre-commit check alone would miss it.
+- **Where the validator runs.** Settled 2026-09-14: **both**. `walk-sheet.py --check` is the command a person runs and the one the two release skills call; `validate-docs.sh` also calls it, for every platform with a ledger, because the staleness the question worried about arrives as a **ledger event** and a ledger event *is* a commit — to `docs/releases/ledgers/*.json`. The code sits in `walk-sheet.py` so the cockpit keeps one byte-identical bundle. `validate-docs.sh` passes `--quiet`, so only a real disagreement speaks on a commit; the worklist remarks belong to the hand-run command. Recorded on [[TASK-0120-The-Procedure-Validator|TASK-0120]].
+
+## What landed
+
+All five tasks, 2026-09-14, in template commits c3cdb4c, a0c80e3 and 0f1b673. The soft dependency was taken up: the validator lives in the module the cockpit bundles, and `walk_sheet_bundled.py` is byte-identical again.

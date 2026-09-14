@@ -3,7 +3,7 @@ type: "[[feature]]"
 id: FEAT-0031
 aliases: ["FEAT-0031"]
 title: "A sitting is walked from a written procedure: setup once, a screen on every step, each expectation tagged with its check, and a validator that holds it to the owed set"
-status: backlog
+status: done
 phase: "[[PHASE-0005]]"
 owner: user:edwin
 created: 2026-09-14

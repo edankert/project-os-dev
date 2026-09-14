@@ -46,10 +46,10 @@ tags: [skills, closeout]
    - create `../../../docs/changes/CHG-YYYYMMDD-Short-Description.md`
    - link it to `issues`/`features` in note + snapshot
    - A document written for a person (a review, a report, a design) is filed as a `reference` note under `docs/reference/` in Markdown, from `../../../docs/__templates__/reference.md`; a page published outside the repo is a copy, and its URL goes in the note's `source:`. Reason: the cockpit lists reference notes and nothing lists a page on another host, so a deliverable that lives only there is invisible to the next session (project-os-dev ISS-0045).
-6. **Acceptance checks this change reopened:**
-   - If the work changed a surface an acceptance check asserts against, record an **invalidation event** in the working ledger for each such check, naming this change or task id. The event is what a walk sheet's survey reads, and it is refused without a change id (`../../instructions/TESTING.md`, "The walk", rule 2).
-   - Optionally write `## Acceptance checks reopened` on the task or change note: the screens to look at and the checks, or "None" and why. The section is prose for the walker; the event is what the gate reads.
-   - **This is the only thing the walk adds to close-out**, and it asks nothing when nothing was reopened. Do not enumerate the suite: name the checks whose surface this change actually touched.
+6. **The screens this change altered, and the checks it reopened:**
+   - **Write the change note's `## Impact` list.** Ask an LLM to draft it from the diff and the repo's `SUR-*` notes: one `[[SUR-####]]` link per screen altered, each with one sentence a person using the product would understand. Check that every id resolves to a surface note. A change that altered no screen writes `No screen changed` and the reason. This list is the only input a release walk's survey has, and it is recorded nowhere else (`../../instructions/TESTING.md`, "The walk", rule 2).
+   - If the work changed a screen an acceptance check asserts against, also record an **invalidation event** in the working ledger for each such check, naming this change or task id. The ledger refuses it without one, and the reason on the event is why that check is owed again.
+   - **These two are what the walk adds to close-out.** Do not enumerate the suite: name the screens this change actually altered and the checks that assert against them.
 7. **Risk scan:**
    - Review the completed work against risk scan triggers in `../../instructions/LIFECYCLE.md`.
    - If any trigger applies, run `../risk-scan/SKILL.md` and create/update `RISK-*` notes.

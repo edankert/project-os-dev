@@ -15,12 +15,36 @@ This file defines default allowed values for common fields so multiple agents/LL
 Projects may override; if you do, update templates and any automation that assumes these values.
 
 ## `kind` (surfaces)
-- `screen` — a place a person navigates to
+
+**A surface is a screen unless its `kind` says otherwise.** A `SUR-*` note names the place a person opens, and a check's `area:` names one of them. The name is written once, in the surface note, instead of retyped on every check that touches it — 94 distinct `area:` strings across one repo's 581 checks is what the type exists to end.
+
+- `screen` — a place a person navigates to. **The default**, and the value a new surface note is born with.
 - `flow` — a sequence across screens, named because it is walked as one thing
 - `subsystem` — a behaviour with no single screen (sync, licensing, physics)
 - `surface-less` — the honest answer where a check is about the record, the build or the repo rather than the product
 
-A `SUR-*` names a place in the product; a check's `area:` names one of these. **The name is written once, in the surface note, instead of retyped on every check that touches it** — 94 distinct `area:` strings across one repo's 581 checks is what the type exists to end.
+`subsystem` and `surface-less` are for a check that has no screen. They are not a place to file a screen that was hard to name.
+
+### The four rules (project-os-dev ADR-0044)
+
+The first large corpus built its surfaces by merging test categories, so its walk sheets name "Hardware", which spans five screens, and never name the screen a person opens. These four rules are what that cost. They are stated here and nowhere else.
+
+1. **A state is not a surface.** Data-only mode, the pacer switched on and the FREE tier are states of a screen; the screen is the surface. your-trainer's equipment panel in data-only mode is the equipment panel, not a second surface. Where a screenshot tool captures a state separately, its key maps to the surface plus the state — `gallery` below.
+2. **A dialog, sheet or panel is a child surface.** It gets its own `SUR-*` note with `parent:` naming the screen it opens from, and a check about the dialog names the dialog. your-trainer's HR-zone interval sheet is a child of the ride cockpit.
+3. **A check that walks several screens names their parent screen.** Where the screens share no parent, the check names the screen it starts on. A check that opens Workouts and then rides in the cockpit names whichever of the two it starts on.
+4. **A screen placed differently per platform is still one surface.** The equipment panel sits on the Workouts screen on Android and inside an Equipment Hub on iOS. One `SUR-*` note covers both, and its "What it is" paragraph says where each platform puts it.
+
+**The 12 to 15 surface target applies to top-level screens only** (project-os-cockpit FEAT-0130). Children — dialogs, sheets, panels, sections — sit under their parent and do not count toward it.
+
+## `gallery` (surfaces)
+
+A surface note lists the screenshot keys that capture it, so a walk sheet can show the screen as it was at the last release beside the screen as it is now:
+
+```yaml
+gallery: [equipment-hub, "equipment-hub-dataonly:data-only"]
+```
+
+Each entry is a capture key, or `key:state` where that key captures the screen in one state. The keys are whatever the repo's own gallery command produces; where the walk sheet looks for the image files is `TESTING.md`, "The walk", rule 2.
 
 ## `status` (surfaces)
 - `active`, `retired`, `superseded`

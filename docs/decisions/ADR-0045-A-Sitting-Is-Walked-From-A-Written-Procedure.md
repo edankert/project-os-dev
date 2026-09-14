@@ -71,7 +71,7 @@ Edwin approved the goal on 2026-09-14 and added that the procedure may be writte
 - [x] **Where a procedure lives is decided.** One file per sitting under `docs/tests/acceptance/walk/`, linked from WALK.md (Edwin, 2026-09-14).
 - [x] **What a procedure covers is decided.** Each file aims to cover every live check in its sitting; the validator's hard requirement is only the owed parts (Edwin, 2026-09-14).
 - [x] **Whether an expectation line quotes the check's own Expect text is decided.** It does, word for word, and the validator checks the quote (Edwin, 2026-09-14).
-- [ ] **REQ-0028's Amendments section records the survey change.**
+- [x] **REQ-0028's Amendments section records the survey change.** Written 2026-09-14, with the measurement behind it: an invalidation names a check and never a screen, and twelve change notes since your-trainer's v2.1.8 tag carry four Impact sections, none naming a screen.
 
 ## Decision record
 

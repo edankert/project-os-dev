@@ -46,6 +46,10 @@ The verdict model is stated once, in `../../instructions/STATUSES.md` `[[test]]`
 - **An acceptance check** (`level: acceptance`, no `command:`) is settled per release and platform in the ledger. Unsettled for this release and platform is **BLOCKED**.
 - **A manual test** (no `command:`, any other level) carries a hand-written verdict and `last_verified:`. **CURRENT**: `status: passing` and `last_verified` inside the staleness window and after the latest `updated` among the tasks under its features. **STALE**: `last_verified` older than that. **UNTESTED**: `status: ready` or `draft`. **FAILING**: `status: failing`.
 
+### 3a. Check the procedures the walk will print
+- Run `python3 tools/scripts/walk-sheet.py --check --platform <platform>`. A sitting with a written procedure is walked from that script, and the script is authored text that can disagree with the owed set after a single ledger event (`../../instructions/TESTING.md`, "The walk", rule 9).
+- Report each refusal in the matrix's notes and rewrite it with `../walk-procedure/SKILL.md` before the walk starts. This is not a release blocker on its own: a refused procedure falls back to per-check rows and nothing owed is hidden.
+
 ### 4. Produce the release test matrix
 Present the results as a table:
 

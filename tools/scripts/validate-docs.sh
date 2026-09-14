@@ -67,4 +67,35 @@ for arg in "$@"; do
   fi
 done
 
-exec python3 "$SCRIPT_DIR/validate-docs.py" "$@"
+# Which repo the caller means. validate-docs.py works it out for itself; the
+# walk check below is a second process and has to be told.
+repo_root="$ROOT"
+expect_root=""
+for arg in "$@"; do
+  if [[ -n "$expect_root" ]]; then repo_root="$arg"; expect_root=""; continue; fi
+  case "$arg" in
+    --repo-root) expect_root=1 ;;
+    --repo-root=*) repo_root="${arg#--repo-root=}" ;;
+  esac
+done
+
+status=0
+python3 "$SCRIPT_DIR/validate-docs.py" "$@" || status=$?
+
+# A sitting's procedure is authored text that cites acceptance checks, and a
+# ledger event can make it stale without anyone editing it (see
+# tools/instructions/TESTING.md, "The walk", rule 9). So it is checked here,
+# where pre-commit and CI both look, rather than only when somebody remembers
+# to run the generator. Silent and exit 0 in a repo with no ledger, no
+# procedures, or no walk-sheet.py.
+#
+# --quiet always: the walk check also REPORTS things that are nobody's mistake
+# — a sitting nobody has scripted yet, a change note written before the Impact
+# rule existed. Printing those on every commit is how validator output stops
+# being read. They are the worklist `walk-sheet.py --check`, release-prep and
+# release-verification print; here, only a real disagreement speaks.
+if [[ -f "$SCRIPT_DIR/walk-sheet.py" && -f "$repo_root/SNAPSHOT.yaml" ]]; then
+  python3 "$SCRIPT_DIR/walk-sheet.py" --check --repo-root "$repo_root" --quiet || status=$?
+fi
+
+exit $status

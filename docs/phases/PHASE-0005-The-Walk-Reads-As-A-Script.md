@@ -3,7 +3,7 @@ type: "[[phase]]"
 id: PHASE-0005
 aliases: ["PHASE-0005"]
 title: "The walk reads as a script: changed screens first, then one written procedure per sitting"
-status: planned
+status: done
 order: 5
 owner: user:edwin
 created: 2026-09-14
@@ -51,11 +51,11 @@ Words used in this phase:
 ## Exit Criteria
 
 - [x] ADR-0044 and ADR-0045 are accepted, amended or declined by Edwin, and ADR-0029 carries a pointer to whichever amendment was accepted. *(Both accepted 2026-09-14; ADR-0029 carries the pointer to ADR-0045.)*
-- [ ] REQ-0029 is implemented, each criterion ticked with evidence or amended with a recorded reason.
-- [ ] REQ-0028's survey criterion is amended in its `## Amendments` section, not reworded silently.
-- [ ] In the template, the fixture test proves the validator fails on an owed part no step cites, on a part two steps cite, on a tag naming a retired check, on a tag naming a step the check does not have, and on a quoted expectation that does not match the check's Expect text.
-- [ ] On your-trainer's REL-0017 Android sheet, the survey lists screens with no test id, and every sitting that has a procedure prints only steps that cite an owed part. That repo's own phase proves it; this criterion records the evidence.
-- [ ] TESTING.md "The walk" still states the rules once. The skills, templates, generator and cockpit link there.
+- [x] REQ-0029 is implemented, each criterion ticked with evidence or amended with a recorded reason. *(All eight ticked 2026-09-14, each naming the code and the assertion behind it.)*
+- [x] REQ-0028's survey criterion is amended in its `## Amendments` section, not reworded silently. *(Written 2026-09-14: criterion 2 is superseded by ADR-0045 decision 1, with the measurement that decided it and a pointer to REQ-0029 criterion 3.)*
+- [x] In the template, the fixture test proves the validator fails on an owed part no step cites, on a part two steps cite, on a tag naming a retired check, on a tag naming a step the check does not have, and on a quoted expectation that does not match the check's Expect text. *(Five defects, one fixture each, plus six more the ADR did not name. 28 mutations, none survived — [[TST-0010-A-Procedure-Covers-Every-Owed-Part-Exactly-Once|TST-0010]].)*
+- [~] On your-trainer's REL-0017 Android sheet, the survey lists screens with no test id, and every sitting that has a procedure prints only steps that cite an owed part. **Cut from this phase, because it is another repo's work and Edwin decided on 2026-09-14 that v2.2.0 waits.** your-trainer's PHASE-024 has to run first: TASK-0900 (the surface mapping Edwin approves), TASK-0902 (the `area:` rewrite), TASK-0904 (captures) and TASK-0906 (the procedures). The machinery is there and synced — `walk-sheet.py --check` runs clean on that repo today, reporting thirteen sittings with no procedure and seven change notes with no Impact list, which is the worklist. Measured there 2026-09-14: 39 owed Android checks, 180 owed parts, 16 surfaces, no `gallery:` key yet.
+- [x] TESTING.md "The walk" still states the rules once. The skills, templates, generator and cockpit link there. *(Rule 2 replaced, rules 5 and 8 narrowed, rule 9 added; "Nine rules" now. Everything downstream links by section name and restates none of it.)*
 
 ## Edwin's decisions, 2026-09-14
 
@@ -86,3 +86,19 @@ Edwin asked whether project-os-dev and the cockpit start first. The answer:
 - **Files change in the template repo** (`~/Dev/repos/project-os`). This repo holds the record, as in PHASE-0004. The template's own `SNAPSHOT.yaml` is a blank template and gets no planning items.
 - **Parallel work downstream.** your-trainer's screen mapping (its TASK-0900, which pauses for Edwin's approval) and the cockpit's step ticks (its TASK-0624, built against a fixture) can start before this phase finishes.
 - **Risk scan.** No new external dependency or environment variable. The generator gains one input (change notes since a git tag), which means it now runs `git` to find the last release tag. That is a new runtime dependency on git history being present, which a shallow CI clone does not have. Recorded on TASK-0118 as a design constraint rather than a `RISK-*`, because the fallback is stated there.
+
+## What this phase landed, 2026-09-14
+
+Template commits `c3cdb4c`, `a0c80e3` and `0f1b673`; synced and committed into your-trainer, project-os-cockpit, project-os-deck, your-sudoku and this repo's vendored `tools/`.
+
+A walk sheet now opens with the screens the release changed — each with the sentence a change note wrote for it and the screen at the last release beside the screen now — and a sitting that carries a written procedure prints as that procedure: the setup once, the steps that cite something still owed, each expectation line quoting the check's own words and saying which check step it satisfies.
+
+Five things are worth carrying forward:
+
+1. **The survey's input did not exist.** Twelve change notes since your-trainer's v2.1.8 tag, four with an `## Impact` section, none of the four naming a screen. That is what made the new close-out obligation the right call rather than an imposition — ADR-0029 rule 8 had refused one, and this is the exception it was refusing in ignorance of.
+2. **Half the corpus has no numbered steps.** Of 39 owed Android checks there, 18 number their steps and 21 do not, giving 180 owed parts. So the "unheaded prose is one part" rule is the common case, and the skill's step 2 — number them in the check note first — is where most of the work will be.
+3. **A measurement found a defect in the rule being written.** An Impact line reading "intervals.icu got its own, SUR-0016" in the middle of a sentence about `area:` values was read as a screen the release changed. The parser now requires the id to start the list item, and the fixture carries that exact sentence.
+4. **Two mutations survived the first pass and both taught something.** One showed a rule written so it could not be got wrong and therefore could not be tested; the other showed a guarantee that was invisible on the sheet but load-bearing for the cockpit's payload. Both are closed, and the second is why the harness now imports the module rather than only grepping its output.
+5. **The sync cost more than a file copy in one repo.** project-os-cockpit's `walk_payload` called the old API, so 37 of its tests went red the moment the module landed. Adapting the payload, rewriting its survey tests to the new rule and drawing the new shape plainly went with the sync, because a sync that leaves a downstream suite red is not a sync. The card layout and the per-step ticks stay that repo's PHASE-044.
+
+**Not done and deliberately so:** the exit criterion above about your-trainer's real sheet. That is its PHASE-024, and Edwin's decision on 2026-09-14 was that v2.2.0 waits.

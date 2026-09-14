@@ -69,7 +69,7 @@ Two more points, decided with the rules:
 
 ## Acceptance
 
-- [ ] **The four rules are in TASK-0116's TAXONOMY.md text and nowhere else.**
+- [x] **The four rules are in TASK-0116's TAXONOMY.md text and nowhere else.** Landed 2026-09-14, `tools/instructions/TAXONOMY.md`, "The four rules", one paragraph each with a your-trainer example. `surface.md`, `SCHEMAS.md` and `TESTING.md` link there and restate none of them; checked by grep across the template and the five synced repos.
 - [x] **Where the gallery-key-to-surface mapping lives is decided.** On the surface note, as a `gallery:` list of `key` or `key:state` entries. Decided by Edwin 2026-09-14 (Decision record below). Reason: the surface note is where a screen is described once, so its pictures belong there too, and no second file can drift from it.
 
 ## Decision record

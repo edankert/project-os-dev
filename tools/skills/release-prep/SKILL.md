@@ -40,6 +40,11 @@ tags: [skills, release]
 - If a check cannot be run, recording a **release exception** with justification is the user's decision (`TESTING.md`, "Release gating"; pause rule: `../../instructions/LIFECYCLE.md`, "When to pause for the user").
 - A repo that has not migrated to notes has no ledger and no sheet; read `docs/tests/ACCEPTANCE_TESTS.md` and list every check "Release gating" calls a blocker.
 
+### 2a. Hold each sitting's procedure to what the release owes
+- Run `python3 tools/scripts/walk-sheet.py --check --platform <platform>` before generating the sheet. A sitting walked from a written procedure goes stale without anyone editing it: a ledger event can make a new part owed (`../../instructions/TESTING.md`, "The walk", rule 9).
+- Rewrite every procedure it refuses, with `../walk-procedure/SKILL.md`, and run it again. A sitting whose procedure still fails prints its per-check rows, so nothing owed is hidden — but the walker then reads the long form of a sitting somebody had already scripted.
+- A sitting with no procedure is not a defect. It prints per-check rows, which is what every sitting did before ADR-0045.
+
 ### 2b. Docs consistency audit
 - Run `bash tools/scripts/validate-docs.sh` (mechanical) and `../docs-audit/SKILL.md` (cross-document, one bounded round) before drafting the release note — releases are the last chance to catch stale references before they ship as documentation.
 

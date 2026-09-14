@@ -65,6 +65,14 @@ Three further reproduced defects do not map to a criterion but produce a wrong s
 
 ## Amendments
 
+**Criterion 2, the survey, was replaced on 2026-09-14 by [[ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure|ADR-0045]] decision 1.** It said the sheet opens with every surface that has an owed check whose latest ledger event is an invalidation, naming the invalidating notes and quoting their `## Acceptance checks reopened` sections. That is now false of the sheet, and the criterion is superseded rather than failed: the survey lists the screens named in the `## Impact` section of every change note added since the last release tag, with each change's one rider-facing sentence and the screen's before and after captures, and it prints no check id at all.
+
+The reason is a measurement, not a preference. **An invalidation names a check and never a screen.** Grouping by the invalidated check's `area:` printed "Hardware" on your-trainer, which spans five screens, and "Riding — structured", which is a mode of the ride cockpit — so the first section of the sheet named test categories to a person who was about to open screens. Worse, a change that altered a screen and reopened no check was invisible, and half the `## Acceptance checks reopened` sections in the fleet say "None". Twelve change notes since your-trainer's v2.1.8 tag: four have an Impact section, none of the four names a screen. So the input the new rule needs was recorded nowhere, which is why ADR-0045 decision 2 adds the one close-out obligation ADR-0029 rule 8 had refused.
+
+What carries the criterion now is [[REQ-0029-A-Release-Walk-Reads-As-A-Script|REQ-0029]] criterion 3. The tick above stays as the record that the old rule was built and worked; it is not a claim about today's sheet. TESTING.md, "The walk", rule 2 is the normative text either way.
+
+---
+
 Three criteria were amended on 2026-09-13, after the independent review of FEAT-0029 reproduced findings against them. Each is recorded here rather than reworded silently.
 
 **"The sheet carries no time estimate anywhere"** was false of a real sheet and is now a claim about the generator. Measured on your-trainer's REL-0017 android sheet: three duration strings, all of them text the sheet quoted verbatim — "in about four minutes" twice inside a quoted `## Acceptance checks reopened` section, and "a 40-minute ride" inside a check's own title. The guard rail the cancelled ordering attempt left behind is that the walk must not *invent* a schedule, and that is what the criterion now says. TESTING.md rule 8 carries the same boundary.

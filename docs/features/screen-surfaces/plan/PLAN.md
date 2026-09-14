@@ -1,7 +1,7 @@
 ---
 type: "[[plan]]"
 title: "Delivery plan — surfaces are screens, change notes name them, and the survey shows them"
-status: draft
+status: done
 owner: user:edwin
 created: 2026-09-14
 updated: 2026-09-14
@@ -28,6 +28,10 @@ Every file changes in `~/Dev/repos/project-os`. This repo holds the record. your
 - **Hard:** ADR-0044 and ADR-0045, both accepted 2026-09-14. Nothing blocks TASK-0116.
 - **Soft:** TASK-0121 in FEAT-0031 edits the same `render()` in `walk-sheet.py`; land TASK-0118 first or rebase deliberately.
 
-## Open questions
+## Answered questions
 
-- How the generator finds "the last release tag": the newest `REL-*` note at `status: released` and its `tag:`, or the newest git tag matching a pattern. your-trainer tags Android as `v2.1.8` and iOS as `ios/v0.1.0`, so it has to be per platform.
+- **How the generator finds "the last release tag."** Settled 2026-09-14 in favour of the release notes: the newest `REL-*` at `status: released` whose `platform:` matches, sorted by `date:` then id, and its `tag:`. A tag pattern was the alternative and it is a guess — your-trainer tags Android `v2.1.8` and iOS `ios/v0.1.0`, so a pattern needs a per-platform convention that exists nowhere, while the release note already carries both the platform and the tag. The full reasoning and the three ways it can have no answer are on [[TASK-0118-The-Survey-Comes-From-Change-Notes-And-Captures|TASK-0118]].
+
+## What landed
+
+All three tasks, 2026-09-14, in template commits c3cdb4c, a0c80e3 and 0f1b673. The soft dependency held: TASK-0118 and TASK-0121 both edit `render()` and TASK-0118 landed first, so no rebase was needed.

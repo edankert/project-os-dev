@@ -3,7 +3,7 @@ type: "[[feature]]"
 id: FEAT-0030
 aliases: ["FEAT-0030"]
 title: "A surface is a screen, a change note names the screens it changed, and the survey shows those screens before and after"
-status: backlog
+status: done
 phase: "[[PHASE-0005]]"
 owner: user:edwin
 created: 2026-09-14

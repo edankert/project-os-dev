@@ -51,3 +51,4 @@ The numbers in a checklist are for reference, not an order. Steps that do not de
 - Adapter sync: `adapter-sync/SKILL.md`
 - Release preparation: `release-prep/SKILL.md`
 - Release verification: `release-verification/SKILL.md`
+- Walk procedure (write or rewrite a sitting's script): `walk-procedure/SKILL.md`

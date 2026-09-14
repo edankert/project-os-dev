@@ -69,6 +69,11 @@ Fields:
 - (optional) `review_date` (string/date): Date of the independent review.
 - (optional) `review_verdict` (string): `approved | changes-requested`.
 
+Body sections:
+- **`## Impact` is a list of the screens this change altered**, and `tools/scripts/walk-sheet.py` parses it to build a release walk's survey (project-os-dev ADR-0045 decision 2). The shape a parser reads: one list item per screen, beginning with a `[[SUR-####]]` link or a bare `SUR-####` id, then a separator (`:`, `—` or `-`), then one sentence in the words a person using the product would use. Everything after the separator is printed verbatim on the sheet.
+- A change that altered no screen writes one item reading **`No screen changed`** followed by the reason. The parser recognises that phrase and asks for nothing else. A change note with no Impact list at all contributes nothing to the survey and is reported by `walk-sheet.py --check`.
+- ~~`## Acceptance checks reopened`~~ — **removed (ADR-0045 decision 1).** The survey no longer reads it. Why a check was reopened is the `reason:` on the ledger's invalidation event, which the ledger refuses to accept without. Old change notes keep the section; nothing parses it.
+
 Where used:
 - Tracked in `SNAPSHOT.yaml` (`items.changes`) for agent context and linked from change notes.
 

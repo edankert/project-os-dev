@@ -188,12 +188,15 @@ has   "a never-walked check is owed"                           '^### \[TST-0004\
 has   "the header counts rows and sittings"                    '\*\*6 owed rows in 3 sittings\.\*\*'
 has   "the header says which count the validator reports"      'ISS-0060'
 
-# --- the survey
-has "the survey names the invalidated check's surface"     '^### Beta — 1 owed'
-has "the survey names the task that reopened it"           '^- \*\*TASK-0001\*\* — The banner moves to the second row'
-has "the survey quotes the reopened section"               '^> - TST-0006 — the banner it asserts against'
+# --- the survey. It named invalidated checks and their `area:` until
+# 2026-09-14; ADR-0045 decision 1 replaced that with the screens the change
+# notes name, so these assertions cover the new answer and the old ones were
+# rewritten here rather than deleted (TASK-0118).
 has "the survey prints WALK.md's gallery command"          'Regenerate and compare before walking anything: `make screens`'
-hasnt "an owed check nobody invalidated is not in the survey" '^### Alpha — '
+has "a repo with no released REL-* note says so in the survey" 'No release to compare against.*no released REL-\* note'
+has "and says why nothing is listed rather than printing an empty list" 'nothing says which change notes are new'
+hasnt "the survey no longer groups owed checks by their area" '^### Beta — 1 owed'
+hasnt "and no longer names the note that reopened one"       '^- \*\*TASK-0001\*\*'
 
 # --- order
 first=$(line_of '^## Sitting 1 — The trainer on the bench')
@@ -617,15 +620,12 @@ has "and its expected result"                                         '^- The ol
 has "an HTML comment above the title is not read as the steps"        '^Press the button and watch the row settle\.'
 hasnt "that comment does not reach the sheet"                         'imported from the v2.1.1 plan'
 has "a regression check is a manual row and stays on the sheet"       '^### \[TST-0203\]'
-has "an invalidation naming a CHANGE resolves its full id and title"  '^- \*\*CHG-20260913-The-Banner-Moves\*\* . The banner moves to the second row'
-# A ledger may name the same change by its canonical id instead. The fixture's
-# second surface carries that form, and it must resolve to the same note.
-has "an invalidation naming a change by its canonical id resolves too" '^- \*\*CHG-20260913\*\* . The banner moves to the second row'
-# A ledger may name the same change by its canonical id instead. The fixture's
-# second surface carries that form, and it must resolve to the same note.
-has "an invalidation naming a change by its canonical id resolves too" '^- \*\*CHG-20260913\*\* . The banner moves to the second row'
-has "and quotes that change notes reopened section"                   '^> - TST-0201 the banner it asserts against'
-has "a SUR note labels its surface in the survey"                     '^### Navigator \(SUR-0001\) . 1 owed'
+# The survey reads change notes now, not invalidation events. This fixture has
+# no released REL-* note, so it has no tag to date them against and says so --
+# the screens-and-captures answer is asserted on its own fixture below (TST-0011).
+hasnt "an invalidation no longer puts its change note in the survey" '^- \*\*CHG-20260913-The-Banner-Moves\*\*'
+hasnt "and its reopened section is no longer quoted"                 '^> - TST-0201 the banner it asserts against'
+hasnt "a surface is no longer headed by how many checks it owes"     '^### Navigator \(SUR-0001\) . 1 owed'
 has "a sitting may claim its checks by SUR id"                        '^## Sitting 1 . The navigator sitting'
 has "a trailing comment is stripped from a sittings state"            'State this sitting needs:\*\* A signed-in account\.$'
 # The template's own example puts a comment on `surfaces:`. Reading it as part
@@ -689,6 +689,463 @@ d["entries"].append({"check": "TST-0107", "mark": "pass", "date": "2026-13-45",
 json.dump(d, open(p, "w"))
 FIXDATE
 refuse "a date-shaped string that is not a date is refused" "$BAD" testbed "no usable date"
+
+# ---------------------------------------------------------------------------
+# TST-0011: the survey is the screens the change notes named since the last
+# release tag, with their sentences and their before and after pictures, and
+# no test id (ADR-0045 decision 1, TASK-0118). A real git repo, because the
+# tag and "added since it" are git questions.
+# ---------------------------------------------------------------------------
+SURVEY="$TMP/survey"
+mkdir -p "$SURVEY/docs/tests/acceptance" "$SURVEY/docs/releases/ledgers" \
+         "$SURVEY/docs/surfaces" "$SURVEY/docs/changes" \
+         "$SURVEY/docs/tests/acceptance/gallery/v1.0" \
+         "$SURVEY/docs/tests/acceptance/gallery/candidate"
+cp "$REPO/SNAPSHOT.yaml" "$SURVEY/SNAPSHOT.yaml"
+git_do() { git -C "$SURVEY" -c user.email=f@f -c user.name=fixture "$@" >/dev/null 2>&1; }
+
+surface_note() { # surface_note <id> <title> <parent> <gallery inline list>
+  cat > "$SURVEY/docs/surfaces/$1-Fixture.md" <<MD
+---
+type: "[[surface]]"
+id: $1
+title: "$2"
+status: active
+owner: user:fixture
+kind: screen
+parent: "$3"
+gallery: $4
+---
+
+# $2
+MD
+}
+surface_note SUR-0001 "Equipment panel" "" '[equipment-hub, "equipment-hub-dataonly:data-only"]'
+surface_note SUR-0002 "Ride cockpit"    "" '[cockpit]'
+surface_note SUR-0003 "Sensor dialog"   "[[SUR-0001]]" '[]'
+
+change_note() { # change_note <id> <title> <impact body>
+  cat > "$SURVEY/docs/changes/$1.md" <<MD
+---
+type: "[[change]]"
+id: $1
+title: "$2"
+status: merged
+owner: user:fixture
+---
+
+# $2
+
+## Impact
+
+$3
+
+## Follow-ups
+- [ ] none
+MD
+}
+change_note CHG-20260701-Before-The-Tag "The old shipped change" \
+  '- [[SUR-0002]]: the cockpit gained a lap counter before the tag.'
+cat > "$SURVEY/docs/releases/REL-0010-v1.0.md" <<'MD'
+---
+type: "[[release]]"
+id: REL-0010
+title: "v1.0"
+status: released
+owner: user:fixture
+version: "1.0"
+tag: "v1.0"
+date: "2026-08-01"
+platform: "testbed"
+---
+
+# v1.0
+MD
+cat > "$SURVEY/docs/tests/acceptance/TST-0501-Fixture.md" <<'MD'
+---
+type: "[[test]]"
+id: TST-0501
+title: "The survey fixture check"
+status: active
+owner: user:fixture
+scope: system
+level: acceptance
+area: "Equipment panel"
+---
+
+# The survey fixture check
+
+## Setup
+The bench.
+
+## Steps
+1. Open it.
+
+## Expect
+- It opens.
+MD
+cat > "$SURVEY/docs/releases/ledgers/WORKING-testbed.json" <<'JSON'
+{"platform": "testbed", "entries": [], "evidence": []}
+JSON
+printf 'before\n' > "$SURVEY/docs/tests/acceptance/gallery/v1.0/equipment-hub.png"
+printf 'after\n'  > "$SURVEY/docs/tests/acceptance/gallery/candidate/equipment-hub.png"
+printf 'after\n'  > "$SURVEY/docs/tests/acceptance/gallery/candidate/cockpit.png"
+git -C "$SURVEY" init -q 2>/dev/null
+git_do add -A
+git_do commit -m "before the tag"
+git_do tag v1.0
+# Added AFTER the tag: these are the survey.
+change_note CHG-20260902-The-Panel-Gains-A-Slot "The panel gains a slot" \
+  '- [[SUR-0001]]: a third slot appears, for a power meter.
+- [[SUR-0003]]: the dialog now asks which sensor kind to pair.'
+change_note CHG-20260903-The-Cockpit-Shows-Cadence "The cockpit shows cadence" \
+  '- SUR-0002: the cadence number sits beside the power number.'
+# A wikilink with display text is the ordinary Obsidian shape, and the sentence
+# starts after the link rather than after the id.
+change_note CHG-20260905-The-Panel-Names-The-Sensor "The panel names the sensor" \
+  '- [[SUR-0001-Equipment-Panel|the equipment panel]]: the sensor name is shown under the slot.'
+change_note CHG-20260904-A-Build-Script "A build script moved" \
+  '- No screen changed: it is a build script.'
+# An Impact line that MENTIONS a screen id in passing is not a line about that
+# screen. One of your-trainer's twelve change notes since v2.1.8 reads
+# "intervals.icu got its own, SUR-0016" in a sentence about `area:` values.
+change_note CHG-20260906-A-Passing-Mention "A passing mention" \
+  '- **Renamed:** eleven checks now point at SUR-0002, which is where the old label went.
+
+SUR-0002 also gained a tab, and this paragraph is not a list item.'
+git_do add -A
+git_do commit -m "after the tag"
+
+OUT="$(python3 "$SHEET" --release REL-0011 --platform testbed --repo-root "$SURVEY" 2>&1)"; code=$?
+check "the survey fixture generates a sheet" "$code" "$OUT"
+# The survey is everything between its heading and the first sitting.
+SURVEY_TEXT="$(printf '%s' "$OUT" | awk '/^## Survey/{on=1} on&&/^## Sitting/{on=0} on')"
+has "the survey says which release and tag it compared against" 'Compared against \*\*REL-0010\*\*, tagged `v1.0`'
+has "a screen a change note named since the tag is listed"  '^### Equipment panel \(SUR-0001\)'
+has "so is a screen named by the other change note"         '^### Ride cockpit \(SUR-0002\)'
+has "each screen carries the sentence its change wrote"     '^- a third slot appears, for a power meter\. — The panel gains a slot'
+has "a bare SUR id in an Impact line is read too"           '^- the cadence number sits beside the power number\.'
+has "a wikilink with display text is cut off the sentence"  '^- the sensor name is shown under the slot\. — The panel names the sensor'
+hasnt "a change note added BEFORE the tag is not in the survey" 'lap counter'
+# A dialog is a child surface (ADR-0044 rule 2) and prints under its parent.
+has "a child surface prints one level under its parent"     '^#### Sensor dialog \(SUR-0003\)'
+parent_line=$(line_of '^### Equipment panel'); child_line=$(line_of '^#### Sensor dialog')
+next_top=$(line_of '^### Ride cockpit')
+check "and prints between its parent and the next screen" \
+  "$( { [[ -n "$parent_line" && -n "$child_line" && -n "$next_top" && "$parent_line" -lt "$child_line" && "$child_line" -lt "$next_top" ]]; }; echo $?)" \
+  "parent=$parent_line child=$child_line next=$next_top"
+has "a screen with both pictures shows the one from the last release" '^!\[equipment-hub, at the last release\]\(docs/tests/acceptance/gallery/v1\.0/equipment-hub\.png\)'
+has "and the one of the build being walked"            '^!\[equipment-hub, now\]\(docs/tests/acceptance/gallery/candidate/equipment-hub\.png\)'
+has "a screen captured only now is marked new"         '`cockpit` . \*\*new\*\*'
+hasnt "a gallery key with no picture at either end prints nothing" 'equipment-hub-dataonly'
+hasnt "a No screen changed line is not printed as a screen"  'it is a build script'
+hasnt "an Impact line that only mentions an id is not a screen" 'which is where the old label went'
+hasnt "a paragraph under Impact is not read as a screen either"  'also gained a tab'
+check "the survey names no check at all" \
+  "$(printf '%s' "$SURVEY_TEXT" | grep -q 'TST-' && echo 1 || echo 0)" \
+  "$(printf '%s' "$SURVEY_TEXT" | grep -n 'TST-' | head -2 | tr '\n' ' ')"
+has "the rest of the sheet still prints its rows" '^### \[TST-0501\]'
+
+# A shallow clone has the commits and not the tag. The survey must say so and
+# the sheet must still print: a walker in CI is not helped by a crash.
+SHALLOW="$TMP/shallow"
+git clone -q --depth 1 "file://$SURVEY" "$SHALLOW" 2>/dev/null
+OUT="$(python3 "$SHEET" --release REL-0011 --platform testbed --repo-root "$SHALLOW" 2>&1)"
+has "a shallow clone says the tag is not in this checkout" 'the tag `v1.0` is not in this checkout'
+has "and still prints the rows below it"                   '^### \[TST-0501\]'
+hasnt "and lists no screen it cannot vouch for"            '^### Equipment panel'
+
+# A released note with no tag: the other way the survey loses its anchor.
+python3 - "$SURVEY/docs/releases/REL-0010-v1.0.md" <<'NOTAG'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1])
+p.write_text(p.read_text().replace('tag: "v1.0"', 'tag: ""'))
+NOTAG
+OUT="$(python3 "$SHEET" --release REL-0011 --platform testbed --repo-root "$SURVEY" 2>&1)"
+has "a released note carrying no tag says which note and why" 'REL-0010 is the newest released note for testbed and it carries no .tag:.'
+
+
+# ---------------------------------------------------------------------------
+# TST-0010: a procedure covers every owed part exactly once, the validator
+# refuses one that does not, and the sheet prints only the owed steps
+# (ADR-0045 decisions 3 to 5; TASK-0120, TASK-0121).
+#
+# One good fixture and one edit per defect. Each variant changes exactly one
+# line of the procedure, so an assertion that passes is pinned to the rule it
+# names rather than to a fixture that is broken in several ways at once.
+# ---------------------------------------------------------------------------
+PROC="$TMP/proc"
+mkdir -p "$PROC/docs/tests/acceptance/walk" "$PROC/docs/releases/ledgers" "$PROC/docs/surfaces"
+cp "$REPO/SNAPSHOT.yaml" "$PROC/SNAPSHOT.yaml"
+for n in 1 2; do
+  title="Equipment panel"; [[ "$n" == "2" ]] && title="Ride cockpit"
+  cat > "$PROC/docs/surfaces/SUR-000$n-Fixture.md" <<MD
+---
+type: "[[surface]]"
+id: SUR-000$n
+title: "$title"
+status: active
+owner: user:fixture
+kind: screen
+---
+
+# $title
+MD
+done
+# proc_check <id> <area> <steps block> <expect block>
+proc_check() {
+  cat > "$PROC/docs/tests/acceptance/$1-Fixture.md" <<MD
+---
+type: "[[test]]"
+id: $1
+title: "The $1 check"
+status: ${5:-active}
+owner: user:fixture
+scope: system
+level: acceptance
+area: "$2"
+---
+
+# The $1 check
+
+## Setup
+The bench.
+
+## Steps
+$3
+$4
+MD
+}
+proc_check TST-0401 Bench "1. Open the panel.
+2. Start the workout.
+3. Swap the trainer." "
+## Expect
+- The panel lists the trainer.
+- The target power is shown.
+- The trainer holds the target."
+proc_check TST-0402 Bench "1. Open the panel.
+2. Start the workout." "
+## Expect
+- The slot reads empty.
+- The cadence field stays empty."
+# Unnumbered steps: one owed part, cited by the bare id. 53 of your-trainer's
+# 61 owed rows looked like this on 2026-09-13 (project-os-dev ISS-0064).
+proc_check TST-0403 Bench "Open the panel and wait for the reading to arrive." "
+## Expect
+- The reading arrives."
+proc_check TST-0404 Bench "1. Unpair everything.
+2. Wait for the reading." "
+## Expect
+- The panel is empty again.
+- The reading arrives."
+proc_check TST-0405 Loose "1. Open it." "
+## Expect
+- It opens."
+proc_check TST-0406 Bench "1. Open the old thing." "
+## Expect
+- The old thing still works." retired
+# A check that never said what should happen. Its quote cannot be compared
+# against anything, so the validator says nothing rather than claiming a
+# mismatch it has no evidence for.
+proc_check TST-0407 Bench "1. Reboot the tablet." ""
+cat > "$PROC/docs/releases/ledgers/WORKING-testbed.json" <<'JSON'
+{
+  "platform": "testbed",
+  "entries": [
+    {"check": "TST-0404", "mark": "pass", "date": "2026-09-01", "by": "user:fixture", "method": "manual"}
+  ],
+  "evidence": []
+}
+JSON
+cat > "$PROC/docs/tests/acceptance/WALK.md" <<'MD'
+---
+type: "[[reference]]"
+title: "Walk order"
+status: active
+owner: user:fixture
+created: 2026-09-14
+updated: 2026-09-14
+---
+
+# Walk order
+
+### The bench
+
+```yaml
+surfaces: ["Bench"]
+state: "The bench powered."
+bench: ["The trainer"]
+```
+
+### No script
+
+```yaml
+surfaces: ["Loose"]
+state: "Anything."
+```
+MD
+cat > "$PROC/docs/tests/acceptance/walk/the-bench.md" <<'MD'
+---
+type: "[[reference]]"
+title: "Procedure — The bench"
+status: active
+owner: user:fixture
+created: 2026-09-14
+updated: 2026-09-14
+sitting: "The bench"
+---
+
+# Procedure — The bench
+
+## Setup
+
+The bench powered and the tablet awake.
+
+## Steps
+
+1. **Equipment panel (SUR-0001).** Open the panel.
+   - The panel lists the trainer. `TST-0401.1`
+   - The slot reads empty. `TST-0402.1`
+2. **Ride cockpit (SUR-0002).** Start the workout.
+   - The target power is shown. `TST-0401.2`
+   - The cadence field stays empty. `TST-0402.2`
+3. **Ride cockpit (SUR-0002).** Swap the trainer and read the panel.
+   - The trainer holds the target. `TST-0401.3`
+   - The reading arrives. `TST-0403` `TST-0404.2`
+4. **Equipment panel (SUR-0001).** Unpair everything.
+   - The panel is empty again. `TST-0404.1`
+5. **Equipment panel (SUR-0001).** Reboot the tablet.
+   - Nothing in this line is in any Expect section. `TST-0407.1`
+MD
+
+# --- step 1 of TST-0010: the procedure that covers every owed part once
+OUT="$(python3 "$SHEET" --check --platform testbed --repo-root "$PROC" 2>&1)"; code=$?
+check "--check passes a procedure that cites every owed part once" "$code" "$OUT"
+has "and says which sittings still have no procedure" 'no procedure yet for: No script'
+hasnt "a check that states no expected result is not called a mismatch" 'quotes TST-0407'
+hasnt "and citing a part that is NOT owed is not a failure"            'TST-0404'
+
+variant() { # variant <name> <old line> <new line> -> echoes the repo path
+  local dir="$TMP/proc-$1"
+  rm -rf "$dir"; cp -R "$PROC" "$dir"
+  OLD="$2" NEW="$3" python3 - "$dir/docs/tests/acceptance/walk/the-bench.md" <<'PY'
+import os, pathlib, sys
+p = pathlib.Path(sys.argv[1])
+t = p.read_text(encoding="utf-8")
+old, new = os.environ["OLD"], os.environ["NEW"]
+assert old in t, "variant fixture: %r is not in the procedure" % old
+p.write_text(t.replace(old, new, 1), encoding="utf-8")
+PY
+  printf '%s' "$dir"
+}
+procfail() { # procfail <label> <dir> <pattern>
+  local out code
+  out="$(python3 "$SHEET" --check --platform testbed --repo-root "$2" 2>&1)"; code=$?
+  check "$1" "$( { [[ $code -eq 1 ]] && printf '%s' "$out" | grep -Eq "$3"; }; echo $?)" "exit $code: $out"
+}
+
+# --- steps 2 to 5a of TST-0010: one defect each, each message naming the
+# check and the step involved
+UNCITED="$(variant uncited '   - The reading arrives. `TST-0403` `TST-0404.2`' '   - The reading arrives. `TST-0404.2`')"
+procfail "an owed part no step cites is refused, and named" "$UNCITED" \
+  'owes TST-0403 \(one part, its steps are not numbered\) and no step cites it'
+TWICE="$(variant twice '   - The target power is shown. `TST-0401.2`' '   - The target power is shown. `TST-0401.2` `TST-0401.1`')"
+procfail "an owed part two steps cite is refused, and both steps named" "$TWICE" \
+  'TST-0401 step 1 is cited by steps 1, 2'
+RETIRED_V="$(variant retired '   - The slot reads empty. `TST-0402.1`' '   - The slot reads empty. `TST-0402.1`
+   - The old thing still works. `TST-0406.1`')"
+procfail "a tag naming a retired check is refused" "$RETIRED_V" \
+  'step 1 of .*the-bench\.md cites TST-0406, which is retired'
+MISSING="$(variant missing '`TST-0401.3`' '`TST-0401.9`')"
+procfail "a tag naming a step the check does not have is refused" "$MISSING" \
+  'cites step 9 of TST-0401, which has steps 1, 2, 3'
+MISMATCH="$(variant mismatch '   - The target power is shown. `TST-0401.2`' '   - The target power is showing. `TST-0401.2`')"
+procfail "a quoted expectation that does not match the check is refused" "$MISMATCH" \
+  'quotes TST-0401 as .The target power is showing'
+# Decided in TASK-0120: a check belongs to one sitting (rule 3), so a tag from
+# another sitting's procedure either walks it twice or hides it.
+CROSS="$(variant cross '`TST-0403` `TST-0404.2`' '`TST-0403` `TST-0404.2` `TST-0405.1`')"
+procfail "a tag naming a check another sitting claims is refused" "$CROSS" \
+  'cites TST-0405, which the sitting "No script" claims'
+BARE="$(variant bare '`TST-0401.1`' '`TST-0401`')"
+procfail "a bare tag on a check that numbers its steps is refused" "$BARE" \
+  'cites TST-0401 with no step number, and that check numbers 3 steps'
+UNKNOWN="$(variant unknown '`TST-0402.1`' '`TST-0402.1` `TST-0999.1`')"
+procfail "a tag naming no check at all is refused" "$UNKNOWN" \
+  'cites TST-0999, which matches no acceptance check in this repo'
+NOSITTING="$(variant nositting 'sitting: "The bench"' 'sitting: ""')"
+procfail "a procedure naming no sitting is refused" "$NOSITTING" \
+  'no .sitting:. in its frontmatter'
+WRONGSITTING="$(variant wrongsitting 'sitting: "The bench"' 'sitting: "The benches"')"
+procfail "a procedure naming a sitting WALK.md does not have is refused" "$WRONGSITTING" \
+  'matches no .### . heading in docs/tests/acceptance/WALK.md'
+TWOFILES="$TMP/proc-twofiles"; rm -rf "$TWOFILES"; cp -R "$PROC" "$TWOFILES"
+cp "$TWOFILES/docs/tests/acceptance/walk/the-bench.md" "$TWOFILES/docs/tests/acceptance/walk/the-bench-again.md"
+procfail "a second procedure for one sitting is refused" "$TWOFILES" \
+  'a second procedure for "The bench"'
+# A step that says where it happens is a rule; a step that does not is reported
+# and does not fail the release, because no owed part goes unwalked for it.
+NOSCREEN="$(variant noscreen '2. **Ride cockpit (SUR-0002).** Start the workout.' '2. Start the workout.')"
+out_noscreen="$(python3 "$SHEET" --check --platform testbed --repo-root "$NOSCREEN" 2>&1)"; code=$?
+check "a step naming no screen is reported and does not fail the check" "$code" "$out_noscreen"
+check "and the report names the step" \
+  "$(printf '%s' "$out_noscreen" | grep -Eq 'step 2 names no screen' && echo 0 || echo 1)" "$out_noscreen"
+
+# --- steps 6 and 7 of TST-0010: what the sheet prints
+OUT="$(python3 "$SHEET" --release REL-0011 --platform testbed --repo-root "$PROC" 2>&1)"
+has   "a sitting with a procedure says which file it walks"   'Walked from a procedure: \[docs/tests/acceptance/walk/the-bench\.md\]'
+has   "the setup is printed once for the whole sitting"       '^The bench powered and the tablet awake\.$'
+check "and exactly once" \
+  "$(printf '%s' "$OUT" | grep -c '^The bench powered and the tablet awake\.$' | grep -q '^1$' && echo 0 || echo 1)" \
+  "$(printf '%s' "$OUT" | grep -c '^The bench powered and the tablet awake\.$')"
+has   "an owed step is printed with its screen in the heading" '^#### Step 1 — SUR-0001'
+has   "its expectation lines keep their tags"                  'The panel lists the trainer\. `TST-0401\.1`'
+hasnt "a step citing only checks that have passed is left out" 'Unpair everything'
+has   "and the sheet says how many steps it left out"          '1 further step in this procedure is left out: everything it cites has'
+has   "a step mixing an owed tag with a passed one still prints" 'The reading arrives\.'
+has   "and marks the tag that has already been walked"          '_\(already walked: TST-0404 step 2\)_'
+has   "the sitting ends with one tick box per owed check"       '^- \[ \] \[TST-0401\]\(docs/tests/acceptance/TST-0401-Fixture\.md\)'
+hasnt "a sitting walked from a procedure prints no per-check rows" '^### \[TST-0401\]'
+has   "a sitting with no procedure prints per-check rows as before" '^### \[TST-0405\]'
+has   "and that row still carries its own setup, steps and expect"  '^- It opens\.$'
+
+# A procedure that no longer covers what the release owes must not hide it.
+OUT="$(python3 "$SHEET" --release REL-0011 --platform testbed --repo-root "$UNCITED" 2>&1)"
+has "a procedure the validator refuses says so on the sheet" 'has a procedure and it no longer matches what the release owes'
+has "and names what is wrong with it"                        '^- The bench owes TST-0403'
+has "and falls back to per-check rows, so nothing owed is hidden" '^### \[TST-0403\]'
+has "including the check the procedure did cover"                 '^### \[TST-0401\]'
+# The sheet is not the only consumer: the cockpit renders `steps` from this
+# payload. A refused procedure that still carried printable steps would show a
+# stale script there while the sheet fell back here.
+payload="$(SHEET_PATH="$SHEET" REPO_ROOT="$UNCITED" python3 - <<'PY'
+import importlib.util as ilu, os, pathlib, sys
+spec = ilu.spec_from_file_location("walk", os.environ["SHEET_PATH"])
+walk = ilu.module_from_spec(spec)
+#: Registered before it runs: a dataclass whose annotations are strings looks
+#: its own module up in sys.modules, and an unregistered one fails there.
+sys.modules["walk"] = walk
+spec.loader.exec_module(walk)
+sheet = walk.generate(pathlib.Path(os.environ["REPO_ROOT"]), "REL-0011", "testbed")
+bench = [p for p in sheet.sittings if p.sitting.name == "The bench"][0]
+print("problems=%d steps=%d owed_checks=%d walked=%s"
+      % (len(bench.procedure.problems), len(bench.steps),
+         len(bench.owed_checks), bench.walked_from_procedure))
+PY
+)"
+check "a refused procedure carries no printable steps in the payload" \
+  "$(printf '%s' "$payload" | grep -q '^problems=1 steps=0 owed_checks=0 walked=False$' && echo 0 || echo 1)" "$payload"
+
+# --check over every platform at once is what validate-docs.sh runs.
+allout="$(python3 "$SHEET" --check --repo-root "$UNCITED" 2>&1)"; code=$?
+check "--check with no platform walks every ledger it finds" \
+  "$( { [[ $code -eq 1 ]] && printf '%s' "$allout" | grep -q 'testbed'; }; echo $?)" "exit $code: $allout"
+noproc="$(python3 "$SHEET" --check --repo-root "$LAYERS" 2>&1)"; code=$?
+check "--check on a repo with no procedures at all passes quietly" \
+  "$( { [[ $code -eq 0 ]] && [[ -z "$noproc" ]]; }; echo $?)" "exit $code: $noproc"
+nolegder="$(python3 "$SHEET" --check --repo-root "$NOLEDGER" 2>&1)"; code=$?
+check "--check on a repo with no ledger is not an error" "$code" "$nolegder"
+
 
 echo "test-walk-sheet: $assertions assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]
