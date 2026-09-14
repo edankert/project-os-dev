@@ -16,7 +16,7 @@ release: ""
 acceptance_exception: ""
 reviewed_by: "model:claude-opus-5"
 review_date: 2026-09-14
-review_verdict: changes-requested
+review_verdict: approved
 related: ["[[ADR-0044-A-Surface-Is-A-Screen-By-Default]]", "[[ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure]]", "[[FEAT-0031-A-Sitting-Is-Walked-From-A-Written-Procedure]]", "[[FEAT-0029-The-Walk-Sheet]]", "[[ISS-0050-Surface-Statuses-Live-Outside-The-File-That-Enforces-Them]]"]
 ---
 
@@ -60,7 +60,7 @@ The survey gains one runtime input: the most recent release tag in git. A shallo
 
 ## Independent review, round one (2026-09-14)
 
-`model:claude-opus-5`, fresh context, separate session from the author; same model family, recorded in `reviewed_by` and not the gate (`tools/instructions/QUALITY.md`, "Independent review (clean-context)"). Verdict: **changes-requested**.
+`model:claude-opus-5`, fresh context, separate session from the author; same model family, recorded in `reviewed_by` and not the gate (`tools/instructions/QUALITY.md`, "Independent review (clean-context)"). Round one verdict: **changes-requested**. Round two closed it: the frontmatter reads `approved`.
 
 The first two acceptance bullets hold. TAXONOMY.md carries the four rules and says they are stated there and nowhere else; `surface.md` points at them and restates none of them; `change-note/SKILL.md` step 2 and `close-out/SKILL.md` step 6 both ask an LLM to draft the `## Impact` list from the diff and the surface notes and to check that every id resolves.
 
@@ -99,3 +99,19 @@ All eight blocking findings are fixed with a fixture each, and five of the nine 
 **Not reproduced by the reviewer either, and left alone:** a path traversal through a `gallery:` key. Appending an extension and the fixed directory depth defeated every escape tried. Worth a bounded key one day; not a defect anybody can demonstrate today.
 
 `docs/PHASES.md` listing both phases as `planned` was an uncommitted working-tree edit of mine that the review caught before it was committed. It is committed now.
+
+### Round two (2026-09-14): approved
+
+Both survey findings are fixed and pinned, verified against the same git fixtures that found them. An `## Impact` line naming two screens now lists both, each with the sentence "both gained a lap counter." and no wikilink markup; an `## Impact` list inside a fenced block adds no screen. Mutating either fix back — `parse_impact` stopping at the first id, or ignoring fences — turns `test-walk-sheet.sh` red by three and one assertions. Round two's full record is on [[REQ-0029-A-Release-Walk-Reads-As-A-Script|REQ-0029]].
+
+## Round two's one finding, fixed rather than filed, 2026-09-14
+
+Round two approved all three notes and verified every one of the eight fixes against the fixture that found it. It also found **a regression the eighth fix introduced**, reported in the note rather than held against the gate because no acceptance criterion claims anything about it. It is fixed here anyway, because parking a regression as an issue is not the same as living with a known limitation.
+
+**What was wrong.** Round one's eighth finding was that `--check` failed forever in a repo with a ledger and no live acceptance check. The fix caught `WalkError` in `run_check` and carried on — and `WalkError` is also what `read_repo` raises for a **broken ledger**. So a ledger whose filename names no platform, and a ledger entry dated `2026-13-45`, both stopped being reported anywhere: the generator still refused them with exit 2, and `validate-docs.sh`, which is the only thing that reads a ledger on every commit, said nothing. Measured by the reviewer at `0f1b673` against `6a513ff`: both cases went from exit 2 to exit 0.
+
+**What was done.** `NothingToWalk` is a subclass of `WalkError`, raised only when a repo has no acceptance check at a live status. `run_check` is silent about that one and reports everything else with exit 2. The redundant second early return went with it — the reviewer noted no test pinned it, and with the narrow exception in place it would have skipped the ledger check in a repo that happens to keep no `walk/` or `changes/` directory.
+
+Two assertions pin it: a ledger named `testbed.json` and an entry dated `2026-13-45` each fail `--check --quiet` with exit 2 and their own message, while the all-retired fixture still exits 0 in silence. The suite is 157 assertions and 38 mutations.
+
+**Why this one is worth naming.** It is the second time in this phase that making something quieter made it blind, and both times the blindness was invisible to the suite because the fixtures tested the case that was being fixed and not the case next to it. The first was `--quiet` on the walk remarks, where the narrowing was deliberate and recorded; this one was accidental and took a second reviewer to see.

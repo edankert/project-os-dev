@@ -67,11 +67,11 @@ The walk sheet from PHASE-0004 worked and a real release showed what it lacked. 
 
 ## Verification
 
-`bash tools/scripts/test-walk-sheet.sh` — 155 assertions over nine fixture repos, two of them real git checkouts, 0 failures. **36 mutations applied to `walk-sheet.py` one at a time, none survived** ([[TST-0010-A-Procedure-Covers-Every-Owed-Part-Exactly-Once|TST-0010]]).
+`bash tools/scripts/test-walk-sheet.sh` — 157 assertions over ten fixture repos, two of them real git checkouts, 0 failures. **36 mutations applied to `walk-sheet.py` one at a time, none survived** ([[TST-0010-A-Procedure-Covers-Every-Owed-Part-Exactly-Once|TST-0010]]).
 
 Every other template harness re-run and green: decision-rule 26, retention 23, hooks 74, pause-rule 15, verdict-model 31, word-budgets 3.
 
-Downstream after the sync: project-os-cockpit `pytest tests/test_walk_*.py` 57 passed and `node --test desktop/tests/*.mjs` 146 passed; `test-walk-sheet.sh` 155 assertions in all five synced repos; `validate-docs.sh` OK in all six. `validate-fleet.sh` over thirteen repos is unchanged before and after — the same four pre-existing failures with the same counts, no new error anywhere.
+Downstream after the sync: project-os-cockpit `pytest tests/test_walk_*.py` 57 passed and `node --test desktop/tests/*.mjs` 146 passed; `test-walk-sheet.sh` 157 assertions in all five synced repos; `validate-docs.sh` OK in all six. `validate-fleet.sh` over thirteen repos is unchanged before and after — the same four pre-existing failures with the same counts, no new error anywhere.
 
 **Same exposure as the rest:** [[ISS-0065-The-Templates-Own-CI-Runs-None-Of-Its-Seven-Harnesses|ISS-0065]] still stands, and this harness is the eighth. The template's own CI runs none of them, so these numbers come from a developer's machine.
 

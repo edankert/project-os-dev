@@ -26,7 +26,7 @@ related: ["[[REQ-0028-A-Release-Presents-Its-Owed-Checks-As-A-Walk]]", "[[FEAT-0
 tests: ["[[TST-0010-A-Procedure-Covers-Every-Owed-Part-Exactly-Once]]", "[[TST-0011-The-Survey-Lists-Changed-Screens-With-Before-And-After]]"]
 reviewed_by: "model:claude-opus-5"
 review_date: 2026-09-14
-review_verdict: changes-requested
+review_verdict: approved
 ---
 
 # A release walk reads as a script
@@ -59,7 +59,7 @@ It is owned by FEAT-0031 because a requirement has at most one owning feature (A
 
 ## Independent review, round one (2026-09-14)
 
-`model:claude-opus-5`, fresh context, separate session from the author. Same model family as the author, which is recorded in `reviewed_by` and is not the gate (`tools/instructions/QUALITY.md`, "Independent review (clean-context)"). Verdict: **changes-requested**.
+`model:claude-opus-5`, fresh context, separate session from the author. Same model family as the author, which is recorded in `reviewed_by` and is not the gate (`tools/instructions/QUALITY.md`, "Independent review (clean-context)"). Round one verdict: **changes-requested**. Round two closed it: the frontmatter reads `approved`.
 
 The harness is real: `bash tools/scripts/test-walk-sheet.sh` prints "139 assertions, 0 failure(s)", and eight mutations applied one at a time to `walk-sheet.py` were each killed by it. Three of the eight criteria are refuted by inputs the reviewer constructed.
 
@@ -98,3 +98,25 @@ All eight blocking findings are fixed with a fixture each, and five of the nine 
 **Not reproduced by the reviewer either, and left alone:** a path traversal through a `gallery:` key. Appending an extension and the fixed directory depth defeated every escape tried. Worth a bounded key one day; not a defect anybody can demonstrate today.
 
 `docs/PHASES.md` listing both phases as `planned` was an uncommitted working-tree edit of mine that the review caught before it was committed. It is committed now.
+
+### Round two (2026-09-14): approved
+
+Same reviewer, same clean context, verifying the fixes to round one's eight blocking findings and nothing else (ADR-0028; `tools/instructions/QUALITY.md`, "Independent review (clean-context)"). Fixes are `project-os` `6a513ff` and `project-os-cockpit` `a168006`. **All eight are fixed**, each re-run against the reproduction that found it, and the good fixture still passes.
+
+`bash tools/scripts/test-walk-sheet.sh` prints "155 assertions, 0 failure(s)", and the new fixtures pin the fixes: mutating each of the five code fixes back — the step number returning to the written digit, expectation tags collected inside a fence again, `numbered_steps` counting distinct digits, `parse_impact` stopping at the first id, `parse_impact` ignoring fences — turns the suite red, by one to three assertions each. So does removing `run_check`'s `WalkError` handler. In the cockpit, both new tests in `tests/test_walk_payload.py` fail when `known=known` comes off the `build_walk` call, and `walk_sheet_bundled.py` is still byte-identical to the template's `walk-sheet.py`.
+
+Criterion 3 now lists both screens a two-id Impact line names, each with the clean sentence and no raw markup, and a fenced Impact list adds no screen. Criterion 5's doubly-cited rule fires on two steps that share a written digit, and a fenced tag neither satisfies coverage nor causes a false refusal. Criterion 8's restatement in `walk.md` is gone, replaced by one sentence that names what rule 9 states without stating it.
+
+**One side effect, reproduced, not blocking.** `run_check` now swallows every `WalkError`, not only the three its docstring names. A ledger file whose name does not name a platform, and a ledger entry whose date is unparseable, both made `--check` exit 2 at `0f1b673` and both return 0 at `6a513ff`. `validate-docs.py` has no ledger check of its own, so nothing in `validate-docs.sh` reports either one any more. The generator still refuses both with exit 2, and no acceptance criterion here claims otherwise, so this is worth an `ISS-*` rather than a third round. Two lines are also unpinned by any test: `run_check`'s second early return (removing it leaves the suite green — it is redundant with the `WalkError` handler) and `walk.md`'s trimmed paragraph, which no harness can check.
+
+## Round two's one finding, fixed rather than filed, 2026-09-14
+
+Round two approved all three notes and verified every one of the eight fixes against the fixture that found it. It also found **a regression the eighth fix introduced**, reported in the note rather than held against the gate because no acceptance criterion claims anything about it. It is fixed here anyway, because parking a regression as an issue is not the same as living with a known limitation.
+
+**What was wrong.** Round one's eighth finding was that `--check` failed forever in a repo with a ledger and no live acceptance check. The fix caught `WalkError` in `run_check` and carried on — and `WalkError` is also what `read_repo` raises for a **broken ledger**. So a ledger whose filename names no platform, and a ledger entry dated `2026-13-45`, both stopped being reported anywhere: the generator still refused them with exit 2, and `validate-docs.sh`, which is the only thing that reads a ledger on every commit, said nothing. Measured by the reviewer at `0f1b673` against `6a513ff`: both cases went from exit 2 to exit 0.
+
+**What was done.** `NothingToWalk` is a subclass of `WalkError`, raised only when a repo has no acceptance check at a live status. `run_check` is silent about that one and reports everything else with exit 2. The redundant second early return went with it — the reviewer noted no test pinned it, and with the narrow exception in place it would have skipped the ledger check in a repo that happens to keep no `walk/` or `changes/` directory.
+
+Two assertions pin it: a ledger named `testbed.json` and an entry dated `2026-13-45` each fail `--check --quiet` with exit 2 and their own message, while the all-retired fixture still exits 0 in silence. The suite is 157 assertions and 38 mutations.
+
+**Why this one is worth naming.** It is the second time in this phase that making something quieter made it blind, and both times the blindness was invisible to the suite because the fixtures tested the case that was being fixed and not the case next to it. The first was `--quiet` on the walk remarks, where the narrowing was deliberate and recorded; this one was accidental and took a second reviewer to see.

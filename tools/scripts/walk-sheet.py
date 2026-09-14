@@ -878,6 +878,20 @@ class WalkError(Exception):
     """Something a person has to fix before a sheet can be produced."""
 
 
+class NothingToWalk(WalkError):
+    """This repo has no walk to compute, which is not a fault.
+
+    **Its own class, because `--check` runs on every commit and must be silent
+    here without going quiet about a broken ledger.** The first version caught
+    `WalkError` and swallowed all of it, so a ledger whose filename named no
+    platform, and a ledger entry dated `2026-13-45`, both stopped being
+    reported anywhere: the generator still refused them and nothing in
+    `validate-docs.sh` did. Found by independent review, round two,
+    2026-09-14 -- a defect introduced by the fix to round one's eighth
+    finding.
+    """
+
+
 @dataclass
 class Event:
     check: str
@@ -1867,7 +1881,7 @@ def read_repo(repo_root: Path, platform: str) -> Reading:
     index, _ = vd.build_note_index(docs_root)
     checks = load_checks(docs_root, index, repo_root=repo_root)
     if not checks:
-        raise WalkError(
+        raise NothingToWalk(
             "no acceptance checks in %s. A walk sheet lists `[[test]]` notes at "
             "`level: acceptance`; this repo has none." % docs_root)
     known = platforms(docs_root)
@@ -1981,30 +1995,34 @@ def check_repo(repo_root: Path, platform: str) -> tuple[list[str], list[str]]:
 def run_check(repo_root: Path, platform: str, quiet: bool = False) -> int:
     """`--check` over one platform or all of them. 0 = nothing to fix.
 
-    **Nothing to check is not a failure.** No ledger, no acceptance check left
-    at a live status, no procedure: each of those is a repo with no procedure
-    to hold to anything, and `validate-docs.sh` runs this on every commit.
-    Letting `read_repo`'s refusals through made a repo whose checks had all
-    been retired fail its own pre-commit hook forever. Found by independent
-    review, 2026-09-14.
+    **Nothing to check is not a failure, and a broken ledger still is.** No
+    ledger and no live acceptance check are both repos with no procedure to
+    hold to anything, and `validate-docs.sh` runs this on every commit --
+    letting those through made a repo whose checks had all been retired fail
+    its own pre-commit hook forever. But the first fix caught every
+    `WalkError`, which took a malformed ledger with it; `NothingToWalk` is the
+    narrow one. Both halves found by independent review, 2026-09-14, rounds
+    one and two.
     """
     docs_root = repo_root / "docs"
     if not has_ledger(docs_root):
-        return 0
-    if not (docs_root / PROCEDURES_REL).is_dir() and not (docs_root / CHANGES_REL).is_dir():
         return 0
     wanted = [platform] if platform else platforms(docs_root)
     status = 0
     for name in wanted:
         try:
             problems, remarks = check_repo(repo_root, name)
-        except WalkError as exc:
-            #: A repo with no live acceptance check has no procedure to hold
-            #: to anything; a ledger for a platform this repo does not keep is
-            #: the caller's typo and is refused by the generator, not here.
+        except NothingToWalk as exc:
+            #: No live acceptance check means no procedure to hold to anything.
             if not quiet:
                 print("walk-sheet --check (%s): nothing to check -- %s"
                       % (name, exc), file=sys.stderr)
+            continue
+        except WalkError as exc:
+            #: Everything else `read_repo` refuses is a broken ledger, and
+            #: `--check` is the only thing that reads one on every commit.
+            print("walk-sheet --check (%s): %s" % (name, exc), file=sys.stderr)
+            status = 2
             continue
         for problem in problems:
             print("walk-sheet --check (%s): %s" % (name, problem), file=sys.stderr)

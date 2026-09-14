@@ -1269,6 +1269,30 @@ PY
 out_allret="$(python3 "$SHEET" --check --quiet --repo-root "$ALLRET" 2>&1)"; code=$?
 check "a repo whose checks are all retired is not a failing commit" "$code" "exit $code: $out_allret"
 check "and it says nothing under --quiet" "$([[ -z "$out_allret" ]]; echo $?)" "$out_allret"
+# ...and a BROKEN ledger is still a failing commit. The first version of the
+# rule above caught every WalkError, so a ledger naming no platform and an
+# entry dated 2026-13-45 both stopped being reported anywhere: the generator
+# refused them and validate-docs.sh, which is the only thing that reads a
+# ledger on every commit, did not. Found by independent review, round two.
+BADLEDGER="$TMP/proc-badledger"; rm -rf "$BADLEDGER"; cp -R "$PROC" "$BADLEDGER"
+cp "$BADLEDGER/docs/releases/ledgers/WORKING-testbed.json" "$BADLEDGER/docs/releases/ledgers/testbed.json"
+out_bad="$(python3 "$SHEET" --check --quiet --repo-root "$BADLEDGER" 2>&1)"; code=$?
+check "a ledger whose filename names no platform still fails --check" \
+  "$( { [[ $code -eq 2 ]] && printf '%s' "$out_bad" | grep -q 'does not name a platform'; }; echo $?)" \
+  "exit $code: $out_bad"
+rm "$BADLEDGER/docs/releases/ledgers/testbed.json"
+python3 - "$BADLEDGER/docs/releases/ledgers/WORKING-testbed.json" <<'PY'
+import json, sys
+p = sys.argv[1]
+d = json.load(open(p))
+d["entries"].append({"check": "TST-0401", "mark": "pass", "date": "2026-13-45",
+                     "by": "user:fixture", "method": "manual"})
+json.dump(d, open(p, "w"))
+PY
+out_bad="$(python3 "$SHEET" --check --quiet --repo-root "$BADLEDGER" 2>&1)"; code=$?
+check "a date-shaped string that is not a date still fails --check" \
+  "$( { [[ $code -eq 2 ]] && printf '%s' "$out_bad" | grep -q 'no usable date'; }; echo $?)" \
+  "exit $code: $out_bad"
 
 # --check reads every change note, whatever the tag says: a repo with no
 # released REL-* note still gets told which notes have no Impact list.
