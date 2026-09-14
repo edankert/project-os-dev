@@ -25,25 +25,29 @@ docs_system:
     - docs/PHASES.md
 
 counters:
-  ADR: 29
+  # Jumped 29 -> 45 on 2026-09-14: the template and this repo cite project-os-cockpit's
+  # ADR-0030..ADR-0043 by bare number (TESTING.md's 'ADR-0031', SCHEMAS.md's 'ADR-0032' and
+  # 'ADR-0034', and more), so a local ADR-0030..0043 would make those citations ambiguous.
+  # Same fix as project-os-cockpit ISS-0123. 0030-0043 are never allocated here.
+  ADR: 45
   CHG:
     last_date: 20260913
-  FEAT: 29
+  FEAT: 31
   ISS: 65
-  PHASE: 4
+  PHASE: 5
   REL: 0
-  REQ: 28
+  REQ: 29
   RISK: 2
-  TASK: 115
-  TST: 9
+  TASK: 123
+  TST: 11
   WF: 3
 
 focus:
   task: ""
   feature: ""
-  phase: ""
+  phase: "PHASE-0005"
   issue: ""
-  note: "PHASE-0004 is done. A release is now walked from one generated document: `python3 tools/scripts/walk-sheet.py --release REL-#### --platform <platform>` prints the screens the release changed, then every owed acceptance check in the project's authored order, each with its setup, steps and expected result on the page. Nothing is written by hand and no second list of what a release owes exists anywhere. ADR-0029 is accepted with four boxes closed, REQ-0028 implemented with three criteria amended rather than ticked to fit, FEAT-0029 done, TASK-0110 to TASK-0115 done, CHG-20260913 records the landing. The eight rules are stated once in TESTING.md, 'The walk'. Landed in the template and synced into the four repos that keep an acceptance suite (your-trainer, project-os-cockpit, project-os-deck, your-sudoku) plus this repo's vendored tools; the cockpit's diverged TESTING.md and test.md were hand-merged, your-trainer's diverged validator left untouched, and validate-fleet is byte-identical before and after. NOTHING IS COMMITTED, here or downstream, and the ISS-0061 work from 2026-09-10 is still uncommitted alongside it -- that is the first thing to do next. The review gate ran its two rounds and approved. It cost: round one reproduced ten findings, six of them real defects in the generator, and the sharpest was about the harness rather than the code -- its fixture had no sealed ledger, so the whole excuse-expiry layer was unexercised and fifteen mutations survived. The suite is now 73 assertions over four fixture repos and TST-0009 carries 26 mutations with one known survivor, which is unobservable on a sheet rather than untested. Three issues came out of it, all at triage: ISS-0063, the generator reads every acceptance note under docs/ and the cockpit reads docs/tests/acceptance/ alone, 649 against 431, which is two owed counts for one corpus waiting to happen; ISS-0064, 57 of 61 real rows say the note states no expected result and for twelve the note does say it under a heading nobody anticipated; ISS-0065, the template ships seven harnesses and its own CI runs none. Also open: ISS-0062, ISS-0053, ISS-0052, ISS-0054, ISS-0049, ISS-0050, ISS-0059, ISS-0060. Downstream and not this repo's: your-trainer FEAT-0119 authors WALK.md against a starting figure of 61 owed rows in 16 area groups and retires its 719-line run plan; project-os-cockpit FEAT-0149 builds the walk page and bundles this module."
+  note: "2026-09-14: PHASE-0005 IS PLANNED, NOTHING BUILT. Edwin approved the goal wording: the walk sheet opens with the app screens a release changed (a rider-facing sentence, before and after captures, no test ids), then one LLM-written procedure per sitting (setup once, a screen per step, each expectation tagged with the check step it satisfies), held to the owed set by a validator. Two decisions are PROPOSED and gate every task: ADR-0044 (a surface is a screen by default, four rules) and ADR-0045 (amends ADR-0029 rules 2, 5 and 8). REQ-0029 is draft. FEAT-0030 (TASK-0116..0118, TST-0011) and FEAT-0031 (TASK-0119..0123, TST-0010). Downstream: your-trainer PHASE-024 and project-os-cockpit PHASE-044, whose first gate is your-trainer TASK-0900, the surface mapping table Edwin approves. ---- EARLIER ---- PHASE-0004 is done. A release is now walked from one generated document: `python3 tools/scripts/walk-sheet.py --release REL-#### --platform <platform>` prints the screens the release changed, then every owed acceptance check in the project's authored order, each with its setup, steps and expected result on the page. Nothing is written by hand and no second list of what a release owes exists anywhere. ADR-0029 is accepted with four boxes closed, REQ-0028 implemented with three criteria amended rather than ticked to fit, FEAT-0029 done, TASK-0110 to TASK-0115 done, CHG-20260913 records the landing. The eight rules are stated once in TESTING.md, 'The walk'. Landed in the template and synced into the four repos that keep an acceptance suite (your-trainer, project-os-cockpit, project-os-deck, your-sudoku) plus this repo's vendored tools; the cockpit's diverged TESTING.md and test.md were hand-merged, your-trainer's diverged validator left untouched, and validate-fleet is byte-identical before and after. NOTHING IS COMMITTED, here or downstream, and the ISS-0061 work from 2026-09-10 is still uncommitted alongside it -- that is the first thing to do next. The review gate ran its two rounds and approved. It cost: round one reproduced ten findings, six of them real defects in the generator, and the sharpest was about the harness rather than the code -- its fixture had no sealed ledger, so the whole excuse-expiry layer was unexercised and fifteen mutations survived. The suite is now 73 assertions over four fixture repos and TST-0009 carries 26 mutations with one known survivor, which is unobservable on a sheet rather than untested. Three issues came out of it, all at triage: ISS-0063, the generator reads every acceptance note under docs/ and the cockpit reads docs/tests/acceptance/ alone, 649 against 431, which is two owed counts for one corpus waiting to happen; ISS-0064, 57 of 61 real rows say the note states no expected result and for twelve the note does say it under a heading nobody anticipated; ISS-0065, the template ships seven harnesses and its own CI runs none. Also open: ISS-0062, ISS-0053, ISS-0052, ISS-0054, ISS-0049, ISS-0050, ISS-0059, ISS-0060. Downstream and not this repo's: your-trainer FEAT-0119 authors WALK.md against a starting figure of 61 owed rows in 16 area groups and retires its 719-line run plan; project-os-cockpit FEAT-0149 builds the walk page and bundles this module."
 
 
 items:
@@ -81,6 +85,18 @@ items:
       requirements: [REQ-0028]
       tasks: [TASK-0110, TASK-0111, TASK-0112, TASK-0113, TASK-0114, TASK-0115]
       related: [ADR-0029, ADR-0027]
+    PHASE-0005:
+      file: "docs/phases/PHASE-0005-The-Walk-Reads-As-A-Script.md"
+      title: "The walk reads as a script: changed screens first, then one written procedure per sitting"
+      status: planned
+      order: 5
+      owner: user:edwin
+      goal: "A person walking a release reads one script: first the app screens the release changed, each with a sentence a rider would understand and before and after pictures, then one procedure per sitting that states the setup once, names the screen for every step and tags each expectation with the check it satisfies. No check note has to be opened."
+      features: [FEAT-0030, FEAT-0031]
+      requirements: [REQ-0029]
+      tasks: [TASK-0116, TASK-0117, TASK-0118, TASK-0119, TASK-0120, TASK-0121, TASK-0122, TASK-0123]
+      related: [ADR-0044, ADR-0045, ADR-0029, REQ-0028]
+      note: "Planned 2026-09-14 from Edwin's approved goal wording. Both decisions (ADR-0044, ADR-0045) are PROPOSED and gate every task. Downstream: your-trainer PHASE-024 (FEAT-0120, FEAT-0121) and project-os-cockpit PHASE-044 (FEAT-0150)."
     PHASE-999:
       file: docs/phases/PHASE-999-Parking-Lot.md
       title: "Parking lot — future and unplanned work"
@@ -90,6 +106,26 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0030:
+      file: "docs/features/screen-surfaces/FEAT-0030-A-Surface-Is-A-Screen-And-A-Change-Names-Its-Screens.md"
+      status: backlog
+      phase: "[[PHASE-0005]]"
+      owner: user:edwin
+      requirements: [REQ-0029]
+      tasks: [TASK-0116, TASK-0117, TASK-0118]
+      tests: [TST-0011]
+      related: [ADR-0044, ADR-0045, FEAT-0031, FEAT-0029]
+      note: "Surfaces are screens by default (four rules in TAXONOMY.md), a change note's Impact lists SUR-* ids with one rider-facing sentence drafted by an LLM, and the survey is built from change notes since the last release tag with before/after captures. Waits on ADR-0044 and ADR-0045."
+    FEAT-0031:
+      file: "docs/features/walk-procedure/FEAT-0031-A-Sitting-Is-Walked-From-A-Written-Procedure.md"
+      status: backlog
+      phase: "[[PHASE-0005]]"
+      owner: user:edwin
+      requirements: [REQ-0029]
+      tasks: [TASK-0119, TASK-0120, TASK-0121, TASK-0122, TASK-0123]
+      tests: [TST-0010]
+      related: [ADR-0045, ADR-0029, ADR-0027, FEAT-0030, ISS-0063, ISS-0064]
+      note: "A procedure per sitting (setup once, a surface on every step, expectation lines tagged TST-id and step), a validator that fails on an uncited, doubly cited, retired or missing-step tag, the sheet printing only owed steps, a regenerate skill, and the sync. Waits on ADR-0045 and its three open boxes."
     FEAT-0029:
       file: "docs/features/walk-sheet/FEAT-0029-The-Walk-Sheet.md"
       status: done
@@ -304,6 +340,78 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0116:
+      file: "docs/features/screen-surfaces/plan/tasks/TASK-0116-TAXONOMY-States-What-A-Surface-Is.md"
+      status: backlog
+      parent: FEAT-0030
+      phase: "[[PHASE-0005]]"
+      effort: S
+      depends: []
+      blocks: [TASK-0117, TASK-0118]
+      tests: []
+    TASK-0117:
+      file: "docs/features/screen-surfaces/plan/tasks/TASK-0117-A-Change-Note-Names-The-Screens-It-Changed.md"
+      status: backlog
+      parent: FEAT-0030
+      phase: "[[PHASE-0005]]"
+      effort: M
+      depends: [TASK-0116]
+      blocks: [TASK-0118]
+      tests: []
+    TASK-0118:
+      file: "docs/features/screen-surfaces/plan/tasks/TASK-0118-The-Survey-Comes-From-Change-Notes-And-Captures.md"
+      status: backlog
+      parent: FEAT-0030
+      phase: "[[PHASE-0005]]"
+      effort: L
+      depends: [TASK-0116, TASK-0117]
+      blocks: [TASK-0123]
+      tests: [TST-0011]
+    TASK-0119:
+      file: "docs/features/walk-procedure/plan/tasks/TASK-0119-The-Procedure-Format.md"
+      status: backlog
+      parent: FEAT-0031
+      phase: "[[PHASE-0005]]"
+      effort: M
+      depends: []
+      blocks: [TASK-0120, TASK-0121]
+      tests: []
+    TASK-0120:
+      file: "docs/features/walk-procedure/plan/tasks/TASK-0120-The-Procedure-Validator.md"
+      status: backlog
+      parent: FEAT-0031
+      phase: "[[PHASE-0005]]"
+      effort: L
+      depends: [TASK-0119]
+      blocks: [TASK-0122, TASK-0123]
+      tests: [TST-0010]
+    TASK-0121:
+      file: "docs/features/walk-procedure/plan/tasks/TASK-0121-The-Sheet-Prints-The-Owed-Parts-Of-A-Procedure.md"
+      status: backlog
+      parent: FEAT-0031
+      phase: "[[PHASE-0005]]"
+      effort: M
+      depends: [TASK-0119]
+      blocks: [TASK-0123]
+      tests: [TST-0010]
+    TASK-0122:
+      file: "docs/features/walk-procedure/plan/tasks/TASK-0122-A-Skill-Regenerates-A-Sittings-Procedure.md"
+      status: backlog
+      parent: FEAT-0031
+      phase: "[[PHASE-0005]]"
+      effort: M
+      depends: [TASK-0120]
+      blocks: [TASK-0123]
+      tests: []
+    TASK-0123:
+      file: "docs/features/walk-procedure/plan/tasks/TASK-0123-Downstream-To-The-Consumers-And-The-Cockpit.md"
+      status: backlog
+      parent: FEAT-0031
+      phase: "[[PHASE-0005]]"
+      effort: M
+      depends: [TASK-0118, TASK-0120, TASK-0121, TASK-0122]
+      blocks: []
+      tests: []
     TASK-0110:
       file: "docs/features/walk-sheet/plan/tasks/TASK-0110-ADR-0027s-Four-Headings-Land-In-The-Test-Template.md"
       status: done
@@ -450,20 +558,6 @@ items:
       effort: M
       blocks: [TASK-0099]
       note: "1,343 words today, loaded by every Claude Code and Cursor session in twelve repos. Runs after FEAT-0024 adds three rules to the same section, so the budget is met with them in place."
-    TASK-0097:
-      file: "docs/features/writing-and-length/plan/tasks/TASK-0097-Length-Limits-In-Snapshot-And-Three-Templates.md"
-      title: "Length limits in SNAPSHOT.md and three templates"
-      status: done
-      phase: "[[PHASE-0003]]"
-      parent: FEAT-0025
-      effort: S
-    TASK-0096:
-      file: "docs/features/writing-and-length/plan/tasks/TASK-0096-Writing-Gains-Five-Rules-And-Agents-Links-Them.md"
-      title: "WRITING.md gains four rules; AGENTS.md links them"
-      status: done
-      phase: "[[PHASE-0003]]"
-      parent: FEAT-0025
-      effort: S
     TASK-0095:
       file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0095-The-Reviewer-Reports-Every-Finding.md"
       title: "The reviewer reports every finding; the repro filter moves downstream"
@@ -472,20 +566,6 @@ items:
       parent: FEAT-0024
       effort: S
       note: "The only task in this plan with a half that lands in this repo: tools/scripts/review-external.py. Sequence after ISS-0041, which edits line 45 of the same skill."
-    TASK-0094:
-      file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0094-Test-Authoring-Says-What-A-Test-Note-Is.md"
-      title: "test-authoring says what a TST note is and is not"
-      status: done
-      phase: "[[PHASE-0003]]"
-      parent: FEAT-0024
-      effort: S
-    TASK-0093:
-      file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0093-Four-One-Sentence-Rules-In-Four-Files.md"
-      title: "Four one-sentence rules: QUALITY, HANDOFF, MARKDOWN, skills README"
-      status: done
-      phase: "[[PHASE-0003]]"
-      parent: FEAT-0024
-      effort: S
     TASK-0092:
       file: "docs/features/pause-and-scope-rules/plan/tasks/TASK-0092-Give-The-Ambiguity-Check-A-Threshold.md"
       title: "Give the spec-ambiguity check a threshold; the planner allocates what is settled"
@@ -1134,6 +1214,14 @@ items:
   # Pruned: ISS-0001 (closed, PHASE-0001). Note preserved under docs/issues/.
 
   requirements:
+    REQ-0029:
+      file: "docs/requirements/REQ-0029-A-Release-Walk-Reads-As-A-Script.md"
+      status: draft
+      owner: user:edwin
+      priority: high
+      phase: "[[PHASE-0005]]"
+      implements: [FEAT-0031]
+      related: [REQ-0028, FEAT-0030, ADR-0044, ADR-0045, ADR-0029]
     REQ-0028:
       file: "docs/requirements/REQ-0028-A-Release-Presents-Its-Owed-Checks-As-A-Walk.md"
       status: implemented
@@ -1370,6 +1458,22 @@ items:
       related: [FEAT-0015, TASK-0060, ADR-0009, REQ-0019]
 
   tests:
+    TST-0010:
+      file: "docs/features/walk-procedure/plan/tests/TST-0010-A-Procedure-Covers-Every-Owed-Part-Exactly-Once.md"
+      status: active
+      scope: feature
+      level: acceptance
+      requirements: [REQ-0029]
+      features: [FEAT-0031]
+      tasks: [TASK-0120, TASK-0121]
+    TST-0011:
+      file: "docs/features/screen-surfaces/plan/tests/TST-0011-The-Survey-Lists-Changed-Screens-With-Before-And-After.md"
+      status: active
+      scope: feature
+      level: acceptance
+      requirements: [REQ-0029]
+      features: [FEAT-0030]
+      tasks: [TASK-0118]
     TST-0009:
       file: "docs/features/walk-sheet/plan/tests/TST-0009-The-Sheet-Is-The-Ledgers-Owed-Set-In-The-Authored-Order.md"
       status: active
@@ -1485,6 +1589,18 @@ items:
       status: merged
 
   decisions:
+    ADR-0045:
+      file: "docs/decisions/ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure.md"
+      status: proposed
+      decision: "Option 3 proposed. Amends ADR-0029 rules 2, 5 and 8: the survey comes from change notes since the last release tag plus before/after captures; a sitting may carry an LLM-written procedure (setup once, a surface per step, expectations tagged TST-id and step) that a validator holds to the owed set; the sheet prints only owed steps."
+      related: [ADR-0029, ADR-0044, ADR-0027, REQ-0028, REQ-0029, FEAT-0031, ISS-0063, ISS-0064]
+      note: "Three open acceptance boxes are Edwin's: where a procedure lives, whether it covers every live check or only owed ones, and whether an expectation line quotes the check's Expect. Reintroduces a close-out obligation (the Impact list), which ADR-0029 rule 8 and project-os-cockpit ADR-0036 argued against; the reason is recorded."
+    ADR-0044:
+      file: "docs/decisions/ADR-0044-A-Surface-Is-A-Screen-By-Default.md"
+      status: proposed
+      decision: "Option 3 proposed. A SUR-* names a screen unless kind says otherwise; four rules in TAXONOMY.md: a state is not a surface, a dialog is a child with parent:, a check crossing screens names their parent, one screen stays one surface across platforms. subsystem and surface-less remain."
+      related: [ADR-0045, ADR-0029, REQ-0029, FEAT-0030, ISS-0050]
+      note: "Edwin rejected a separate screens concept on 2026-09-14. Raises the surface count above project-os-cockpit FEAT-0130's 12-15 target; top-level screens stay that size with children under them."
     ADR-0029:
       file: "docs/decisions/ADR-0029-The-Walk-Sheet-Is-Derived-And-Its-Order-Is-Authored-Once.md"
       status: accepted
@@ -1648,11 +1764,11 @@ items:
 
 metrics:
   counts:
-    features_total: 29
+    features_total: 31
     features_done: 26
-    phases_total: 5
+    phases_total: 6
     phases_done: 3
-    tasks_total: 115
+    tasks_total: 123
     tasks_done: 108
     tests_total: 4
     tests_passing: 0
@@ -1661,8 +1777,8 @@ metrics:
     issues_triage: 9
     tasks_deferred: 0
     issues_deferred: 0
-    requirements_total: 28
+    requirements_total: 29
     requirements_implemented: 26
     risks_open: 0
     releases_total: 0
-    decisions_total: 29
+    decisions_total: 31
