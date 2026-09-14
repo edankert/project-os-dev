@@ -101,4 +101,14 @@ Five things are worth carrying forward:
 4. **Two mutations survived the first pass and both taught something.** One showed a rule written so it could not be got wrong and therefore could not be tested; the other showed a guarantee that was invisible on the sheet but load-bearing for the cockpit's payload. Both are closed, and the second is why the harness now imports the module rather than only grepping its output.
 5. **The sync cost more than a file copy in one repo.** project-os-cockpit's `walk_payload` called the old API, so 37 of its tests went red the moment the module landed. Adapting the payload, rewriting its survey tests to the new rule and drawing the new shape plainly went with the sync, because a sync that leaves a downstream suite red is not a sync. The card layout and the per-step ticks stay that repo's PHASE-044.
 
+## What the review cost, and what it was worth
+
+The gate ran its round one on 2026-09-14 from a clean context and returned `changes-requested` on all three notes. **Eight blocking findings, every one reproduced, every one fixed with a fixture**, plus nine non-blocking of which five are fixed and two are filed ([[ISS-0066-An-Expectation-Line-May-Quote-Any-Expect-Line-Of-Its-Check|ISS-0066]], [[ISS-0067-Git-Rename-Detection-Can-Hide-A-New-Change-Note-From-The-Survey|ISS-0067]]). The harness went from 139 assertions and 28 mutations to 155 and 36.
+
+Two things about those eight are worth carrying into the next phase.
+
+**Five of them were about a shape the corpus writes and the fixtures did not.** Markdown's "every item is `1.`" — which defeated the doubly-cited rule outright — a worked example inside a fence, two screens on one Impact line, an `## Impact` list shown inside a fence, and a repo whose acceptance checks have all been retired. The fixtures had been written from the rule, and the rule is what the author already believed. A fixture drawn from a real note would have caught four of the five on the first run.
+
+**The sharpest finding was not in the generator at all.** `walk_payload` in project-os-cockpit and `walk-sheet.py` disagreed about the same procedure, because the cockpit passed only the owed checks and a procedure legitimately cites checks that have already passed. That is exactly the failure rule 7 says bundling one implementation prevents — and bundling did not prevent it, because the bundled module took its inputs from a caller. Neither repo's suite could see it: no cockpit test wrote a procedure file. Two now do.
+
 **Not done and deliberately so:** the exit criterion above about your-trainer's real sheet. That is its PHASE-024, and Edwin's decision on 2026-09-14 was that v2.2.0 waits.

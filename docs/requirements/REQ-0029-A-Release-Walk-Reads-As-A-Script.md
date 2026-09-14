@@ -24,6 +24,9 @@ implements: "[[FEAT-0031-A-Sitting-Is-Walked-From-A-Written-Procedure]]"
 verifies: []
 related: ["[[REQ-0028-A-Release-Presents-Its-Owed-Checks-As-A-Walk]]", "[[FEAT-0030-A-Surface-Is-A-Screen-And-A-Change-Names-Its-Screens]]", "[[ADR-0029-The-Walk-Sheet-Is-Derived-And-Its-Order-Is-Authored-Once]]", "[[ADR-0027-An-Acceptance-Check-Is-Walkable-By-A-Stranger]]"]
 tests: ["[[TST-0010-A-Procedure-Covers-Every-Owed-Part-Exactly-Once]]", "[[TST-0011-The-Survey-Lists-Changed-Screens-With-Before-And-After]]"]
+reviewed_by: "model:claude-opus-5"
+review_date: 2026-09-14
+review_verdict: changes-requested
 ---
 
 # A release walk reads as a script
@@ -53,3 +56,45 @@ It is owned by FEAT-0031 because a requirement has at most one owning feature (A
 
 - Implements: [[FEAT-0031-A-Sitting-Is-Walked-From-A-Written-Procedure]]
 - Verified by: [[TST-0010-A-Procedure-Covers-Every-Owed-Part-Exactly-Once]], [[TST-0011-The-Survey-Lists-Changed-Screens-With-Before-And-After]]
+
+## Independent review, round one (2026-09-14)
+
+`model:claude-opus-5`, fresh context, separate session from the author. Same model family as the author, which is recorded in `reviewed_by` and is not the gate (`tools/instructions/QUALITY.md`, "Independent review (clean-context)"). Verdict: **changes-requested**.
+
+The harness is real: `bash tools/scripts/test-walk-sheet.sh` prints "139 assertions, 0 failure(s)", and eight mutations applied one at a time to `walk-sheet.py` were each killed by it. Three of the eight criteria are refuted by inputs the reviewer constructed.
+
+**Criterion 5 is refuted twice.** The rule the criterion names — an owed part cited by two steps is refused — is defeated by two steps that share a step number, because `audit_procedure` keys the count on `step.number` rather than on the step. Markdown's ordinary "every item is `1.`" style makes every step share a number, and nothing in TESTING.md or `procedure.md` forbids it. And a tag inside a fenced code block is read as a real citation, because `parse_steps` skips fences when finding step boundaries but not when collecting expectation lines — which both satisfies coverage with a fenced example (when the cited check states no `## Expect`, the dominant corpus shape per ISS-0064) and refuses a correct procedure with a spurious "cited by steps 1, 4".
+
+**Criterion 3 is refuted.** A change note whose `## Impact` line names two screens loses the second one from the survey, and the first screen's rider-facing sentence prints as `and [[SUR-0002]]: both gained a lap counter.` — raw wikilink markup. An `## Impact` list written inside a fenced block is read as a real changed screen.
+
+**Criterion 8 is refuted.** `docs/__templates__/walk.md` restates rule 9's "Where it lives" bullet, its `sitting:` convention and its reason, in a file the criterion's own evidence names as restating none of it.
+
+Separately, a check whose `## Steps` repeat a number collapses to one owed part, so the release owes less than rule 9 says it does; and the cockpit's `walk_payload` refuses any procedure citing an already-passed check, which is a disagreement between the two readers that rule 7 says cannot happen. The reproductions, the commands and the non-blocking findings are in the reviewer's report.
+
+## Review response — round one addressed, 2026-09-14
+
+All eight blocking findings are fixed with a fixture each, and five of the nine non-blocking ones. Two are filed as issues at `triage` because they need a decision rather than a change. The harness is 155 assertions and 36 mutations, none surviving.
+
+**1. Two steps sharing a written number defeated the doubly-cited rule.** A step's number is now its **position in the list**, not the digit written, because markdown renumbers an ordered list and "every item is `1.`" is the style most people write. `written` is kept so the validator can report a note whose own numbering will not match the sheet. Rule 9 and SCHEMAS.md say so. Fixture: a procedure written `1.` on every item passes; two steps citing one owed part are refused naming "steps 1, 2".
+
+**2. A tag inside a fenced block counted as a citation.** Expectations are now collected while the fence state is known, in the same pass that finds the step boundaries, so a worked example inside ``` claims nothing. Both directions have a fixture: a fenced repeat no longer refuses a correct procedure, and a fenced tag no longer covers an owed part.
+
+**3. A check whose `## Steps` repeat a number owed one part instead of three.** `numbered_steps` counted distinct digits and now counts positions, the same rule as above. Fixture: a check written `1.` three times still owes three parts, and dropping one is still refused.
+
+**4. The cockpit and the generator disagreed about one procedure.** `audit_procedure` takes `known` — every check a tag may legally name — defaulting to `checks`. A procedure covers its whole sitting and prints the owed part of itself, so its tags name checks that have already passed; a caller that passed only the owed set reported every such tag as naming no check. `walk_payload` now builds `known` from the checks its procedures actually cite, so a repo with 431 of them pays for the handful its scripts name. Two new cockpit tests write a procedure file — the reviewer found that none did — and both fail when the fix is reverted. The template harness asserts the same contract through `build_walk`, because the generator always passes the full set and cannot reach it alone.
+
+**5. `walk.md` restated rule 9.** It now says a sitting may be walked from a written script and points at rule 9 for everything else: one sentence, no facts of its own.
+
+**6. A change note naming two screens on one Impact line lost one of them,** and printed the other's sentence as raw wikilink markup. The parser reads the whole run of ids at the head of an item, joined by `and`, `,`, `&` or `+`, and gives each of them the one sentence that follows. SCHEMAS.md documents the shape. Fixture asserts both screens and that neither sentence carries the markup between them.
+
+**7. An `## Impact` list inside a fenced block was read as a real changed screen.** `parse_impact` tracks fences now. Fixture: a change note whose Impact section is "No screen changed" above a fenced example surveys nothing.
+
+**8. `--check` failed forever in a repo with a ledger and no live acceptance check.** `read_repo`'s refusals reached the exit code, so a repo whose checks had all been retired failed its own pre-commit hook. Nothing to check is not a failure: it returns 0, and says why only when not `--quiet`. Fixture: every check retired, `--check --quiet` exits 0 and prints nothing.
+
+**Non-blocking, fixed:** `--check` now reads every change note whatever the tag says, so a repo with no released `REL-*` note is still told which notes have no Impact list (the CHG note claimed this and the code did not do it); a retired citation gets the same message from the sheet as from `--check`, because `retired` is threaded into `attach_procedure`; a procedure whose written numbers do not match their positions is reported; `.svg` is a capture format; and rule 2 now says the survey reads what git says was **added**, so an uncommitted note and a back-filled Impact list are both outside it.
+
+**Non-blocking, filed rather than fixed:** [[ISS-0066-An-Expectation-Line-May-Quote-Any-Expect-Line-Of-Its-Check|ISS-0066]] (a line tagged `.1` may quote the check's step-3 expectation; three options costed, Edwin's call) and [[ISS-0067-Git-Rename-Detection-Can-Hide-A-New-Change-Note-From-The-Survey|ISS-0067]] (deleting a change note can make git pair it as a rename and hide a new one; reachable only by breaking LIFECYCLE's "never delete a completed note").
+
+**Not reproduced by the reviewer either, and left alone:** a path traversal through a `gallery:` key. Appending an extension and the fixed directory depth defeated every escape tried. Worth a bounded key one day; not a defect anybody can demonstrate today.
+
+`docs/PHASES.md` listing both phases as `planned` was an uncommitted working-tree edit of mine that the review caught before it was committed. It is committed now.

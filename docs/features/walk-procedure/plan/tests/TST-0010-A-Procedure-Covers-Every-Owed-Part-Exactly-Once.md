@@ -17,8 +17,8 @@ covers: ["[[FEAT-0031-A-Sitting-Is-Walked-From-A-Written-Procedure]]"]
 issues: []
 tasks: ["[[TASK-0120-The-Procedure-Validator]]", "[[TASK-0121-The-Sheet-Prints-The-Owed-Parts-Of-A-Procedure]]"]
 artifacts: []
-adequacy: "28 mutations over walk-sheet.py, none survived (2026-09-14); the list is in this note's Adequacy section"
-mutation_score: "28/28 killed"
+adequacy: "36 mutations over walk-sheet.py, none survived (2026-09-14, after the independent review added eight); the list is in this note's Adequacy section"
+mutation_score: "36/36 killed"
 reviewed_by: ""
 review_date: ""
 review_verdict: ""
@@ -64,11 +64,15 @@ The procedure fixtures it builds: one repo with two sittings, seven acceptance c
 
 ## Adequacy
 
-139 assertions over six fixture repos, two of them real git checkouts. **28 mutations applied to `walk-sheet.py` one at a time on 2026-09-14, none survived.** One per rule:
+155 assertions over nine fixture repos, two of them real git checkouts. **36 mutations applied to `walk-sheet.py` one at a time on 2026-09-14, none survived.** One per rule:
 
-the uncited-owed-part rule · the doubly-cited rule · the retired-check rule · the unknown-check rule · the other-sitting rule · the missing-step rule · the bare-tag-on-a-numbered-check rule · the quote comparison · "silence is not a mismatch" · the owed filter on printed steps · one part per numbered step · reading a check's step numbers · nesting a child screen under its parent · restricting the survey to notes added since the tag · verifying the tag is in this checkout · which capture is before and which is now · marking a screen captured only now as new · stripping the wikilink before the sentence · a released note must carry a tag · the report of sittings with no procedure · the step-names-no-screen remark · the owed predicate the sheet shares with the gate · the fall-back to rows when a procedure is refused · a second procedure for one sitting · a procedure naming a sitting WALK.md does not have · the exit code `--check` reports a problem with · anchoring the Impact id at the start of its item · the list-item shape an Impact line must have.
+the uncited-owed-part rule · the doubly-cited rule · the retired-check rule · the unknown-check rule · the other-sitting rule · the missing-step rule · the bare-tag-on-a-numbered-check rule · the quote comparison · "silence is not a mismatch" · the owed filter on printed steps · one part per numbered step · reading a check's step numbers · nesting a child screen under its parent · restricting the survey to notes added since the tag · verifying the tag is in this checkout · which capture is before and which is now · marking a screen captured only now as new · stripping the wikilink before the sentence · a released note must carry a tag · the report of sittings with no procedure · the step-names-no-screen remark · the owed predicate the sheet shares with the gate · the fall-back to rows when a procedure is refused · a second procedure for one sitting · a procedure naming a sitting WALK.md does not have · the exit code `--check` reports a problem with · anchoring the Impact id at the start of its item · the list-item shape an Impact line must have · a step's number is its position rather than the digit written · a tag inside a fenced block is not a citation · a check's parts are its step positions rather than its distinct digits · every screen an Impact item names · a fenced Impact list is an example · nothing to check is not a failing commit · a tag may cite a check that has already passed · `--check` reads every change note whatever the tag says.
 
 **Two survived the first pass and both were closed rather than excused**, which is the part worth keeping:
 
 - *Anchoring the Impact id.* The pattern carried `^` and the call used `.match`, so removing the `^` changed nothing and the rule could not be got wrong — or tested. The `^` came out, and the fixture gained the exact sentence shape from the real corpus ("eleven checks now point at SUR-0002, which is where the old label went"), which only a `.search` reads as a screen.
 - *The fall-back when a procedure is refused.* `attach_procedure`'s early return is invisible on a sheet, because the renderer decides from `problems`. It is not invisible to the cockpit, which renders `steps` from the payload. The harness now imports the module and asserts `problems=1 steps=0 owed_checks=0 walked=False` directly.
+
+**Eight of the 36 came from the independent review of 2026-09-14**, which refuted three of REQ-0029's criteria against the 139-assertion suite. Every one of those eight is a defect the suite passed over, and the pattern in them is worth naming: **five were about a shape the corpus writes and the fixtures did not.** Markdown's "every item is `1.`", a worked example inside a fence, two screens on one Impact line, an `## Impact` list shown inside a fence, a repo whose checks have all been retired. The fixtures were written from the rule rather than from the corpus, and the rule is what the author already believed.
+
+The two that were not about shape are the two worth remembering. One was a **disagreement between two readers of one corpus** that neither repo's suite could see, because no cockpit test wrote a procedure file at all. The other was a rule the author had written so that it could not be got wrong, and therefore could not be tested — `.match` with a redundant `^`.

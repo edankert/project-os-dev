@@ -14,6 +14,9 @@ requirements: ["[[REQ-0029-A-Release-Walk-Reads-As-A-Script]]"]
 tasks: ["[[TASK-0116-TAXONOMY-States-What-A-Surface-Is]]", "[[TASK-0117-A-Change-Note-Names-The-Screens-It-Changed]]", "[[TASK-0118-The-Survey-Comes-From-Change-Notes-And-Captures]]"]
 release: ""
 acceptance_exception: ""
+reviewed_by: "model:claude-opus-5"
+review_date: 2026-09-14
+review_verdict: changes-requested
 related: ["[[ADR-0044-A-Surface-Is-A-Screen-By-Default]]", "[[ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure]]", "[[FEAT-0031-A-Sitting-Is-Walked-From-A-Written-Procedure]]", "[[FEAT-0029-The-Walk-Sheet]]", "[[ISS-0050-Surface-Statuses-Live-Outside-The-File-That-Enforces-Them]]"]
 ---
 
@@ -54,3 +57,45 @@ The survey gains one runtime input: the most recent release tag in git. A shallo
 - Decision: [[ADR-0044-A-Surface-Is-A-Screen-By-Default]], and ADR-0045 decisions 1 and 2.
 - Requirement: [[REQ-0029-A-Release-Walk-Reads-As-A-Script]] criteria 1 to 3.
 - Downstream: your-trainer FEAT-0120 (its surfaces become screens, its change notes name them), project-os-cockpit FEAT-0150 (screen cards).
+
+## Independent review, round one (2026-09-14)
+
+`model:claude-opus-5`, fresh context, separate session from the author; same model family, recorded in `reviewed_by` and not the gate (`tools/instructions/QUALITY.md`, "Independent review (clean-context)"). Verdict: **changes-requested**.
+
+The first two acceptance bullets hold. TAXONOMY.md carries the four rules and says they are stated there and nowhere else; `surface.md` points at them and restates none of them; `change-note/SKILL.md` step 2 and `close-out/SKILL.md` step 6 both ask an LLM to draft the `## Impact` list from the diff and the surface notes and to check that every id resolves.
+
+The third bullet — "the sheet's survey lists exactly the surfaces those notes name" — is refuted on two inputs the reviewer built on a real git fixture.
+
+**Two screens on one `## Impact` line lose one of them.** `parse_impact` anchors `_SUR_RE` at the start of the list item and reads one id per line, so `- [[SUR-0001]] and [[SUR-0002]]: both gained a lap counter.` puts SUR-0001 in the survey, drops SUR-0002 entirely, and prints SUR-0001's rider-facing sentence as `and [[SUR-0002]]: both gained a lap counter.` — raw wikilink markup in the one line a walker is meant to read. `walk-sheet.py --check` says nothing about it. `change.md` does say one line per screen, so the input is off-template; the sentence it prints is still broken markdown and the dropped screen is still silent.
+
+**An `## Impact` list inside a fenced code block is read as a real changed screen.** A change note whose Impact section says "No screen changed: it is documentation" above a fenced example naming SUR-0002 puts SUR-0002 on the survey. `section()` and `parse_steps` both skip fences; `parse_impact` does not.
+
+Neither is covered by [[TST-0011-The-Survey-Lists-Changed-Screens-With-Before-And-After|TST-0011]]. Commands and output are in the reviewer's report, together with the non-blocking survey findings: an uncommitted change note is silently absent, an `## Impact` list back-filled onto a pre-tag note is invisible, and git's default rename detection can pair a deleted pre-tag note with a new post-tag one so that the new one never reaches the survey.
+
+## Review response — round one addressed, 2026-09-14
+
+All eight blocking findings are fixed with a fixture each, and five of the nine non-blocking ones. Two are filed as issues at `triage` because they need a decision rather than a change. The harness is 155 assertions and 36 mutations, none surviving.
+
+**1. Two steps sharing a written number defeated the doubly-cited rule.** A step's number is now its **position in the list**, not the digit written, because markdown renumbers an ordered list and "every item is `1.`" is the style most people write. `written` is kept so the validator can report a note whose own numbering will not match the sheet. Rule 9 and SCHEMAS.md say so. Fixture: a procedure written `1.` on every item passes; two steps citing one owed part are refused naming "steps 1, 2".
+
+**2. A tag inside a fenced block counted as a citation.** Expectations are now collected while the fence state is known, in the same pass that finds the step boundaries, so a worked example inside ``` claims nothing. Both directions have a fixture: a fenced repeat no longer refuses a correct procedure, and a fenced tag no longer covers an owed part.
+
+**3. A check whose `## Steps` repeat a number owed one part instead of three.** `numbered_steps` counted distinct digits and now counts positions, the same rule as above. Fixture: a check written `1.` three times still owes three parts, and dropping one is still refused.
+
+**4. The cockpit and the generator disagreed about one procedure.** `audit_procedure` takes `known` — every check a tag may legally name — defaulting to `checks`. A procedure covers its whole sitting and prints the owed part of itself, so its tags name checks that have already passed; a caller that passed only the owed set reported every such tag as naming no check. `walk_payload` now builds `known` from the checks its procedures actually cite, so a repo with 431 of them pays for the handful its scripts name. Two new cockpit tests write a procedure file — the reviewer found that none did — and both fail when the fix is reverted. The template harness asserts the same contract through `build_walk`, because the generator always passes the full set and cannot reach it alone.
+
+**5. `walk.md` restated rule 9.** It now says a sitting may be walked from a written script and points at rule 9 for everything else: one sentence, no facts of its own.
+
+**6. A change note naming two screens on one Impact line lost one of them,** and printed the other's sentence as raw wikilink markup. The parser reads the whole run of ids at the head of an item, joined by `and`, `,`, `&` or `+`, and gives each of them the one sentence that follows. SCHEMAS.md documents the shape. Fixture asserts both screens and that neither sentence carries the markup between them.
+
+**7. An `## Impact` list inside a fenced block was read as a real changed screen.** `parse_impact` tracks fences now. Fixture: a change note whose Impact section is "No screen changed" above a fenced example surveys nothing.
+
+**8. `--check` failed forever in a repo with a ledger and no live acceptance check.** `read_repo`'s refusals reached the exit code, so a repo whose checks had all been retired failed its own pre-commit hook. Nothing to check is not a failure: it returns 0, and says why only when not `--quiet`. Fixture: every check retired, `--check --quiet` exits 0 and prints nothing.
+
+**Non-blocking, fixed:** `--check` now reads every change note whatever the tag says, so a repo with no released `REL-*` note is still told which notes have no Impact list (the CHG note claimed this and the code did not do it); a retired citation gets the same message from the sheet as from `--check`, because `retired` is threaded into `attach_procedure`; a procedure whose written numbers do not match their positions is reported; `.svg` is a capture format; and rule 2 now says the survey reads what git says was **added**, so an uncommitted note and a back-filled Impact list are both outside it.
+
+**Non-blocking, filed rather than fixed:** [[ISS-0066-An-Expectation-Line-May-Quote-Any-Expect-Line-Of-Its-Check|ISS-0066]] (a line tagged `.1` may quote the check's step-3 expectation; three options costed, Edwin's call) and [[ISS-0067-Git-Rename-Detection-Can-Hide-A-New-Change-Note-From-The-Survey|ISS-0067]] (deleting a change note can make git pair it as a rename and hide a new one; reachable only by breaking LIFECYCLE's "never delete a completed note").
+
+**Not reproduced by the reviewer either, and left alone:** a path traversal through a `gallery:` key. Appending an extension and the fixed directory depth defeated every escape tried. Worth a bounded key one day; not a defect anybody can demonstrate today.
+
+`docs/PHASES.md` listing both phases as `planned` was an uncommitted working-tree edit of mine that the review caught before it was committed. It is committed now.

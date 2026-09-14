@@ -63,9 +63,9 @@ Beyond the five ADR-0045 lists, the validator also refuses a tag naming a check 
 
 ## Adequacy
 
-`test-walk-sheet.sh` is 139 assertions over six fixture repos, two of them real git checkouts. **28 mutations, none survived** — one per rule, including the six the ADR names, the printing filter, the owed predicate, the tag verification and the Impact anchoring. Recorded on [[TST-0010-A-Procedure-Covers-Every-Owed-Part-Exactly-Once|TST-0010]].
+`test-walk-sheet.sh` is 155 assertions over nine fixture repos, two of them real git checkouts. **36 mutations, none survived** — one per rule, including the six the ADR names, the printing filter, the owed predicate, the tag verification and the Impact anchoring. Recorded on [[TST-0010-A-Procedure-Covers-Every-Owed-Part-Exactly-Once|TST-0010]].
 
-Two mutations survived the first pass and both were closed rather than excused. One showed that `.match` with a redundant `^` made the anchoring rule impossible to get wrong and therefore impossible to test; the `^` came out and the fixture gained the sentence shape from the real corpus. The other showed that a refused procedure's fall-back was only observable on the sheet, not in the payload the cockpit renders — so the harness now imports the module and asserts the payload directly.
+Two mutations survived the first pass and both were closed rather than excused, and the independent review of 2026-09-14 then added eight more defects with a fixture each (see the review response on FEAT-0031). One showed that `.match` with a redundant `^` made the anchoring rule impossible to get wrong and therefore impossible to test; the `^` came out and the fixture gained the sentence shape from the real corpus. The other showed that a refused procedure's fall-back was only observable on the sheet, not in the payload the cockpit renders — so the harness now imports the module and asserts the payload directly.
 
 ## The exposure this shares with the rest
 

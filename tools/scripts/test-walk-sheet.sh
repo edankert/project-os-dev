@@ -805,7 +805,15 @@ change_note CHG-20260903-The-Cockpit-Shows-Cadence "The cockpit shows cadence" \
 change_note CHG-20260905-The-Panel-Names-The-Sensor "The panel names the sensor" \
   '- [[SUR-0001-Equipment-Panel|the equipment panel]]: the sensor name is shown under the slot.'
 change_note CHG-20260904-A-Build-Script "A build script moved" \
-  '- No screen changed: it is a build script.'
+  '- No screen changed: it is a build script.
+
+```
+- [[SUR-0003]]: this is the shape, inside a fence, and it altered nothing.
+```'
+# One line naming two screens: both are surveyed, and the sentence is the
+# sentence rather than the markup between them.
+change_note CHG-20260907-Two-Screens-One-Line "Two screens on one line" \
+  '- [[SUR-0002]] and [[SUR-0003]]: both gained a gradient arrow.'
 # An Impact line that MENTIONS a screen id in passing is not a line about that
 # screen. One of your-trainer's twelve change notes since v2.1.8 reads
 # "intervals.icu got its own, SUR-0016" in a sentence about `area:` values.
@@ -839,6 +847,14 @@ has "and the one of the build being walked"            '^!\[equipment-hub, now\]
 has "a screen captured only now is marked new"         '`cockpit` . \*\*new\*\*'
 hasnt "a gallery key with no picture at either end prints nothing" 'equipment-hub-dataonly'
 hasnt "a No screen changed line is not printed as a screen"  'it is a build script'
+hasnt "an Impact list inside a fenced block is an example, not a screen" 'inside a fence, and it altered nothing'
+# One item, two screens. The first used to keep a sentence beginning "and
+# [[SUR-...]]:" -- raw markup -- and the second was dropped in silence.
+has   "both screens on one Impact line reach the survey"     '^- both gained a gradient arrow\. — Two screens on one line'
+check "and that sentence appears under each of them" \
+  "$(printf '%s' "$SURVEY_TEXT" | grep -c 'both gained a gradient arrow' | grep -q '^2$' && echo 0 || echo 1)" \
+  "$(printf '%s' "$SURVEY_TEXT" | grep -c 'both gained a gradient arrow')"
+hasnt "and neither sentence carries the markup between the two ids" 'and \[\[SUR-'
 hasnt "an Impact line that only mentions an id is not a screen" 'which is where the old label went'
 hasnt "a paragraph under Impact is not read as a screen either"  'also gained a tab'
 check "the survey names no check at all" \
@@ -1145,6 +1161,137 @@ check "--check on a repo with no procedures at all passes quietly" \
   "$( { [[ $code -eq 0 ]] && [[ -z "$noproc" ]]; }; echo $?)" "exit $code: $noproc"
 nolegder="$(python3 "$SHEET" --check --repo-root "$NOLEDGER" 2>&1)"; code=$?
 check "--check on a repo with no ledger is not an error" "$code" "$nolegder"
+
+
+# ---------------------------------------------------------------------------
+# What an independent review found on 2026-09-14, one fixture per defect. Each
+# of these passed the 139-assertion suite and was wrong.
+# ---------------------------------------------------------------------------
+
+# A step's number is its POSITION. Markdown's ordinary "every item is 1." style
+# made two steps share a number, and the doubly-cited rule counted numbers.
+ALLONE="$(variant allone '2. **Ride cockpit (SUR-0002).** Start the workout.' '1. **Ride cockpit (SUR-0002).** Start the workout.')"
+out_allone="$(python3 "$SHEET" --check --platform testbed --repo-root "$ALLONE" 2>&1)"; code=$?
+check "a procedure written 1. on every item still passes" "$code" "$out_allone"
+DUPNUM="$TMP/proc-dupnum"; rm -rf "$DUPNUM"; cp -R "$PROC" "$DUPNUM"
+python3 - "$DUPNUM/docs/tests/acceptance/walk/the-bench.md" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]); t = p.read_text()
+t = t.replace("2. **Ride cockpit (SUR-0002).** Start the workout.",
+              "1. **Ride cockpit (SUR-0002).** Start the workout.", 1)
+t = t.replace("   - The cadence field stays empty. `TST-0402.2`",
+              "   - The cadence field stays empty. `TST-0402.2`\n"
+              "   - The panel lists the trainer. `TST-0401.1`", 1)
+p.write_text(t)
+PY
+procfail "two steps that share a written number are still two steps" "$DUPNUM" \
+  'TST-0401 step 1 is cited by steps 1, 2'
+OUT="$(python3 "$SHEET" --release REL-0011 --platform testbed --repo-root "$ALLONE" 2>&1)"
+has "and the sheet numbers them by position, not by the digit" '^#### Step 2 — SUR-0002'
+
+# A tag inside a fenced block is an example. It used to satisfy coverage on its
+# own, and could equally refuse a correct procedure for citing a part twice.
+FENCED="$(variant fenced '   - The reading arrives. `TST-0403` `TST-0404.2`' '   - The reading arrives. `TST-0403` `TST-0404.2`
+
+   ```
+   - The panel lists the trainer. `TST-0401.1`
+   ```
+')"
+out_fenced="$(python3 "$SHEET" --check --platform testbed --repo-root "$FENCED" 2>&1)"; code=$?
+check "a fenced example does not refuse a correct procedure" "$code" "$out_fenced"
+FENCEONLY="$(variant fenceonly '   - The reading arrives. `TST-0403` `TST-0404.2`' '   - The reading arrives. `TST-0404.2`
+
+   ```
+   - The reading arrives. `TST-0403`
+   ```
+')"
+procfail "and a fenced example does not cover an owed part either" "$FENCEONLY" \
+  'owes TST-0403 \(one part, its steps are not numbered\) and no step cites it'
+
+# A check whose own Steps repeat a number owes one part per step, not one part.
+CHKNUM="$TMP/proc-chknum"; rm -rf "$CHKNUM"; cp -R "$PROC" "$CHKNUM"
+python3 - "$CHKNUM/docs/tests/acceptance/TST-0401-Fixture.md" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]); t = p.read_text()
+p.write_text(t.replace("1. Open the panel.\n2. Start the workout.\n3. Swap the trainer.",
+                       "1. Open the panel.\n1. Start the workout.\n1. Swap the trainer."))
+PY
+out_chknum="$(python3 "$SHEET" --check --platform testbed --repo-root "$CHKNUM" 2>&1)"; code=$?
+check "a check written 1. on every step still owes three parts" "$code" "$out_chknum"
+python3 - "$CHKNUM/docs/tests/acceptance/walk/the-bench.md" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]); t = p.read_text()
+p.write_text(t.replace("   - The trainer holds the target. `TST-0401.3`\n", ""))
+PY
+procfail "and dropping one of them is still refused" "$CHKNUM" \
+  'owes TST-0401 step 3 and no step cites it'
+
+# A procedure covers its whole sitting, so it cites checks that have already
+# passed. A reader that knew only the owed set called every such tag unknown.
+has "the base fixture's procedure cites an already-passed check" '`TST-0404\.2`'
+
+# A host may hold its own owed set and pass a smaller `checks` -- the cockpit
+# does. `known` is what a tag is resolved against, so a procedure citing a
+# check that has already passed must still be accepted. Asserted through the
+# module's API, because the generator always passes the full set and so cannot
+# reach this on its own.
+known_out="$(SHEET_PATH="$SHEET" REPO_ROOT="$PROC" python3 - <<'PY'
+import importlib.util as ilu, os, pathlib, sys
+spec = ilu.spec_from_file_location("walk", os.environ["SHEET_PATH"])
+walk = ilu.module_from_spec(spec); sys.modules["walk"] = walk
+spec.loader.exec_module(walk)
+root = pathlib.Path(os.environ["REPO_ROOT"])
+read = walk.read_repo(root, "testbed")
+owed = {c.id for c in walk.owed_checks(read.checks, read.events)}
+thin = {i: c for i, c in read.checks.items() if i in owed}
+sheet = walk.build_walk(
+    thin, read.events, read.sittings, release="REL-0011", platform="testbed",
+    surfaces=read.surfaces, surface_notes=read.surface_notes,
+    procedures=read.procedures, known=read.checks, retired=read.retired,
+    authored_order=read.authored)
+bench = [p for p in sheet.sittings if p.sitting.name == "The bench"][0]
+print("problems=%d walked=%s" % (len(bench.procedure.problems),
+                                 bench.walked_from_procedure))
+PY
+)"
+check "a host passing only its owed checks still accepts a passed-check tag" \
+  "$(printf '%s' "$known_out" | grep -q '^problems=0 walked=True$' && echo 0 || echo 1)" "$known_out"
+
+# Nothing to check is not a failure: validate-docs.sh runs --check on every
+# commit, and a repo whose checks are all retired has no procedure to hold to
+# anything.
+ALLRET="$TMP/proc-allret"; rm -rf "$ALLRET"; cp -R "$PROC" "$ALLRET"
+python3 - "$ALLRET" <<'PY'
+import pathlib, sys
+for p in (pathlib.Path(sys.argv[1]) / "docs/tests/acceptance").glob("TST-*.md"):
+    p.write_text(p.read_text().replace("status: active", "status: retired"))
+PY
+out_allret="$(python3 "$SHEET" --check --quiet --repo-root "$ALLRET" 2>&1)"; code=$?
+check "a repo whose checks are all retired is not a failing commit" "$code" "exit $code: $out_allret"
+check "and it says nothing under --quiet" "$([[ -z "$out_allret" ]]; echo $?)" "$out_allret"
+
+# --check reads every change note, whatever the tag says: a repo with no
+# released REL-* note still gets told which notes have no Impact list.
+NOTAGCHG="$TMP/proc-nochg"; rm -rf "$NOTAGCHG"; cp -R "$PROC" "$NOTAGCHG"
+mkdir -p "$NOTAGCHG/docs/changes"
+cat > "$NOTAGCHG/docs/changes/CHG-20260914-Silent.md" <<'MD'
+---
+type: "[[change]]"
+id: CHG-20260914-Silent
+title: "A change that says nothing"
+status: merged
+owner: user:fixture
+---
+
+# A change that says nothing
+
+## Summary
+It shipped.
+MD
+out_nochg="$(python3 "$SHEET" --check --platform testbed --repo-root "$NOTAGCHG" 2>&1)"; code=$?
+check "a change note with no Impact list is named even with no release tag" \
+  "$( { [[ $code -eq 0 ]] && printf '%s' "$out_nochg" | grep -q 'CHG-20260914-Silent.md has no'; }; echo $?)" \
+  "exit $code: $out_nochg"
 
 
 echo "test-walk-sheet: $assertions assertions, $failures failure(s)"

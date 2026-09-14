@@ -314,7 +314,7 @@ PROCEDURES_REL = "tests/acceptance/walk"
 #: The folder holding the pictures of the build being walked. Every other
 #: folder under the gallery is named after the tag it was captured at.
 CANDIDATE_DIR = "candidate"
-IMAGE_EXT = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif")
+IMAGE_EXT = (".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif", ".svg")
 IMPACT_HEADING = "Impact"
 #: A release note is a candidate for "the last release tag" only at this
 #: status. `draft` has not shipped; `reverted` and `abandoned` shipped and
@@ -451,7 +451,17 @@ def parse_impact(body: str) -> tuple[list[tuple[str, str]], bool]:
     """
     screens: list[tuple[str, str]] = []
     none = False
+    in_fence = False
     for line in section(body, IMPACT_HEADING).splitlines():
+        if FENCE_RE.match(line):
+            in_fence = not in_fence
+            continue
+        #: **A fenced block is an example, not a claim.** A template or a
+        #: change note showing the shape inside ``` would otherwise put a
+        #: screen on the survey that nothing altered. Found by independent
+        #: review, 2026-09-14.
+        if in_fence:
+            continue
         item = _LIST_ITEM_RE.match(line)
         if not item:
             continue
@@ -459,19 +469,37 @@ def parse_impact(body: str) -> tuple[list[tuple[str, str]], bool]:
         if _NO_SCREEN_RE.match(text):
             none = True
             continue
-        found = _SUR_RE.match(text)
+        #: **Every screen the item names, not just the first.** One line
+        #: reading `[[SUR-0001]] and [[SUR-0002]]: both gained a lap counter`
+        #: used to drop the second screen and print the first one's sentence
+        #: as `and [[SUR-0002]]: both gained…`, raw markup and all. The label
+        #: is the run of ids and links at the head of the item; the sentence
+        #: is what follows the last of them, and each screen gets it. Found by
+        #: independent review, 2026-09-14.
+        found: list[str] = []
+        rest = text
+        while True:
+            match = _SUR_RE.match(rest)
+            if not match:
+                break
+            found.append("SUR-%s" % match.group(1))
+            rest = rest[match.end():]
+            close = rest.find("]]")
+            if 0 <= close <= 80:
+                rest = rest[close + 2:]
+            else:
+                rest = re.sub(r"^[-\w]*", "", rest)
+            #: `and`, `,` or `+` between two ids keeps the label going; a
+            #: separator ends it and the sentence starts.
+            joined = re.match(r"^[\s*_`]*(?:and|,|&|\+)[\s*_`]*", rest)
+            if not joined:
+                break
+            rest = rest[joined.end():]
         if not found:
             continue
-        tail = text[found.end():]
-        #: A wikilink carries the note's slug after the id, so the sentence
-        #: starts after the closing brackets. Bounded, so a `]]` belonging to
-        #: a later link in the same sentence is not mistaken for this one's.
-        close = tail.find("]]")
-        if 0 <= close <= 80:
-            tail = tail[close + 2:]
-        else:
-            tail = re.sub(r"^[-\w]*", "", tail)
-        screens.append(("SUR-%s" % found.group(1), _SEP_RE.sub("", tail, count=1).strip()))
+        sentence = _SEP_RE.sub("", rest, count=1).strip()
+        for surface_id in found:
+            screens.append((surface_id, sentence))
     return screens, none
 
 
@@ -656,8 +684,13 @@ class Expectation:
 
 @dataclass
 class Step:
+    #: Its position in the list, which is what a tag's `.N` names and what the
+    #: sheet prints. Markdown renumbers an ordered list and so does this.
     number: int
     head: str
+    #: The digit actually written, kept only so the validator can report a
+    #: note whose own numbering will not match what the sheet prints.
+    written: int = 0
     body: list[str] = field(default_factory=list)
     #: The `SUR-*` id this step happens on, when one could be resolved.
     surface_id: str = ""
@@ -687,7 +720,21 @@ class Procedure:
 
 
 def parse_steps(body: str) -> list[Step]:
-    """`## Steps` -> the numbered items under it, each with its own lines."""
+    """`## Steps` -> the numbered items under it, each with its own lines.
+
+    **A step's number is its position, not the digit written.** Markdown
+    renumbers an ordered list, so `1.` on every item renders as 1, 2, 3 and is
+    the style most people write. Keying on the written digit made two steps
+    share a number, which defeated the rule that an owed part may be cited by
+    only one step -- the citation count was a set of numbers. Found by
+    independent review, 2026-09-14. `written` keeps the digit so the validator
+    can say when a note's own numbering will not match the sheet.
+
+    **A tag inside a fenced block is not a citation.** Fences were skipped when
+    finding where a step begins and not when collecting what it claims, so a
+    worked example in ``` satisfied coverage on its own, and could equally
+    refuse a correct procedure for citing one part twice. Same review.
+    """
     steps: list[Step] = []
     current: Step | None = None
     in_fence = False
@@ -699,18 +746,23 @@ def parse_steps(body: str) -> list[Step]:
             continue
         found = None if in_fence else _STEP_RE.match(line)
         if found:
-            current = Step(number=int(found.group(1)),
-                           head=found.group(2).strip(), body=[line])
+            current = Step(number=len(steps) + 1, head=found.group(2).strip(),
+                           written=int(found.group(1)), body=[line])
             steps.append(current)
-            continue
-        if current is not None:
-            current.body.append(line)
-    for step in steps:
-        for line in step.body:
             tags = parse_tags(line)
             if tags:
-                step.expectations.append(
+                current.expectations.append(
                     Expectation(quote=quote_of(line), raw=line, tags=tags))
+            continue
+        if current is None:
+            continue
+        current.body.append(line)
+        if in_fence:
+            continue
+        tags = parse_tags(line)
+        if tags:
+            current.expectations.append(
+                Expectation(quote=quote_of(line), raw=line, tags=tags))
     return steps
 
 
@@ -750,13 +802,8 @@ def load_procedures(docs_root: Path, repo_root: Path | None = None) -> list[Proc
     return out
 
 
-def numbered_steps(check: Check) -> list[int]:
-    """The step numbers a check note actually has, in order, deduplicated.
-
-    A check whose procedure is an unheaded paragraph has none, and is one
-    owed part cited by its bare id ("The walk", rule 9). Most of the corpus
-    that needs this looks like that today (project-os-dev ISS-0064).
-    """
+def written_steps(check: Check) -> list[int]:
+    """The digits a check note writes on the numbered items under `## Steps`."""
     out: list[int] = []
     in_fence = False
     for line in (check.steps or "").splitlines():
@@ -766,9 +813,25 @@ def numbered_steps(check: Check) -> list[int]:
         if in_fence:
             continue
         found = _STEP_RE.match(line)
-        if found and int(found.group(1)) not in out:
+        if found:
             out.append(int(found.group(1)))
     return out
+
+
+def numbered_steps(check: Check) -> list[int]:
+    """The step positions a check note has: 1..n, or empty.
+
+    **Position, not the digit written**, for the reason `parse_steps` gives.
+    A note whose `## Steps` read `1.` three times has three steps, because
+    that is what markdown renders and what a walker counts; counting distinct
+    digits collapsed it to one owed part, so the release owed less than rule 9
+    says it does. Found by independent review, 2026-09-14.
+
+    A check whose procedure is an unheaded paragraph has none, and is one
+    owed part cited by its bare id ("The walk", rule 9). Most of the corpus
+    that needs this looks like that today (project-os-dev ISS-0064).
+    """
+    return list(range(1, len(written_steps(check)) + 1))
 
 
 def parts_of(check: Check) -> list[tuple[str, str]]:
@@ -1287,7 +1350,8 @@ def build_survey(changes: list[Change], surfaces: dict[str, Surface],
 def build_walk(checks: dict[str, Check], events: list[Event], sittings: list[Sitting],
                *, release: str, platform: str, surfaces=None,
                surface_notes=None, changes=None, captures=None,
-               procedures=None, gallery: str = "", generated: str = "",
+               procedures=None, known=None, retired=None,
+               gallery: str = "", generated: str = "",
                warnings=None, notices=None, authored_order: bool = True,
                survey_release: str = "", survey_tag: str = "",
                survey_problem: str = "") -> Walk:
@@ -1318,7 +1382,8 @@ def build_walk(checks: dict[str, Check], events: list[Event], sittings: list[Sit
         entry = Placed(sitting=sitting, rows=rows)
         procedure = by_sitting.get(sitting.name)
         if procedure is not None:
-            attach_procedure(entry, procedure, checks, owed_ids, sittings, surfaces)
+            attach_procedure(entry, procedure, checks, owed_ids, sittings,
+                             surfaces, retired=retired, known=known)
         placed.append(entry)
     unplaced = order_rows([c for c in owed if c.id not in taken],
                           warnings, "Unplaced")
@@ -1332,7 +1397,8 @@ def build_walk(checks: dict[str, Check], events: list[Event], sittings: list[Sit
 
 def attach_procedure(entry: Placed, procedure: Procedure, checks: dict[str, Check],
                      owed_ids: set[str], sittings: list[Sitting],
-                     surfaces: dict[str, str]) -> None:
+                     surfaces: dict[str, str], retired: set[str] | None = None,
+                     known: dict[str, Check] | None = None) -> None:
     """Hold a procedure to what this sitting owes, then keep what prints.
 
     The judgement is `audit_procedure`; this decides what a sheet does with
@@ -1343,7 +1409,8 @@ def attach_procedure(entry: Placed, procedure: Procedure, checks: dict[str, Chec
     """
     entry.procedure = procedure
     procedure.problems, procedure.remarks = audit_procedure(
-        procedure, entry.sitting, entry.rows, checks, owed_ids, sittings, surfaces)
+        procedure, entry.sitting, entry.rows, checks, owed_ids, sittings, surfaces,
+        retired=retired, known=known)
     if procedure.problems:
         return
     owed_parts = {part for c in entry.rows for part in parts_of(c)}
@@ -1361,7 +1428,8 @@ def attach_procedure(entry: Placed, procedure: Procedure, checks: dict[str, Chec
 def audit_procedure(procedure: Procedure, sitting: Sitting, owed: list[Check],
                     checks: dict[str, Check], owed_ids: set[str],
                     sittings: list[Sitting], surfaces: dict[str, str],
-                    retired: set[str] | None = None) -> tuple[list[str], list[str]]:
+                    retired: set[str] | None = None,
+                    known: dict[str, Check] | None = None) -> tuple[list[str], list[str]]:
     """(problems, remarks) for one procedure ("The walk", rule 9).
 
     A problem is a disagreement between the procedure and the release's owed
@@ -1373,12 +1441,27 @@ def audit_procedure(procedure: Procedure, sitting: Sitting, owed: list[Check],
     problems: list[str] = []
     remarks: list[str] = []
     retired = retired or set()
-    where = placement(sorted(checks.values(), key=lambda c: c.id), sittings, surfaces)
+    #: **Every check a tag may legally name, not only the owed ones.** A
+    #: procedure covers its whole sitting and prints the owed part of itself,
+    #: so it cites checks that have already passed. A host that passed only
+    #: the owed set -- which the cockpit's `walk_payload` did -- reported
+    #: every such tag as naming no check at all, and the two readers of one
+    #: corpus disagreed about one procedure. That is exactly what rule 7 says
+    #: bundling this module prevents. Found by independent review, 2026-09-14.
+    known = known or checks
+    where = placement(sorted(known.values(), key=lambda c: c.id), sittings, surfaces)
     want: dict[tuple[str, str], Check] = {}
     for check in owed:
         for part in parts_of(check):
             want[part] = check
     cited: dict[tuple[str, str], set[int]] = {}
+    off = [s for s in procedure.steps if s.written and s.written != s.number]
+    if off:
+        remarks.append(
+            "%s numbers its steps %s and the sheet prints them 1 to %d; a "
+            "part is counted by position, so cite the position"
+            % (procedure.path, ", ".join(str(s.written) for s in procedure.steps),
+               len(procedure.steps)))
     for step in procedure.steps:
         if not step.surface_id:
             remarks.append("step %d names no screen; a step says where it "
@@ -1387,7 +1470,7 @@ def audit_procedure(procedure: Procedure, sitting: Sitting, owed: list[Check],
             for tag in expectation.tags:
                 cited.setdefault(tag, set()).add(step.number)
                 problems.extend(_audit_tag(procedure, step, expectation, tag,
-                                           checks, retired, where, sitting.name))
+                                           known, retired, where, sitting.name))
     for part in sorted(want):
         if part not in cited:
             check = want[part]
@@ -1401,7 +1484,7 @@ def audit_procedure(procedure: Procedure, sitting: Sitting, owed: list[Check],
                 "verdict has one place to come from (%s)"
                 % (_part_name(part), ", ".join(str(n) for n in sorted(steps)),
                    procedure.path))
-    live = [c for c in checks.values()
+    live = [c for c in known.values()
             if c.section != "automated" and where.get(c.id) == sitting.name]
     covered = {tag[0] for tag in cited}
     missing = sorted(c.id for c in live if c.id not in covered)
@@ -1833,7 +1916,7 @@ def generate(repo_root: Path, release: str, platform: str) -> Walk:
     return build_walk(
         read.checks, read.events, read.sittings, release=release, platform=platform,
         surfaces=read.surfaces, surface_notes=read.surface_notes,
-        changes=read.changes, procedures=read.procedures,
+        changes=read.changes, procedures=read.procedures, retired=read.retired,
         captures=capture_finder(read.docs_root, repo_root, read.survey_tag),
         gallery=read.gallery, warnings=read.warnings, notices=notices,
         authored_order=read.authored, survey_release=read.survey_release,
@@ -1878,7 +1961,12 @@ def check_repo(repo_root: Path, platform: str) -> tuple[list[str], list[str]]:
                             for c in owed} - seen - {""})
         if uncovered:
             remarks.append("no procedure yet for: %s" % ", ".join(uncovered))
-    for change in read.changes:
+    #: **Every change note, not only the ones this release surveys.** The
+    #: survey is restricted to what git says is new since the tag; the
+    #: worklist is not, and a repo with no released note would otherwise be
+    #: told nothing at all about its Impact lists. Found by independent
+    #: review, 2026-09-14.
+    for change in load_changes(read.docs_root, repo_root):
         for surface_id, _ in change.screens:
             if surface_id not in read.surface_notes:
                 remarks.append("%s names %s in its Impact list and no surface "
@@ -1891,9 +1979,19 @@ def check_repo(repo_root: Path, platform: str) -> tuple[list[str], list[str]]:
 
 
 def run_check(repo_root: Path, platform: str, quiet: bool = False) -> int:
-    """`--check` over one platform or all of them. 0 = nothing to fix."""
+    """`--check` over one platform or all of them. 0 = nothing to fix.
+
+    **Nothing to check is not a failure.** No ledger, no acceptance check left
+    at a live status, no procedure: each of those is a repo with no procedure
+    to hold to anything, and `validate-docs.sh` runs this on every commit.
+    Letting `read_repo`'s refusals through made a repo whose checks had all
+    been retired fail its own pre-commit hook forever. Found by independent
+    review, 2026-09-14.
+    """
     docs_root = repo_root / "docs"
     if not has_ledger(docs_root):
+        return 0
+    if not (docs_root / PROCEDURES_REL).is_dir() and not (docs_root / CHANGES_REL).is_dir():
         return 0
     wanted = [platform] if platform else platforms(docs_root)
     status = 0
@@ -1901,8 +1999,12 @@ def run_check(repo_root: Path, platform: str, quiet: bool = False) -> int:
         try:
             problems, remarks = check_repo(repo_root, name)
         except WalkError as exc:
-            print("walk-sheet --check (%s): %s" % (name, exc), file=sys.stderr)
-            status = 2
+            #: A repo with no live acceptance check has no procedure to hold
+            #: to anything; a ledger for a platform this repo does not keep is
+            #: the caller's typo and is refused by the generator, not here.
+            if not quiet:
+                print("walk-sheet --check (%s): nothing to check -- %s"
+                      % (name, exc), file=sys.stderr)
             continue
         for problem in problems:
             print("walk-sheet --check (%s): %s" % (name, problem), file=sys.stderr)

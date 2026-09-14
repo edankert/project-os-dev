@@ -67,13 +67,19 @@ The walk sheet from PHASE-0004 worked and a real release showed what it lacked. 
 
 ## Verification
 
-`bash tools/scripts/test-walk-sheet.sh` — 139 assertions over six fixture repos, two of them real git checkouts, 0 failures. **28 mutations applied to `walk-sheet.py` one at a time, none survived** ([[TST-0010-A-Procedure-Covers-Every-Owed-Part-Exactly-Once|TST-0010]]).
+`bash tools/scripts/test-walk-sheet.sh` — 155 assertions over nine fixture repos, two of them real git checkouts, 0 failures. **36 mutations applied to `walk-sheet.py` one at a time, none survived** ([[TST-0010-A-Procedure-Covers-Every-Owed-Part-Exactly-Once|TST-0010]]).
 
 Every other template harness re-run and green: decision-rule 26, retention 23, hooks 74, pause-rule 15, verdict-model 31, word-budgets 3.
 
-Downstream after the sync: project-os-cockpit `pytest` 2121 passed / 6 skipped and `node --test desktop/tests/*.mjs` 146 passed; `test-walk-sheet.sh` 139 assertions in all five synced repos; `validate-docs.sh` OK in all six. `validate-fleet.sh` over thirteen repos is unchanged before and after — the same four pre-existing failures with the same counts, no new error anywhere.
+Downstream after the sync: project-os-cockpit `pytest tests/test_walk_*.py` 57 passed and `node --test desktop/tests/*.mjs` 146 passed; `test-walk-sheet.sh` 155 assertions in all five synced repos; `validate-docs.sh` OK in all six. `validate-fleet.sh` over thirteen repos is unchanged before and after — the same four pre-existing failures with the same counts, no new error anywhere.
 
 **Same exposure as the rest:** [[ISS-0065-The-Templates-Own-CI-Runs-None-Of-Its-Seven-Harnesses|ISS-0065]] still stands, and this harness is the eighth. The template's own CI runs none of them, so these numbers come from a developer's machine.
+
+## The independent review
+
+Round one returned `changes-requested` on all three notes and refuted three of REQ-0029's eight criteria. **Eight blocking findings, every one reproduced, every one fixed here with the fixture that would have caught it** — the list is in the review response on FEAT-0031. The sharpest of them was not in the generator: `walk_payload` in project-os-cockpit and `walk-sheet.py` disagreed about the same procedure, which is the failure bundling the module exists to prevent, and neither repo's suite could see it because no cockpit test wrote a procedure file.
+
+Five of the nine non-blocking findings are fixed too. Two are filed at `triage`: [[ISS-0066-An-Expectation-Line-May-Quote-Any-Expect-Line-Of-Its-Check|ISS-0066]] and [[ISS-0067-Git-Rename-Detection-Can-Hide-A-New-Change-Note-From-The-Survey|ISS-0067]].
 
 ## Follow-ups
 
