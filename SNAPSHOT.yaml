@@ -1,5 +1,5 @@
 version: 1
-updated: "2026-09-14T18:00Z"
+updated: "2026-09-16T12:00Z"
 
 template:
   replace_me: false
@@ -31,28 +31,39 @@ counters:
   # Same fix as project-os-cockpit ISS-0123. 0030-0043 are never allocated here.
   ADR: 45
   CHG:
-    last_date: 20260913
-  FEAT: 31
+    last_date: 20260916
+  FEAT: 32
   ISS: 67
-  PHASE: 5
+  PHASE: 6
   REL: 0
-  REQ: 29
-  RISK: 2
-  TASK: 123
-  TST: 11
+  REQ: 30
+  RISK: 3
+  TASK: 124
+  TST: 12
   WF: 3
 
 focus:
   task: ""
-  feature: ""
-  phase: "PHASE-0005"
+  feature: "FEAT-0032"
+  phase: "PHASE-0006"
   issue: ""
-  note: "2026-09-14: PHASE-0005 IS DONE, BUILT, TESTED, REVIEWED AND COMMITTED in six repos, and NOT PUSHED anywhere. A walk sheet now opens with the app screens a release changed -- one rider-facing sentence per change, the screen at the last release beside the screen now, and no test id -- and a sitting may be walked from one written procedure: setup once, numbered steps naming their screen, expectation lines quoting the check's own Expect text with TST-####.N tags. `walk-sheet.py --check` refuses a procedure that disagrees with what the release owes, and validate-docs.sh runs it quietly on every commit. Landed in the template (c3cdb4c, a0c80e3, 0f1b673, 6a513ff, f61e000) and synced and committed into your-trainer (64789852, 8d4c7179, c44ba941, d17b95a8), project-os-cockpit (0dabb4f, 9a0ed94, a168006, 14b6dbb), project-os-deck (38a38e0, 6b9bf61, e50baa1), your-sudoku (5e25fcc, 3adb7fd, 120f3be) and this repo's vendored tools. THE REVIEW GATE RAN BOTH ROUNDS AND ROUND TWO RETURNED approved on all three notes. Round one refuted three of REQ-0029's eight criteria: EIGHT BLOCKING FINDINGS, ALL REPRODUCED, ALL FIXED with a fixture each; five of nine non-blocking fixed; ISS-0066 and ISS-0067 filed at triage. Round two verified all eight and found ONE MORE, a regression the eighth fix introduced -- catching every WalkError in --check also swallowed a broken ledger, so a filename naming no platform and an entry dated 2026-13-45 stopped being reported on a commit. Fixed with a narrow NothingToWalk and two assertions rather than filed (project-os f61e000). What the eight cost is worth keeping: FIVE were about a shape the corpus writes and the fixtures did not -- markdown's "every item is 1." defeated the doubly-cited rule outright, a tag inside a fence counted as a citation, two screens on one Impact line lost one, a fenced Impact list was read as real, and a repo whose checks are all retired failed its own pre-commit hook forever. The sharpest was NOT in the generator: walk_payload and walk-sheet.py disagreed about one procedure because the cockpit passed only the owed checks, which is the failure rule 7 says bundling prevents -- and no cockpit test wrote a procedure file, so neither suite could see it. Two now do. Harness: 157 assertions over ten fixture repos, two real git checkouts, 38 mutations none survived. Six other template harnesses green; cockpit walk tests 57 passed and node 146 passed; validate-fleet unchanged over thirteen repos before and after. NEXT: push all six repos and watch CI. Nothing else is owed here. THE ONE EXIT CRITERION CUT: your-trainer's real REL-0017 sheet -- that is its PHASE-024 and Edwin decided v2.2.0 waits. Measured there 2026-09-14: 39 owed Android checks, 18 with numbered steps and 21 without, 180 owed parts; 16 surfaces, none with a gallery: key; 12 change notes since the v2.1.8 tag, four with an Impact section and NONE naming a screen. ISS-0065 still stands and this harness is the eighth the template's own CI does not run. Also open: ISS-0066, ISS-0067, ISS-0063, ISS-0064, ISS-0062, ISS-0053, ISS-0052, ISS-0054, ISS-0049, ISS-0050, ISS-0059, ISS-0060. Downstream and not this repo's: your-trainer PHASE-024 (TASK-0900 the surface mapping Edwin approves, then the area: rewrite, the captures, the procedures) and project-os-cockpit PHASE-044, whose TASK-0622 records what this sync already landed there."
+  note: "2026-09-16: Codex adapter implemented and fixture-tested in project-os commit 336d5f9 (TASK-0124 done). FEAT-0032 awaits independent review, upstream push and CI confirmation; no fleet rollout. Cockpit PHASE-004 is closed; PHASE-040 is deferred by user request."
 
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
+    PHASE-0006:
+      file: docs/phases/PHASE-0006-Codex-Native-Adapter.md
+      title: "Codex native project adapter"
+      status: active
+      order: 6
+      owner: user:edwin
+      goal: "Give Codex native project-os skills, agents, and lifecycle hooks generated from the same canonical playbooks as Claude Code."
+      features: [FEAT-0032]
+      requirements: [REQ-0030]
+      tasks: [TASK-0124]
+      related: [RISK-0003]
     PHASE-0001:
       file: docs/phases/PHASE-0001-Documentation-System-Foundations.md
       title: "Documentation system foundations"
@@ -106,6 +117,15 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0032:
+      file: docs/features/codex-native-adapter/FEAT-0032-Codex-Native-Project-Adapter.md
+      status: review
+      phase: "[[PHASE-0006]]"
+      owner: user:edwin
+      requirements: [REQ-0030]
+      tasks: [TASK-0124]
+      tests: [TST-0012]
+      related: [RISK-0003]
     FEAT-0030:
       file: "docs/features/screen-surfaces/FEAT-0030-A-Surface-Is-A-Screen-And-A-Change-Names-Its-Screens.md"
       status: done
@@ -228,15 +248,6 @@ items:
       phase: "[[PHASE-999]]"
       tasks: [TASK-0075, TASK-0076, TASK-0077]
       note: "Every review recorded across the fleet is Claude-on-Claude; the different-family gate has never actually been satisfied. Runner prototyped (TASK-0075); the ISS-0011..0015 calibration is the test of whether it is worth promoting."
-    FEAT-0007:
-      file: docs/features/relationship-model/FEAT-0007-Relationship-Model.md
-      title: "Named relationship fields with child-to-parent linking"
-      status: done
-      owner: user:edwin
-      phase: PHASE-0001
-      goal: "Relationship model for linking notes. NOTE: the semantic-named-field design was reverted in May 2026; the model in force is specified by REQ-0015"
-      requirements: [REQ-0010, REQ-0015]
-      tasks: [TASK-0023, TASK-0024, TASK-0025, TASK-0027, TASK-0028, TASK-0029, TASK-0026]
     FEAT-0008:
       file: docs/features/phase-notes/FEAT-0008-Phase-Notes.md
       title: "Phases as first-class note type"
@@ -340,6 +351,15 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0124:
+      file: docs/features/codex-native-adapter/plan/tasks/TASK-0124-Implement-And-Verify-Codex-Native-Adapter.md
+      status: done
+      parent: FEAT-0032
+      phase: "[[PHASE-0006]]"
+      effort: L
+      depends: []
+      blocks: []
+      tests: [TST-0012]
     TASK-0116:
       file: "docs/features/screen-surfaces/plan/tasks/TASK-0116-TAXONOMY-States-What-A-Surface-Is.md"
       status: done
@@ -1226,6 +1246,15 @@ items:
   # Pruned: ISS-0001 (closed, PHASE-0001). Note preserved under docs/issues/.
 
   requirements:
+    REQ-0030:
+      file: docs/requirements/REQ-0030-Codex-Receives-Native-Project-OS-Integration.md
+      status: approved
+      owner: user:edwin
+      priority: high
+      phase: "[[PHASE-0006]]"
+      implements: [FEAT-0032]
+      tests: [TST-0012]
+      related: [RISK-0003]
     REQ-0029:
       file: "docs/requirements/REQ-0029-A-Release-Walk-Reads-As-A-Script.md"
       status: implemented
@@ -1452,6 +1481,14 @@ items:
       related: [ADR-0024, REQ-0018, ISS-0041, ISS-0042, ISS-0043]
       note: "ADR-0024 option 1: widens REQ-0018 from state rules to every normative rule. Supersedes it rather than reopening a terminal requirement."
   risks:
+    RISK-0003:
+      file: docs/risks/RISK-0003-Codex-Hook-Trust-And-Coverage.md
+      title: "Codex hooks can be unavailable or miss edits"
+      status: open
+      owner: user:edwin
+      likelihood: medium
+      impact: medium
+      related: [FEAT-0032, REQ-0030]
     RISK-0001:
       file: docs/risks/RISK-0001-Fleet-Status-Migration.md
       title: "The fleet status migration rewrites ~300 notes across 10 repos; a bad mapping silently relabels delivered work"
@@ -1470,6 +1507,14 @@ items:
       related: [FEAT-0015, TASK-0060, ADR-0009, REQ-0019]
 
   tests:
+    TST-0012:
+      file: docs/features/codex-native-adapter/plan/tests/TST-0012-Codex-Adapter-Contracts.md
+      status: active
+      scope: feature
+      level: system
+      requirements: [REQ-0030]
+      features: [FEAT-0032]
+      tasks: [TASK-0124]
     TST-0010:
       file: "docs/features/walk-procedure/plan/tests/TST-0010-A-Procedure-Covers-Every-Owed-Part-Exactly-Once.md"
       status: active
@@ -1782,21 +1827,21 @@ items:
 
 metrics:
   counts:
-    features_total: 31
+    features_total: 32
     features_done: 28
-    phases_total: 6
+    phases_total: 7
     phases_done: 4
-    tasks_total: 123
-    tasks_done: 116
-    tests_total: 4
+    tasks_total: 124
+    tasks_done: 117
+    tests_total: 5
     tests_passing: 0
     tests_failing: 0
     issues_open: 27
     issues_triage: 11
     tasks_deferred: 0
     issues_deferred: 0
-    requirements_total: 29
+    requirements_total: 30
     requirements_implemented: 27
-    risks_open: 0
+    risks_open: 1
     releases_total: 0
     decisions_total: 31
