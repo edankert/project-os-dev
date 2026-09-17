@@ -1,5 +1,5 @@
 version: 1
-updated: "2026-09-16T12:00Z"
+updated: "2026-09-17T07:56Z"
 
 template:
   replace_me: false
@@ -29,25 +29,27 @@ counters:
   # ADR-0030..ADR-0043 by bare number (TESTING.md's 'ADR-0031', SCHEMAS.md's 'ADR-0032' and
   # 'ADR-0034', and more), so a local ADR-0030..0043 would make those citations ambiguous.
   # Same fix as project-os-cockpit ISS-0123. 0030-0043 are never allocated here.
-  ADR: 45
+  ADR: 46
   CHG:
     last_date: 20260916
-  FEAT: 32
+  FEAT: 33
   ISS: 67
   PHASE: 6
   REL: 0
-  REQ: 30
+  REQ: 31
   RISK: 3
-  TASK: 124
+  TASK: 125
   TST: 12
   WF: 3
 
 focus:
-  task: ""
-  feature: "FEAT-0032"
-  phase: "PHASE-0006"
+  # TASK-0125 now supports validated check-level readiness for unscripted fallback rows. Twelve focused generator tests and the shared sheet script pass; both consumers have the same generator. Broader contradiction and corpus audits remain open.
+  # TASK-0125 is extending the shared walk contract so unscripted checks can declare platform-specific readiness without changing owed check membership.
+  task: "TASK-0125"
+  feature: "FEAT-0033"
+  phase: ""
   issue: ""
-  note: "2026-09-16: Codex adapter implemented and fixture-tested in project-os commit 336d5f9 (TASK-0124 done). FEAT-0032 awaits independent review, upstream push and CI confirmation; no fleet rollout. Cockpit PHASE-004 is closed; PHASE-040 is deferred by user request."
+  note: "FEAT-0033 extends the shared release-walk contract for Your Trainer FEAT-0122. TASK-0125 has implemented prerequisite retention, scoped setup, platform actions, required state, readiness labels, evidence links and timers, with focused generator tests and synced consumers. Known surface ids show titles, and malformed check tags trigger per-check fallback. Authored `state_for` reminders now carry across later applicable steps, including omitted steps, and stop at the next declaration; ten focused fixture cases pass. Structured contradiction and full corpus coverage checks remain before closure. Existing FEAT-0032 review work remains recorded in its feature note."
 
 
 items:
@@ -117,6 +119,13 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0033:
+      file: docs/features/walk-preparation/FEAT-0033-A-Walk-Keeps-Required-Preparation.md
+      status: doing
+      owner: user:edwin
+      requirements: [REQ-0031]
+      tasks: [TASK-0125]
+      related: [ADR-0046]
     FEAT-0032:
       file: docs/features/codex-native-adapter/FEAT-0032-Codex-Native-Project-Adapter.md
       status: review
@@ -248,16 +257,6 @@ items:
       phase: "[[PHASE-999]]"
       tasks: [TASK-0075, TASK-0076, TASK-0077]
       note: "Every review recorded across the fleet is Claude-on-Claude; the different-family gate has never actually been satisfied. Runner prototyped (TASK-0075); the ISS-0011..0015 calibration is the test of whether it is worth promoting."
-    FEAT-0008:
-      file: docs/features/phase-notes/FEAT-0008-Phase-Notes.md
-      title: "Phases as first-class note type"
-      status: done
-      owner: user:edwin
-      phase: PHASE-0001
-      goal: "Promote phases from a single registry file to individual navigable notes with contextual dashboards"
-      requirements: [REQ-0011]
-      tasks: [TASK-0030, TASK-0031, TASK-0033, TASK-0034, TASK-0035, TASK-0032]
-      related: [FEAT-0007]
     FEAT-0009:
       file: docs/features/cockpit-layout/FEAT-0009-Cockpit-Layout.md
       title: "Obsidian cockpit layout with NAV.base and CONTEXT.base"
@@ -351,6 +350,13 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0125:
+      file: docs/features/walk-preparation/plan/tasks/TASK-0125-Retain-Declared-Preparation-And-Relevant-Setup.md
+      status: doing
+      parent: FEAT-0033
+      effort: L
+      depends: []
+      blocks: []
     TASK-0124:
       file: docs/features/codex-native-adapter/plan/tasks/TASK-0124-Implement-And-Verify-Codex-Native-Adapter.md
       status: done
@@ -549,13 +555,6 @@ items:
     TASK-0101:
       file: "docs/features/instruction-weight/plan/tasks/TASK-0101-Generated-Skill-Bodies-Stop-Repeating-Close-Out.md"
       title: "Generated skill bodies stop repeating the close-out steps"
-      status: done
-      phase: "[[PHASE-0003]]"
-      parent: FEAT-0026
-      effort: S
-    TASK-0100:
-      file: "docs/features/instruction-weight/plan/tasks/TASK-0100-Template-Frontmatter-Comments.md"
-      title: "Template frontmatter comments: one line per field, plus a pointer"
       status: done
       phase: "[[PHASE-0003]]"
       parent: FEAT-0026
@@ -1246,6 +1245,12 @@ items:
   # Pruned: ISS-0001 (closed, PHASE-0001). Note preserved under docs/issues/.
 
   requirements:
+    REQ-0031:
+      file: docs/requirements/REQ-0031-Preparation-Is-Declared-And-Validated.md
+      status: approved
+      owner: user:edwin
+      priority: high
+      implements: [FEAT-0033]
     REQ-0030:
       file: docs/requirements/REQ-0030-Codex-Receives-Native-Project-OS-Integration.md
       status: approved
@@ -1652,6 +1657,11 @@ items:
       status: merged
 
   decisions:
+    ADR-0046:
+      file: docs/decisions/ADR-0046-Declared-Preparation-Survives-Walk-Filtering.md
+      status: accepted
+      owner: user:edwin
+      related: [FEAT-0033, REQ-0031]
     ADR-0045:
       file: "docs/decisions/ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure.md"
       status: accepted
@@ -1827,11 +1837,11 @@ items:
 
 metrics:
   counts:
-    features_total: 32
+    features_total: 33
     features_done: 28
     phases_total: 7
     phases_done: 4
-    tasks_total: 124
+    tasks_total: 125
     tasks_done: 117
     tests_total: 5
     tests_passing: 0
@@ -1840,8 +1850,8 @@ metrics:
     issues_triage: 11
     tasks_deferred: 0
     issues_deferred: 0
-    requirements_total: 30
+    requirements_total: 31
     requirements_implemented: 27
     risks_open: 1
     releases_total: 0
-    decisions_total: 31
+    decisions_total: 32
