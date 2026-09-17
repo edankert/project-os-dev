@@ -228,6 +228,10 @@ class Check:
     expect: str = ""
     #: The note's unheaded description, printed only when it states no steps.
     lead: str = ""
+    #: Declared only on checks without a usable authored procedure. A platform
+    #: can owe a check even when its action is not currently possible there.
+    readiness_for: dict[str, dict[str, str]] = field(default_factory=dict)
+    readiness_problems: list[str] = field(default_factory=list)
 
     @property
     def section(self) -> str:
@@ -287,6 +291,8 @@ def load_checks(docs_root: Path, index=None, repo_root: Path | None = None) -> d
                 shown = path.relative_to(repo_root)
             except ValueError:
                 pass
+        readiness, readiness_problems = parse_check_readiness(
+            fm.get("walk_readiness_for"), str(shown))
         out[note_id] = Check(
             id=note_id,
             title=_text(fm.get("title")),
@@ -303,8 +309,44 @@ def load_checks(docs_root: Path, index=None, repo_root: Path | None = None) -> d
             steps=section(body, "Steps", "Procedure"),
             expect=section(body, "Expect", "Expected results"),
             lead=lead_paragraph(body),
+            readiness_for=readiness,
+            readiness_problems=readiness_problems,
         )
     return out
+
+
+def parse_check_readiness(raw, path: str) -> tuple[dict[str, dict[str, str]], list[str]]:
+    """Read a check's explicit per-platform readiness for fallback rows."""
+    if raw in (None, ""):
+        return {}, []
+    if not isinstance(raw, dict):
+        return {}, ["%s: `walk_readiness_for` must map platforms to kind and reason" % path]
+    out: dict[str, dict[str, str]] = {}
+    problems: list[str] = []
+    for platform, value in raw.items():
+        if (not isinstance(platform, str)
+                or not re.fullmatch(r"[a-z][a-z0-9_-]*", platform)
+                or not isinstance(value, dict)
+                or value.get("kind") not in ("preparation", "decision")
+                or not isinstance(value.get("reason"), str)
+                or not value["reason"].strip()
+                or ("issue" in value and not isinstance(value["issue"], str))):
+            problems.append("%s: `walk_readiness_for` entry %r needs a platform, "
+                            "kind preparation or decision, and a plain reason" % (path, platform))
+            continue
+        out[platform] = {"kind": value["kind"],
+                         "reason": value["reason"].strip(),
+                         "issue": value.get("issue", "").strip()}
+    return out, problems
+
+
+def check_readiness(check: Check, platform: str) -> dict[str, str]:
+    """A malformed declaration is a visible decision, never a ready card."""
+    if check.readiness_problems:
+        return {"kind": "decision", "reason":
+                "This check's walk readiness declaration is invalid. Fix its note "
+                "before recording a verdict.", "issue": ""}
+    return check.readiness_for.get(platform, {})
 
 
 CHANGES_REL = "changes"
@@ -646,6 +688,11 @@ _STEP_RE = re.compile(r"^ {0,3}(\d+)[.)]\s+(.*)$")
 #: an LLM into a markdown file and read back by a regular expression; an
 #: en dash or a smart quote in one would be a tag nobody can find.
 _TAG_RE = re.compile(r"`(TST-\d{2,})(?:\.(\d+))?`")
+#: A malformed backticked check reference must be reported even when another
+#: valid tag on the same line satisfies coverage. Otherwise the unparsed text
+#: becomes prose and an observation can disappear from the owed walk.
+_TAG_LIKE_RE = re.compile(r"`TST-[^`]*`")
+_ACTION_HEAD_RE = re.compile(r"^(\*\*.+?\.\*\*)\s*(.*)$")
 _MARKER_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
 _WS_RE = re.compile(r"\s+")
 
@@ -688,6 +735,7 @@ class Step:
     #: sheet prints. Markdown renumbers an ordered list and so does this.
     number: int
     head: str
+    authored_head: str = ""
     #: The digit actually written, kept only so the validator can report a
     #: note whose own numbering will not match what the sheet prints.
     written: int = 0
@@ -698,10 +746,37 @@ class Step:
     #: not resolve.
     surface_said: str = ""
     expectations: list[Expectation] = field(default_factory=list)
+    #: Empty means every platform; otherwise the authored platforms for this action.
+    platforms: set[str] = field(default_factory=set)
+    #: State to confirm before this action; authored, never inferred from prose.
+    #: A declaration on this source step; carried to later applicable steps
+    #: when the walk is built for one platform.
+    state_declared: str = ""
+    required_state: str = ""
+    #: A later retained step may ask the walker to keep evidence from here.
+    capture_prompt: str = ""
+    capture_needed: bool = False
+    uses_capture: list[int] = field(default_factory=list)
+    #: A wait the author declared for this action, never a session estimate.
+    timer_seconds: int = 0
+    #: A known fixture, control or product decision needed before execution.
+    readiness: dict[str, object] = field(default_factory=dict)
+    readiness_declared: dict[str, object] = field(default_factory=dict)
+    #: Platform-specific action prose after the unchanged bold surface name.
+    action_for: dict[str, str] = field(default_factory=dict)
 
     @property
     def parts(self) -> set[tuple[str, str]]:
         return {tag for e in self.expectations for tag in e.tags}
+
+
+@dataclass
+class SetupItem:
+    id: str
+    text: str
+    #: Empty means every step; annotated procedures name the steps explicitly.
+    steps: set[int] = field(default_factory=set)
+    platforms: set[str] = field(default_factory=set)
 
 
 @dataclass
@@ -712,11 +787,192 @@ class Procedure:
     sitting: str
     setup: str
     steps: list[Step] = field(default_factory=list)
+    setup_items: list[SetupItem] = field(default_factory=list)
+    requires: dict[int, list[int]] = field(default_factory=dict)
+    parse_problems: list[str] = field(default_factory=list)
     #: Why this procedure cannot be printed. Non-empty means the sitting falls
     #: back to per-check rows ("The walk", rule 9).
     problems: list[str] = field(default_factory=list)
     #: True about the procedure, nobody's mistake.
     remarks: list[str] = field(default_factory=list)
+
+
+_SETUP_ITEM_RE = re.compile(r"^- \[([a-z][a-z0-9_-]*)\] (.+)$")
+
+
+def _number_map(raw, label: str, path: str) -> tuple[dict[int, list[int]], list[str]]:
+    """Read a frontmatter map of step positions to step positions."""
+    if raw in (None, ""):
+        return {}, []
+    if not isinstance(raw, dict):
+        return {}, ["%s: `%s` must map step numbers to lists of step numbers" % (path, label)]
+    out: dict[int, list[int]] = {}
+    problems: list[str] = []
+    for key, value in raw.items():
+        number = 0
+        try:
+            number = int(key)
+            targets = [int(item) for item in value] if isinstance(value, list) else None
+        except (TypeError, ValueError):
+            targets = None
+        if number < 1 or targets is None or any(target < 1 for target in targets):
+            problems.append("%s: `%s` entry %r needs positive step numbers" % (path, label, key))
+        else:
+            out[number] = targets
+    return out, problems
+
+
+def _platform_map(raw, label: str, path: str) -> tuple[dict[str, set[str]], list[str]]:
+    if raw in (None, ""):
+        return {}, []
+    if not isinstance(raw, dict):
+        return {}, ["%s: `%s` must map ids to platform lists" % (path, label)]
+    out: dict[str, set[str]] = {}
+    problems: list[str] = []
+    for key, value in raw.items():
+        if not isinstance(value, list) or not value or any(
+                not isinstance(item, str) or not item.strip() for item in value):
+            problems.append("%s: `%s` entry %r needs a nonempty platform list" % (path, label, key))
+        else:
+            out[str(key)] = {item.strip() for item in value}
+    return out, problems
+
+
+def _text_map(raw, label: str, path: str) -> tuple[dict[str, str], list[str]]:
+    if raw in (None, ""):
+        return {}, []
+    if not isinstance(raw, dict):
+        return {}, ["%s: `%s` must map step numbers to nonempty text" % (path, label)]
+    out: dict[str, str] = {}
+    problems: list[str] = []
+    for key, value in raw.items():
+        if not str(key).isdigit() or not isinstance(value, str) or not value.strip():
+            problems.append("%s: `%s` entry %r needs a step number and nonempty text"
+                            % (path, label, key))
+        else:
+            out[str(key)] = value.strip()
+    return out, problems
+
+
+def _duration_map(raw, path: str) -> tuple[dict[str, int], list[str]]:
+    if raw in (None, ""):
+        return {}, []
+    if not isinstance(raw, dict):
+        return {}, ["%s: `timer_for` must map step numbers to positive seconds" % path]
+    out: dict[str, int] = {}
+    problems: list[str] = []
+    for key, value in raw.items():
+        try:
+            seconds = int(value)
+        except (TypeError, ValueError):
+            seconds = 0
+        if not str(key).isdigit() or seconds < 1:
+            problems.append("%s: `timer_for` entry %r needs a step number and positive seconds"
+                            % (path, key))
+        else:
+            out[str(key)] = seconds
+    return out, problems
+
+
+def _readiness_map(raw, path: str) -> tuple[dict[str, dict[str, object]], list[str]]:
+    if raw in (None, ""):
+        return {}, []
+    if not isinstance(raw, dict):
+        return {}, ["%s: `readiness_for` must map step numbers to kind and reason" % path]
+    out: dict[str, dict[str, object]] = {}
+    problems: list[str] = []
+    for key, value in raw.items():
+        if (not str(key).isdigit() or not isinstance(value, dict)
+                or value.get("kind") not in ("preparation", "decision")
+                or not isinstance(value.get("reason"), str)
+                or not value["reason"].strip()
+                or ("issue" in value and not isinstance(value["issue"], str))
+                or ("platforms" in value and (not isinstance(value["platforms"], list)
+                    or not value["platforms"] or any(not isinstance(item, str)
+                    or not re.fullmatch(r"[a-z][a-z0-9_-]*", item)
+                    for item in value["platforms"])))):
+            problems.append("%s: `readiness_for` entry %r needs a step number, "
+                            "kind preparation or decision, and a plain reason" % (path, key))
+        else:
+            out[str(key)] = {"kind": value["kind"], "reason": value["reason"].strip(),
+                             "issue": value.get("issue", "").strip(),
+                             "platforms": list(value.get("platforms", []))}
+    return out, problems
+
+
+def _action_map(raw, path: str) -> tuple[dict[str, dict[str, str]], list[str]]:
+    if raw in (None, ""):
+        return {}, []
+    if not isinstance(raw, dict):
+        return {}, ["%s: `action_for` must map step numbers to platform actions" % path]
+    out: dict[str, dict[str, str]] = {}
+    problems: list[str] = []
+    for key, value in raw.items():
+        if (not str(key).isdigit() or not isinstance(value, dict) or not value
+                or any(not isinstance(platform, str) or not re.fullmatch(r"[a-z][a-z0-9_-]*", platform)
+                       or not isinstance(action, str) or not action.strip()
+                       or _TAG_RE.search(action) for platform, action in value.items())):
+            problems.append("%s: `action_for` entry %r needs platform names and nonempty actions without test tags"
+                            % (path, key))
+        else:
+            out[str(key)] = {platform: action.strip() for platform, action in value.items()}
+    return out, problems
+
+
+def parse_setup_items(setup: str, scope, platforms, path: str) -> tuple[list[SetupItem], list[str]]:
+    """A scoped setup is a list of named bullets; legacy setup remains whole."""
+    if scope in (None, "") and platforms in (None, ""):
+        return ([SetupItem(id="", text=setup)] if setup else []), []
+    problems: list[str] = []
+    if not isinstance(scope, dict):
+        return [], ["%s: `setup_for` must map each setup id to step numbers" % path]
+    if platforms in (None, ""):
+        platforms = {}
+    if not isinstance(platforms, dict):
+        return [], ["%s: `setup_platforms` must map setup ids to platforms" % path]
+    items: list[SetupItem] = []
+    current: list[str] = []
+    current_id = ""
+    for line in setup.splitlines():
+        found = _SETUP_ITEM_RE.match(line)
+        if found:
+            if current_id:
+                items.append(SetupItem(id=current_id, text="\n".join(current).strip()))
+            current_id, current = found.group(1), ["- " + found.group(2)]
+        elif current_id:
+            current.append(line)
+        elif line.strip():
+            problems.append("%s: scoped setup has text before its first named item" % path)
+    if current_id:
+        items.append(SetupItem(id=current_id, text="\n".join(current).strip()))
+    ids = [item.id for item in items]
+    if len(ids) != len(set(ids)):
+        problems.append("%s: setup ids must be unique" % path)
+    for item in items:
+        raw_steps = scope.get(item.id)
+        if raw_steps == "all":
+            item.steps = set()
+        elif not isinstance(raw_steps, list) or not raw_steps:
+            problems.append("%s: setup item %s needs `all` or a nonempty `setup_for` step list"
+                            % (path, item.id))
+            continue
+        else:
+            try:
+                item.steps = {int(value) for value in raw_steps}
+            except (TypeError, ValueError):
+                problems.append("%s: setup item %s names an invalid step" % (path, item.id))
+        if any(value < 1 for value in item.steps):
+            problems.append("%s: setup item %s names an invalid step" % (path, item.id))
+        raw_platforms = platforms.get(item.id, [])
+        if not isinstance(raw_platforms, list) or any(
+                not isinstance(value, str) or not value.strip() for value in raw_platforms):
+            problems.append("%s: setup item %s has invalid platforms" % (path, item.id))
+        else:
+            item.platforms = {value.strip() for value in raw_platforms}
+    for key in set(scope) | set(platforms):
+        if key not in ids:
+            problems.append("%s: setup metadata names absent item %s" % (path, key))
+    return items, problems
 
 
 def parse_steps(body: str) -> list[Step]:
@@ -747,6 +1003,7 @@ def parse_steps(body: str) -> list[Step]:
         found = None if in_fence else _STEP_RE.match(line)
         if found:
             current = Step(number=len(steps) + 1, head=found.group(2).strip(),
+                           authored_head=found.group(2).strip(),
                            written=int(found.group(1)), body=[line])
             steps.append(current)
             tags = parse_tags(line)
@@ -772,7 +1029,9 @@ def name_surfaces(steps: list[Step], surfaces: dict[str, Surface]) -> None:
     for step in steps:
         found = [i for i in _ids(step.head) if i.startswith("SUR-")]
         if found:
-            step.surface_id, step.surface_said = found[0], found[0]
+            step.surface_id = found[0]
+            known = surfaces.get(step.surface_id)
+            step.surface_said = known.title if known and known.title else step.surface_id
             continue
         for title, sid in sorted(titles.items(), key=lambda kv: -len(kv[0])):
             if title and title in step.head:
@@ -797,8 +1056,50 @@ def load_procedures(docs_root: Path, repo_root: Path | None = None) -> list[Proc
                 shown = path.relative_to(repo_root)
             except ValueError:
                 pass
-        out.append(Procedure(path=str(shown), sitting=_text(fm.get("sitting")),
-                             setup=section(body, "Setup"), steps=parse_steps(body)))
+        shown_path = str(shown)
+        setup = section(body, "Setup")
+        steps = parse_steps(body)
+        requires, require_problems = _number_map(fm.get("requires"), "requires", shown_path)
+        step_platforms, step_problems = _platform_map(
+            fm.get("step_platforms"), "step_platforms", shown_path)
+        step_states, state_problems = _text_map(
+            fm.get("state_for"), "state_for", shown_path)
+        capture_prompts, capture_problems = _text_map(
+            fm.get("capture_for"), "capture_for", shown_path)
+        capture_sources, use_problems = _number_map(
+            fm.get("use_capture"), "use_capture", shown_path)
+        timers, timer_problems = _duration_map(fm.get("timer_for"), shown_path)
+        readiness, readiness_problems = _readiness_map(fm.get("readiness_for"), shown_path)
+        actions, action_problems = _action_map(fm.get("action_for"), shown_path)
+        setup_items, setup_problems = parse_setup_items(
+            setup, fm.get("setup_for"), fm.get("setup_platforms"), shown_path)
+        for step in steps:
+            step.platforms = step_platforms.get(str(step.number), set())
+            step.state_declared = step_states.get(str(step.number), "")
+            step.required_state = step.state_declared
+            step.capture_prompt = capture_prompts.get(str(step.number), "")
+            step.uses_capture = capture_sources.get(step.number, [])
+            step.timer_seconds = timers.get(str(step.number), 0)
+            step.readiness = readiness.get(str(step.number), {})
+            step.readiness_declared = readiness.get(str(step.number), {})
+            step.action_for = actions.get(str(step.number), {})
+        unknown = set(step_platforms) - {str(step.number) for step in steps}
+        for number in sorted(unknown):
+            step_problems.append("%s: `step_platforms` names absent step %s" % (shown_path, number))
+        for number in sorted(set(step_states) - {str(step.number) for step in steps}):
+            state_problems.append("%s: `state_for` names absent step %s" % (shown_path, number))
+        for label, mapping, target in (("capture_for", capture_prompts, capture_problems),
+                                       ("timer_for", timers, timer_problems),
+                                       ("readiness_for", readiness, readiness_problems),
+                                       ("action_for", actions, action_problems)):
+            for number in sorted(set(mapping) - {str(step.number) for step in steps}):
+                target.append("%s: `%s` names absent step %s" % (shown_path, label, number))
+        out.append(Procedure(
+            path=shown_path, sitting=_text(fm.get("sitting")), setup=setup,
+            steps=steps, setup_items=setup_items, requires=requires,
+            parse_problems=(require_problems + step_problems + state_problems
+                            + capture_problems + use_problems + timer_problems
+                            + setup_problems + readiness_problems + action_problems)))
     return out
 
 
@@ -1237,6 +1538,8 @@ class Placed:
     rows: list[Check]
     #: The sitting's written procedure, when it has one and it holds up.
     procedure: Procedure | None = None
+    #: Only setup that the retained actions use on this platform.
+    setup: str = ""
     #: The steps of that procedure this release owes something from.
     steps: list[Step] = field(default_factory=list)
     #: How many steps were left out because everything they cite has passed.
@@ -1337,6 +1640,16 @@ def build_survey(changes: list[Change], surfaces: dict[str, Surface],
                     screen.parent = ""
                 found[surface_id] = screen
             screen.sentences.append((change.id, change.title, sentence))
+    # A changed dialog still needs its containing screen in the survey, even
+    # when no change note names that screen directly.
+    for screen in list(found.values()):
+        if screen.parent and screen.parent not in found:
+            parent = surfaces.get(screen.parent)
+            found[screen.parent] = Screen(
+                id=screen.parent,
+                title=parent.title if parent and parent.title else screen.parent,
+                parent="",
+                unresolved=parent is None)
     if captures is not None:
         for screen in found.values():
             known = surfaces.get(screen.id)
@@ -1397,7 +1710,7 @@ def build_walk(checks: dict[str, Check], events: list[Event], sittings: list[Sit
         procedure = by_sitting.get(sitting.name)
         if procedure is not None:
             attach_procedure(entry, procedure, checks, owed_ids, sittings,
-                             surfaces, retired=retired, known=known)
+                             surfaces, platform=platform, retired=retired, known=known)
         placed.append(entry)
     unplaced = order_rows([c for c in owed if c.id not in taken],
                           warnings, "Unplaced")
@@ -1411,7 +1724,8 @@ def build_walk(checks: dict[str, Check], events: list[Event], sittings: list[Sit
 
 def attach_procedure(entry: Placed, procedure: Procedure, checks: dict[str, Check],
                      owed_ids: set[str], sittings: list[Sitting],
-                     surfaces: dict[str, str], retired: set[str] | None = None,
+                     surfaces: dict[str, str], platform: str = "",
+                     retired: set[str] | None = None,
                      known: dict[str, Check] | None = None) -> None:
     """Hold a procedure to what this sitting owes, then keep what prints.
 
@@ -1422,26 +1736,131 @@ def attach_procedure(entry: Placed, procedure: Procedure, checks: dict[str, Chec
     reading rows and wondering where the script went.
     """
     entry.procedure = procedure
+    for step in procedure.steps:
+        step.head = step.authored_head or step.head
+        step.readiness = step.readiness_declared
     procedure.problems, procedure.remarks = audit_procedure(
         procedure, entry.sitting, entry.rows, checks, owed_ids, sittings, surfaces,
-        retired=retired, known=known)
+        platform=platform, retired=retired, known=known)
     if procedure.problems:
         return
-    owed_parts = {part for c in entry.rows for part in parts_of(c)}
-    kept: list[Step] = []
+    applicable = [step for step in procedure.steps
+                  if not step.platforms or not platform or platform in step.platforms]
+    current_state = ""
     for step in procedure.steps:
+        step.required_state = ""
+    for step in applicable:
+        if step.state_declared:
+            current_state = step.state_declared
+        step.required_state = current_state
+    for step in procedure.steps:
+        action = step.action_for.get(platform)
+        if action:
+            prefix = _ACTION_HEAD_RE.match(step.authored_head)
+            if prefix:
+                step.head = "%s %s" % (prefix.group(1), action)
+        if step.readiness and step.readiness.get("platforms") and platform not in step.readiness["platforms"]:
+            step.readiness = {}
+    owed_parts = {part for c in entry.rows for part in parts_of(c)}
+    direct: set[int] = set()
+    for step in procedure.steps:
+        for expectation in step.expectations:
+            expectation.owed.clear()
+    for step in applicable:
         for expectation in step.expectations:
             expectation.owed = {tag for tag in expectation.tags if tag in owed_parts}
         if any(e.owed for e in step.expectations):
-            kept.append(step)
+            direct.add(step.number)
+    needed = set(direct)
+    pending = list(direct)
+    while pending:
+        for prerequisite in procedure.requires.get(pending.pop(), []):
+            if prerequisite not in needed:
+                needed.add(prerequisite)
+                pending.append(prerequisite)
+    kept = [step for step in applicable if step.number in needed]
+    by_number = {step.number: step for step in procedure.steps}
+    for step in procedure.steps:
+        step.capture_needed = False
+    for step in kept:
+        for source in step.uses_capture:
+            by_number[source].capture_needed = True
     entry.steps = kept
     entry.omitted = len(procedure.steps) - len(kept)
     entry.owed_checks = list(entry.rows)
+    entry.setup = "\n\n".join(item.text for item in procedure.setup_items
+                              if (not item.platforms or not platform or platform in item.platforms)
+                              and (not item.steps or item.steps & needed))
+
+
+def validate_preparation(procedure: Procedure, platform: str = "") -> list[str]:
+    """Reject broken declarations before they can drop an owed observation."""
+    problems = list(procedure.parse_problems)
+    steps = {step.number: step for step in procedure.steps}
+    graph = procedure.requires
+    for number, targets in graph.items():
+        if number not in steps:
+            problems.append("%s: `requires` names absent step %d" % (procedure.path, number))
+        for target in targets:
+            if target not in steps:
+                problems.append("%s: step %d requires absent step %d"
+                                % (procedure.path, number, target))
+            elif number in steps and platform and (
+                    not steps[number].platforms or platform in steps[number].platforms) and (
+                    steps[target].platforms and platform not in steps[target].platforms):
+                problems.append("%s: step %d requires step %d, which is unavailable on %s"
+                                % (procedure.path, number, target, platform))
+            if target >= number:
+                problems.append("%s: step %d requires step %d, but a prerequisite must come earlier"
+                                % (procedure.path, number, target))
+    visiting: set[int] = set()
+    visited: set[int] = set()
+
+    def visit(number: int) -> None:
+        if number in visiting:
+            problems.append("%s: `requires` has a cycle through step %d"
+                            % (procedure.path, number))
+            return
+        if number in visited or number not in steps:
+            return
+        visiting.add(number)
+        for target in graph.get(number, []):
+            visit(target)
+        visiting.remove(number)
+        visited.add(number)
+
+    for number in graph:
+        visit(number)
+    for item in procedure.setup_items:
+        for number in item.steps:
+            if number not in steps:
+                problems.append("%s: setup item %s names absent step %d"
+                                % (procedure.path, item.id, number))
+    for step in procedure.steps:
+        if step.action_for and (not _ACTION_HEAD_RE.match(step.authored_head)
+                                or parse_tags(step.body[0])):
+            problems.append("%s: step %d needs a bold surface heading without test tags for `action_for`"
+                            % (procedure.path, step.number))
+        for source in step.uses_capture:
+            if source not in steps:
+                problems.append("%s: step %d uses evidence from absent step %d"
+                                % (procedure.path, step.number, source))
+            elif source >= step.number:
+                problems.append("%s: step %d must use evidence from an earlier step"
+                                % (procedure.path, step.number))
+            elif not steps[source].capture_prompt:
+                problems.append("%s: step %d uses step %d but it declares no capture prompt"
+                                % (procedure.path, step.number, source))
+            elif source not in graph.get(step.number, []):
+                problems.append("%s: step %d must require evidence source step %d"
+                                % (procedure.path, step.number, source))
+    return problems
 
 
 def audit_procedure(procedure: Procedure, sitting: Sitting, owed: list[Check],
                     checks: dict[str, Check], owed_ids: set[str],
                     sittings: list[Sitting], surfaces: dict[str, str],
+                    platform: str = "",
                     retired: set[str] | None = None,
                     known: dict[str, Check] | None = None) -> tuple[list[str], list[str]]:
     """(problems, remarks) for one procedure ("The walk", rule 9).
@@ -1452,7 +1871,7 @@ def audit_procedure(procedure: Procedure, sitting: Sitting, owed: list[Check],
     or a live check the procedure has not reached yet. Coverage of the owed
     parts is the requirement; coverage of everything live is the aim.
     """
-    problems: list[str] = []
+    problems: list[str] = validate_preparation(procedure, platform)
     remarks: list[str] = []
     retired = retired or set()
     #: **Every check a tag may legally name, not only the owed ones.** A
@@ -1469,17 +1888,32 @@ def audit_procedure(procedure: Procedure, sitting: Sitting, owed: list[Check],
         for part in parts_of(check):
             want[part] = check
     cited: dict[tuple[str, str], set[int]] = {}
-    off = [s for s in procedure.steps if s.written and s.written != s.number]
+    applicable = [step for step in procedure.steps
+                  if not step.platforms or not platform or platform in step.platforms]
+    off = [s for s in applicable if s.written and s.written != s.number]
     if off:
         remarks.append(
             "%s numbers its steps %s and the sheet prints them 1 to %d; a "
             "part is counted by position, so cite the position"
             % (procedure.path, ", ".join(str(s.written) for s in procedure.steps),
                len(procedure.steps)))
-    for step in procedure.steps:
+    for step in applicable:
         if not step.surface_id:
             remarks.append("step %d names no screen; a step says where it "
                            "happens (%s)" % (step.number, procedure.path))
+        in_fence = False
+        for line in step.body:
+            if FENCE_RE.match(line):
+                in_fence = not in_fence
+                continue
+            if in_fence:
+                continue
+            for candidate in _TAG_LIKE_RE.finditer(line):
+                if not _TAG_RE.fullmatch(candidate.group()):
+                    problems.append(
+                        "step %d of %s has malformed expectation tag %s; "
+                        "use a numeric `TST-####.N` tag or a bare check id"
+                        % (step.number, procedure.path, candidate.group()))
         for expectation in step.expectations:
             for tag in expectation.tags:
                 cited.setdefault(tag, set()).add(step.number)
@@ -1649,14 +2083,22 @@ def render_survey(walk: Walk, out: list[str]) -> None:
             out.append("")
 
 
-def render_check(check: Check, out: list[str]) -> None:
+def render_check(check: Check, out: list[str], platform: str = "") -> None:
     """One per-check row, walkable without leaving the sheet (rule 5)."""
     head = "### [%s](%s)" % (check.id, check.path)
     if check.title:
         head += " — %s" % check.title
     out.append(head)
     out.append("")
-    out.append("- [ ] walked, and the verdict recorded in the ledger")
+    readiness = check_readiness(check, platform)
+    if readiness:
+        label = "Needs preparation" if readiness["kind"] == "preparation" else "Needs a decision"
+        out.append("**%s:** %s" % (label, readiness["reason"]))
+        if readiness.get("issue"):
+            out.append("Related issue: %s." % readiness["issue"])
+        out.append("")
+    out.append("- [ ] walked, and the verdict recorded in the ledger" if not readiness
+               else "- [ ] readiness resolved, then walked or a decision recorded in the ledger")
     out.append("")
     if check.setup:
         out.append("**Setup:** %s" % check.setup.strip())
@@ -1693,10 +2135,10 @@ def render_procedure(placed: Placed, out: list[str]) -> None:
     out.append("Walked from a procedure: [%s](%s). The setup below is stated once "
                "and every step assumes it." % (procedure.path, procedure.path))
     out.append("")
-    if procedure.setup:
+    if placed.setup:
         out.append("**Setup:**")
         out.append("")
-        out.append(procedure.setup)
+        out.append(placed.setup)
     else:
         out.append("**Setup: not stated.** The procedure has no Setup heading, so "
                    "every step below assumes a state nobody wrote down.")
@@ -1704,16 +2146,42 @@ def render_procedure(placed: Placed, out: list[str]) -> None:
     out.append("%d %s to walk." % (len(placed.steps), _plural(len(placed.steps), "step")))
     if placed.omitted:
         out.append("")
-        out.append("%d further %s in this procedure %s left out: everything %s "
-                   "already been walked on this platform."
+        out.append("%d further %s in this procedure %s left out because %s "
+                   "not needed for this platform's owed observations."
                    % (placed.omitted, _plural(placed.omitted, "step"),
                       _plural(placed.omitted, "is", "are"),
-                      _plural(placed.omitted, "it cites has", "they cite has")))
+                      _plural(placed.omitted, "it is", "they are")))
     out.append("")
-    for step in placed.steps:
-        out.append("#### Step %d%s" % (step.number,
-                                       " — %s" % step.surface_said if step.surface_said else ""))
+    for position, step in enumerate(placed.steps, start=1):
+        preparation = not any(expectation.owed for expectation in step.expectations)
+        out.append("#### Step %d%s%s" % (
+            position,
+            " — %s" % step.surface_said if step.surface_said else "",
+            " (preparation; source step %d)" % step.number if preparation else
+            " (source step %d)" % step.number if position != step.number else ""))
         out.append("")
+        if step.required_state:
+            out.append("**Required state:** %s" % step.required_state)
+            out.append("")
+        if step.readiness:
+            label = "Needs preparation" if step.readiness["kind"] == "preparation" else "Needs a decision"
+            out.append("**%s:** %s%s" % (label, step.readiness["reason"],
+                       " (%s)" % step.readiness["issue"] if step.readiness["issue"] else ""))
+            out.append("")
+        if step.capture_needed:
+            out.append("**Capture here for a later comparison:** %s" % step.capture_prompt)
+            out.append("")
+        if step.uses_capture:
+            out.append("**Compare with evidence from source %s.**" % ", ".join(
+                "step %d" % source for source in step.uses_capture))
+            out.append("")
+        if step.timer_seconds:
+            out.append("**Optional timer:** %d seconds. Ending it records no verdict."
+                       % step.timer_seconds)
+            out.append("")
+        if preparation:
+            out.append("_Prepare the next observation. Continue without recording a test verdict._")
+            out.append("")
         for i, line in enumerate(step.body):
             #: The step's number is already in the heading above, so the first
             #: line prints without it. Everything else prints as written: a
@@ -1727,6 +2195,8 @@ def render_procedure(placed: Placed, out: list[str]) -> None:
             found = next((e for e in step.expectations if e.raw == line), None)
             if found is None:
                 out.append(text)
+                continue
+            if preparation:
                 continue
             passed = [tag for tag in found.tags if tag not in found.owed]
             suffix = ""
@@ -1810,7 +2280,7 @@ def render(walk: Walk) -> str:
         out.append("%d %s." % (len(rows), "row" if len(rows) == 1 else "rows"))
         out.append("")
         for check in rows:
-            render_check(check, out)
+            render_check(check, out, walk.platform)
 
     for i, placed in enumerate(walk.sittings, start=1):
         rows_of("Sitting %d — %s" % (i, placed.sitting.name), placed, placed.rows)
@@ -1941,6 +2411,8 @@ def check_repo(repo_root: Path, platform: str) -> tuple[list[str], list[str]]:
     """(problems, remarks) for every procedure in a repo, on one platform."""
     read = read_repo(repo_root, platform)
     problems: list[str] = []
+    for check in read.checks.values():
+        problems.extend(check.readiness_problems)
     remarks: list[str] = []
     owed = owed_checks(read.checks, read.events)
     owed_ids = {c.id for c in owed}
@@ -1967,6 +2439,7 @@ def check_repo(repo_root: Path, platform: str) -> tuple[list[str], list[str]]:
         mine = [c for c in mine if placed.get(c.id) == sitting.name]
         found, said = audit_procedure(procedure, sitting, mine, read.checks,
                                       owed_ids, read.sittings, read.surfaces,
+                                      platform=platform,
                                       retired=read.retired)
         problems.extend(found)
         remarks.extend(said)

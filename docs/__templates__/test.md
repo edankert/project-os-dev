@@ -25,6 +25,8 @@ related: []
 # level: acceptance only; delete on an executable test. Fields explained in SCHEMAS.md, test.md ("Acceptance fields").
 area: ""             # the human grouping, one walk's worth of related checks; the verdict lives in the release ledger, not here (ADR-0037)
 after: []            # optional: checks that should have passed before this one is walked; orders the walk sheet and gates nothing (tools/instructions/TESTING.md, "The walk", rule 4)
+# walk_readiness_for: # optional on an acceptance check without a usable sitting procedure; name platforms with a preparation or decision reason (TESTING.md, "The walk", rule 5)
+#   ios: { kind: decision, reason: "Name the missing action or decision.", issue: "ISS-0000" }
 ---
 
 # <Test>

@@ -1114,10 +1114,10 @@ has   "the setup is printed once for the whole sitting"       '^The bench powere
 check "and exactly once" \
   "$(printf '%s' "$OUT" | grep -c '^The bench powered and the tablet awake\.$' | grep -q '^1$' && echo 0 || echo 1)" \
   "$(printf '%s' "$OUT" | grep -c '^The bench powered and the tablet awake\.$')"
-has   "an owed step is printed with its screen in the heading" '^#### Step 1 — SUR-0001'
+has   "an owed step is printed with its screen in the heading" '^#### Step 1 — Equipment panel'
 has   "its expectation lines keep their tags"                  'The panel lists the trainer\. `TST-0401\.1`'
 hasnt "a step citing only checks that have passed is left out" 'Unpair everything'
-has   "and the sheet says how many steps it left out"          '1 further step in this procedure is left out: everything it cites has'
+has   "and the sheet says how many steps it left out"          '1 further step in this procedure is left out because it is not needed'
 has   "a step mixing an owed tag with a passed one still prints" 'The reading arrives\.'
 has   "and marks the tag that has already been walked"          '_\(already walked: TST-0404 step 2\)_'
 has   "the sitting ends with one tick box per owed check"       '^- \[ \] \[TST-0401\]\(docs/tests/acceptance/TST-0401-Fixture\.md\)'
@@ -1187,7 +1187,7 @@ PY
 procfail "two steps that share a written number are still two steps" "$DUPNUM" \
   'TST-0401 step 1 is cited by steps 1, 2'
 OUT="$(python3 "$SHEET" --release REL-0011 --platform testbed --repo-root "$ALLONE" 2>&1)"
-has "and the sheet numbers them by position, not by the digit" '^#### Step 2 — SUR-0002'
+has "and the sheet numbers them by position, not by the digit" '^#### Step 2 — Ride cockpit'
 
 # A tag inside a fenced block is an example. It used to satisfy coverage on its
 # own, and could equally refuse a correct procedure for citing a part twice.

@@ -8,6 +8,28 @@ updated: 2026-01-26
 # The `### ` heading in docs/tests/acceptance/WALK.md that this procedure walks,
 # word for word. It is the only link between the two files.
 sitting: ""
+# Optional when the sheet must retain preparation or filter setup. Positions
+# refer to numbered items under Steps, regardless of the digits written there.
+# requires:
+#   3: [1, 2]
+# setup_for:
+#   trainer: [1, 2, 3]
+# step_platforms:
+#   2: [android]
+# action_for:
+#   2: {android: "Open Profile — Connected.", ios: "Open Settings — Integrations."}
+# setup_platforms:
+#   trainer: [android]
+# state_for:
+#   3: "The same ride is running with the trainer connected."
+# capture_for:
+#   2: "Record the cadence shown before switching sources."
+# use_capture:
+#   5: [2] # Also add 2 to requires for step 5.
+# timer_for:
+#   5: 120 # Optional timer in seconds; it never records a verdict.
+# readiness_for:
+#   5: {kind: preparation, reason: "Bring the power meter to the bench.", issue: "ISS-0123"}
 related: []
 tags: [walk, procedure]
 ---
@@ -20,7 +42,7 @@ Regenerate it with `tools/skills/walk-procedure/SKILL.md` when the validator rep
 
 ## Setup
 
-<The state this whole sitting needs, stated once, and the cheapest way to reach it. Everything below assumes it. This replaces the Setup line each check would otherwise repeat.>
+<The state this whole sitting needs, stated once, and the cheapest way to reach it. If only some retained steps need an item, use named bullets such as `- [trainer] Connect the trainer.` and `setup_for:` above.>
 
 ## Steps
 
