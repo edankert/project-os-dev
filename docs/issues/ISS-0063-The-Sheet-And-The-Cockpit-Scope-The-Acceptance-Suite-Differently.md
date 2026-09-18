@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0063
 aliases: ["ISS-0063"]
 title: "The walk sheet reads every acceptance note under docs/ and the cockpit reads only docs/tests/acceptance/; no repo has such a note today, so the divergence is latent rather than live"
-status: open
+status: fixed
 owner: user:edwin
 created: 2026-09-13
 updated: 2026-09-18
@@ -43,3 +43,7 @@ What is left is latent. Counted across the fleet the same day, **zero** acceptan
 The cockpit reads acceptance checks from one folder, while `walk-sheet.py` reads every `level: acceptance` note, and LIFECYCLE.md allows them inside a feature folder. This repo has 7 such notes, all automated, and keeps no ledgers, so nothing differs yet.
 
 Checked as part of FEAT-0036 (TASK-0140).
+
+## Answered and fixed, 2026-09-18
+
+Edwin, 2026-09-18: no. Template 7595361: LIFECYCLE.md and TESTING.md say a walked check lives under `docs/tests/acceptance/`, where the walk and the cockpit both look, and an automated one (with a `command:`) may sit beside its feature. The validator reports a walked check stored elsewhere as ACCEPT-LOCATION, an error. Measured first: 666 walked checks in four repos, none outside that folder. Three cases in `test-ledger-checks.sh`.

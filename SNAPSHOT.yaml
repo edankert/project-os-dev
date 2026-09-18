@@ -885,7 +885,7 @@ items:
       parent: FEAT-0037
     ISS-0066:
       file: "docs/issues/ISS-0066-An-Expectation-Line-May-Quote-Any-Expect-Line-Of-Its-Check.md"
-      status: open
+      status: fixed
       severity: medium
       phase: "[[PHASE-999]]"
       note: "From the PHASE-0005 review. A procedure line tagged TST-0401.1 may quote any line of that check's Expect section, including step 3's, and the validator compares the quote against the set. Three options costed in the note; option 2 (each Expect line quoted exactly once across the procedure) is the one worth measuring. Edwin's call, and nothing waits on it."
@@ -897,7 +897,7 @@ items:
       note: "From the PHASE-0005 review. Deleting a change note in the same range as adding one can make git pair them as a rename, so --diff-filter=A misses the new note and the survey silently loses its screens. Reachable only by deleting a change note, which LIFECYCLE forbids. The fix is one flag; the question is whether a renamed note counts as new."
     ISS-0065:
       file: "docs/issues/ISS-0065-The-Templates-Own-CI-Runs-None-Of-Its-Seven-Harnesses.md"
-      status: open
+      status: fixed
       severity: medium
       component: tooling
       note: "From the independent review of FEAT-0029. The template ships seven harnesses and its own CI runs run-tests.py --ci, which finds no command: note in its docs/ and runs nothing. They are not unrun -- each is the command: on a TST-* note here, and this repo's workflow checks the template out beside itself -- so a broken harness goes red in the wrong repo. The open question is whether the template declares its own TST notes, which every new project would then inherit, or names the scripts in a CI step."
@@ -911,7 +911,7 @@ items:
       related: [FEAT-0029, ADR-0027, ADR-0029]
     ISS-0063:
       file: "docs/issues/ISS-0063-The-Sheet-And-The-Cockpit-Scope-The-Acceptance-Suite-Differently.md"
-      status: open
+      status: fixed
       severity: medium
       component: tooling
       note: "Found while landing TASK-0113. The template's generator reads every level: acceptance note under docs/, which LIFECYCLE.md 'Test storage' allows; the cockpit reads docs/tests/acceptance/ alone. 649 notes against 431 on your-trainer, with every note both see resolving identically -- so no wrong number today, and two owed counts for one corpus as soon as somebody files an acceptance check beside its feature. Which scoping is the rule is the open question."
@@ -1926,7 +1926,7 @@ metrics:
     tests_total: 10
     tests_passing: 0
     tests_failing: 0
-    issues_open: 12
+    issues_open: 9
     issues_triage: 3
     tasks_deferred: 0
     issues_deferred: 0

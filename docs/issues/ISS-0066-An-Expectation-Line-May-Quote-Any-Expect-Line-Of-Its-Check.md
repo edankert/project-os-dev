@@ -2,7 +2,7 @@
 type: "[[issue]]"
 id: ISS-0066
 title: "An expectation line may quote any Expect line of the check it cites, not the one its step is about"
-status: open
+status: fixed
 phase: "[[PHASE-999-Parking-Lot]]"
 owner: user:edwin
 created: 2026-09-14
@@ -57,3 +57,7 @@ Option 2 is the one worth costing. It is Edwin's call, and nothing is blocked wh
 `walk-sheet.py` checks the quote against all of the check's Expect lines; TESTING.md says only that it quotes one line of the check's own Expect section.
 
 Checked as part of FEAT-0036 (TASK-0140).
+
+## Answered and fixed, 2026-09-18
+
+Edwin, 2026-09-18: as recommended. Template 7595361: TESTING.md rule 9 says a quoted Expect line proves the words are the check's own, and the tag says which step. `walk-sheet.py` is unchanged.

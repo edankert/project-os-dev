@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0065
 aliases: ["ISS-0065"]
 title: "The template repo ships seven test scripts and its own CI runs none of them, because nothing in its docs/ declares a command:"
-status: open
+status: fixed
 owner: user:edwin
 created: 2026-09-13
 updated: 2026-09-18
@@ -39,3 +39,7 @@ They are not unrun: every one of them is the `command:` on a `TST-*` note in **p
 The template has 17 test scripts. Its CI runs only `test-codex-adapter.sh`; the others run only here, each as a TST note's `command:`.
 
 Checked as part of FEAT-0036 (TASK-0140).
+
+## Answered and fixed, 2026-09-18
+
+Edwin, 2026-09-18: as recommended. Template 7595361: the template's CI runs every `tools/scripts/test-*.sh` and `test-retention.py`, only when the repository is `edankert/project-os`. Run from a clean checkout before committing: all 15 pass. The TST notes here that run the same scripts stay; they now duplicate the template's CI and can be retired when convenient.
