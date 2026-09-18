@@ -87,6 +87,15 @@ def gate(entries):
     return "[VERIFY-ACCEPTANCE] FEAT-0001" in out
 check("the gate is quiet when the ledger passes the check", not gate([good]))
 check("the gate warns when the ledger has no verdict for it", gate([]))
+# project-os-dev ISS-0063: a walked check lives under docs/tests/acceptance/
+loc = Path(tempfile.mkdtemp())
+def placed(rel, **fm):
+    p = loc / rel; p.parent.mkdir(parents=True, exist_ok=True); p.write_text("---\n---\n")
+    r = vd.Report(); vd.validate_acceptance_location(loc, r, {"TST-0009": (p, dict({"id": "TST-0009", "level": "acceptance"}, **fm))})
+    return any("ACCEPT-LOCATION" in m for m in r.errors)
+check("a walked check beside its feature is refused", placed("docs/features/x/plan/tests/TST-0009-A.md"))
+check("a walked check under docs/tests/acceptance/ is fine", not placed("docs/tests/acceptance/TST-0009-A.md"))
+check("an automated check beside its feature is fine", not placed("docs/features/x/plan/tests/TST-0009-A.md", command="make test"))
 print("test-ledger-checks: %d assertions, %d failure(s)" % (n, failures))
 sys.exit(1 if failures else 0)
 PYEOF

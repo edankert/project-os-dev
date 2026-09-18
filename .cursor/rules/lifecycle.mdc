@@ -13,7 +13,7 @@ Rules for the lifecycle of work. Each is stated once here, with a reason and a l
 - `../../SNAPSHOT.yaml` is the canonical, machine-readable active context for agents. Notes under `../../docs/` are the durable human record, and the snapshot's derived fields follow them ("Mandatory Automated Documentation" below). Bases views are for people and are not canonical for agents.
 
 ## Test storage (hybrid)
-- Feature-scoped: `docs/features/<feature-slug>/plan/tests/TST-####-*.md`, an acceptance check for the feature included; system-wide: `docs/tests/TST-####-*.md`, with a system-wide acceptance suite under `docs/tests/acceptance/`.
+- Feature-scoped: `docs/features/<feature-slug>/plan/tests/TST-####-*.md`; system-wide: `docs/tests/TST-####-*.md`. A walked acceptance check lives under `docs/tests/acceptance/`; one with a `command:` may sit beside its feature.
 
 ## Statuses
 - Statuses and transitions are stated once, in `STATUSES.md`.

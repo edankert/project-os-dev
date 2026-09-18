@@ -2262,6 +2262,32 @@ def validate_vouched_ledgers(root, report, note_index):
                     % (rel, note_id, found[:12], vouched[:12] or "nothing"))
 
 
+def validate_acceptance_location(root, report, note_index):
+    """A walked acceptance check lives under docs/tests/acceptance/ (project-os-dev ISS-0063).
+
+    The cockpit reads acceptance checks from that folder only, while walk-sheet.py
+    reads every `level: acceptance` note, so a walked check stored beside its
+    feature was on the sheet and missing from the cockpit. An automated check
+    (one with a `command:`) is run, not walked, and may stay beside its feature.
+    Measured before adding this: 666 walked checks in four repos, none outside.
+    """
+    home = root / "docs" / "tests" / "acceptance"
+    for nid, (path, fm) in sorted(note_index.items()):
+        fm = fm or {}
+        if str(fm.get("level", "") or "").strip().lower() != "acceptance":
+            continue
+        if str(fm.get("command", "") or "").strip():
+            continue
+        if str(fm.get("id", "") or "").strip() not in ("", nid):
+            continue   # a composite name indexed under another id
+        try:
+            path.relative_to(home)
+        except ValueError:
+            report.error("ACCEPT-LOCATION", "%s is an acceptance check a person walks, but it is not under "
+                         "docs/tests/acceptance/, where the walk and the cockpit look for it; move it there, "
+                         "or give it a command: if it is automated (%s)" % (nid, path.relative_to(root)))
+
+
 def validate_moved_verdict_fields(root, report, note_index):
     """A verdict field on a note, in a repo whose verdicts live in ledgers.
 
@@ -2520,6 +2546,7 @@ def validate(root, report):
     note_index, note_claimants = build_note_index(docs_dir)
     allowed_status = load_allowed_status(root)
     validate_ledgers(root, report, note_index)
+    validate_acceptance_location(root, report, note_index)
     ledger_cleared = _ledger_cleared(root)
     validate_moved_verdict_fields(root, report, note_index)
     validate_vouched_ledgers(root, report, note_index)
