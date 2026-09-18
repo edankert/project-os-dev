@@ -881,7 +881,7 @@ items:
       status: triage
     ISS-0068:
       file: docs/issues/ISS-0068-The-Cockpits-Validator-Carries-Rules-The-Template-Lacks.md
-      status: triage
+      status: fixed
       parent: FEAT-0037
     ISS-0066:
       file: "docs/issues/ISS-0066-An-Expectation-Line-May-Quote-Any-Expect-Line-Of-Its-Check.md"
@@ -1927,7 +1927,7 @@ metrics:
     tests_passing: 0
     tests_failing: 0
     issues_open: 9
-    issues_triage: 3
+    issues_triage: 2
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 31
