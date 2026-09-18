@@ -2,7 +2,7 @@
 type: "[[feature]]"
 id: FEAT-0035
 title: "A finding is fixed before it is filed"
-status: backlog
+status: doing
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
@@ -10,7 +10,7 @@ updated: 2026-09-18
 source: ["[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]", "Edwin, 2026-09-18: issues 'not reported by me or written in a way that I can understand ... not fixed as part of the features they belong to and often they are marked as needing my input'"]
 goal: "A defect found in a feature's own code is fixed before the feature closes. Only what needs a decision, lies outside the feature, or is too big is filed. Each issue says what a user would notice, and a question for Edwin reaches him in chat with a recommendation."
 requirements: []
-tasks: []
+tasks: [TASK-0132, TASK-0133]
 release: ""
 acceptance_exception: "A process rule with no product surface. It is checked by what the next five features close with, as PHASE-0007's exit criteria state."
 related: ["[[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It]]", "[[ADR-0028-A-Review-Gate-Runs-Two-Rounds]]", "[[ISS-0028-Close-Out-Has-No-Answer-For-Cannot-Fix]]"]

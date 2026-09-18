@@ -54,6 +54,7 @@ The seven parts below are the change. Each names the task that builds it.
 4. **A hard limit, enforced by a hook** ([[TASK-0128-A-Hook-Stops-The-Reviewer-At-Its-Budget|TASK-0128]]). A `PreToolUse` hook counts tool calls per `agent_id` when `agent_type` is `independent-reviewer`. At call 30 it warns that 10 calls are left. At call 40 it refuses further calls with "budget reached: write your report now; mark unchecked claims *not checked*". `maxTurns: 100` stays in the agent file as a backstop only, because a subagent that hits `maxTurns` stops without writing a report (Claude Code docs, sub-agents page).
 5. **Round two is a smaller job** ([[TASK-0129-Round-Two-Verifies-Fixes-Only|TASK-0129]]). Its packet holds only the fix diff and round one's blocking findings. For each finding it answers *fixed* or *not fixed*. It may raise no new findings, and its limit is 15 calls. The round number is recorded in the note, closing [[ISS-0062-A-Reviews-Round-Count-Is-Recorded-Nowhere|ISS-0062]].
 6. **Keep the context small** (TASK-0127). Read the line ranges around each changed section, not whole files. Keep only the tail of test output. Make independent reads together in one turn. Claude Code does not document a way to force that last one, so it is an instruction, and TASK-0131 measures whether it holds.
+6b. **Two reviewers per packet** (Edwin, 2026-09-18, after the comparison in TASK-0130). Two reviewers run at once and the author combines their reports: a refutation with evidence wins. A single run found the hardest known defect about half the time; two catch it about three times in four. A *holds* verdict cites its evidence, one per part of a claim with several parts. The budget warning is at call 36.
 7. **Tune the reviewer's settings** (TASK-0127 and [[TASK-0131-Roll-Out-And-Measure-Five-Reviews|TASK-0131]]). The reviewer agent file gets `effort: medium`. Sonnet is tried on the next three small reviews, and kept only if it misses nothing that blocked.
 
 **Also in scope:**
@@ -67,8 +68,8 @@ The seven parts below are the change. Each names the task that builds it.
 
 ## Acceptance
 
-- TASK-0130's re-run finds the FEAT-0107 guard defect within 40 tool calls.
-- The next five `your-trainer` feature reviews have a median of 50 tool calls or fewer, 12 minutes or less, and 8M context tokens or fewer. The baseline is about 95 calls, about 20 minutes and 16–32M tokens.
+- TASK-0130's re-run finds the FEAT-0107 guard defect within 40 tool calls. Done: every run found it.
+- The next five `your-trainer` feature reviews each run two reviewers. Per review, the pair together stays at 12M context tokens or fewer, each reviewer at 40 tool calls or fewer, and wall-clock time at 12 minutes or less. The baseline is one reviewer at about 95 calls, about 20 minutes and 16–32M tokens. Measured on FEAT-0107's known review: 64 calls, 10.1M tokens and 6.2 minutes for the pair.
 - None of those five is a phase review, none runs a third round, and every one starts from a packet.
 - The procedure, the packet and the budget are stated once, in `independent-review/SKILL.md`. The agent file and the hook link to it. The cockpit and `your-trainer` carry the same text after the sync.
 

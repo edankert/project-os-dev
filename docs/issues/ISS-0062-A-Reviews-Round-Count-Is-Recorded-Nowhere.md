@@ -3,17 +3,17 @@ type: "[[issue]]"
 id: ISS-0062
 aliases: ["ISS-0062"]
 title: "A review's round count is recorded nowhere, so an eight-round review and a one-round review both read `approved` and the cost of the gate is invisible to every measurement"
-status: triage
+status: fixed
 phase: ""
 severity: medium
 owner: user:edwin
 created: 2026-09-10
-updated: "2026-09-10"
+updated: 2026-09-18
 source: ["[[ADR-0028-A-Review-Gate-Runs-Two-Rounds]] acceptance criterion 2", "The 10% changes-requested rate ADR-0026 used to leave the review gate unchanged"]
 component: docs
 parent: ""
 related: ["[[ADR-0028-A-Review-Gate-Runs-Two-Rounds]]", "[[ISS-0061-A-Review-Gate-Has-No-Round-Cap-And-No-Severity-Bar]]", "[[ADR-0026-When-A-Drift-Sweep-Stops]]", "[[ISS-0025-Review-Verdict-Vocabulary-Is-Unvalidated]]"]
-tests: []
+tests: [TST-0015]
 ---
 
 # A review's round count is recorded nowhere
@@ -65,3 +65,6 @@ Only the last verdict survives. Rounds are visible solely as hand-written prose 
 - [ ] Add the validator check that ADR-0028's cap needs, warning-first with a dated promotion if any existing note violates it.
 - [ ] Backfill the two known multi-round reviews (`CHG-20260804`, eight; `CHG-20260726`, five) so the first measurement is not all zeroes.
 - [ ] Then promote ADR-0028 to a rule-ADR — this check is the `## Conformance` it is currently missing.
+
+## Fixed, 2026-09-18
+Fixed by PHASE-0007 in `~/Dev/repos/project-os` commit `3c979ee` (TASK-0129: `review_round` is recorded, and the validator refuses any value but 1 or 2).

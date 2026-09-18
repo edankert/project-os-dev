@@ -3,17 +3,17 @@ type: "[[issue]]"
 id: ISS-0028
 aliases: ["ISS-0028"]
 title: "Close-out says to run the validator and fix what it reports, and has no answer for 'cannot fix' — which is exactly the case that needs a human and therefore the one that must leave a record"
-status: open
+status: fixed
 severity: low
 owner: user:edwin
 created: 2026-07-30
-updated: 2026-07-30
+updated: 2026-09-18
 component: docs
 source: ["project-os-cockpit FEAT-0051, 2026-07-30 — a validator badge that reported a count with nothing behind it"]
 phase: "[[PHASE-999-Parking-Lot]]"
 related: []
 depends: []
-tests: []
+tests: [TST-0006]
 ---
 
 # Close-out has no answer for "cannot fix"
@@ -50,3 +50,6 @@ Anything still failing that you cannot or should not fix becomes an `ISS-*` carr
 Running downstream in `project-os-cockpit` since 2026-07-30, in `CLAUDE.md` rather than the instruction — `tools/instructions/` is template-owned, so a local edit becomes divergence the next sync reports. That repo carries a guard which fails if the template ever adopts the rule, so the local copy gets deleted rather than left to drift alongside it.
 
 Same shape as [[ISS-0025]] and [[ISS-0027]]: a close-out obligation the template states half of.
+
+## Fixed, 2026-09-18
+Fixed by PHASE-0007 in `~/Dev/repos/project-os` commit `3c979ee` (TASK-0132: the close-out skill says a validator error you caused is fixed, and one you cannot fix is filed only under the filing bar).

@@ -38,19 +38,17 @@ counters:
   REL: 0
   REQ: 31
   RISK: 3
-  TASK: 131
-  TST: 12
+  TASK: 133
+  TST: 15
   WF: 3
 
 focus:
-  # TASK-0125 now supports validated check-level readiness for unscripted fallback rows. Twelve focused generator tests and the shared sheet script pass; both consumers have the same generator. Broader contradiction and corpus audits remain open.
-  # TASK-0125 is extending the shared walk contract so unscripted checks can declare platform-specific readiness without changing owed check membership.
-  task: "TASK-0125"
-  feature: "FEAT-0033"
-  phase: ""
+  # Goal 1 of PHASE-0007 closed 2026-09-18: FEAT-0035's tasks and FEAT-0034 TASK-0126 to TASK-0130 are done, and the template is committed (project-os 3c979ee, db98f46) and synced to your-trainer (5b317fb4) and project-os-cockpit (f120f35).
+  task: "TASK-0131"
+  feature: "FEAT-0034"
+  phase: "PHASE-0007"
   issue: ""
-  note: "FEAT-0033 extends the shared release-walk contract for Your Trainer FEAT-0122. TASK-0125 has implemented prerequisite retention, scoped setup, platform actions, required state, readiness labels, evidence links and timers, with focused generator tests and synced consumers. Known surface ids show titles, and malformed check tags trigger per-check fallback. Authored `state_for` reminders now carry across later applicable steps, including omitted steps, and stop at the next declaration; ten focused fixture cases pass. Structured contradiction and full corpus coverage checks remain before closure. Existing FEAT-0032 review work remains recorded in its feature note."
-
+  note: "What remains of FEAT-0034 happens as features close: the Sonnet trial and five measured two-reviewer reviews in your-trainer (TASK-0131). FEAT-0035's acceptance is measured over the same five features. Goal 2, the your-trainer leg of FEAT-0036, is next."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -62,7 +60,7 @@ items:
       order: 7
       owner: user:edwin
       features: [FEAT-0034, FEAT-0035, FEAT-0036]
-      tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131]
+      tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0132, TASK-0133]
       issues: [ISS-0028, ISS-0062, ISS-0033, ISS-0034, ISS-0035, ISS-0036, ISS-0037, ISS-0038, ISS-0039]
       related: [ADR-0047]
     PHASE-0006:
@@ -137,7 +135,8 @@ items:
       related: [ADR-0047]
     FEAT-0035:
       file: docs/features/fix-before-filing/FEAT-0035-A-Finding-Is-Fixed-Before-It-Is-Filed.md
-      status: backlog
+      status: doing
+      tasks: [TASK-0132, TASK-0133]
       owner: user:edwin
       phase: "[[PHASE-0007]]"
       related: [ADR-0047]
@@ -369,6 +368,22 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0133:
+      file: docs/features/fix-before-filing/plan/tasks/TASK-0133-An-Issue-Says-Who-Reported-It-And-What-It-Asks.md
+      status: done
+      parent: FEAT-0035
+      phase: "[[PHASE-0007]]"
+      effort: M
+      depends: [TASK-0132]
+      blocks: []
+    TASK-0132:
+      file: docs/features/fix-before-filing/plan/tasks/TASK-0132-The-Rules-Say-Fix-Before-Filing.md
+      status: done
+      parent: FEAT-0035
+      phase: "[[PHASE-0007]]"
+      effort: M
+      depends: []
+      blocks: [TASK-0133]
     TASK-0131:
       file: docs/features/review-cost/plan/tasks/TASK-0131-Roll-Out-And-Measure-Five-Reviews.md
       status: backlog
@@ -379,7 +394,7 @@ items:
       blocks: []
     TASK-0130:
       file: docs/features/review-cost/plan/tasks/TASK-0130-Re-Run-The-FEAT-0107-Review-The-New-Way.md
-      status: backlog
+      status: done
       parent: FEAT-0034
       phase: "[[PHASE-0007]]"
       effort: S
@@ -387,7 +402,7 @@ items:
       blocks: [TASK-0131]
     TASK-0129:
       file: docs/features/review-cost/plan/tasks/TASK-0129-Round-Two-Verifies-Fixes-Only.md
-      status: backlog
+      status: done
       parent: FEAT-0034
       phase: "[[PHASE-0007]]"
       effort: S
@@ -395,7 +410,7 @@ items:
       blocks: [TASK-0131]
     TASK-0128:
       file: docs/features/review-cost/plan/tasks/TASK-0128-A-Hook-Stops-The-Reviewer-At-Its-Budget.md
-      status: backlog
+      status: done
       parent: FEAT-0034
       phase: "[[PHASE-0007]]"
       effort: S
@@ -403,7 +418,7 @@ items:
       blocks: [TASK-0130]
     TASK-0127:
       file: docs/features/review-cost/plan/tasks/TASK-0127-The-Reviewer-Checks-A-List-Of-Claims.md
-      status: backlog
+      status: done
       parent: FEAT-0034
       phase: "[[PHASE-0007]]"
       effort: M
@@ -411,7 +426,7 @@ items:
       blocks: [TASK-0128, TASK-0130]
     TASK-0126:
       file: docs/features/review-cost/plan/tasks/TASK-0126-The-Review-Packet-Script.md
-      status: backlog
+      status: done
       parent: FEAT-0034
       phase: "[[PHASE-0007]]"
       effort: M
@@ -573,13 +588,6 @@ items:
       phase: "[[PHASE-0003]]"
       effort: M
       tests: [TST-0008]
-    TASK-0108:
-      file: "docs/features/executable-tests-no-verdict/plan/tasks/TASK-0108-One-Verdict-Model-In-The-Templates-And-Skills.md"
-      status: done
-      parent: FEAT-0028
-      phase: "[[PHASE-0003]]"
-      effort: M
-      tests: []
     TASK-0109:
       file: "docs/features/executable-tests-no-verdict/plan/tasks/TASK-0109-This-Repo-Follows-Sync-Debt-And-Seven-Tests.md"
       status: done
@@ -896,7 +904,7 @@ items:
       related: [ADR-0029, FEAT-0029, TASK-0113]
     ISS-0062:
       file: "docs/issues/ISS-0062-A-Reviews-Round-Count-Is-Recorded-Nowhere.md"
-      status: triage
+      status: fixed
       severity: medium
       component: docs
       note: "A reviewed note records reviewed_by, review_date and review_verdict, and nothing anywhere records how many rounds the review took, so an eight-round review and a first-pass approval produce identical frontmatter. That blindness already changed a decision: ADR-0026 left the review gate alone on a changes-requested rate of about 10% computed from final verdicts, which cannot see a round. The open question, and why this sits at triage, is how a round gets recorded -- a hand-maintained counter is the ISS-0026 shape, a per-round list is verbose, and deriving it from the issues each round filed needs no new field but only works when a round files one. Landing it is what makes ADR-0028's two-round cap checkable, and it is the conformance ADR-0028 needs to become a rule-ADR."
@@ -1161,7 +1169,7 @@ items:
     ISS-0028:
       file: "docs/issues/ISS-0028-Close-Out-Has-No-Answer-For-Cannot-Fix.md"
       title: "Close-out says to run the validator and fix what it reports, and has no answer for 'cannot fix' — which is exactly the case that needs a human and therefore the one that must leave a record"
-      status: open
+      status: fixed
       severity: low
       phase: "[[PHASE-999-Parking-Lot]]"
       note: "Filed from project-os-cockpit FEAT-0051. The missing half of an existing sentence: every validator error is either fixed or FILED, deduped on (code, subject). Not an automatic filer — issues appearing unasked is a worse failure than one occasionally missed. Running downstream in CLAUDE.md, with a guard that fails if the template adopts it."
@@ -1712,7 +1720,7 @@ items:
   decisions:
     ADR-0047:
       file: docs/decisions/ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It.md
-      status: proposed
+      status: accepted
       owner: user:edwin
       related: [PHASE-0007, ADR-0028]
     ADR-0046:
@@ -1745,7 +1753,7 @@ items:
       related: [ADR-0026, ADR-0013, ADR-0019, ISS-0061, ISS-0062]
     ADR-0027:
       file: "docs/decisions/ADR-0027-An-Acceptance-Check-Is-Walkable-By-A-Stranger.md"
-      status: proposed
+      status: accepted
       decision: "Proposed, undecided: three options for making acceptance checks walkable by someone who did not write them. Option 3 proposed -- state the Setup/Steps/Expect/Not-this-check shape in TESTING.md, ship it in the test template, and add a grandfathered validator rule for the three mechanical failures. Existing corpora are rewritten ON CONTACT, never swept: rewriting from note text alone manufactures assertions nobody verified. Measured over your-trainer's 631 checks -- 165 under 30 words, 160 with no expected-result verb at all, 71 naming a code symbol with no observable anchor, 53 with migration provenance inside the procedure. The validator half lands in project-os-cockpit, not here."
       related: [ADR-0023, ADR-0024, ADR-0025]
     ADR-0026:
@@ -1797,7 +1805,7 @@ items:
     ADR-0016:
       file: docs/decisions/ADR-0016-Ceremony-Proportionate-To-The-Change.md
       title: "Ceremony is proportionate to the change: a declared fast path, or the rule that every change is documented stops being followed"
-      status: proposed
+      status: accepted
       owner: user:edwin
       decision: "Two paths through the lifecycle, selected by blast radius rather than effort. Small changes get an ISS-*, the fix and the validator; contract/path/fleet/requirement changes keep the full path. The selector is written down once and linked, never restated"
       related: [ADR-0004, ADR-0008, ADR-0011, ADR-0014]
@@ -1899,13 +1907,13 @@ metrics:
     features_done: 28
     phases_total: 8
     phases_done: 4
-    tasks_total: 131
-    tasks_done: 117
-    tests_total: 5
+    tasks_total: 133
+    tasks_done: 124
+    tests_total: 8
     tests_passing: 0
     tests_failing: 0
-    issues_open: 27
-    issues_triage: 11
+    issues_open: 26
+    issues_triage: 10
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 31

@@ -33,3 +33,8 @@ tests: []
 
 ## Notes
 - The other nine fleet repos get this at their next sync. That is not part of this task.
+
+## Progress, 2026-09-18
+- ADR-0047 is accepted.
+- **The sync is done**, as a partial sync of only the files this work changed: your-trainer `5b317fb4`, project-os-cockpit `f120f35`, including the cockpit's `QUALITY.md`. Neither repo's `.project-os-sync` baseline moved. A full sync of the cockpit still needs a hand-merge of `TESTING.md`, `test-walk-sheet.sh`, `validate-docs.py` and `walk-sheet.py`, which is outside this task.
+- **Still to do:** the Sonnet trial (now one pair per packet), and measuring five real reviews. The FEAT-0034 targets are now per pair: see its Acceptance.

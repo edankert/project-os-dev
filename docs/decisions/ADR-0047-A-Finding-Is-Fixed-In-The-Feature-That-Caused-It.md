@@ -3,10 +3,10 @@ type: "[[adr]]"
 id: ADR-0047
 aliases: ["ADR-0047"]
 title: "A finding is fixed in the feature that caused it, and a review is sized to the change"
-status: proposed
+status: "accepted"
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-18
+updated: "2026-09-18"
 source: ["[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]", "Edwin, 2026-09-18, on review effort and on issues 'not fixed as part of the features they belong to'"]
 decision: "Keep ADR-0028's two-round cap, its adjudication rule and its ban on the author answering the reviewer. Replace its severity bar. A finding about code the feature changed is fixed before the feature closes. It is filed as an ISS-* only when the fix needs a product decision, touches code the feature did not change, or is too large for the session. A finding that is neither fixed nor worth filing is recorded in the feature's review section and dropped. A review covers one feature's diff, follows a fixed procedure and stops at a budget."
 context: "ADR-0028 stopped review loops. It did so by letting every true finding that does not break behaviour be filed at triage while the item closes. In your-trainer, that turned a review's findings into backlog: 55 of 121 open issues come from reviews, and FEAT-0107's main behaviour has no test that can fail, which was filed as ISS-0466 instead of fixed. A single review still takes about 160 turns and 90-100 tool calls, because it has no scope limit, no procedure and no stopping point."
@@ -61,3 +61,11 @@ ADR-0028 chose "only a behavioural finding blocks" to stop reviews from looping 
 - `QUALITY.md`, `independent-review/SKILL.md`, `LIFECYCLE.md` ("Scope of a change"), the close-out skill and the issue template change in `~/Dev/repos/project-os`. Every repo receives them at the next sync.
 - A feature may take longer to close, because it now carries its fixes. A review is expected to take a third of its current tool calls.
 - Round counts are still recorded nowhere until [[ISS-0062-A-Reviews-Round-Count-Is-Recorded-Nowhere|ISS-0062]] lands. The new budget is also convention rather than check until then.
+
+## Amendment, 2026-09-18: two reviewers per packet
+
+Decided by Edwin after the measured comparison in [[TASK-0130-Re-Run-The-FEAT-0107-Review-The-New-Way|TASK-0130]]. Decision 6's procedure was re-run against FEAT-0107's code as it stood before its review, whose defects were known.
+- **A single bounded run found the hardest defect (ISS-0463) in 5 of 10 runs.** Two runs on one packet catch it about three times in four, for about 10M context tokens against 16.3M for the one unbounded review. So each review is two reviewers run at once, and the author combines their reports.
+- **A *holds* verdict now cites its evidence**, one per part of a claim with several parts. Three runs marked a partly-false claim *holds* with no evidence for the false part.
+- **The budget warning moved from call 30 to call 36.** A warning to finish up acted as the real limit: every run stopped near call 34.
+- **Instructions under test must not describe the answers.** The first comparison was void because the skill's own examples named FEAT-0107's findings.
