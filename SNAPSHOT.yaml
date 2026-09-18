@@ -38,14 +38,14 @@ counters:
   REL: 0
   REQ: 31
   RISK: 3
-  TASK: 138
+  TASK: 139
   TST: 17
   WF: 3
 
 focus:
   # Goal 1 of PHASE-0007 closed 2026-09-18: FEAT-0035's tasks and FEAT-0034 TASK-0126 to TASK-0130 are done, and the template is committed (project-os 3c979ee, db98f46) and synced to your-trainer (5b317fb4) and project-os-cockpit (f120f35).
   # 2026-09-18: FEAT-0036 widened by Edwin to the seven repos with open issues; your-trainer goes first (its own task records the leg).
-  task: "TASK-0138"
+  task: "TASK-0139"
   feature: "FEAT-0036"
   phase: "PHASE-0007"
   issue: ""
@@ -141,7 +141,7 @@ items:
       owner: user:edwin
       phase: "[[PHASE-0007]]"
       related: [ADR-0047]
-      tasks: [TASK-0138]
+      tasks: [TASK-0138, TASK-0139]
     FEAT-0035:
       file: docs/features/fix-before-filing/FEAT-0035-A-Finding-Is-Fixed-Before-It-Is-Filed.md
       status: doing
@@ -377,6 +377,11 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0139:
+      file: docs/features/backlog-clearance/plan/tasks/TASK-0139-Your-Healths-Open-Issues-Are-Checked-Against-The-Code.md
+      status: doing
+      parent: FEAT-0036
+      phase: "[[PHASE-0007]]"
     TASK-0138:
       file: docs/features/backlog-clearance/plan/tasks/TASK-0138-Your-Trainers-Open-Issues-Are-Checked-Against-The-Code.md
       status: doing
@@ -567,15 +572,6 @@ items:
       depends: [TASK-0110, TASK-0111, TASK-0112]
       blocks: [TASK-0115]
       tests: [TST-0009]
-    TASK-0114:
-      file: "docs/features/walk-sheet/plan/tasks/TASK-0114-The-Skills-And-Note-Templates-Hand-Over-The-Sheet.md"
-      status: done
-      parent: FEAT-0029
-      phase: "[[PHASE-0004]]"
-      effort: M
-      depends: [TASK-0111]
-      blocks: [TASK-0115]
-      tests: []
     TASK-0115:
       file: "docs/features/walk-sheet/plan/tasks/TASK-0115-Downstream-To-The-Consumers-And-The-Cockpit.md"
       status: done
@@ -1925,7 +1921,7 @@ metrics:
     features_done: 28
     phases_total: 8
     phases_done: 4
-    tasks_total: 138
+    tasks_total: 139
     tasks_done: 128
     tests_total: 10
     tests_passing: 0
