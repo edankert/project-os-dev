@@ -53,6 +53,7 @@ parser that supports the constrained YAML subset SNAPSHOT.yaml uses
 """
 
 import argparse
+import datetime
 import re
 import sys
 from pathlib import Path
@@ -481,6 +482,23 @@ _CHECKED_TABLE_NAMES = frozenset({
 #: own coverage claim false in the same way ISS-0012 did. Type and case are not
 #: what makes something a status table.
 _NON_STATUS_COLLECTIONS = frozenset({
+    # ADR-0037: the acceptance LEDGER's outcome vocabulary, its reason-bearing
+    # subset, and how a result arrived. None is a status, and registering them
+    # as one would assert the opposite of what they exist to preserve: a
+    # verdict is an EVENT, deliberately outside the status vocabulary, which is
+    # what keeps 671 acceptance tests off the review gate and off a badge.
+    # Caught by this guard on the day they were added — the fourth time it has
+    # earned its keep.
+    # ADR-0039: SOURCE FILE SUFFIXES a JVM test class could live in. Not a
+    # status by any reading, and caught by this guard the moment the resolver
+    # landed -- the fifth time it has earned its keep, and the second time in
+    # one day that a collection added for a good reason was stopped from
+    # entering the status vocabulary by accident.
+    "_CMD_JVM_SUFFIXES",
+    "LEDGER_MARKS",
+    "LEDGER_NEEDS_REASON",
+    "LEDGER_METHODS",
+    "LEDGER_MOVED_FIELDS",
     "ID_PREFIXES",           # note ID prefixes
     "RELATIONSHIP_FIELDS",   # frontmatter field names
     # The registry's own bookkeeping. Named rather than exempted by identity:
@@ -833,6 +851,16 @@ PROMOTIONS = {
     # the full 90 days ADR-0011 allows before it may error.
     "ISSUE-REPORTER": "2026-10-19",
     "ISSUE-QUESTION": "2026-12-17",
+    # Ported from project-os-cockpit with its ledger and frontmatter checks
+    # (project-os-dev FEAT-0037, TASK-0136). The cockpit had no findings; the
+    # fleet had debt on 2026-09-18: your-trainer 649 LEDGER-FIELD (notes still
+    # carrying verdict fields ADR-0037 moved into the ledger), 1 LEDGER-SEALED
+    # and 9 NOTE-FRONTMATTER; NOTE-FRONTMATTER also in your-health (5),
+    # project-os-dev (2), articles (1) and your-applications.com (1). Clause 3
+    # forbids promoting over debt, so they warn for the 90 days it allows.
+    "LEDGER-FIELD": "2026-12-17",
+    "LEDGER-SEALED": "2026-12-17",
+    "NOTE-FRONTMATTER": "2026-12-17",
 }
 
 #: Issues created before this date are not checked by ISSUE-REPORTER or
@@ -2044,10 +2072,339 @@ def validate_plan_notes(root, docs_dir, allowed_status, grandfathered, report):
         )
 
 
+#: Ported from project-os-cockpit on 2026-09-18 (project-os-dev FEAT-0037,
+#: TASK-0136): the acceptance-ledger checks (its ADR-0037) and the frontmatter
+#: parse check (its ISS-0214; this repo's ISS-0053). Every repo that keeps
+#: ledgers already reads them through walk-sheet.py, so the rules belong here.
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _is_real_date(raw):
+    """A date, not a date-SHAPED string.
+
+    `2026-13-45` matched the regex and was accepted. A ledger is sorted by this
+    field, so a nonsense date does not merely look wrong — it reorders which
+    verdict wins. Found by independent review, 2026-08-19.
+    """
+    if not DATE_RE.match(raw or ""):
+        return False
+    try:
+        datetime.date.fromisoformat(raw)
+    except ValueError:
+        return False
+    return True
+
+
+LEDGERS_REL = "releases/ledgers"
+#: The acceptance ledger's outcome vocabulary (project-os-cockpit ADR-0037).
+#: Restated here rather than imported: this script is template-owned and runs
+#: in twelve repos, none of which may depend on the cockpit being installed.
+#: `tests/test_ledger.py::test_taxonomy_documents_exactly_the_vocabulary`
+#: keeps the restatement honest by reading TAXONOMY.md against the module.
+LEDGER_MARKS = ("pass", "partial", "na", "excused", "blocked", "fail",
+                "question")
+LEDGER_NEEDS_REASON = tuple(m for m in LEDGER_MARKS if m != "pass")
+LEDGER_METHODS = ("manual", "automated", "migration")
+LEDGER_NAME_RE = re.compile(r"^(?:WORKING|[A-Z]{2,6}-\d{3,4})-(.+)$")
+
+
+#: The seven fields ADR-0037 moved into the ledger. Refused **only in a repo
+#: that keeps ledgers** — the discriminator matters more than the list: a
+#: schema change that broke every repo which had not migrated yet would be a
+#: worse failure than the one it fixes, and eight of twelve fleet repos are in
+#: exactly that state. Same construction that keeps `mark_check` alive.
+LEDGER_MOVED_FIELDS = ("mark", "verdict_date", "verdict_reason",
+                       "invalidated_by", "automation", "covered_by",
+                       "evidence",
+                       # ISS-0224: a position in a document that no longer
+                       # exists. Order is (tier, id); grouping is `area`.
+                       "section", "ordinal",
+                       # ISS-0233: provenance of migrations that are finished.
+                       # `migrated_from` names a document nobody can open;
+                       # `merged_from` an id space that is gone; `burden` was
+                       # empty on every check in the fleet. Git holds the
+                       # first two, with the shas ADR-0030 and ADR-0031 name.
+                       "migrated_from", "merged_from", "burden")
+
+
+def validate_vouched_ledgers(root, report, note_index):
+    """Every ledger a release vouches for still hashes to what it recorded.
+
+    **Driven from the release note, not from the ledger.** The first version
+    walked `docs/releases/ledgers/*.json` and checked the ones whose `sealed`
+    key was set -- gating the check on a field *inside the file it protects*.
+    Independent review reproduced four clean bypasses: delete the `sealed`
+    key and rewrite every entry; delete the file; move it out of the
+    directory; rewrite LF to CRLF. The record that vouches lives outside the
+    file, so the walk starts there.
+
+    **Bytes, not text.** `Path.read_text()` normalises newlines, so a CRLF
+    rewrite hashed identically -- a hash that is not a hash of the bytes is
+    not a hash.
+    """
+    for note_id, (path, fm) in sorted((note_index or {}).items()):
+        if not isinstance(fm, dict):
+            continue
+        for row in fm.get("ledgers") or []:
+            if not isinstance(row, dict) or not row.get("file"):
+                continue
+            name = str(row["file"])
+            vouched = str(row.get("sha") or "")
+            target = root / "docs" / LEDGERS_REL / name
+            rel = "docs/%s/%s" % (LEDGERS_REL, name)
+            if not target.is_file():
+                promotion_emit(report, "LEDGER-SEALED", {}, None)(
+                    "LEDGER-SEALED",
+                    "%s vouches for %s and it is not there. A release that "
+                    "records what it was measured against, against a file "
+                    "nobody can open, is the answer `was release R walked?` "
+                    "silently becoming unavailable" % (note_id, rel))
+                continue
+            raw = target.read_bytes()
+            found = hashlib.sha1(b"blob %d\0" % len(raw) + raw).hexdigest()
+            if found != vouched:
+                promotion_emit(report, "LEDGER-SEALED", {}, None)(
+                    "LEDGER-SEALED",
+                    "%s no longer hashes to what %s records (%s != %s). "
+                    "`was release R walked?` is answerable only while that "
+                    "answer cannot change"
+                    % (rel, note_id, found[:12], vouched[:12] or "nothing"))
+
+
+def validate_moved_verdict_fields(root, report, note_index):
+    """A verdict field on a note, in a repo whose verdicts live in ledgers.
+
+    Two sources for one fact is what this whole decision removes, and the
+    stale one wins by being older: `apply_ledger` reads the ledger, so a
+    leftover `mark: done` is invisible until somebody greps for it and
+    concludes the migration did not run.
+    """
+    if not (root / "docs" / LEDGERS_REL).is_dir():
+        return
+    if not any((root / "docs" / LEDGERS_REL).glob("*.json")):
+        return
+    for note_id, (path, fm) in sorted(note_index.items()):
+        if not isinstance(fm, dict):
+            continue
+        if str(fm.get("level", "") or "").strip().lower() != "acceptance":
+            continue
+        found = [f for f in LEDGER_MOVED_FIELDS if f in fm]
+        if found:
+            try:
+                rel = path.relative_to(root)
+            except ValueError:                       # pragma: no cover
+                rel = path
+            promotion_emit(report, "LEDGER-FIELD", {}, None)(
+                "LEDGER-FIELD",
+                "%s carries %s — this repo records verdicts in "
+                "docs/%s/, and a verdict on the note is a second source for "
+                "one fact (ADR-0037) (%s)"
+                % (note_id, ", ".join("`%s`" % f for f in found),
+                   LEDGERS_REL, rel))
+
+
+def validate_frontmatter_parses(root, report):
+    """A note whose frontmatter is not YAML ([[ISS-0214]]).
+
+    Identity comes from the FILENAME almost everywhere, so a note whose
+    frontmatter will not parse still indexes, still links, still counts -- and
+    every field on it silently reads as absent. No status, no parent, no
+    phase. It is worse than a wrong value and it fired twice in one day:
+    `TASK-0521` shipped with unescaped quotes in its title, and `FEAT-0128`
+    with a truncated `tasks:` list, both past a green validator.
+    """
+    try:
+        import yaml
+    except ImportError:                                  # pragma: no cover
+        return
+    docs = root / "docs"
+    if not docs.is_dir():
+        return
+    for path in sorted(docs.rglob("*.md")):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:                                  # pragma: no cover
+            continue
+        if not text.startswith("---"):
+            continue
+        try:
+            #: **A real YAML parse, not `load_yaml`.** This script's own
+            #: parser is a deliberate dependency-free SUBSET, and it is
+            #: lenient exactly where a broken note is broken -- it read
+            #: `title: "Retire "walk" from it"` without complaint. So the
+            #: check needs PyYAML, and is silent where PyYAML is absent
+            #: rather than pretending a subset parse is a YAML parse.
+            yaml.safe_load(text.split("---", 2)[1])
+        except Exception as exc:                         # noqa: BLE001
+            try:
+                rel = path.relative_to(root)
+            except ValueError:                           # pragma: no cover
+                rel = path
+            promotion_emit(report, "NOTE-FRONTMATTER", {}, None)(
+                "NOTE-FRONTMATTER",
+                "%s: frontmatter does not parse (%s). Identity comes from the "
+                "filename, so this note still indexes and links while every "
+                "field on it reads as absent" % (rel, str(exc).splitlines()[0]))
+
+
+def _blob_sha(text):
+    """Git's blob hash, computed rather than shelled out."""
+    import hashlib
+
+    raw = text.encode("utf-8")
+    return hashlib.sha1(b"blob %d\0" % len(raw) + raw).hexdigest()
+
+
+def _sealed_shas(note_index):
+    """`{ledger filename: sha}` from every release note's `ledgers:`."""
+    out = {}
+    for _note_id, (_path, fm) in (note_index or {}).items():
+        if not isinstance(fm, dict):
+            continue
+        for row in fm.get("ledgers") or []:
+            if isinstance(row, dict) and row.get("file"):
+                out[str(row["file"])] = str(row.get("sha") or "")
+    return out
+
+
+def validate_ledgers(root, report, note_index):
+    """The acceptance ledgers — required fields, reasons, and immutability.
+
+    Three rules, and the third is the one that makes *"was release R walked?"*
+    answerable at all:
+
+    * every entry names a check, a date, an author and a method;
+    * every mark but `pass` carries a reason — [[ADR-0029]]'s rule, enforced
+      here for the first time against something that exists (`verdict_reason:`
+      was non-empty on **0 of 671** notes, because nobody ever wrote one of the
+      marks that demanded it);
+    * **a sealed ledger differing from its committed content is an error.**
+      Without that, the ledger is a mutable log, which is a scalar with extra
+      steps.
+
+    A repo with no ledger directory is silent: nine of twelve fleet repos have
+    none, and absent is a real state rather than a broken one.
+    """
+    import json
+    import subprocess
+
+    ledger_dir = root / "docs" / LEDGERS_REL
+    if not ledger_dir.is_dir():
+        return
+    sealed_shas = _sealed_shas(note_index)
+    for path in sorted(ledger_dir.glob("*.json")):
+        rel = "docs/%s/%s" % (LEDGERS_REL, path.name)
+        # A filename the reader cannot place is a ledger that disappears from
+        # its own platform while still sitting there looking read -- the same
+        # failure the `_platform_of` fix closed, reached through a different
+        # door (independent review, finding 5).
+        if not LEDGER_NAME_RE.match(path.stem):
+            report.error(
+                "LEDGER-NAME",
+                "%s does not name a platform. It must be "
+                "`WORKING-<platform>.json` or `REL-####-<platform>.json`, or "
+                "its verdicts are invisible to every query" % rel)
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception as exc:  # noqa: BLE001
+            report.error("LEDGER-PARSE", "%s is not readable as JSON: %s"
+                         % (rel, exc))
+            continue
+        if not isinstance(data, dict):
+            report.error("LEDGER-PARSE", "%s is not an object" % rel)
+            continue
+        stated = str(data.get("platform") or "").strip()
+        named = LEDGER_NAME_RE.match(path.stem)
+        if stated and named and stated != named.group(1):
+            report.error(
+                "LEDGER-NAME",
+                "%s says platform %r and is filed under %r. The reader "
+                "REFUSES this rather than guessing, so one such file makes "
+                "every ledger in the repo unreadable"
+                % (rel, stated, named.group(1)))
+        entries = data.get("entries") or []
+        pairs = set()
+        for n, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                report.error("LEDGER-ENTRY", "%s entry %d is not an object"
+                             % (rel, n))
+                continue
+            check = str(entry.get("check") or "").strip()
+            when = str(entry.get("date") or "").strip()
+            if not check:
+                report.error("LEDGER-ENTRY",
+                             "%s entry %d names no check" % (rel, n))
+                continue
+            pairs.add((check, when))
+            if not _is_real_date(when):
+                report.error("LEDGER-ENTRY", "%s %s has no usable date (%r)"
+                             % (rel, check, when))
+            if "platform" in entry:
+                report.error(
+                    "LEDGER-ENTRY",
+                    "%s %s carries its own platform — the platform is the "
+                    "ledger's, and an entry that can contradict its file is a "
+                    "second encoding of one fact" % (rel, check))
+            if note_index and check not in note_index:
+                report.error("LEDGER-ENTRY",
+                             "%s %s is not a note in this repo" % (rel, check))
+            if entry.get("invalidated_by"):
+                if entry.get("mark"):
+                    report.error(
+                        "LEDGER-ENTRY",
+                        "%s %s carries both a mark and an invalidation — they "
+                        "are two events and belong on two lines" % (rel, check))
+                continue
+            mark = str(entry.get("mark") or "").strip()
+            if mark not in LEDGER_MARKS:
+                report.error("LEDGER-MARK", "%s %s has mark %r; expected one "
+                             "of %s" % (rel, check, mark,
+                                        ", ".join(LEDGER_MARKS)))
+                continue
+            if mark in LEDGER_NEEDS_REASON and not str(
+                    entry.get("reason") or "").strip():
+                report.error(
+                    "LEDGER-REASON",
+                    "%s a %s verdict on %s needs a reason — the mark and its "
+                    "justification are one event, so a check cannot leave the "
+                    "gate without saying why" % (rel, mark, check))
+            if str(entry.get("method") or "").strip() not in LEDGER_METHODS:
+                report.error("LEDGER-ENTRY", "%s %s has method %r; expected "
+                             "one of %s" % (rel, check, entry.get("method"),
+                                            ", ".join(LEDGER_METHODS)))
+            if not str(entry.get("by") or "").strip():
+                report.error("LEDGER-ENTRY",
+                             "%s %s names nobody in `by`" % (rel, check))
+
+        for n, item in enumerate(data.get("evidence") or []):
+            if not isinstance(item, dict):
+                continue
+            key = (str(item.get("check") or "").strip(),
+                   str(item.get("date") or "").strip())
+            if key not in pairs:
+                report.error(
+                    "LEDGER-EVIDENCE",
+                    "%s evidence %d is for %s @ %s, which matches no entry — "
+                    "evidence for a walk nobody recorded is a claim with "
+                    "nothing behind it" % (rel, n, key[0] or "?", key[1] or "?"))
+
+        if str(data.get("sealed") or "").strip() and path.name not in sealed_shas:
+            promotion_emit(report, "LEDGER-SEALED", {}, None)(
+                "LEDGER-SEALED",
+                "%s is sealed and no release note vouches for it. A sealed "
+                "ledger with nothing recording its hash is exactly the state "
+                "the old check could not tell from a good one -- add "
+                "`ledgers: [{file, sha}]` to its release" % rel)
+
+
+
+
 def validate(root, report):
     # Self-check first: it needs no repo state, and a validator whose own status
     # tables disagree cannot be trusted to report on anything else.
     validate_status_tables(report)
+    validate_frontmatter_parses(root, report)
 
     snap_path = root / "SNAPSHOT.yaml"
     if not snap_path.is_file():
@@ -2071,6 +2428,9 @@ def validate(root, report):
     docs_dir = root / "docs"
     note_index, note_claimants = build_note_index(docs_dir)
     allowed_status = load_allowed_status(root)
+    validate_ledgers(root, report, note_index)
+    validate_moved_verdict_fields(root, report, note_index)
+    validate_vouched_ledgers(root, report, note_index)
     grandfathered = load_grandfathered(root)
     verification_cfg = snap.get("verification") if isinstance(snap.get("verification"), dict) else {}
     try:
