@@ -33,7 +33,7 @@ counters:
   CHG:
     last_date: 20260916
   FEAT: 37
-  ISS: 69
+  ISS: 70
   PHASE: 7
   REL: 0
   REQ: 31
@@ -876,6 +876,9 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0070:
+      file: docs/issues/ISS-0070-A-Snapshot-That-Does-Not-Parse-Still-Passes-Validation.md
+      status: triage
     ISS-0069:
       file: docs/issues/ISS-0069-A-Regression-Check-A-Change-Overlaps-Cannot-Be-Reopened.md
       status: triage
@@ -1927,7 +1930,7 @@ metrics:
     tests_passing: 0
     tests_failing: 0
     issues_open: 26
-    issues_triage: 12
+    issues_triage: 13
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 31
