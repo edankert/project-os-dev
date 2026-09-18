@@ -8,7 +8,7 @@ created: 2026-01-27
 updated: 2026-01-27
 source: []
 scope: feature
-level: system       # unit | integration | system | e2e | acceptance
+level: system       # values: tools/instructions/TAXONOMY.md, `level` (tests)
 entrypoint: ""
 command: ""         # a runnable check; when set, the note records no verdict (tools/instructions/STATUSES.md, [[test]]; ADR-0025)
 last_verified: ""    # manual tests only (no `command:`) — date the procedure was last performed; goes stale
@@ -35,7 +35,7 @@ after: []            # optional: checks that should have passed before this one 
 ## Purpose
 <What does this test verify?>
 
-> **Status is evidence, not intent** (`tools/instructions/STATUSES.md` `[[test]]`). A test with a `command:` records no verdict: it rests at `active`, CI runs it on every push, and `python3 tools/scripts/run-tests.py` reproduces the run locally without writing anything (ADR-0025). A test without one is manual: it carries a hand-written `passing` or `failing`, `ready` means defined and not yet run, and `last_verified:` must stay current or the verification gate stops accepting it.
+> **Status is evidence, not intent.** Who writes a test's status, and what a `command:` changes, is stated once in `tools/instructions/STATUSES.md` `[[test]]`; `python3 tools/scripts/run-tests.py --filter TST-####` reproduces an executable test's run locally without writing anything.
 
 <!-- level: acceptance ONLY — delete these four headings on any other test, and delete Procedure/Expected results below on an acceptance check. The shape and the reason are stated once in tools/instructions/TESTING.md, "A check is walkable by a stranger". -->
 
