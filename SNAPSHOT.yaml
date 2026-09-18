@@ -38,14 +38,14 @@ counters:
   REL: 0
   REQ: 31
   RISK: 3
-  TASK: 137
+  TASK: 138
   TST: 17
   WF: 3
 
 focus:
   # Goal 1 of PHASE-0007 closed 2026-09-18: FEAT-0035's tasks and FEAT-0034 TASK-0126 to TASK-0130 are done, and the template is committed (project-os 3c979ee, db98f46) and synced to your-trainer (5b317fb4) and project-os-cockpit (f120f35).
   # 2026-09-18: FEAT-0036 widened by Edwin to the seven repos with open issues; your-trainer goes first (its own task records the leg).
-  task: ""
+  task: "TASK-0138"
   feature: "FEAT-0036"
   phase: "PHASE-0007"
   issue: ""
@@ -141,6 +141,7 @@ items:
       owner: user:edwin
       phase: "[[PHASE-0007]]"
       related: [ADR-0047]
+      tasks: [TASK-0138]
     FEAT-0035:
       file: docs/features/fix-before-filing/FEAT-0035-A-Finding-Is-Fixed-Before-It-Is-Filed.md
       status: doing
@@ -376,6 +377,11 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0138:
+      file: docs/features/backlog-clearance/plan/tasks/TASK-0138-Your-Trainers-Open-Issues-Are-Checked-Against-The-Code.md
+      status: doing
+      parent: FEAT-0036
+      phase: "[[PHASE-0007]]"
     TASK-0137:
       file: docs/features/template-sync-hygiene/plan/tasks/TASK-0137-Three-Repos-Reach-The-Current-Validator.md
       status: done
@@ -1916,7 +1922,7 @@ metrics:
     features_done: 28
     phases_total: 8
     phases_done: 4
-    tasks_total: 137
+    tasks_total: 138
     tasks_done: 128
     tests_total: 10
     tests_passing: 0

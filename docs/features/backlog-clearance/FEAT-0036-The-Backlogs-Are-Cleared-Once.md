@@ -10,7 +10,7 @@ updated: 2026-09-18
 source: ["[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]", "Edwin, 2026-09-18: 'My main concern is with the your-trainer repo'"]
 goal: "Every open issue in the seven fleet repos that have any is checked against today's code, and then fixed, closed as obsolete, or kept with a plain title. Edwin receives one short list of real questions per repo."
 requirements: []
-tasks: []
+tasks: [TASK-0138]
 release: ""
 acceptance_exception: "A one-time cleanup of the record. It is checked by the exit criteria of PHASE-0007, not by a product check."
 related: ["[[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It]]", "[[ISS-0033-Prune-Deletes-Entries-Whose-Notes-Cannot-Replace-Them]]", "[[ISS-0039-The-Restatement-Reached-Three-Surfaces-Of-Four]]"]
@@ -49,7 +49,7 @@ your-applications.com, edankert.com, yourtrainer-mcp, project-os-bench and obsid
 
 **What a leg fixes, and what it keeps** (Edwin, 2026-09-18). A real defect is fixed during the cleanup only when the fix is small and in one place, with a test that fails without it. A defect that needs a build on both platforms, a behaviour Edwin would want to see, or more than a small change is **kept**: its title and first sentence say what a user notices, and it is linked to the feature or phase it belongs to, for normal feature work.
 
-Each leg is a task recorded in its own repo, pointing back here. project-os-dev's leg includes ISS-0033 to ISS-0039 from the eight-round review.
+Each leg is a task under this feature, here. The repos have no standing phase for record upkeep, and minting a feature in each for a cleanup would be the phase inflation ISS-0077 warns about. What each issue became is recorded in that issue's own note, in its own repo. project-os-dev's leg includes ISS-0033 to ISS-0039 from the eight-round review.
 
 ## Acceptance
 
