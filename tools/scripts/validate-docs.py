@@ -294,7 +294,69 @@ _SETTLED_MARKS = ("done", "incomplete", "canceled", "x", "X", "/", "~", "-")
 _SETTLED_WORDS = ("done", "incomplete", "canceled")
 
 
-def _acceptance_is_settled(note_id, note_index):
+#: The ledger outcomes that clear a check, and those that survive a sealed
+#: ledger. Restated from walk-sheet.py (CLEARING, PERSISTS), whose `resolve()`
+#: these rules follow; TAXONOMY.md "Acceptance outcomes" is the source.
+_LEDGER_CLEARING = frozenset({"pass", "partial", "na", "excused"})
+_LEDGER_PERSISTS = frozenset({"pass", "partial", "na"})
+
+
+def _ledger_cleared(root):
+    """Checks a repo's acceptance ledgers currently clear, or None without ledgers.
+
+    project-os-dev ISS-0060: VERIFY-ACCEPTANCE read only a note's `mark:`, while
+    LEDGER-FIELD refuses `mark:` on a note in a repo that keeps ledgers, so in
+    such a repo the warning could never be cleared. Where ledgers exist, a check
+    is settled by them instead. Resolution follows walk-sheet.py's `resolve()`:
+    per platform, oldest sealed ledger first and the open one last; a later
+    verdict supersedes an earlier one; an invalidation clears the standing
+    verdict; only `pass`, `partial` and `na` survive a sealed ledger. A check is
+    settled when it is cleared on at least one platform.
+    """
+    import json
+    d = root / "docs" / LEDGERS_REL
+    if not d.is_dir():
+        return None
+    files = sorted(d.glob("*.json"))
+    if not files:
+        return None
+    by_platform = {}
+    for path in files:
+        m = LEDGER_NAME_RE.match(path.stem)
+        if not m:
+            continue                 # LEDGER-NAME reports it
+        try:
+            raw = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue                 # LEDGER-PARSE reports it
+        if not isinstance(raw, dict):
+            continue
+        sealed = str(raw.get("sealed") or "").strip()
+        by_platform.setdefault(m.group(1), []).append((bool(sealed), sealed, raw.get("entries") or []))
+    cleared = set()
+    for ledgers in by_platform.values():
+        ledgers.sort(key=lambda l: (not l[0], l[1]))
+        standing, transient = {}, {}
+        for is_sealed, _, entries in ledgers:
+            rows = [e for e in entries if isinstance(e, dict)]
+            for e in sorted(rows, key=lambda e: str(e.get("date") or "")):
+                check = str(e.get("check") or "").strip()
+                mark = str(e.get("mark") or "").strip()
+                if str(e.get("invalidated_by") or "").strip():
+                    standing.pop(check, None)
+                    transient.pop(check, None)
+                elif mark in _LEDGER_PERSISTS:
+                    standing[check] = mark
+                    transient.pop(check, None)
+                elif not is_sealed:
+                    transient[check] = mark
+        for check, mark in {**standing, **transient}.items():
+            if mark in _LEDGER_CLEARING:
+                cleared.add(check)
+    return cleared
+
+
+def _acceptance_is_settled(note_id, note_index, ledger_cleared=None):
     """Whether a walked test's verdict settles it (ADR-0034).
 
     The walked half of one rule: an executable test is settled when the runner
@@ -308,6 +370,8 @@ def _acceptance_is_settled(note_id, note_index):
     fm = entry[1] or {}
     if str(fm.get("command", "") or "").strip():
         return str(fm.get("status", "") or "").strip() == "passing"
+    if ledger_cleared is not None:
+        return note_id in ledger_cleared
     # **Never strip the character form.** `" x"` and `"x "` are the exact typos
     # the row parser refuses to normalise, and stripping moved them from
     # unrecognised-and-blocking to settled. `acceptance.normalise_mark` was
@@ -499,6 +563,8 @@ _NON_STATUS_COLLECTIONS = frozenset({
     "LEDGER_NEEDS_REASON",
     "LEDGER_METHODS",
     "LEDGER_MOVED_FIELDS",
+    "_LEDGER_CLEARING",      # ledger outcomes, restated from walk-sheet.py
+    "_LEDGER_PERSISTS",
     "ID_PREFIXES",           # note ID prefixes
     "RELATIONSHIP_FIELDS",   # frontmatter field names
     # The registry's own bookkeeping. Named rather than exempted by identity:
@@ -2429,6 +2495,7 @@ def validate(root, report):
     note_index, note_claimants = build_note_index(docs_dir)
     allowed_status = load_allowed_status(root)
     validate_ledgers(root, report, note_index)
+    ledger_cleared = _ledger_cleared(root)
     validate_moved_verdict_fields(root, report, note_index)
     validate_vouched_ledgers(root, report, note_index)
     grandfathered = load_grandfathered(root)
@@ -2679,13 +2746,17 @@ def validate(root, report):
                         if tst in note_index and has_value((note_index[tst][1] or {}).get("command")):
                             continue
                         if _is_acceptance_test(tst, note_index):
-                            if not _acceptance_is_settled(tst, note_index):
+                            if not _acceptance_is_settled(tst, note_index, ledger_cleared):
                                 promotion_emit(
                                     report, "VERIFY-ACCEPTANCE",
                                     grandfathered, item_id)(
                                     "VERIFY-ACCEPTANCE",
-                                    "%s is %s but the acceptance test %s covering it is not "
-                                    "settled -- its mark is not done/incomplete/canceled"
+                                    ("%s is %s but the acceptance test %s covering it is not "
+                                     "settled -- no ledger verdict clears it (pass, partial, na "
+                                     "or excused on some platform)"
+                                     if ledger_cleared is not None else
+                                     "%s is %s but the acceptance test %s covering it is not "
+                                     "settled -- its mark is not done/incomplete/canceled")
                                     % (item_id, terminal, tst))
                             continue
                         tst_status = ""
