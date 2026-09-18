@@ -32,6 +32,8 @@
 - Validate docs-first gate: `bash tools/agents/check-docs-first.sh`
 - Validate docs invariants (snapshot/notes/links/verification): `bash tools/scripts/validate-docs.sh`
 - Browse docs cockpit: `bash tools/cockpit/run.sh docs --bind 127.0.0.1 --port 8765`
+- Generate native adapters: `python3 tools/scripts/generate-adapters.py --install-hooks`
+- Verify Codex adapter: `bash tools/scripts/test-codex-adapter.sh`
 - Sync Codex adapter guidance: read `tools/skills/adapter-sync/SKILL.md`
 
 ## External Dependencies (Common)

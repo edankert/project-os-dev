@@ -4,25 +4,25 @@ id: INSTR-HOOKS
 status: active
 owner: group:maintainers
 created: 2026-03-08
-updated: 2026-09-04
+updated: 2026-09-18
 tags: [instructions, hooks]
 ---
 
 # Hook contracts (tool-agnostic)
 
-These contracts define the checks every project-os workflow must perform at key lifecycle points, independent of which LLM tool drives the session. Each contract states the trigger, the project-os rule it enforces, the check logic, and the failure behavior; `../adapters/<tool>/ADAPTER.md` documents how a given tool implements it. The Claude Code adapter implements the first eight as session hooks (`../adapters/claude-code/hooks/`); the Codex/generic path implements a subset with `AGENTS.md` instructions plus `tools/agents/*.sh` scripts, with the rest enforced at pre-commit/CI.
+These contracts define the checks every project-os workflow must perform at key lifecycle points, independent of which LLM tool drives the session. Each contract states the trigger, the project-os rule it enforces, the check logic, and the failure behavior; `../adapters/<tool>/ADAPTER.md` documents how a given tool implements it. The Claude Code and Codex adapters implement the first eight as session hooks (`../adapters/claude-code/hooks/` and `../adapters/codex/hooks/`). Their tool payloads and support differ, as each adapter documents. The generic path uses `AGENTS.md` instructions plus `tools/agents/*.sh`; pre-commit and CI remain the backstop.
 
-Contract IDs are `HC-001`..`HC-009`. (Earlier revisions of this file used `CHC-00x` codes; the mapping is at the end for downstream docs that still cite them.)
+Contract IDs are `HC-001`..`HC-010`. (Earlier revisions of this file used `CHC-00x` codes; the mapping is at the end for downstream docs that still cite them.)
 
 ## HC-001: Document-first gate
 
 - Trigger: before functional code changes.
 - Rule: `LIFECYCLE.md` — "Preflight (must happen before code changes)" and "Mandatory Automated Documentation".
 - Check logic:
-  - `SNAPSHOT.yaml` has an active `focus.task` or `focus.issue` covering the work. Exempt paths, stated once here and cited by both implementations: `docs/`, `tools/`, `.claude/`, `.cursor/`, `.github/`, `SNAPSHOT.yaml`, `CLAUDE.md`, `CONTEXT.md`, `README.md`, `AGENTS.md`, `LLM_BRIEF.md`, and the lint and sync configs (`.prettierrc`, `.markdownlint*`, `.yamllint*`, `.gitignore`, `.project-os-sync`).
+  - `SNAPSHOT.yaml` has an active `focus.task` or `focus.issue` covering the work. Exempt paths, stated once here and cited by both implementations: `docs/`, `tools/`, `.claude/`, `.codex/`, `.agents/`, `.cursor/`, `.github/`, `SNAPSHOT.yaml`, `CLAUDE.md`, `CONTEXT.md`, `README.md`, `AGENTS.md`, `LLM_BRIEF.md`, and the lint and sync configs (`.prettierrc`, `.markdownlint*`, `.yamllint*`, `.gitignore`, `.project-os-sync`).
   - Code changes have a `docs/changes/CHG-*.md` note when required.
   - Change notes have no pending documentation-coverage entries.
-- Implementations: Claude Code `hooks/document-first-gate.sh` (blocking PreToolUse); Codex/generic `bash tools/agents/start-change.sh "<short title>"` + `bash tools/agents/check-docs-first.sh`.
+- Implementations: Claude Code `hooks/document-first-gate.sh` (blocking PreToolUse); Codex `hooks/dispatch.py` (blocking on recognized code edits) plus `bash tools/agents/start-change.sh "<short title>"` and `bash tools/agents/check-docs-first.sh`; generic uses the scripts.
 - The target file's repo governs the edit. A file outside every project-os repo is not gated: when the walk up from the target finds no `SNAPSHOT.yaml`, only a relative path or a path under the session repo falls back to the session repo's focus; any other path is allowed (project-os-dev ISS-0003).
 - On failure: block the code edit (or close-out) until the documentation state is explicit.
 
@@ -33,7 +33,7 @@ Contract IDs are `HC-001`..`HC-009`. (Earlier revisions of this file used `CHC-0
 - Check logic:
   - Required context files exist and `SNAPSHOT.yaml` can be read.
   - Current branch, head, focus, and working tree are visible.
-- Implementations: Claude Code `hooks/snapshot-freshness.sh` (SessionStart reminder); Codex/generic `bash tools/agents/bootstrap.sh`.
+- Implementations: Claude Code `hooks/snapshot-freshness.sh` (SessionStart reminder); Codex `hooks/dispatch.py` (SessionStart reminder) and `bash tools/agents/bootstrap.sh`; generic uses bootstrap.
 - On failure: stop and fix missing required files before implementation.
 
 ## HC-003: Verification gate
@@ -48,7 +48,7 @@ Contract IDs are `HC-001`..`HC-009`. (Earlier revisions of this file used `CHC-0
   - a test at `level: acceptance` — it rests at `active` and its verdict is a release-ledger event (`STATUSES.md` `[[test]]`, ADR-0037). Whether it is *settled* is the validator's `VERIFY-ACCEPTANCE`; the hook reads frontmatter and cannot see the ledger, so it does not check settledness.
 - A `verification_waiver:` requires `waiver_expires: YYYY-MM-DD` in both implementations; an open-ended waiver is a rule deletion written in the passive voice (ADR-0010).
 - On failure: block the terminal status transition unless a `verification_waiver` is recorded (`QUALITY.md`, "Verification gating").
-- Enforcement: this gate must be mechanical, not advisory. The Claude Code adapter implements it as a blocking PreToolUse hook (`../adapters/claude-code/hooks/verification-gate.py`); other adapters must run `tools/scripts/validate-docs.sh` before close-out and at pre-commit/CI. The two agree on the exemptions and the waiver rule above. They still differ in reach: the validator gates on the reverse `covers:` index and the hook on the subject's `tests:`, so the validator sees links the hook does not (project-os-dev ISS-0051, follow-up).
+- Enforcement: this gate must be mechanical, not advisory. The Claude Code and Codex adapters implement it as a blocking PreToolUse hook for confirmed failing tests (`../adapters/claude-code/hooks/verification-gate.py`, `../adapters/codex/hooks/dispatch.py`); other adapters must run `tools/scripts/validate-docs.sh` before close-out and at pre-commit/CI. Both use the exemptions and waiver rule above. Codex emits an advisory for missing test links because its PreToolUse `ask` decision is unsupported. They still differ in reach: the validator gates on the reverse `covers:` index and the hook on the subject's `tests:`, so the validator sees links the hook does not (project-os-dev ISS-0051, follow-up).
 
 ## HC-004: Phase alignment
 
@@ -57,7 +57,7 @@ Contract IDs are `HC-001`..`HC-009`. (Earlier revisions of this file used `CHC-0
 - Check logic:
   - Read `focus.phase` from `SNAPSHOT.yaml` and the task or parent feature `phase`.
   - If both phases are set and the task belongs to a future phase, flag the mismatch.
-- Implementations: Claude Code `hooks/phase-alignment.sh` (PostToolUse advisory).
+- Implementations: Claude Code `hooks/phase-alignment.sh` and Codex `hooks/dispatch.py` (PostToolUse advisory).
 - On failure: warn. Whether the task runs ahead of its phase is the user's decision (`LIFECYCLE.md`, "When to pause for the user").
 
 ## HC-005: Risk-scan trigger
@@ -65,7 +65,7 @@ Contract IDs are `HC-001`..`HC-009`. (Earlier revisions of this file used `CHC-0
 - Trigger: a changed path matching the risk-scan trigger list.
 - Rule: `LIFECYCLE.md` — "Risk scan triggers" (the list); `../skills/risk-scan/SKILL.md`.
 - Check logic: match the changed path against the risk-scan trigger list in `LIFECYCLE.md`; when it matches, a `RISK-*` note must be created or updated per `../skills/risk-scan/SKILL.md`.
-- Implementations: Claude Code `hooks/risk-scan-trigger.sh` (PostToolUse advisory).
+- Implementations: Claude Code `hooks/risk-scan-trigger.sh` and Codex `hooks/dispatch.py` (PostToolUse advisory for identifiable paths).
 - On failure: warn; close-out (HC-006) verifies the `RISK-*` note exists when hazards changed.
 
 ## HC-006: Close-out check
@@ -79,7 +79,7 @@ Contract IDs are `HC-001`..`HC-009`. (Earlier revisions of this file used `CHC-0
   - Metrics and relationships are updated.
   - Required `CHG-*` and `RISK-*` notes exist when behavior, paths, contracts, or hazards changed.
 - The write test: a `PostToolUse` hook records the session's first write; the Stop hook consumes that record when it blocks, so the reminder arrives once per burst of work rather than once per turn. `focus` is durable project state and says nothing about what a turn did, so reading it alone charged a forced continuation to every stop, questions included, in any repo whose focus item was parked (project-os-dev ISS-0056). Every path that cannot answer the question — no session identifier in the payload, no recorder on disk — blocks, because a check that disables itself when its input is missing is worse than one that nags. A session that writes through the shell rather than the editing tools records nothing and is not reminded; ISS-0056 holds the alternatives that were weighed.
-- Implementations: Claude Code `hooks/close-out-check.sh` (blocking Stop hook, also runs HC-007) with `hooks/session-touch.sh` (`PostToolUse`) as its recorder, sharing one path formula in `hooks/shared/session-marker.sh`. Tools without a per-session identifier implement the focus half unconditionally.
+- Implementations: Claude Code `hooks/close-out-check.sh` (blocking Stop hook, also runs HC-007) with `hooks/session-touch.sh` (`PostToolUse`) as its recorder; Codex `hooks/dispatch.py` uses the same event pattern and a per-session marker for recognized edits. Tools without a per-session identifier implement the focus half unconditionally.
 - On failure: complete the missing close-out work before stopping.
 
 ## HC-007: Mechanical docs validation
@@ -105,7 +105,7 @@ Contract IDs are `HC-001`..`HC-009`. (Earlier revisions of this file used `CHC-0
   - Say who writes the note: a single issue or task gets its note in the main loop; a multi-item scaffold or an ambiguous ask goes to the `planner` subagent, with the user's prompt verbatim and one sentence on what the result enables. The documentation requirement itself does not change.
   - Name the `independent-reviewer` subagent only in review states.
   - Stay within 3 lines and 600 characters (asserted by `tools/scripts/test-hooks.sh`), so the hint never grows into the SessionStart slice. Stay silent on a template placeholder snapshot (`template.replace_me: true`) or when no snapshot exists.
-- Implementations: Claude Code `hooks/model-routing-hint.sh` (advisory UserPromptSubmit) plus the model-pinned subagents generated by `tools/scripts/generate-adapters.py`. The script keeps its filename so existing `.claude/settings.json` files keep resolving. Tools without subagents implement this as instructions only.
+- Implementations: Claude Code `hooks/model-routing-hint.sh` (advisory UserPromptSubmit) plus the model-pinned subagents generated by `tools/scripts/generate-adapters.py`. The script keeps its filename so existing `.claude/settings.json` files keep resolving. Codex uses `hooks/dispatch.py` for the hint and generated `.codex/agents/*.toml` profiles without model pins. Tools without subagents implement this as instructions only.
 - On failure: none. The hint informs; the harness routes (project-os-dev ADR-0003). It does not and cannot change a session's model.
 
 ## HC-009: Test commands run before the push; CI runs the suite once
@@ -120,6 +120,20 @@ Contract IDs are `HC-001`..`HC-009`. (Earlier revisions of this file used `CHC-0
 - Why the split: a repo's test notes carry filtered commands, and a filtered command is a subset of the suite. your-health has 26 notes running the same Gradle task with different `--tests` filters; one by one on a cold runner that is about 45 minutes a push for an answer one suite run already gives. The suite is the covering command, so CI runs that and keeps the non-bypassable verdict; the filtered commands run where the toolchain is already warm.
 - Failure behaviour: pre-push exits non-zero and the push does not happen. `--no-verify` skips it, and `PROJECT_OS_SKIP_PREPUSH=1` skips it without skipping the rest — both leave CI's suite run in place, which is the point of keeping one there.
 - A repo that declares no `ci.suite_command` is unaffected: CI runs every command exactly as before.
+
+## HC-010: Review budget
+
+- Trigger: every tool call made by the `independent-reviewer` subagent, before and after it runs.
+- Rule: `QUALITY.md`, "One review per feature, sized to its diff"; the budget itself is stated in `../skills/independent-review/SKILL.md`.
+- Check logic:
+  1. Ignore every call whose hook input does not carry `agent_type: independent-reviewer` and an `agent_id`. The shell wrapper returns before starting Python for them, because it runs on every tool call of every session.
+  2. Count calls per `agent_id`. The budget is 40, or 15 once the reviewer has read a round-two packet (`review-packet-<FEAT>-r2`). `PROJECT_OS_REVIEW_BUDGET` and `PROJECT_OS_REVIEW_BUDGET_ROUND2` override them per repo.
+  3. After call 36 of 40 (12 of 15 in round two), add context saying how many calls are left. The warning was at call 30 until measured reviews all stopped near 34: a warning to finish up becomes the real limit.
+  4. Past the budget, deny the call with an instruction to write the report and mark unfinished claims *not checked*. Edits to notes under `docs/` are still allowed for 10 more calls, so the verdict can be recorded.
+- Implementations: Claude Code `hooks/review-budget.sh` with `hooks/review-budget.py`, registered for `PreToolUse` and `PostToolUse` with no matcher. Codex has no equivalent: its hook input does not name the subagent, so there the budget is the skill's instruction only.
+- On failure: fail open. A broken budget must not block anyone's work; the skill's stated budget still applies.
+- Why a hook and not `maxTurns`: a subagent that reaches `maxTurns` stops without writing a report. A denied tool call is a message the reviewer reads, and the report it then writes is the review. `maxTurns: 100` stays in the agent file as a backstop.
+- Test: `bash tools/scripts/test-review-budget.sh`.
 
 ## Legacy CHC-* code mapping
 

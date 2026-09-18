@@ -52,6 +52,9 @@ paths:
   "docs/workflows/": project
   "docs/reference/": project
   "docs/research/": project
+  ".agents/skills/": generated
+  ".codex/agents/": generated
+  ".codex/hooks.json": generated
   ".claude/skills/": generated
   ".claude/agents/": generated
   ".cursor/rules/": generated

@@ -443,6 +443,10 @@ TERMINAL_TYPES = {
 #: Flat status collections, with the note types each is compared against.
 #: validate_status_tables walks this, so adding a status table means adding a row
 #: here rather than remembering to write another check by hand.
+#: The issue statuses ISSUE-REPORTER and ISSUE-QUESTION check (ADR-0047).
+#: `deferred` is parked work, not an open question, so it is left out.
+OPEN_ISSUE_STATUSES = {"triage", "open"}
+
 FLAT_STATUS_TABLES = {
     # Registered rather than exempted: every value in it IS a test status, and
     # the point of the collection is that an acceptance test must not hold one.
@@ -454,6 +458,7 @@ FLAT_STATUS_TABLES = {
     "DESCOPED_STATUSES": (DESCOPED_STATUSES, ("requirement",)),
     "TEST_RUNNER_STATUSES": (TEST_RUNNER_STATUSES, ("test",)),
     "REQ_UNADVANCED_STATUSES": (REQ_UNADVANCED_STATUSES, ("requirement",)),
+    "OPEN_ISSUE_STATUSES": (OPEN_ISSUE_STATUSES, ("issue",)),
 }
 
 
@@ -819,7 +824,21 @@ PROMOTIONS = {
     # invented without a status table. Cheaper to clear than TEST-ENTRYPOINT
     # and dated the same day for one cutover rather than two.
     "STATUS-TYPE": "2026-11-12",
+    # ADR-0047 (project-os-dev): an issue says who reported it, and one that
+    # waits on the owner states the question. Only issues created on or after
+    # ISSUE_RULES_FROM are checked, so the fleet's existing issues are not
+    # flagged; FEAT-0036 brings those up to the rule by hand. The month is for
+    # repos that sync the template after the cutover. ISSUE-QUESTION reads
+    # prose for "waits on the owner", which is a heuristic, so it warns for
+    # the full 90 days ADR-0011 allows before it may error.
+    "ISSUE-REPORTER": "2026-10-19",
+    "ISSUE-QUESTION": "2026-12-17",
 }
+
+#: Issues created before this date are not checked by ISSUE-REPORTER or
+#: ISSUE-QUESTION (ADR-0047 landed in the template on 2026-09-18).
+ISSUE_RULES_FROM = "2026-09-19"
+REPORTED_BY_RE = re.compile(r"^(user:\S+|review|agent)$")
 
 
 def promotion_emit(report, gate, grandfathered, item_id):
@@ -1660,6 +1679,60 @@ def validate_brief(root, report):
         )
 
 
+def validate_review_and_issue_fields(note_index, grandfathered, report):
+    """REVIEW-ROUND, ISSUE-REPORTER and ISSUE-QUESTION (ADR-0047).
+
+    REVIEW-ROUND: a gate runs at most two rounds (QUALITY.md), so a recorded
+    round is 1 or 2. It is an error from the start: the field is new, so no
+    note carries a bad value yet.
+
+    ISSUE-REPORTER: an open issue created on or after ISSUE_RULES_FROM names
+    who reported it, as `user:<name>`, `review` or `agent`, so a reader can
+    tell the owner's issues from the ones agents filed.
+
+    ISSUE-QUESTION: such an issue that says it waits on the owner carries a
+    `question:` with the question, its options and a recommendation. Measured
+    2026-09-18: 16 open issues in your-trainer said they waited on Edwin, and
+    most did not state a question he could answer.
+    """
+    seen = set()
+    for note_id, (path, fm) in sorted(note_index.items()):
+        if path in seen or not isinstance(fm, dict):
+            continue
+        seen.add(path)
+        rnd = fm.get("review_round")
+        if has_value(rnd) and str(rnd).strip().strip("\"'") not in ("1", "2"):
+            report.error("REVIEW-ROUND", "%s records review_round %r; a gate runs at most two rounds, so it is 1 or 2 "
+                         "(QUALITY.md, ADR-0028)" % (note_id, rnd))
+        if note_type(fm) != "issue":
+            continue
+        status = str(fm.get("status", "") or "").strip().strip("\"'")
+        created = str(fm.get("created", "") or "").strip().strip("\"'")
+        if status not in OPEN_ISSUE_STATUSES or not created or created < ISSUE_RULES_FROM:
+            continue
+        reporter = str(fm.get("reported_by", "") or "").strip().strip("\"'")
+        if not REPORTED_BY_RE.match(reporter):
+            promotion_emit(report, "ISSUE-REPORTER", grandfathered, note_id)(
+                "ISSUE-REPORTER", "%s has no valid `reported_by:` (user:<name>, review or agent; got %r). "
+                "Becomes an error on %s (ADR-0047)" % (note_id, reporter, PROMOTIONS["ISSUE-REPORTER"]))
+        if has_value(fm.get("question")):
+            continue
+        owner = str(fm.get("owner", "") or "")
+        name = owner.split(":", 1)[1].strip() if owner.startswith("user:") else ""
+        waits = r"\b(owner|user)'?s (call|decision|input)\b|\bwaits? on (the )?(owner|user)\b|\bneeds? (the )?(owner|user)'?s? (input|decision)\b"
+        if name:
+            waits += r"|\b%s'?s (call|decision|input|choice)\b|\b(for|ask|awaiting|needs?|waits? on) %s\b" % ((re.escape(name),) * 2)
+        try:
+            body = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if re.search(waits, body, re.I):
+            promotion_emit(report, "ISSUE-QUESTION", grandfathered, note_id)(
+                "ISSUE-QUESTION", "%s says it waits on the owner but has no `question:`. State the question, the "
+                "options and a recommendation, or decide it. Becomes an error on %s (ADR-0047)"
+                % (note_id, PROMOTIONS["ISSUE-QUESTION"]))
+
+
 def validate_release_contents(note_index, report):
     """RELEASE-FEATURES — a release must name features that exist, by the name
     they actually have.
@@ -2058,6 +2131,7 @@ def validate(root, report):
     validate_decision_rule(root, items, note_index, report)
     validate_design_notes(root, docs_dir, report)
     validate_release_contents(note_index, report)
+    validate_review_and_issue_fields(note_index, grandfathered, report)
     validate_plan_notes(root, docs_dir, allowed_status, grandfathered, report)
 
     def resolves(ref_id):

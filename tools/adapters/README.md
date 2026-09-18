@@ -4,7 +4,7 @@ id: TOOLS-ADAPTERS-README
 status: active
 owner: group:maintainers
 created: 2026-03-08
-updated: 2026-07-17
+updated: 2026-09-16
 tags: [tools, adapters]
 ---
 
@@ -17,20 +17,20 @@ Adapters map project-os rules to a target LLM tool's native instruction format a
 ```text
 tools/adapters/
 ├── README.md
-├── claude-code/   # CLAUDE.md @imports + blocking session hooks (fullest enforcement)
-├── codex/         # AGENTS.md + LLM_BRIEF.md + tools/agents/*.sh (advisory + pre-commit/CI)
+├── claude-code/   # CLAUDE.md @imports + blocking session hooks
+├── codex/         # AGENTS.md + generated skills, agents, and native lifecycle hooks
 ├── cursor/        # .cursor/rules/*.mdc generated from the skill playbooks
 └── generic/       # CONTEXT.md single-file fallback for any other tool
 ```
 
-## Enforcement asymmetry (deliberate)
+## Enforcement coverage
 
 All tools share the same mechanical backstop, the outer two of the three enforcement layers in `../instructions/QUALITY.md` "Documentation Fidelity". What differs is in-session, real-time enforcement of the hook contracts (`../instructions/HOOKS.md`):
 
 | Adapter | In-session enforcement | Install |
 |---|---|---|
 | claude-code | All eight HC-* contracts as session hooks; HC-001/HC-003 blocking | `claude-code/ADAPTER.md` (hooks into `.claude/settings.json`) |
-| codex | HC-001/HC-002 via `tools/agents/*.sh`, rest advisory prose | Root `AGENTS.md` + `LLM_BRIEF.md` (present by default) |
+| codex | Native HC-001..HC-008 hooks where trusted; HC-009 shared git/CI runner; limits in `codex/ADAPTER.md` | `python3 tools/scripts/generate-adapters.py --install-hooks`, then review `/hooks` |
 | cursor | None (rules prose only) | Generate `.cursor/rules/` per `cursor/ADAPTER.md` |
 | generic | None (prose only) | Point the tool at `CONTEXT.md` |
 

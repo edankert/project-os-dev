@@ -4,36 +4,43 @@ tool: codex
 status: active
 owner: group:maintainers
 created: 2026-03-08
-updated: 2026-05-05
+updated: 2026-09-16
 ---
 
 # Codex adapter
 
-## Overview
+## Native files
 
-Codex reads project instructions from `AGENTS.md` in the repository root. It can also read referenced files on demand, but `AGENTS.md` should remain self-contained enough to define the startup contract, docs-first gate, canonical state file, and close-out expectations.
+Codex reads the project contract from `AGENTS.md`. `python3 tools/scripts/generate-adapters.py --install-hooks` also creates:
 
-Note: `AGENTS.md` is a cross-tool convention, not Codex-specific — several agent tools read it. The root `AGENTS.md`/`LLM_BRIEF.md` pair is therefore the **generic instruction layer** (see `../generic/ADAPTER.md`); this adapter documents how Codex specifically consumes it plus the `tools/agents/*.sh` enforcement scripts.
+- `.agents/skills/<name>/SKILL.md` from every canonical `tools/skills/<name>/SKILL.md`, matching the Claude skill wrappers.
+- `.codex/agents/planner.toml` and `.codex/agents/independent-reviewer.toml` from the same agent instructions used by the Claude adapter. They inherit the session model; no Codex model is pinned. Call an agent only when the task warrants delegation or independent review.
+- `.codex/hooks.json` from `tools/adapters/codex/hooks.json`, pointing to `tools/adapters/codex/hooks/dispatch.py`.
 
-## Native instruction files
+The generated skills and agents are checked by `python3 tools/scripts/generate-adapters.py --check` at pre-commit and in CI. Edit their canonical sources, then regenerate. The hook installation leaves an existing `.codex/hooks.json` untouched; `--force-hooks` replaces it after a deliberate review. If a repository already has hooks, merge the project-os entries manually to retain both sets.
 
-- `AGENTS.md`: mandatory startup contract and docs-first gate.
-- `LLM_BRIEF.md`: compact project identity, important paths, and common commands.
-- `CONTEXT.md`: tool-agnostic project-os contract.
-- `SNAPSHOT.yaml`: canonical machine-readable work state.
+## Activation
 
-## Codex hook equivalents
+Project-local hooks load only after Codex trusts the repository's `.codex` config layer. Each changed hook definition must also be reviewed and trusted through `/hooks`. A new session may be needed after installing or changing hooks. See the [Codex hooks guide](https://learn.chatgpt.com/docs/hooks), [skills guide](https://learn.chatgpt.com/docs/build-skills), and [subagent guide](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
-Codex does not require a checked-in native hook configuration for this template. Use these repository scripts as Codex-compatible enforcement points:
+The hook command resolves `tools/adapters/codex/hooks/dispatch.py` from the git root, so a session opened from a subdirectory still reaches the adapter. Python 3.9 or newer is sufficient for the hook runner. Run `bash tools/scripts/test-codex-adapter.sh` to exercise its fixtures, then `bash tools/scripts/validate-docs.sh` for the mechanical document gate.
 
-| Contract | Entrypoint | Purpose |
-|---|---|---|
-| Startup preflight | `bash tools/agents/bootstrap.sh` | Verify required files, snapshot focus, branch, and basic tooling. |
-| Docs-first intake | `bash tools/agents/start-change.sh "<short title>"` | Scaffold a change note when downstream projects require docs-first change records. |
-| Docs-first validation | `bash tools/agents/check-docs-first.sh` | Check that code changes have documentation coverage and snapshot updates. |
+## Hook contract coverage
 
-See `tools/instructions/HOOKS.md` for the Codex hook-equivalent contracts.
+| Contract | Native Codex behavior |
+|---|---|
+| HC-001 document-first | `PreToolUse` denies confidently identified code edits without a focused task or issue. Target repositories are evaluated independently; the untouched template placeholder is exempt. |
+| HC-002 startup | `SessionStart` reminds the agent of read order, bootstrap, branch, and work state. |
+| HC-003 verification | `PreToolUse` denies terminal status edits with failing linked manual tests or an open-ended waiver. Executable and acceptance tests use the same exemptions as the validator. Missing links produce a reminder because Codex does not currently support the `ask` decision for `PreToolUse`. |
+| HC-004 phase alignment | `PostToolUse` reminds the agent to compare a task newly set to `doing` with the focus phase. |
+| HC-005 risk scan | `PostToolUse` flags identifiable dependency, environment, and deployment configuration edits. The full risk trigger list still needs agent review. |
+| HC-006 close-out | `PostToolUse` records recognized edits per session. `Stop` checks active focus once after a write and asks for completion or a handoff. |
+| HC-007 validation | `Stop` runs `validate-docs.sh`; pre-commit and CI remain the hard backstop. |
+| HC-008 delegation | `UserPromptSubmit` states the focus and recommends planner or independent reviewer only where useful. |
+| HC-009 test execution | The shared pre-push hook and CI runner execute declared tests. |
 
-## Synchronizing the adapter
+Codex hook tool coverage includes `apply_patch` and Bash, but an arbitrary shell script may write files without an identifiable target. The adapter detects patch file headers and simple shell redirects; it does not pretend to parse all shell programs. Some specialized tools also bypass tool hooks. The git hook and CI validator therefore remain required, and `/hooks` should be checked when an expected reminder does not appear. This is tracked as project-os-dev RISK-0003.
 
-Run `tools/skills/adapter-sync/SKILL.md` when shared lifecycle, status, quality, snapshot, or skill rules change. The sync should update Codex-facing guidance without introducing tool-specific files for unsupported agents.
+## Synchronizing
+
+Follow `tools/skills/adapter-sync/SKILL.md` whenever canonical lifecycle rules or skills change. `sync-project-os.py` regenerates the native files after a template sync and installs the Codex hook file only when that target is absent. Existing downstream Codex hooks need a manual merge.

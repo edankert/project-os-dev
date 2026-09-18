@@ -1,0 +1,67 @@
+{
+  "description": "project-os lifecycle checks for Codex",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/tools/adapters/codex/hooks/dispatch.py\"",
+            "timeout": 15,
+            "statusMessage": "Checking project-os preflight"
+          }
+        ],
+        "matcher": "^(Bash|apply_patch)$"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/tools/adapters/codex/hooks/dispatch.py\"",
+            "timeout": 15,
+            "statusMessage": "Checking project-os follow-ups"
+          }
+        ],
+        "matcher": "^(Bash|apply_patch)$"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/tools/adapters/codex/hooks/dispatch.py\"",
+            "timeout": 15,
+            "statusMessage": "Loading project-os context"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/tools/adapters/codex/hooks/dispatch.py\"",
+            "timeout": 15,
+            "statusMessage": "Checking project-os focus"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/tools/adapters/codex/hooks/dispatch.py\"",
+            "timeout": 65,
+            "statusMessage": "Validating project-os close-out"
+          }
+        ]
+      }
+    ]
+  }
+}

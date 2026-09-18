@@ -21,6 +21,7 @@ mutation_score: ""
 reviewed_by: ""
 review_date: ""
 review_verdict: ""
+review_round: ""
 related: []
 # level: acceptance only; delete on an executable test. Fields explained in SCHEMAS.md, test.md ("Acceptance fields").
 area: ""             # the human grouping, one walk's worth of related checks; the verdict lives in the release ledger, not here (ADR-0037)

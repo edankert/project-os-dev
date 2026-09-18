@@ -4,7 +4,7 @@ id: INSTR-LIFECYCLE
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-09-04
+updated: 2026-09-18
 tags: [instructions, lifecycle]
 ---
 
@@ -55,7 +55,7 @@ When the project uses phases (`../../docs/PHASES.md`):
 Pause for the user only when the work genuinely requires them: a destructive or irreversible action, a real scope change, or input that only they can provide. Everything else is your judgment call. First do everything that does not depend on the answer; then put the question at the end of a turn that also delivers that progress. Reason: an early question hands the task back unfinished.
 
 ### Scope of a change
-A bug, a cleanup or a missing abstraction the task did not ask for is an `ISS-*` at `triage` or a follow-up in your summary, not a change in this diff, unless the requested behaviour cannot work without it. Reason: the document-first gate blocks an edit with no focus item, and widening the task is the bypass. When the wording admits two readings, implement the one it most directly supports and state the assumption; the threshold for asking is `../skills/issue-intake/SKILL.md` step 1.
+A defect in code this feature changed is fixed in it (`QUALITY.md`, ADR-0047). A bug, cleanup or missing abstraction elsewhere is an `ISS-*` or a follow-up in your summary, unless the requested behaviour needs it. Reason: the document-first gate blocks an edit with no focus item, and widening the task is the bypass. When the wording admits two readings, implement the one it most directly supports and state the assumption; the threshold for asking is `../skills/issue-intake/SKILL.md` step 1.
 
 ## Close-out (must happen after work)
 1. Set the note status: task `done`, issue `fixed`, requirement `implemented`, feature `done` (`STATUSES.md`).

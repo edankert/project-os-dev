@@ -13,6 +13,14 @@
             "command": "\"$CLAUDE_PROJECT_DIR/tools/adapters/claude-code/hooks/verification-gate.sh\""
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/tools/adapters/claude-code/hooks/review-budget.sh\""
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -35,6 +43,14 @@
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR/tools/adapters/claude-code/hooks/session-touch.sh\""
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/tools/adapters/claude-code/hooks/review-budget.sh\""
           }
         ]
       }

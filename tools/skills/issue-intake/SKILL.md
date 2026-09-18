@@ -4,7 +4,7 @@ id: SKILL-ISSUE-INTAKE
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-09-04
+updated: 2026-09-18
 tags: [skills, issues]
 ---
 
@@ -12,6 +12,7 @@ tags: [skills, issues]
 
 ## When to use
 - A prompt reports a bug, mismatch, broken workflow, unclear documentation, or unexpected behavior.
+- An agent or a review finds a defect it will not fix now. **First apply the filing bar** in `../../instructions/QUALITY.md` ("The filing bar"): a defect in code the current feature changed is fixed in that feature, not filed. File only when the fix needs the owner's decision, the defect is in code the work did not change, or the fix is too large for the session.
 
 ## Inputs
 - User prompt, repro steps/logs, and any affected repo paths.
@@ -45,6 +46,9 @@ tags: [skills, issues]
    - set `phase` in frontmatter if applicable
    - include repro, expected vs actual, evidence paths
    - put the reporter's words verbatim in the "As reported" callout under Problem, and keep your paraphrase outside it; a fix is judged against the sentence the reporter wrote
+   - **the title and the first sentence say what a user would notice**, in plain words (`../../instructions/WRITING.md`): "Two screens disagree about whether anything is waiting to ship", not "the platform scoping stops at the derived view". The code symbol comes after
+   - set `reported_by:` — `user:<name>` when a person reported it, `review` when a review found it, `agent` when an agent found it while working (validator ISSUE-REPORTER)
+   - if the issue needs the owner's decision, fill `question:` with the question, the options and your recommendation, and ask it in your reply as well. An issue that says it waits on the owner without one draws ISSUE-QUESTION. If a sensible default exists, take it and record it instead of asking
 7. If the fix requires implementation:
    - ensure there is a parent `FEAT-*` (create if needed)
    - create one or more `TASK-*` under the feature and link them in snapshot + notes

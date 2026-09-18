@@ -13,6 +13,10 @@ requirements: []
 tasks: []
 release: ""
 acceptance_exception: ""   # leave empty and write the check; fill only where a check can never exist (SCHEMAS.md, feature.md)
+reviewed_by: ""
+review_date: ""
+review_verdict: ""
+review_round: ""
 related: []
 ---
 
@@ -25,7 +29,10 @@ related: []
 <In/out of scope>
 
 ## Acceptance
-- <observable criteria>
+- <observable criteria, each a claim a reviewer can refute; the review packet copies them word for word>
+
+## Verification
+<Before the review: the full test command, the date and the result count, e.g. `pytest`, 2026-09-18: 412 passed.>
 
 ## Links
 - Requirements: use `[[REQ-####-...]]` links

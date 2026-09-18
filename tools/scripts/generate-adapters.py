@@ -7,10 +7,13 @@ this script derives, deterministically:
   .claude/skills/<name>/SKILL.md   Claude Code native skills (auto-discovered, /name invocable)
   .claude/agents/planner.md                Claude Code subagent for LIFECYCLE.md preflight (model-pinned)
   .claude/agents/independent-reviewer.md   Claude Code subagent for QUALITY.md independent review (model-pinned)
+  .agents/skills/<name>/SKILL.md   Codex native skills
+  .codex/agents/*.toml             Codex native subagents
   .cursor/rules/*.mdc              Cursor rules (instructions inlined per the cursor adapter mapping)
 
-With --install-hooks it also installs the Claude Code hook set into .claude/settings.json
-(copy when absent, merge the missing "hooks" key when present, leave any existing hooks alone).
+With --install-hooks it installs Claude Code hooks into .claude/settings.json and
+Codex hooks into .codex/hooks.json. Existing hook configuration is preserved
+unless --force-hooks is supplied.
 With --check it writes nothing and exits 1 if any generated file is stale (for CI/pre-commit).
 
 Stdlib only. Re-run after changing skills or instructions (see tools/skills/adapter-sync/SKILL.md).
@@ -93,18 +96,19 @@ Return the allocated IDs with their paths, a short plan summary per item, any im
 
 REVIEWER_AGENT = """---
 name: independent-reviewer
-description: Independent review pass at the gates project-os QUALITY.md states (a TST-* reaching passing, a requirement reaching implemented, a feature reaching done). Reviews adversarially from a clean context and records reviewed_by/review_date/review_verdict in the note frontmatter.
+description: Independent review of one feature reaching done (the gates project-os QUALITY.md states), from a packet written by tools/scripts/review-packet.py. Reviews adversarially from a clean context, within a tool-call budget, and returns a claims table; two reviewers run on each packet and the author records the combined verdict.
 model: %(model)s
+effort: medium
+maxTurns: 100
 ---
 
 You are the project-os independent reviewer. Your review counts only if you genuinely try to refute the work, not confirm it.
 
-1. Read `tools/skills/independent-review/SKILL.md` in full and follow it exactly.
-2. Read the notes under review (TST-*/REQ-*/FEAT-*, and a CHG-* only when asked; a change note owes no review) and the code or docs they claim to cover; attempt to refute each claim (does the test fail when the fix is broken? does the change note match what actually changed?).
-3. Record the outcome in each reviewed note's frontmatter: `reviewed_by: model:%(model)s`, `review_date: <today>`, `review_verdict: approved` or `changes-requested` (with your findings in the note body).
-4. What makes this pass independent is stated once in `tools/instructions/QUALITY.md`, "Independent review (clean-context)": your context, not your model. Protect it. Do not ask the author what they meant, and do not reconstruct their intent charitably; if the change cannot be justified from the notes alone, that is a finding about the documentation, which is the point of the handoff surface.
-5. You are very likely the same model that wrote the work. That is expected and is not a defect in this pass; a shared model correlates *capability*, a shared context correlates *commitment*, and it is the second that review exists to break. What you must not be is the same *session*: if you find yourself with any memory of authoring this, stop and say so — that is self-review and your verdict cannot settle it.
-6. State plainly in your report what was independent (fresh context, separate session) and what was not (same model family, recorded in `reviewed_by`). A reader should be able to judge the independence rather than infer it.
+1. Your first call reads the review packet named in your brief. It is your scope. If you were given no packet, say so and stop: the author must write one with `tools/scripts/review-packet.py`.
+2. Follow `tools/skills/independent-review/SKILL.md`, "The reviewer" (or "Round two" for a round-two packet). It states the procedure, the report and the budget: 40 tool calls in round one, 15 in round two. In Claude Code a hook refuses calls past the budget; plan to finish well before it either way.
+3. Return the claims table and your verdict in your final message, and write nothing in the notes. Another reviewer may be reviewing the same packet at the same time: work on your own. The author combines both reports and records `reviewed_by: model:%(model)s` and the verdict.
+4. What makes this pass independent is stated once in `tools/instructions/QUALITY.md`, "Independent review (clean-context)": your context, not your model. Do not ask the author what they meant, and do not reconstruct their intent charitably; a change the notes and the packet cannot justify is a finding about the documentation.
+5. You are very likely the same model that wrote the work. That is expected: a shared model correlates *capability*, a shared context correlates *commitment*, and review exists to break the second. If you find yourself with any memory of authoring this, stop and say so: that is self-review and your verdict cannot settle it.
 """ % {"model": REVIEWER_MODEL}
 
 
@@ -172,6 +176,23 @@ def build_skill(name, src_rel, body):
     return "\n".join(lines)
 
 
+
+def build_codex_agent(claude_agent):
+    """Render the canonical agent body as a Codex TOML profile without a model pin."""
+    fm, body = parse_frontmatter_body(claude_agent)
+    name = re.search(r"^name:\s*(.+)$", fm, re.MULTILINE).group(1).strip()
+    description = re.search(r"^description:\s*(.+)$", fm, re.MULTILINE).group(1).strip()
+    description = description.replace(" (model-pinned)", "")
+    body = body.replace("model:claude-opus-5", "model:<active Codex model ID>")
+    return "\n".join([
+        "# generated by tools/scripts/generate-adapters.py from canonical project-os agent instructions",
+        "name = " + json.dumps(name),
+        "description = " + json.dumps(description),
+        "developer_instructions = " + json.dumps(body.strip()),
+        "",
+    ])
+
+
 def build_cursor_rule(name, globs, src_rel, text):
     _fm, body = parse_frontmatter_body(text)
     body = body.strip()
@@ -205,9 +226,12 @@ def generate(root):
         src_rel = skill_path.relative_to(root).as_posix()
         _fm, body = parse_frontmatter_body(skill_path.read_text(encoding="utf-8"))
         out[".claude/skills/%s/SKILL.md" % name] = build_skill(name, src_rel, body)
+        out[".agents/skills/%s/SKILL.md" % name] = build_skill(name, src_rel, body)
 
     out[".claude/agents/planner.md"] = PLANNER_AGENT
     out[".claude/agents/independent-reviewer.md"] = REVIEWER_AGENT
+    out[".codex/agents/planner.toml"] = build_codex_agent(PLANNER_AGENT)
+    out[".codex/agents/independent-reviewer.toml"] = build_codex_agent(REVIEWER_AGENT)
 
     instr_dir = root / "tools" / "instructions"
     for fname, rule, globs in CURSOR_RULES:
@@ -293,6 +317,18 @@ def install_hooks(root, force=False):
 
 
 
+def install_codex_hooks(root, force=False):
+    source = root / "tools" / "adapters" / "codex" / "hooks.json"
+    if not source.is_file():
+        return "Codex hooks.json not found; skipped"
+    target = root / ".codex" / "hooks.json"
+    if target.is_file() and not force:
+        return "existing .codex/hooks.json left alone (use --force-hooks to replace)"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+    return "installed .codex/hooks.json"
+
+
 def untracked_artifacts(root, artifacts):
     """Generated artifacts present on disk that git will not carry.
 
@@ -329,7 +365,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Generate native adapter artifacts from project-os playbooks.")
     ap.add_argument("--repo-root", default=".", help="Repo root (default: cwd)")
     ap.add_argument("--check", action="store_true", help="Verify generated files are current; write nothing, exit 1 on drift")
-    ap.add_argument("--install-hooks", action="store_true", help="Install the Claude Code hook set into .claude/settings.json")
+    ap.add_argument("--install-hooks", action="store_true", help="Install Claude Code and Codex hook sets")
     ap.add_argument("--force-hooks", action="store_true", help="With --install-hooks: replace an existing hooks key")
     args = ap.parse_args(argv)
 
@@ -365,7 +401,7 @@ def main(argv=None):
                 "generate-adapters: %d artifact(s) exist here but are not tracked by git.\n"
                 "  These are build outputs the repository is meant to carry (SYNCING.md: 'template-owned\n"
                 "  build outputs'), so a fresh clone will not have them and CI will report every one STALE\n"
-                "  however many times you regenerate. Check .gitignore — a stock '.claude/' or '.cursor/'\n"
+                "  however many times you regenerate. Check .gitignore — a stock '.claude/', '.codex/', '.agents/' or '.cursor/'\n"
                 "  line from a language scaffold is the usual cause." % len(untracked)
             )
             return 1
@@ -374,6 +410,7 @@ def main(argv=None):
 
     if args.install_hooks:
         print("generate-adapters: %s" % install_hooks(root, force=args.force_hooks))
+        print("generate-adapters: %s" % install_codex_hooks(root, force=args.force_hooks))
     print("generate-adapters: %d artifacts current" % len(artifacts))
     return 0
 
