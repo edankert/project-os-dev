@@ -23,14 +23,20 @@ paths:
   "docs/__bases__/": template
   "docs/phases/": merge
   "docs/PHASES.md": merge
-  "docs/README.md": template
-  "docs/INDEX.md": template
+  # Seed: copied once, then the project's. Each is filled with project facts
+  # (a brief, security notes, a record's own sections), and as template files
+  # they were reported as conflicts on every sync (FEAT-0037, 2026-09-18).
+  "docs/README.md": seed
+  "docs/INDEX.md": seed
   "CONTEXT.md": template
   "AGENTS.md": template
-  "LLM_BRIEF.md": template
-  "SECURITY.md": template
+  "LLM_BRIEF.md": seed
+  "SECURITY.md": seed
   "ROADMAP.md": merge
   "docs/reference/README.md": seed
+  # Any other workflow is the project's own: a repo adds its own CI (deck-smoke.yml)
+  # without editing this template-owned file (FEAT-0037).
+  ".github/workflows/": project
   # template-owned, not seed: this workflow carries enforcement the template owns,
   # so a CI change made here must reach every repo. As `seed` it was copied once and
   # never overwritten, meaning validator/CI changes stopped at the template (TASK-0072).

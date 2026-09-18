@@ -7,6 +7,9 @@ baseline (the template commit recorded in .project-os-sync at the last sync).
   target == new template version          -> up to date
   target missing                          -> copied (seed paths: only ever copied once)
   target == baseline version              -> safe fast-forward, overwritten
+  target == an OLDER template version     -> stale, fast-forwarded: nobody edited it,
+                                             an earlier sync skipped it (FEAT-0037)
+  target listed under keep_local:          -> kept, reported, never touched
   target != baseline (locally modified)   -> SKIPPED and reported for hand-merge
                                              (--force overwrites template-owned only)
   'merge'-owned path, diverged            -> ALWAYS skipped, even with --force: real project
@@ -22,6 +25,7 @@ Stdlib only. Usage: sync-project-os.py <path-to-upstream-project-os> [--dry-run]
 from __future__ import annotations
 
 import argparse
+import hashlib
 import fnmatch
 import re
 import shutil
@@ -93,15 +97,57 @@ def git_show(src_repo, sha, rel):
 
 
 def read_state(root):
+    """The state file's scalars, plus `keep_local` (paths) and `keep_block` (its raw text).
+
+    `keep_local:` lists template-owned files this repo keeps different on purpose
+    (a CI workflow that runs its own suite, say). The sync reports them as kept
+    and never touches them. The block is carried over verbatim, comments
+    included, when the sync rewrites the file.
+    """
     path = root / STATE_FILE
     if not path.is_file():
         return {}
-    state = {}
+    state, keep, block, in_keep = {}, [], [], False
     for line in path.read_text(encoding="utf-8").splitlines():
+        if re.match(r"^keep_local:\s*$", line):
+            in_keep = True
+            block.append(line)
+            continue
+        if in_keep and (line.startswith((" ", "\t")) or not line.strip()):
+            block.append(line)
+            m = re.match(r'^\s+-\s*"?([^"#]+?)"?\s*(#.*)?$', line)
+            if m:
+                keep.append(m.group(1).strip())
+            continue
+        in_keep = False
         m = re.match(r"^(\w+):\s*\"?([^\"]*)\"?\s*$", line)
         if m:
             state[m.group(1)] = m.group(2)
+    state["keep_local"] = keep
+    state["keep_block"] = "\n".join(block).rstrip() + "\n" if block else ""
     return state
+
+
+def blob_id(data):
+    """The git blob id of `data`, the same value `git hash-object` prints."""
+    return hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()
+
+
+def template_history(src_repo, rel):
+    """Every blob id `rel` has had in the template's history."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(src_repo), "log", "--all", "--format=", "--raw", "--no-abbrev", "--", rel],
+            capture_output=True, check=True, text=True,
+        ).stdout
+    except (subprocess.CalledProcessError, OSError):
+        return set()
+    ids = set()
+    for line in out.splitlines():
+        parts = line.split()
+        if len(parts) >= 4 and line.startswith(":"):
+            ids.update(p for p in parts[2:4] if not set(p) <= {"0"})
+    return ids
 
 
 
@@ -174,9 +220,11 @@ def main(argv=None):
         print("sync-project-os: upstream and downstream are the same directory", file=sys.stderr)
         return 2
     owners, excludes = parse_manifest(src / "tools" / "sync" / "MANIFEST.yaml")
-    baseline = args.baseline or read_state(root).get("baseline_sha") or None
+    state = read_state(root)
+    baseline = args.baseline or state.get("baseline_sha") or None
+    keep_local = set(state.get("keep_local") or [])
 
-    copied, updated, seeded, uptodate = [], [], [], []
+    copied, updated, seeded, uptodate, kept = [], [], [], [], []
     diverged, merge_pending, gone = [], [], []
     processed = set()
 
@@ -184,6 +232,9 @@ def main(argv=None):
         if rel in processed:
             return
         processed.add(rel)
+        if rel in keep_local:
+            kept.append(rel)
+            return
         src_file = src / rel
         target = root / rel
         new = src_file.read_bytes()
@@ -202,6 +253,16 @@ def main(argv=None):
         base = git_show(src, baseline, rel) if baseline else None
         if base is not None and current == base:
             updated.append(rel)
+            if not args.dry_run:
+                shutil.copy2(src_file, target)
+            return
+        # A file that is exactly an earlier template version has no local
+        # edits: an earlier sync skipped it and then recorded a later
+        # baseline, so it can never equal the baseline again. Measured
+        # 2026-09-18: 51 such files across the fleet, every one reported as
+        # locally edited. Not for 'merge' paths, which may hold project data.
+        if owner != "merge" and blob_id(current) in template_history(src, rel):
+            updated.append(rel + " (was an older template version)")
             if not args.dry_run:
                 shutil.copy2(src_file, target)
             return
@@ -255,6 +316,10 @@ def main(argv=None):
         prefix, len(copied), len(updated), len(seeded), len(uptodate), baseline or "none"))
     for rel in copied + updated + seeded:
         print("%s  synced  %s" % (prefix, rel))
+    if kept:
+        print("%sKept on purpose (keep_local: in %s), not touched:" % (prefix, STATE_FILE))
+        for rel in kept:
+            print("%s  KEPT  %s" % (prefix, rel))
     if diverged:
         print("%sACTION REQUIRED — locally diverged template-owned files:" % prefix)
         # Ordered so the destructive case is read first: PUSH-UPSTREAM is the one
@@ -284,7 +349,8 @@ def main(argv=None):
         if sha:
             stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
             (root / STATE_FILE).write_text(
-                'baseline_sha: "%s"\nsynced: "%s"\nsource: "%s"\n' % (sha, stamp, src), encoding="utf-8")
+                'baseline_sha: "%s"\nsynced: "%s"\nsource: "%s"\n%s' % (sha, stamp, src, state.get("keep_block", "")),
+                encoding="utf-8")
         for cmd in (["bash", str(root / "tools" / "scripts" / "install-git-hooks.sh")],
                     ["python3", str(root / "tools" / "scripts" / "generate-adapters.py"),
                      "--repo-root", str(root), "--install-hooks"]):
