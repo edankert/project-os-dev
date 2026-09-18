@@ -43,3 +43,9 @@ Seven read-only reviewers checked nine issues each, as ordinary agents. Their ev
 **Kept with care.** ISS-0170 (high: a meal section set out of order makes a meal reach Health Connect as a near-whole-day record) is kept to be coordinated with TASK-0446, whose uncommitted change to the same code lengthens those spans. ISS-0112 is the template validator's, and is filed here as [[ISS-0070-A-Snapshot-That-Does-Not-Parse-Still-Passes-Validation|ISS-0070]].
 
 **The other session's work stayed out.** your-health had 21 uncommitted files from another session, SNAPSHOT.yaml among them. The committed snapshot was rebuilt in a worktree at HEAD with only this review's notes, and staged from there. Their files are unchanged.
+
+## Decisions and a repair, 2026-09-18
+
+Edwin took all eight recommendations ("take your recommendations"). ISS-0026 and ISS-0130 are declined. ISS-0169, 0049, 0150, 0127, 0047 and 0158 become fixes, added to [[your-health#ISS-0181]], which now has eighteen items. Committed as your-health `7357d39`.
+
+**Repair.** The pre-commit hook in your-health runs `sync-snapshot.py` on the working tree and re-adds `SNAPSHOT.yaml`. So `0bdf4af` and `7357d39` both committed the working snapshot, which still held another session's uncommitted focus, a TASK-0446 entry and two statuses, instead of the snapshot built for them. HEAD then failed `--as-committed` with five errors. `ab1e790` removed those lines, committed from a clean worktree at HEAD so the hook could not pull them in again. The other session's change was restored to its working tree, uncommitted. HEAD now passes the full CI step set. your-applications.com, where the same staging was used, was checked and is clean.
