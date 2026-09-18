@@ -1039,12 +1039,16 @@ METRIC_PREFIXES = {"FEAT", "TASK", "ISS", "PHASE", "TST", "RISK", "REL", "ADR", 
 def compute_metric_counts(items, note_index, claimants=None):
     """Counts over all notes in docs/ (the archive) plus snapshot items; snapshot status wins where both exist."""
     statuses = {}
+    fields = {}   # id -> the note's frontmatter, for the field counts
+    waived = set()
     for coll in (items.values() if isinstance(items, dict) else []):
         if not isinstance(coll, dict):
             continue
         for item_id, entry in coll.items():
             if isinstance(entry, dict) and str(entry.get("status", "") or ""):
                 statuses[item_id] = str(entry.get("status", "") or "")
+            if isinstance(entry, dict) and str(entry.get("verification_waiver", "") or "").strip():
+                waived.add(item_id)
     # The archive fallback must use only notes that genuinely CLAIM an id.
     # `note_index` matches IDs as SUBSTRINGS, so a composite filename like
     # CHG-20260525-FEAT-0009-Chrome-Polish.md is indexed under FEAT-0009 and,
@@ -1059,7 +1063,14 @@ def compute_metric_counts(items, note_index, claimants=None):
     for nid, paths in (claimants or {}).items():
         if len(paths) != 1:
             continue
-        fm = parse_frontmatter(paths[0]) or {}
+        # ISS-0035: note_index already holds this parse whenever it indexed the
+        # same file; re-parsing every note cost 4.9 s of 31 s in your-trainer.
+        indexed = (note_index or {}).get(nid)
+        if indexed and indexed[0] == paths[0]:
+            fm = indexed[1] or {}
+        else:
+            fm = parse_frontmatter(paths[0]) or {}
+        fields.setdefault(nid, fm)
         st = str(fm.get("status", "") or "").strip()
         if st:
             statuses.setdefault(nid, st)
@@ -1068,6 +1079,7 @@ def compute_metric_counts(items, note_index, claimants=None):
         if claimed and claimed != nid:
             continue
         statuses.setdefault(nid, str((fm or {}).get("status", "") or ""))
+        fields.setdefault(nid, fm or {})
     # Acceptance tests are excluded from every metric (ADR-0030, carried into
     # ADR-0031): *"a count of acceptance rows on the overview is a number
     # nobody acts on"*. That refusal used to be free, because a check carried
@@ -1091,10 +1103,23 @@ def compute_metric_counts(items, note_index, claimants=None):
         vals = by_prefix.get(prefix, [])
         return len(vals) if allowed is None else sum(1 for s in vals if s in allowed)
 
-    return {
+    counts = {
         name: count(prefix, None if allowed is None else set(allowed))
         for name, (prefix, allowed) in METRIC_STATUS_FILTERS.items()
     }
+    # Counts that read a FIELD rather than a status (project-os-dev ISS-0020,
+    # ISS-0021). Like every metric, a repo gets one only by listing its key in
+    # metrics.counts. `tests_executable` + `tests_manual` = `tests_total`.
+    tests = [the_id for the_id in statuses
+             if the_id not in acceptance_ids
+             and (ID_RE.match(the_id) or [None, None])[1] == "TST"]
+    counts["tests_executable"] = sum(
+        1 for t in tests if str(fields.get(t, {}).get("command", "") or "").strip())
+    counts["tests_manual"] = len(tests) - counts["tests_executable"]
+    waived |= {nid for nid, fm in fields.items()
+               if str(fm.get("verification_waiver", "") or "").strip()}
+    counts["waivers_outstanding"] = len(waived)
+    return counts
 def fix_metrics(root):
     """Rewrite metrics.counts values in SNAPSHOT.yaml to the computed counts, preserving formatting."""
     snap_path = root / "SNAPSHOT.yaml"
@@ -3370,6 +3395,10 @@ def validate(root, report):
             verdict = str(fm.get("review_verdict", "") or entry.get("review_verdict", "") or "").strip()
             if verdict == "changes-requested":
                 report.error("REVIEW", "%s is '%s' but review_verdict is changes-requested" % (item_id, status))
+            elif verdict and verdict != "approved":
+                # project-os-dev ISS-0025: any other word used to pass as a review.
+                report.error("REVIEW", "%s is '%s' with review_verdict '%s'; a close-out review's verdict "
+                             "is approved or changes-requested (QUALITY.md)" % (item_id, status, verdict))
             elif not verdict:
                 promotion_emit(report, "REVIEW", grandfathered, item_id)(
                     "REVIEW",

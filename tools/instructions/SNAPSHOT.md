@@ -95,6 +95,8 @@ The `goal` and `note` prose on any item is at most two sentences each, and the l
 - `phases_total` / `phases_done`: all `PHASE-*`; done = status `done`.
 - `tasks_total` / `tasks_done`: all `TASK-*`; done = status `done`.
 - `tests_total` / `tests_passing` / `tests_failing`: all `TST-*`; by status `passing` / `failing`.
+- `tests_executable` / `tests_manual`: `TST-*` with a `command:`, and without one; together they are `tests_total`. Acceptance checks are left out of every test count.
+- `waivers_outstanding`: items whose note or snapshot entry carries a `verification_waiver`.
 - `issues_open`: `ISS-*` with status `open`; `issues_triage`: status `triage`. The two are disjoint, and together they are the outstanding set — since ADR-0008 merged `closed` into `fixed`, `fixed` is terminal and correctly excluded. (Before the merge, `fixed` meant "implemented, not verified" and 313 issues fleet-wide sat in it counted by nothing; that limbo is what ISS-0008 reported, and removing the state resolved it rather than widening the metric.)
 - `tasks_deferred` / `issues_deferred`: `TASK-*` / `ISS-*` with status `deferred` (parked work stays visible; see `STATUSES.md`, "Deferral and re-adoption").
 - `risks_open`: `RISK-*` with status `open`.

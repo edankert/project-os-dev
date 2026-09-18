@@ -59,9 +59,9 @@ def fixture(tmp, entries, notes, retention=""):
 
 def prunable(root):
     snap = ss.load_yaml((root / "SNAPSHOT.yaml").read_text(encoding="utf-8")) or {}
-    statuses, index, _cl = ss.note_statuses(root)
+    statuses, index, claimants = ss.note_statuses(root)
     _, window = ss.retention_config(snap)
-    return {i for _, i in ss.prunable_ids(snap, index, window or 0, statuses)}
+    return {i for _, i in ss.prunable_ids(snap, index, window or 0, statuses, claimants)}
 
 
 def base(extra_entry=None, extra_note=None, retention="prune_window: 0"):
@@ -129,6 +129,18 @@ def main():
     run_case("cond6 cleared releases", True)
     # (7) outstanding verification business holds
     run_case("cond7 waiver holds", False, extra_entry={"verification_waiver": '"docs only"'})
+    run_case("cond7 a waiver on the note holds", False, extra_note={"verification_waiver": '"docs only"'})
+    # (7) reads the note that claims the id (project-os-dev ISS-0037). A change
+    # note whose filename contains TASK-0001 sorts first in the substring index;
+    # reading it instead would hide the real note's waiver and prune the entry.
+    entries, notes, retention = base(extra_note={"verification_waiver": '"docs only"'})
+    with tempfile.TemporaryDirectory() as tmp:
+        root = fixture(tmp, entries, notes, retention)
+        (root / "docs" / "CHG-20260101-TASK-0001-Impostor.md").write_text(
+            '---\ntype: "[[change]]"\nid: CHG-20260101-TASK-0001-Impostor\nstatus: merged\n---\n', encoding="utf-8")
+        _st, index, _cl = ss.note_statuses(root)
+        check("the impostor does hold the index slot", str(index["TASK-0001"][0]).endswith("Impostor.md"), True)
+        check("cond7 reads the claiming note, not a composite-named impostor", "TASK-0001" in prunable(root), False)
 
     # Fail-safe on derivation: a note with no usable title must leave the
     # snapshot value ALONE rather than blanking it. 3 REGISTERED notes are in this

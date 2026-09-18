@@ -47,9 +47,7 @@ gallery: [equipment-hub, "equipment-hub-dataonly:data-only"]
 Each entry is a capture key, or `key:state` where that key captures the screen in one state. The keys are whatever the repo's own gallery command produces; where the walk sheet looks for the image files is `TESTING.md`, "The walk", rule 2.
 
 ## `status` (surfaces)
-- `active`, `retired`, `superseded`
-
-A surface is not *done*: it exists until the product stops having it. `retired` says the place is gone; `superseded` says another surface took it over and names which.
+The allowed values are stated in `STATUSES.md`, `[[surface]]`, which the validator reads.
 
 ## `owner` (all notes)
 See `OWNERSHIP.md` for allowed formats and the canonical registry.

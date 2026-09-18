@@ -46,5 +46,10 @@ check "keep_local survives the state rewrite, comment included" grep -q 'runs it
 check "the baseline moved to the template head" grep -q "$(git -C "$U" rev-parse HEAD)" "$D/.project-os-sync"
 check "a project's own workflow is left alone" grep -qx "our CI" "$D/.github/workflows/own-ci.yml"
 check "a seed file with project facts is left alone" grep -qx "Name: down" "$D/LLM_BRIEF.md"
+# The real template seeds a ledger README (project-os-dev ISS-0059): a new repo
+# gets one, and a repo that wrote its own keeps it.
+REAL="$(cd "$HERE/../.." && pwd)"
+check "the template ships docs/releases/ledgers/README.md" test -s "$REAL/docs/releases/ledgers/README.md"
+check "the manifest seeds it rather than owning it" grep -q '^  "docs/releases/ledgers/README.md": seed' "$REAL/tools/sync/MANIFEST.yaml"
 echo "test-sync-stale: $n assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]

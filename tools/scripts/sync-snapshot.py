@@ -434,7 +434,7 @@ def _owes_verification(entry, note_fm, statuses):
     return any(statuses.get(t, "unknown") != "passing" for t in linked)
 
 
-def prunable_ids(snap, index, window, statuses):
+def prunable_ids(snap, index, window, statuses, claimants=None):
     """IDs removable under ADR-0018's conditions. Fail-safe: doubt -> keep."""
     items = snap.get("items") or {}
     def _focus_ids(node, acc):
@@ -497,7 +497,16 @@ def prunable_ids(snap, index, window, statuses):
                 continue
             # (7) outstanding verification business holds the entry: an
             # unexpired waiver, or a linked test that is not passing.
-            note_fm = (index.get(the_id) or (None, {}))[1] or {}
+            # project-os-dev ISS-0037: read the note that CLAIMS the id, as (5)
+            # does. `index` matches substrings, so a composite-named note such
+            # as CHG-...-TASK-0001-x.md could lend its fields (and hide the real
+            # note's waiver) to TASK-0001.
+            indexed = index.get(the_id) or (None, {})
+            paths = (claimants or {}).get(the_id) or []
+            if len(paths) == 1 and indexed[0] != paths[0]:
+                note_fm = _vd.parse_frontmatter(paths[0]) or {}
+            else:
+                note_fm = indexed[1] or {}
             if _owes_verification(entry, note_fm, statuses):
                 continue
             out.append((coll, the_id))
@@ -661,7 +670,7 @@ def main(argv=None):
 
     pruned, held = [], []
     if window is not None and not args.no_prune:
-        targets = prunable_ids(snap_after, index, window, statuses)
+        targets = prunable_ids(snap_after, index, window, statuses, claimants)
         held = held_ids(snap_after)
         if args.check:
             pruned = [i for _, i in targets]

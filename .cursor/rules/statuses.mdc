@@ -161,3 +161,7 @@ The steps, and re-adoption, are in `../skills/status-transition/SKILL.md` ("Defe
 
 ## `[[reference]]`
 - Allowed: `active`, `deprecated`
+
+## `[[surface]]`
+- Allowed: `active`, `retired`, `superseded`
+- A surface is not *done*: it exists until the product stops having it. `retired` says the place is gone; `superseded` says another surface took it over, named in `superseded_by:`.

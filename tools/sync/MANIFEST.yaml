@@ -34,6 +34,9 @@ paths:
   "SECURITY.md": seed
   "ROADMAP.md": merge
   "docs/reference/README.md": seed
+  # Where a repo's first acceptance verdict goes (project-os-dev ISS-0059). A repo
+  # that wrote its own, such as project-os-deck, keeps it.
+  "docs/releases/ledgers/README.md": seed
   # Any other workflow is the project's own: a repo adds its own CI (deck-smoke.yml)
   # without editing this template-owned file (FEAT-0037).
   ".github/workflows/": project

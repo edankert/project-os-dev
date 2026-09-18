@@ -45,7 +45,7 @@ Documentation-as-database systems accumulate cross-document defects — stale re
 4. **Union what the passes report. Do not filter by agreement.** Passes sample different parts of a large corpus, so overlap measures sampling, not truth — two passes at adjacent commits here found 25 findings each and shared almost none, including two severe defects that one pass each found alone.
 5. **Verify every finding against its reproduction before fixing it.** A finding arrives with a command or a file:line that demonstrates it; run that, and discard what does not reproduce. This is what controls false positives, and it is the step agreement was supposed to do and cannot.
 6. Fix what is confirmed and unambiguous. File an `ISS-*` for anything needing a decision, and **do not decide it inside the sweep**.
-7. **Record the residue and stop.** What was found and not fixed goes on the issue, with why. Do not start another round: a second round on the same corpus produces more findings and fewer true ones per finding.
+7. **Record the residue and stop.** Each finding that was found and not fixed is filed as an `ISS-*` if the filing bar admits it (`../../instructions/QUALITY.md`), or declined in the audit's `CHG-*` note with the reason. It never sits only inside a note that is being closed. Do not start another round: a second round on the same corpus produces more findings and fewer true ones per finding.
 8. Record the audit in a `CHG-*` note if anything changed (passes run, found, confirmed, fixed, residue).
 
 What one round missed is caught by the cadence in "When to use", not by re-running now.
