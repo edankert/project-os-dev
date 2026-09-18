@@ -3,10 +3,10 @@ type: "[[adr]]"
 id: ADR-0027
 aliases: ["ADR-0027"]
 title: "An acceptance check states its setup, its steps and its expected result, so someone who did not write it can walk it"
-status: "proposed"
+status: "accepted"
 owner: user:edwin
 created: 2026-09-06
-updated: "2026-09-06"
+updated: "2026-09-18"
 source: ["Edwin, 2026-09-06, reading TST-0018 in your-trainer: 'I don't understand the description, in general it might be good to rewrite all the test descriptions because they can be very abstract'", "Measured over your-trainer's 631-check acceptance corpus, 2026-09-06"]
 decision: "Option 3 proposed. State the shape in TESTING.md, ship it in the test template so a new check is born in it, and add a grandfathered validator rule for the three mechanical failures. Existing corpora are rewritten on contact, never swept."
 context: "A check is written once, by someone holding the whole context, and walked later by someone holding none of it. Nothing in project-os says what a check must contain, so what gets written is a reminder to its author rather than a procedure for its reader."
@@ -15,6 +15,7 @@ consequences: []
 supersedes: ""
 superseded: ""
 related: ["[[ADR-0023-A-Quantified-Rule-Is-A-Decision]]", "[[ADR-0024-A-Normative-Rule-Is-Stated-Once]]", "[[ADR-0025-An-Executable-Test-Records-No-Verdict]]"]
+decided_option: "3"
 ---
 
 # An acceptance check is walkable by a stranger

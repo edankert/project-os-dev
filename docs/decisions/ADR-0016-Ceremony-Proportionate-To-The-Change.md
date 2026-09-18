@@ -3,10 +3,10 @@ type: "[[adr]]"
 id: ADR-0016
 aliases: ["ADR-0016"]
 title: "Ceremony is proportionate to the change: a declared fast path, or the rule that every change is documented stops being followed"
-status: proposed
+status: "accepted"
 owner: user:edwin
 created: 2026-07-29
-updated: 2026-07-29
+updated: "2026-09-18"
 source: ["landscape review 2026-07-29: BMAD v6 scale-adaptive levels; Thoughtworks Technology Radar placing SDD in Assess"]
 decision: "The lifecycle declares more than one path through itself, selected by the size of the change rather than by the agent's appetite. A small change gets an issue note, a commit and the validator — no feature, no task, no CHG-*, no independent review. The full path stays mandatory for anything that changes a contract, a path, a status vocabulary, or the fleet. The selector is written down and mechanical, not left to judgement in the moment"
 context: "LIFECYCLE.md's No Orphaned Code rule requires a Task under a Feature for every functional code change, excluding only typos, comments, formatting and pure documentation. There is exactly one path and it is sized for the largest work the system does. Nothing in the system currently authorises doing less, so an agent facing a one-line fix either pays the full cost or quietly skips the rule"
