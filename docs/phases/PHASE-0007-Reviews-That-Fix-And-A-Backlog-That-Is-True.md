@@ -28,13 +28,13 @@ This phase fixes both problems at the rule level, in the template, so every repo
 
 - [[FEAT-0034-A-Review-Costs-What-The-Change-Is-Worth|FEAT-0034]]: a review starts from a generated packet holding the diff, gives a verdict on a fixed list of claims, runs only targeted tests, and is stopped by a hook at 40 tool calls. Round two only verifies fixes, with a 15-call limit. Before rollout, the new review is re-run against FEAT-0107's code as it was before the fixes, and must find the defects the old review found. Six tasks, TASK-0126 to TASK-0131.
 - [[FEAT-0035-A-Finding-Is-Fixed-Before-It-Is-Filed|FEAT-0035]]: a finding in the feature's own code is fixed before the feature closes. What may be filed, how an issue is written, and how a question reaches Edwin all change. This absorbs [[ISS-0028-Close-Out-Has-No-Answer-For-Cannot-Fix|ISS-0028]].
-- [[FEAT-0036-The-Backlogs-Are-Cleared-Once|FEAT-0036]]: every open issue in `your-trainer`, `project-os-cockpit` and this repo is checked against the current code. Each one is then fixed, closed as obsolete, or kept with a plain title and a stated question. `your-trainer` goes first.
+- [[FEAT-0036-The-Backlogs-Are-Cleared-Once|FEAT-0036]]: every open issue in the seven fleet repos that have any (290 on 2026-09-18) is checked against the current code, then fixed, closed as obsolete, kept with a plain title, or put on one list of questions for Edwin. `your-trainer` goes first and calibrates the method. Widened by Edwin on 2026-09-18 from three repos to seven.
 - The seven issues left by the eight-round review, ISS-0033 to ISS-0039, are settled as part of this repo's leg of FEAT-0036.
 
 ## Out of Scope
 
 - **The cost of rewriting acceptance-check procedures in `your-trainer`.** Since 2026-08-29, 47 general-purpose runs took 439 minutes, more than its 13 reviews (310 minutes). It is real, but it is not review cost, and it belongs to the walk work ([[PHASE-0005-The-Walk-Reads-As-A-Script|PHASE-0005]]).
-- The other nine fleet repos' backlogs. They get the new rules at the next sync. Clearing their backlogs is a follow-up, once this phase shows the method works.
+- The five fleet repos with no open issues. The other nine repos did get the new rules, at the syncs recorded in [[TASK-0131-Roll-Out-And-Measure-Five-Reviews|TASK-0131]].
 - Removing independent review. The FEAT-0107 review found real defects; what goes wrong is what happens to its findings afterwards.
 
 ## Exit Criteria
@@ -42,7 +42,7 @@ This phase fixes both problems at the rule level, in the template, so every repo
 - [ ] Edwin has accepted or amended ADR-0047. The rule text is in `~/Dev/repos/project-os` and synced to `your-trainer` and `project-os-cockpit`, including the cockpit's `QUALITY.md`, which is two months behind.
 - [ ] The next five feature reviews in `your-trainer` have a median of 50 tool calls or fewer and 12 minutes or less. The baseline is about 95 tool calls and about 20 minutes.
 - [ ] None of those five features closes with an open issue its own review filed against its own code, unless that issue states a product question.
-- [ ] Every open issue in `your-trainer`, `project-os-cockpit` and this repo has been checked against the code on or after 2026-09-18. Each has a `reported_by:` field and a title that names what a user would notice.
+- [ ] Every open issue in the seven repos that had any on 2026-09-18 has been checked against the code on or after that date. Each has a `reported_by:` field and a title that names what a user would notice.
 - [ ] Every open issue waiting on Edwin states its question, the options and a recommendation. They are handed to him as one list, not found one at a time.
 
 ## Notes

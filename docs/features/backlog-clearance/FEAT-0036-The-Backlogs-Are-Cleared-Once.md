@@ -2,13 +2,13 @@
 type: "[[feature]]"
 id: FEAT-0036
 title: "The backlogs are cleared once"
-status: backlog
+status: doing
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
 updated: 2026-09-18
 source: ["[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]", "Edwin, 2026-09-18: 'My main concern is with the your-trainer repo'"]
-goal: "Every open issue in your-trainer, project-os-cockpit and project-os-dev is checked against today's code and then fixed, closed as obsolete, or kept with a plain title. Edwin receives one short list of real questions."
+goal: "Every open issue in the seven fleet repos that have any is checked against today's code, and then fixed, closed as obsolete, or kept with a plain title. Edwin receives one short list of real questions per repo."
 requirements: []
 tasks: []
 release: ""
@@ -31,17 +31,29 @@ The open issues no longer say what is true of the code. `your-trainer` has 121 o
 3. **Kept.** It is real but too big to fix now. Rewrite the title and first sentence as what a user would notice, add `reported_by:`, and link it to the feature or standing phase it belongs to.
 4. **A question for Edwin.** Write the question, the options and a recommendation, and put it on one list.
 
-**Three legs, in this order:**
+**Seven legs, one at a time** (widened by Edwin on 2026-09-18 from the first three). On that date, 290 issues were open (`triage` or `open`) across the seven repos that have any:
 
-- **`your-trainer`** (121 open). The 34 March review issues go first. They name user-visible defects, such as wrong speed units, duplicate Strava uploads and data left behind when a user is deleted, and are the most likely to be real or obsolete.
-- **`project-os-cockpit`** (37 open). ISS-0268, ISS-0307 and ISS-0301 are real bugs with small fixes.
-- **`project-os-dev`** (38 open), including ISS-0033 to ISS-0039 from the eight-round review.
+| Order | Repo | Open | Older than August |
+|---|---|---|---|
+| 1 | `your-trainer` | 116 | 74 |
+| 2 | `your-health` | 65 | 7 |
+| 3 | `project-os-dev` | 37 | 13 |
+| 4 | `project-os-cockpit` | 35 | 0 |
+| 5 | `your-sudoku` | 17 | 6 |
+| 6 | `project-os-deck` | 17 | 0 |
+| 7 | `articles` | 3 | 2 |
 
-Each leg is a task recorded in its own repo, pointing back here.
+your-applications.com, edankert.com, yourtrainer-mcp, project-os-bench and obsidian-supernote-sync have none.
+
+**your-trainer goes first and calibrates the method.** Its 34 March review issues (ISS-0070 to ISS-0106) go first. The split across the four end states is recorded, and the method is adjusted before the next leg starts. Each repo's questions reach Edwin as one list when its leg ends.
+
+**What a leg fixes, and what it keeps** (Edwin, 2026-09-18). A real defect is fixed during the cleanup only when the fix is small and in one place, with a test that fails without it. A defect that needs a build on both platforms, a behaviour Edwin would want to see, or more than a small change is **kept**: its title and first sentence say what a user notices, and it is linked to the feature or phase it belongs to, for normal feature work.
+
+Each leg is a task recorded in its own repo, pointing back here. project-os-dev's leg includes ISS-0033 to ISS-0039 from the eight-round review.
 
 ## Acceptance
 
-- Every issue open in the three repos on 2026-09-18 is in one of the four states, with evidence dated on or after 2026-09-18.
+- Every issue open in the seven repos on 2026-09-18 is in one of the four states, with evidence dated on or after 2026-09-18.
 - Edwin has received one list per repo of the questions that remain, each with a recommendation.
 - The open count and origin mix are measured again and written into the reference note.
 
