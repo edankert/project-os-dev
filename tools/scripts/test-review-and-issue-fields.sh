@@ -15,8 +15,9 @@ NEW, OLD = "2026-09-20", "2026-09-01"
 iss = lambda **k: dict({"type": "[[issue]]", "status": "open", "created": NEW, "owner": "user:edwin"}, **k)
 cases = [
     # (description, note, code, expected to fire)
-    ("round 3 is refused", note("FEAT-0001", {"type": "[[feature]]", "review_round": 3}), "REVIEW-ROUND", True),
-    ("round 2 is fine", note("FEAT-0002", {"type": "[[feature]]", "review_round": 2}), "REVIEW-ROUND", False),
+    ("round 3 is refused", note("FEAT-0001", {"type": "[[feature]]", "review_round": 3, "review_date": "2026-09-20"}), "REVIEW-ROUND", True),
+    ("round 2 is fine", note("FEAT-0002", {"type": "[[feature]]", "review_round": 2, "review_date": "2026-09-20"}), "REVIEW-ROUND", False),
+    ("round 8 from before the cap is history, not a violation", note("TST-0002", {"type": "[[test]]", "review_round": 8, "review_date": "2026-08-10"}), "REVIEW-ROUND", False),
     ("no round is fine", note("TST-0001", {"type": "[[test]]"}), "REVIEW-ROUND", False),
     ("a new open issue with no reporter", note("ISS-0001", iss()), "ISSUE-REPORTER", True),
     ("a reporter outside the vocabulary", note("ISS-0002", iss(reported_by="someone")), "ISSUE-REPORTER", True),
