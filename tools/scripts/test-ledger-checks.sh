@@ -96,6 +96,19 @@ def placed(rel, **fm):
 check("a walked check beside its feature is refused", placed("docs/features/x/plan/tests/TST-0009-A.md"))
 check("a walked check under docs/tests/acceptance/ is fine", not placed("docs/tests/acceptance/TST-0009-A.md"))
 check("an automated check beside its feature is fine", not placed("docs/features/x/plan/tests/TST-0009-A.md", command="make test"))
+# a release note vouching for a sealed ledger's bytes (validate_vouched_ledgers)
+import hashlib
+def vouched(edit=None):
+    root = Path(tempfile.mkdtemp()); d = root / "docs" / "releases" / "ledgers"; d.mkdir(parents=True)
+    led = d / "REL-0001-app.json"; led.write_text(json.dumps({"platform": "app", "sealed": "2026-09-01", "entries": [good]}))
+    raw = led.read_bytes(); sha = hashlib.sha1(b"blob %d\0" % len(raw) + raw).hexdigest()
+    note = root / "docs" / "releases" / "REL-0001-A.md"
+    note.write_text('---\ntype: "[[release]]"\nid: REL-0001\nstatus: released\nledgers:\n  - file: "REL-0001-app.json"\n    sha: "%s"\n---\n' % sha)
+    if edit: led.write_bytes(edit(raw))
+    idx = {"REL-0001": (note, vd.parse_frontmatter(note))}
+    r = vd.Report(); vd.validate_vouched_ledgers(root, r, idx); return r.errors + r.warnings
+check("a sealed ledger matching its release note's hash draws nothing", vouched() == [])
+check("a sealed ledger edited after sealing draws LEDGER-SEALED", "LEDGER-SEALED" in codes(vouched(lambda b: b.replace(b"pass", b"fail"))))
 print("test-ledger-checks: %d assertions, %d failure(s)" % (n, failures))
 sys.exit(1 if failures else 0)
 PYEOF
