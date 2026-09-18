@@ -377,7 +377,7 @@ items:
   tasks:
     TASK-0137:
       file: docs/features/template-sync-hygiene/plan/tasks/TASK-0137-Three-Repos-Reach-The-Current-Validator.md
-      status: doing
+      status: done
       parent: FEAT-0037
       phase: "[[PHASE-0007]]"
       depends: [TASK-0134]
@@ -1916,7 +1916,7 @@ metrics:
     phases_total: 8
     phases_done: 4
     tasks_total: 137
-    tasks_done: 127
+    tasks_done: 128
     tests_total: 10
     tests_passing: 0
     tests_failing: 0
