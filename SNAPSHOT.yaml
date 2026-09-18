@@ -32,20 +32,20 @@ counters:
   ADR: 47
   CHG:
     last_date: 20260916
-  FEAT: 36
-  ISS: 67
+  FEAT: 37
+  ISS: 68
   PHASE: 7
   REL: 0
   REQ: 31
   RISK: 3
-  TASK: 133
-  TST: 15
+  TASK: 137
+  TST: 17
   WF: 3
 
 focus:
   # Goal 1 of PHASE-0007 closed 2026-09-18: FEAT-0035's tasks and FEAT-0034 TASK-0126 to TASK-0130 are done, and the template is committed (project-os 3c979ee, db98f46) and synced to your-trainer (5b317fb4) and project-os-cockpit (f120f35).
-  task: "TASK-0131"
-  feature: "FEAT-0034"
+  task: "TASK-0134"
+  feature: "FEAT-0037"
   phase: "PHASE-0007"
   issue: ""
   note: "What remains of FEAT-0034 happens as features close: the Sonnet trial and five measured two-reviewer reviews in your-trainer (TASK-0131). FEAT-0035's acceptance is measured over the same five features. Goal 2, the your-trainer leg of FEAT-0036, is next."
@@ -127,6 +127,13 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0037:
+      file: docs/features/template-sync-hygiene/FEAT-0037-Every-Repo-Can-Take-The-Template-Again.md
+      status: doing
+      owner: user:edwin
+      phase: "[[PHASE-0007]]"
+      tasks: [TASK-0134, TASK-0135, TASK-0136, TASK-0137]
+      issues: [ISS-0068]
     FEAT-0036:
       file: docs/features/backlog-clearance/FEAT-0036-The-Backlogs-Are-Cleared-Once.md
       status: backlog
@@ -368,6 +375,30 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0137:
+      file: docs/features/template-sync-hygiene/plan/tasks/TASK-0137-Three-Repos-Reach-The-Current-Validator.md
+      status: doing
+      parent: FEAT-0037
+      phase: "[[PHASE-0007]]"
+      depends: [TASK-0134]
+    TASK-0136:
+      file: docs/features/template-sync-hygiene/plan/tasks/TASK-0136-The-Cockpits-Validator-Checks-Reach-The-Template.md
+      status: done
+      parent: FEAT-0037
+      phase: "[[PHASE-0007]]"
+      depends: [TASK-0135]
+    TASK-0135:
+      file: docs/features/template-sync-hygiene/plan/tasks/TASK-0135-Older-Local-Variants-Take-The-Template.md
+      status: done
+      parent: FEAT-0037
+      phase: "[[PHASE-0007]]"
+      depends: [TASK-0134]
+    TASK-0134:
+      file: docs/features/template-sync-hygiene/plan/tasks/TASK-0134-The-Sync-Fast-Forwards-Stale-Copies.md
+      status: done
+      parent: FEAT-0037
+      phase: "[[PHASE-0007]]"
+      depends: []
     TASK-0133:
       file: docs/features/fix-before-filing/plan/tasks/TASK-0133-An-Issue-Says-Who-Reported-It-And-What-It-Asks.md
       status: done
@@ -519,33 +550,6 @@ items:
       effort: M
       depends: [TASK-0118, TASK-0120, TASK-0121, TASK-0122]
       blocks: []
-      tests: []
-    TASK-0110:
-      file: "docs/features/walk-sheet/plan/tasks/TASK-0110-ADR-0027s-Four-Headings-Land-In-The-Test-Template.md"
-      status: done
-      parent: FEAT-0029
-      phase: "[[PHASE-0004]]"
-      effort: S
-      depends: []
-      blocks: [TASK-0113]
-      tests: []
-    TASK-0111:
-      file: "docs/features/walk-sheet/plan/tasks/TASK-0111-TESTING-md-States-The-Walk-Once.md"
-      status: done
-      parent: FEAT-0029
-      phase: "[[PHASE-0004]]"
-      effort: M
-      depends: []
-      blocks: [TASK-0112, TASK-0113, TASK-0114]
-      tests: []
-    TASK-0112:
-      file: "docs/features/walk-sheet/plan/tasks/TASK-0112-The-WALK-md-Template.md"
-      status: done
-      parent: FEAT-0029
-      phase: "[[PHASE-0004]]"
-      effort: M
-      depends: [TASK-0111]
-      blocks: [TASK-0113]
       tests: []
     TASK-0113:
       file: "docs/features/walk-sheet/plan/tasks/TASK-0113-The-Generator-And-Its-Fixture-Test.md"
@@ -869,6 +873,10 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0068:
+      file: docs/issues/ISS-0068-The-Cockpits-Validator-Carries-Rules-The-Template-Lacks.md
+      status: triage
+      parent: FEAT-0037
     ISS-0066:
       file: "docs/issues/ISS-0066-An-Expectation-Line-May-Quote-Any-Expect-Line-Of-Its-Check.md"
       status: triage
@@ -1903,17 +1911,17 @@ items:
 
 metrics:
   counts:
-    features_total: 36
+    features_total: 37
     features_done: 28
     phases_total: 8
     phases_done: 4
-    tasks_total: 133
-    tasks_done: 124
-    tests_total: 8
+    tasks_total: 137
+    tasks_done: 127
+    tests_total: 10
     tests_passing: 0
     tests_failing: 0
     issues_open: 26
-    issues_triage: 10
+    issues_triage: 11
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 31

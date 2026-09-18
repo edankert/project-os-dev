@@ -8,9 +8,9 @@ owner: user:edwin
 created: 2026-09-18
 updated: 2026-09-18
 goal: "A review costs what the change is worth and its findings are fixed in the feature that caused them, so the open issues in every repo are real, readable, and mostly reported by a person."
-features: [FEAT-0034, FEAT-0035, FEAT-0036]
+features: [FEAT-0034, FEAT-0035, FEAT-0036, FEAT-0037]
 requirements: []
-tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0132, TASK-0133]
+tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0132, TASK-0133, TASK-0134, TASK-0135, TASK-0136, TASK-0137]
 issues: [ISS-0028, ISS-0062, ISS-0033, ISS-0034, ISS-0035, ISS-0036, ISS-0037, ISS-0038, ISS-0039]
 related: ["[[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It]]", "[[ADR-0028-A-Review-Gate-Runs-Two-Rounds]]", "[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]"]
 tags: [review, issues, fleet]
