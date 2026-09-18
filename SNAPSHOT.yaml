@@ -29,12 +29,12 @@ counters:
   # ADR-0030..ADR-0043 by bare number (TESTING.md's 'ADR-0031', SCHEMAS.md's 'ADR-0032' and
   # 'ADR-0034', and more), so a local ADR-0030..0043 would make those citations ambiguous.
   # Same fix as project-os-cockpit ISS-0123. 0030-0043 are never allocated here.
-  ADR: 46
+  ADR: 47
   CHG:
     last_date: 20260916
-  FEAT: 33
+  FEAT: 36
   ISS: 67
-  PHASE: 6
+  PHASE: 7
   REL: 0
   REQ: 31
   RISK: 3
@@ -55,6 +55,15 @@ focus:
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
+    PHASE-0007:
+      file: docs/phases/PHASE-0007-Reviews-That-Fix-And-A-Backlog-That-Is-True.md
+      title: "Reviews that fix, and a backlog that is true"
+      status: active
+      order: 7
+      owner: user:edwin
+      features: [FEAT-0034, FEAT-0035, FEAT-0036]
+      issues: [ISS-0028, ISS-0062, ISS-0033, ISS-0034, ISS-0035, ISS-0036, ISS-0037, ISS-0038, ISS-0039]
+      related: [ADR-0047]
     PHASE-0006:
       file: docs/phases/PHASE-0006-Codex-Native-Adapter.md
       title: "Codex native project adapter"
@@ -119,6 +128,24 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0036:
+      file: docs/features/backlog-clearance/FEAT-0036-The-Backlogs-Are-Cleared-Once.md
+      status: backlog
+      owner: user:edwin
+      phase: "[[PHASE-0007]]"
+      related: [ADR-0047]
+    FEAT-0035:
+      file: docs/features/fix-before-filing/FEAT-0035-A-Finding-Is-Fixed-Before-It-Is-Filed.md
+      status: backlog
+      owner: user:edwin
+      phase: "[[PHASE-0007]]"
+      related: [ADR-0047]
+    FEAT-0034:
+      file: docs/features/review-cost/FEAT-0034-A-Review-Costs-What-The-Change-Is-Worth.md
+      status: backlog
+      owner: user:edwin
+      phase: "[[PHASE-0007]]"
+      related: [ADR-0047]
     FEAT-0033:
       file: docs/features/walk-preparation/FEAT-0033-A-Walk-Keeps-Required-Preparation.md
       status: doing
@@ -257,16 +284,6 @@ items:
       phase: "[[PHASE-999]]"
       tasks: [TASK-0075, TASK-0076, TASK-0077]
       note: "Every review recorded across the fleet is Claude-on-Claude; the different-family gate has never actually been satisfied. Runner prototyped (TASK-0075); the ISS-0011..0015 calibration is the test of whether it is worth promoting."
-    FEAT-0009:
-      file: docs/features/cockpit-layout/FEAT-0009-Cockpit-Layout.md
-      title: "Obsidian cockpit layout with NAV.base and CONTEXT.base"
-      status: done
-      owner: user:edwin
-      phase: PHASE-0001
-      goal: "Three-pane Obsidian layout: left sidebar for navigation, center editor, right sidebar for dynamic context using this.file"
-      requirements: [REQ-0012]
-      tasks: [TASK-0036, TASK-0037, TASK-0038, TASK-0039, TASK-0040]
-      related: [FEAT-0007, FEAT-0008]
     FEAT-0010:
       file: docs/features/template-completeness/FEAT-0010-Template-Completeness-Program.md
       title: "Template completeness program — consistency debt, native adapters, verification health, fleet sync, tool wiring"
@@ -1657,6 +1674,11 @@ items:
       status: merged
 
   decisions:
+    ADR-0047:
+      file: docs/decisions/ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It.md
+      status: proposed
+      owner: user:edwin
+      related: [PHASE-0007, ADR-0028]
     ADR-0046:
       file: docs/decisions/ADR-0046-Declared-Preparation-Survives-Walk-Filtering.md
       status: accepted
@@ -1837,9 +1859,9 @@ items:
 
 metrics:
   counts:
-    features_total: 33
+    features_total: 36
     features_done: 28
-    phases_total: 7
+    phases_total: 8
     phases_done: 4
     tasks_total: 125
     tasks_done: 117
@@ -1854,4 +1876,4 @@ metrics:
     requirements_implemented: 27
     risks_open: 1
     releases_total: 0
-    decisions_total: 32
+    decisions_total: 33
