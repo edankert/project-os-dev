@@ -3,12 +3,12 @@ type: "[[issue]]"
 id: ISS-0054
 aliases: ["ISS-0054"]
 title: "Nine residue findings have no open item carrying them"
-status: open
+status: fixed
 phase: "[[PHASE-0003]]"
 severity: medium
 owner: user:edwin
 created: 2026-09-04
-updated: "2026-09-04"
+updated: 2026-09-18
 component: docs
 source: ["Found by the independent review of REQ-0027, 2026-09-04"]
 related: ["[[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File]]", "[[ADR-0026-When-A-Drift-Sweep-Stops]]"]
@@ -70,3 +70,9 @@ Sibling: [[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File]], w
 ## Risk scan
 
 No new dependency, env var, path or credential. The hazard is the one this issue exists to stop: findings that decay because nothing open points at them.
+
+## Fixed, 2026-09-18
+
+3e12cff: the research report at the template's root moved to this repo as `docs/reference/Reliability-Toolkit-Research-2026-07.md`, and docs-audit step 7 now says each unfixed finding is filed as an issue or declined in the audit's change note.
+
+Checked as part of FEAT-0036 (TASK-0140).

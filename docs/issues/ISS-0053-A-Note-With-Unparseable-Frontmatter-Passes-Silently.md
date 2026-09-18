@@ -3,12 +3,12 @@ type: "[[issue]]"
 id: ISS-0053
 aliases: ["ISS-0053"]
 title: "A note with unparseable frontmatter passes validation silently"
-status: triage
+status: open
 phase: "[[PHASE-0003]]"
 severity: high
 owner: user:edwin
 created: 2026-09-04
-updated: "2026-09-04"
+updated: 2026-09-18
 component: tooling
 source: ["Found by the independent review of REQ-0027, 2026-09-04, which noticed ISS-0048's own frontmatter had been corrupted and nothing reported it"]
 related: ["[[ISS-0052-Three-More-Drift-Classes-Should-Be-Checks]]", "[[ADR-0026-When-A-Drift-Sweep-Stops]]"]
@@ -68,3 +68,13 @@ Sibling found: [[ISS-0052-Three-More-Drift-Classes-Should-Be-Checks]], the other
 ## Risk scan
 
 One hazard: turning parse failure into an error could break a downstream repo that already has a corrupt note. That is the point of the check, but it should be measured across the fleet before it errors rather than warns (`STATUSES.md`, "Grandfathering").
+
+## Checked against the template, 2026-09-18: still true
+
+**What someone notices:** A note whose `related:` key is misspelled loses all its links, and the validator still says OK.
+
+The first half is done: NOTE-FRONTMATTER reports frontmatter that does not parse (d2f78bc), and it fires here today on TST-0003 and CHG-20260804. Nothing checks top-level key names on notes.
+
+**Next:** Narrowed to the second half: warn on an unknown top-level key, after measuring how many the fleet has.
+
+Checked as part of FEAT-0036 (TASK-0140).

@@ -7,7 +7,7 @@ status: open
 severity: high
 owner: user:edwin
 created: 2026-07-29
-updated: 2026-07-29
+updated: 2026-09-18
 component: tooling
 source: ["intake 2026-07-29: articles repo, quality-without-reading thesis, finding 7"]
 phase: "[[PHASE-999-Parking-Lot]]"
@@ -102,3 +102,13 @@ Every repo carrying the validator. The check has never fired on this case in any
 - [ ] Decide the disposition for the existing 52 here (waiver vs test), and whether `REQ-0006`'s wording needs amending or superseding — it currently sanctions the bug.
 - [ ] Arm as an error behind a dated cutover per ADR-0011, after the backfill, not before (ISS-0007).
 - [ ] Author a `TST-*` covering both branches — empty and non-empty — since the empty branch is the one that was never covered.
+
+## Checked against the template, 2026-09-18: still true
+
+**What someone notices:** A task, issue or feature closed with no test and no waiver looks exactly like a verified one.
+
+Every VERIFY finding is inside the loop over linked tests, so an item with none is never examined. QUALITY.md still says a silent skip is a build failure.
+
+**Next:** Report the empty case as a warning, count it across the fleet, backfill, then make it an error at a dated cutover. The code is small; the backfill is the large part.
+
+Checked as part of FEAT-0036 (TASK-0140).

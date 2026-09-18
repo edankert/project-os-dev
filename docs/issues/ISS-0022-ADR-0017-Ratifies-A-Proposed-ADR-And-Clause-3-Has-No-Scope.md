@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0022
 aliases: ["ISS-0022"]
 title: "ADR-0017 is accepted while ratifying ADR-0014, which is only proposed; clause 3 has no stated subject, so read literally it forbids the waiver and manual-test paths the same ADR says it preserves; and a consequence names ISS-0020 for ISS-0019's defect"
-status: open
+status: fixed
 severity: medium
 owner: user:edwin
 created: 2026-07-29
-updated: 2026-07-29
+updated: 2026-09-18
 component: docs
 source: ["review:2026-07-29-independent-review-ADR-0017"]
 phase: "[[PHASE-999-Parking-Lot]]"
@@ -88,3 +88,9 @@ Ticks below were applied by the **round-two reviewer** (2026-07-29, `model:claud
 - [x] Reconcile `SNAPSHOT.yaml` `focus.note` (*"Two ADRs await a decision — ADR-0016 … and ADR-0017"*) with ADR-0017's `accepted` status. — done. `focus.note` now states ADR-0017 accepted-then-reviewed and scopes the pending decision to ADR-0016 alone; `ADR-0016` verified still `proposed`.
 - [x] Separately: correct ISS-0021 and the intake reference note from 15 waivers to 19 (the one-date finding is unaffected; the 52→"nearer 67" arithmetic becomes 71). — numbers corrected and **independently recounted**: 19 `waiver_expires: 2026-10-23` lines in `docs/`, 19 `VERIFY-WAIVED` from `validate-docs.sh`, and the 52-item population reproduced from `SNAPSHOT.yaml` + note frontmatter (40 tasks + 7 issues + 5 features), so 52 + 19 = 71 holds. **Caveat:** the provenance paragraph added alongside the numbers introduced two new defects — ISS-0023 findings 4 and 5.
 - [ ] Consider whether `REVIEW_SETTLED_STATUSES` should cover `decisions` — an ADR carrying `review_verdict: changes-requested` is currently invisible to the validator, so this note is the only thing holding the finding. — **still open (expected).** Verified unchanged: `validate-docs.py:192` is `{"tests": ("passing",), "changes": ("merged",)}`. Round two adds a related datum: `SCHEMAS.md` declares `reviewed_by`/`review_date`/`review_verdict` only under `change.md` and `test.md`, and `review_note` under no type at all, while ADR-0006 and ADR-0017 both carry them — so the ADR review surface is undeclared as well as unchecked.
+
+## Fixed, 2026-09-18
+
+3e12cff: QUALITY.md now states ADR-0017's rule where it describes verification. ADR-0017's own `changes-requested` verdict is the reviewer's and is left as it is.
+
+Checked as part of FEAT-0036 (TASK-0140).

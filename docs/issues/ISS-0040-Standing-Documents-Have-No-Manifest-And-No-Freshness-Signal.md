@@ -7,7 +7,7 @@ status: open
 severity: medium
 owner: user:edwin
 created: 2026-08-10
-updated: 2026-08-10
+updated: 2026-09-18
 component: tooling
 source: ["project-os-cockpit ISS-0125 / REQ-0033 / FEAT-0091", "fleet measurement over 12 repos, 2026-08-10"]
 phase: "[[PHASE-999]]"
@@ -76,3 +76,13 @@ The rule lives in the app there rather than in `validate-docs.py` because that f
 ## Re-measure after
 
 85 of 90 stale or undated is the **before**. The proposal is only worth adopting if that number moves.
+
+## Checked against the template, 2026-09-18: still true
+
+**What someone notices:** README, ARCHITECTURE, GLOSSARY and the other one-per-project documents go stale in 11 repos, and nothing reports it.
+
+The template has no list of these documents and no freshness check. project-os-cockpit has one in `src/project_os_cockpit/standing.py`.
+
+**Next:** Port it as a warning-only check, after deciding whether the list of documents lives in the template or in each snapshot.
+
+Checked as part of FEAT-0036 (TASK-0140).

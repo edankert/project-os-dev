@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0030
 aliases: ["ISS-0030"]
 title: "Retention is a policy nothing performs, configured by three flags no code reads, and its normative rule still names the `closed` status ADR-0008 deleted — so snapshots accumulate until most of what a query matches is finished work"
-status: open
+status: fixed
 severity: medium
 owner: user:edwin
 created: 2026-08-03
-updated: 2026-08-03
+updated: 2026-09-18
 component: tooling
 source: ["fleet measurement 2026-08-03: 590 sessions, 19.3B cache-read tokens", "downstream:your-trainer/ISS-0371"]
 phase: "[[PHASE-999-Parking-Lot]]"
@@ -132,3 +132,9 @@ Every repo in the fleet. The fix to the stale `SNAPSHOT.md` line propagates thro
 - [ ] Confirm whether `recent_changes_max: 25` is honoured anywhere, or is a fourth dead key.
 - [ ] Link the downstream instances: `your-trainer` ISS-0371 (filed), and check `project-os-cockpit`, `your-health` and `your-applications.com`, which are on the same curve.
 - [ ] Consider whether `SNAP-RETENTION` belongs in the ISS-0011 family of "one fact restated where nothing compares the copies" — the flags, the prose rule and the absent implementation are three statements of one policy that already disagree.
+
+## Checked against the template, 2026-09-18: already fixed
+
+Later work fixed this and the note was never updated. No snapshot in the fleet has `keep_closed_issues` (0 of 13). `sync-snapshot.py` reads `retention.prune_window`, and `test-retention.py` covers the pruning. ADR-0018 and FEAT-0022 built what this note asked for.
+
+Checked as part of FEAT-0036 (TASK-0140).

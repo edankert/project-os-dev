@@ -3,12 +3,12 @@ type: "[[issue]]"
 id: ISS-0050
 aliases: ["ISS-0050"]
 title: "Surface statuses live outside the file that enforces them"
-status: triage
+status: fixed
 phase: "[[PHASE-0003]]"
 severity: low
 owner: user:edwin
 created: 2026-09-04
-updated: "2026-09-04"
+updated: 2026-09-18
 component: docs
 source: ["The ISS-0048 drift sweep, pass 11, run 2026-09-04 in a clean context over template 19ba330"]
 related: ["[[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File]]", "[[ADR-0024-A-Normative-Rule-Is-Stated-Once]]"]
@@ -56,3 +56,9 @@ Sibling found: [[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-Fil
 ## Risk scan
 
 No new risks if the exception is recorded; if the list moves, the hazard is the newly-erroring downstream repos named in the Next Action, which the grandfathering rule already covers.
+
+## Fixed, 2026-09-18
+
+3e12cff: STATUSES.md has a `[[surface]]` section, which the validator reads, and TAXONOMY.md points to it. Tested by `test-statuses-md.sh`.
+
+Checked as part of FEAT-0036 (TASK-0140).

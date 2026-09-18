@@ -7,7 +7,7 @@ status: open
 severity: medium
 owner: user:edwin
 created: 2026-07-29
-updated: 2026-07-29
+updated: 2026-09-18
 component: tooling
 source: ["landscape review 2026-07-29: Doorstop item fingerprints and suspect links"]
 phase: "[[PHASE-999-Parking-Lot]]"
@@ -77,3 +77,13 @@ Every repo carrying the validator. The population is not hypothetical — `REVIE
 - [ ] Choose the revision source (git blob hash vs content hash excluding review fields) and confirm stamping cannot self-invalidate.
 - [ ] Decide whether link suspicion (parent-fingerprint-on-child) is in scope or a follow-up — it is the larger and more valuable half, and the more expensive one.
 - [ ] Author a `TST-*` proving the inversion: stamp, edit, expect a finding.
+
+## Checked against the template, 2026-09-18: still true
+
+**What someone notices:** A note that was approved and then rewritten still reads `approved`, and the validator stays clean.
+
+The only content hashes in the validator seal release ledgers (LEDGER-SEALED); nothing compares a review verdict with the note it was given on.
+
+**Next:** Store the git blob hash of the reviewed note beside the verdict, reusing the helper the ledger check already has. It depends on ADR-0014, which is still proposed.
+
+Checked as part of FEAT-0036 (TASK-0140).

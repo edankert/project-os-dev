@@ -6,7 +6,7 @@ title: "What the generator owns: it derives every field that has a note counterp
 status: accepted
 owner: user:edwin
 created: 2026-08-04
-updated: 2026-08-04
+updated: 2026-09-18
 source: ["fleet measurement 2026-08-03/04", "ISS-0030", "user decision 2026-08-04"]
 decision: "Three rules. (1) Every snapshot field with a counterpart in the note's frontmatter is derived from it — `title` and feature `goal` join `status`, `counters` and `metrics.counts`. (2) Membership is derivable in ONE direction only: the generator may remove an entry meeting a reproducible rule and may never add one. (3) Item-level `note:`, the one field with no note counterpart, is **scratch context** rather than durable record — the note file is the archive, a non-empty `note:` HOLDS its entry from removal and is reported as a pending relocation, and clearing it is the author's confirmation that the durable copy exists"
 context: "ADR-0009 made status, counters and metrics derived and left membership as curation, on evidence: a whole-file generator diverged on all 10 repos (180 items added, 153 dropped, ~80 curated comment lines destroyed), so TASK-0063 was cancelled. Six weeks later ISS-0030 found the consequence — retention is performed by nothing, its three flags are read by no code, and its rule named a status ADR-0008 deleted. Measured: your-trainer holds 709 terminal items of 1,065; its titles are 60% of the file and 413 of them have drifted from the notes they duplicate"
@@ -68,10 +68,13 @@ An entry is removable when **all** of the following hold:
 
 1. its status is terminal for its type — `done` task, `fixed` issue, `done` feature;
 2. it is not among the **N most recent by ID** in its collection;
-3. it is not `deferred` — never, under [[ADR-0005-Deferral-As-Descoping|ADR-0005]] and `DEFER-RETENTION`;
+3. it is not `deferred` — never, under [[ADR-0005-Deferral-As-Descoping|ADR-0005]] and `DEFER-RETENTION`. The code has no separate check for this: condition 5 requires the note's own status to be the terminal one, and `deferred` never is;
 4. it is not named in `focus`;
-5. its note exists on disk and parses — otherwise the entry may be the only surviving copy of its state;
-6. its item-level `note:` field is empty (see rule 3). `goal:` does not appear here — under rule 1 it is derived, so it cannot hold anything.
+5. its note exists on disk, parses, is the one file that claims the id, and carries the same terminal status — otherwise the entry may be the only surviving copy of its state;
+6. its item-level `note:` field is empty (see rule 3). `goal:` does not appear here — under rule 1 it is derived, so it cannot hold anything;
+7. it owes no verification: neither the entry nor its note carries a `verification_waiver`, and every test it links is `passing`. Without this, pruning removed 12 VERIFY-WAIVED warnings in this repo and 3 VERIFY warnings in your-trainer by deleting the entries they were reported on.
+
+*(Corrected 2026-09-18, [[ISS-0036]]. This list used to name six conditions. The code in `sync-snapshot.py`, `prunable_ids`, implements condition 3 through condition 5 and adds condition 7. The list now says what the code does; the decision is unchanged.)*
 
 **The window is count-based, never wall-clock.** This is the substance of what `TASK-0063` worked out and it is not negotiable: a date-keyed rule makes the output depend on the day it ran, so an untouched repo drifts overnight and CI's `sync-snapshot.py --check` fails on any repo that has not committed recently. `REQ-0019`'s zero-diff property is what forces this.
 

@@ -3,11 +3,11 @@ type: "[[issue]]"
 aliases: ["ISS-0037"]
 id: ISS-0037
 title: "Round-five review: the engineering is clean under every attack I could construct — 10 of 22 mutations reproduced exactly, 1,352 removals with 0 unbacked, 709 migration rows with 0 mismatches — but round four's corrections were applied to the CHG note and not to TST-0003, which still carries three figures round four measured as wrong, and the one figure that was rewritten in both is now false against the population the rewrite names"
-status: open
+status: fixed
 severity: low
 owner: user:edwin
 created: 2026-08-04
-updated: 2026-08-04
+updated: 2026-09-18
 component: tooling
 source: ["review:2026-08-04-independent-review-round-five-FEAT-0022", "22 mutations + full fleet re-measurement 2026-08-04 over 12 repos"]
 phase: "[[PHASE-999]]"
@@ -140,3 +140,9 @@ Round five's diagnosis was right and is the useful one: round four's corrections
 - **Non-blocking, recorded not fixed:** `prunable_ids` resolves `note_fm` through the substring `index` rather than `claimants` (`sync-snapshot.py:496`), the one place the verification hold fails open. Measured latent — 2 diverging IDs fleet-wide, neither prunable, 0 of 12 repos affected. Fixing it under review pressure with no failing case would be a change made to look responsive; it belongs in the ADR-0018 amendment that also has to reconcile six authorised conditions against seven implemented.
 
 Stays **open**: the author does not clear a verdict on their own work.
+
+## Fixed, 2026-09-18
+
+3e12cff: condition 7 reads the note that claims the id, as condition 5 does. `test-retention.py` has a case with a composite-named change note holding the index slot, which fails without the fix.
+
+Checked as part of FEAT-0036 (TASK-0140).

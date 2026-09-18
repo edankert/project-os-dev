@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0025
 aliases: ["ISS-0025"]
 title: "The validator checks that review_verdict is PRESENT but never that it is a DEFINED value, so any string reads as a satisfied review — 10 notes in one repo carried `CLOSE`, which QUALITY.md does not define"
-status: open
+status: fixed
 severity: medium
 owner: user:edwin
 created: 2026-07-30
-updated: 2026-07-30
+updated: 2026-09-18
 component: docs
 source: ["project-os-cockpit ISS-0069, 2026-07-30 — surfaced by RENDERING the corpus, not by validating it"]
 phase: "[[PHASE-999-Parking-Lot]]"
@@ -72,3 +72,9 @@ An unrecognised `review_verdict` fails validation. A recognised one that belongs
 Found by **rendering** the corpus, not by validating it: a `verdict-chip` in the cockpit UI showed grey — the fallback for a value its vocabulary does not recognise. The chip degrading rather than mis-colouring is correct behaviour, and it is the only reason this was visible at all. Worth keeping, because it inverts this system's usual lesson: here the surface caught what the validator could not.
 
 `project-os-cockpit` carries a local guard (`test_review_verdicts_use_a_defined_value`) that catches the undefined-value case. It cannot be the answer for the fleet — it lives in one repo's suite, and `validate-docs.py` is byte-identity-checked against the template there, so it deliberately was not edited downstream.
+
+## Fixed, 2026-09-18
+
+3e12cff: a passing test whose `review_verdict` is neither `approved` nor `changes-requested` is an error. No note in the fleet has one. Tested by `test-review-verdict.sh`.
+
+Checked as part of FEAT-0036 (TASK-0140).

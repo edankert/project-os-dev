@@ -2,11 +2,11 @@
 type: "[[issue]]"
 id: ISS-0067
 title: "Git's rename detection can pair a deleted change note with a new one, so the new one never reaches the survey"
-status: triage
+status: open
 phase: "[[PHASE-999-Parking-Lot]]"
 owner: user:edwin
 created: 2026-09-14
-updated: 2026-09-14
+updated: 2026-09-18
 source: ["Independent review of PHASE-0005, 2026-09-14 (model:claude-opus-5)"]
 severity: low
 component: tooling
@@ -43,3 +43,13 @@ It is surveyed unless git decided it is a rename of something deleted.
 ## Next Actions
 
 - [ ] Decide whether a renamed change note is new for survey purposes, then either pass `--no-renames` or say in rule 2 that a rename is not an addition.
+
+## Checked against the template, 2026-09-18: still true
+
+**What someone notices:** If a change note is deleted in the same range as one is added, the release's screen survey can skip the new one without saying so.
+
+`walk-sheet.py` runs `git diff --diff-filter=A` without `--no-renames`, here and in the cockpit and your-trainer copies.
+
+**Next:** Add `--no-renames` with a test, through TASK-0125, which owns `walk-sheet.py` now.
+
+Checked as part of FEAT-0036 (TASK-0140).

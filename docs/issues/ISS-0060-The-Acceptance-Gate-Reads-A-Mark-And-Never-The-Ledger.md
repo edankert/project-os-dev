@@ -3,12 +3,12 @@ type: "[[issue]]"
 id: ISS-0060
 aliases: ["ISS-0060"]
 title: "The validator's acceptance gate reads a mark: on the test note and never the release ledger, so a repository that keeps its verdicts in the ledger can never satisfy it — and on 2026-11-20 the warning becomes an error"
-status: triage
+status: fixed
 phase: ""
 severity: medium
 owner: user:edwin
 created: 2026-09-09
-updated: 2026-09-09
+updated: 2026-09-18
 component: tools
 source: ["Filed from project-os-deck on 2026-09-09; its own ISS-0016 carries the evidence and says the fix belongs here because tools/scripts/ is template-owned"]
 related: ["[[ISS-0059-A-New-Project-Starts-On-The-Pre-Ledger-Write-Path]]", "[[project-os-cockpit#ADR-0037]]"]
@@ -57,3 +57,9 @@ validate-docs: OK
 ## Next Actions
 - [ ] Decide whether the gate reads the ledger, or declares which repositories it applies to
 - [ ] Correct the vocabulary in the message either way, since it is wrong under both models
+
+## Fixed, 2026-09-18
+
+a978752: where `docs/releases/ledgers/` holds a ledger, VERIFY-ACCEPTANCE settles a check from it, the way `walk-sheet.py` resolves a ledger; other repos still read `mark:`. Warnings that could not be cleared dropped from 61 to 19 in project-os-cockpit and from 19 to 14 in project-os-deck. `test-ledger-checks.sh` gained 15 cases. project-os-cockpit keeps its own validator and still has the defect; that is its own work.
+
+Checked as part of FEAT-0036 (TASK-0140).

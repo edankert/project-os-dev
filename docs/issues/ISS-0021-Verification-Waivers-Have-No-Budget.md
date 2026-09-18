@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0021
 aliases: ["ISS-0021"]
 title: "Verification waivers expire individually but nothing bounds how many are outstanding, and a batch stamped with one date is indistinguishable from waivers considered one at a time — all 19 in this repo expire 2026-10-23, the migration default no waiver has diverged from since"
-status: open
+status: fixed
 severity: low
 owner: user:edwin
 created: 2026-07-29
-updated: 2026-07-29
+updated: 2026-09-18
 component: tooling
 source: ["intake 2026-07-29: articles repo, quality-without-reading thesis, finding 8 (narrowed after verification)"]
 phase: "[[PHASE-999-Parking-Lot]]"
@@ -77,3 +77,9 @@ Metrics are additive and fleet-safe. Any check is not: the fleet's waiver popula
 - [ ] Measure the fleet-wide waiver population and the distribution of `waiver_expires` dates. The one-date pattern here may be fleet-wide or local to this repo's program closes; that changes the finding.
 - [ ] Evaluate a shared-expiry-date check as the narrow alternative to a cap.
 - [ ] Do not arm anything until ISS-0019 has landed — a cap on the visible exit while the invisible one is open is a regression.
+
+## Fixed, 2026-09-18
+
+3e12cff: the snapshot can count `waivers_outstanding`. Separately, 19 waivers in this repo expire on 2026-10-23 and are in the list sent to Edwin.
+
+Checked as part of FEAT-0036 (TASK-0140).

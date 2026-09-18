@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0020
 aliases: ["ISS-0020"]
 title: "Nothing requires a `TST-*` to carry a `command:`, and no metric distinguishes executable from manual tests — so the project cannot report how much of its verification actually runs"
-status: open
+status: fixed
 severity: medium
 owner: user:edwin
 created: 2026-07-29
-updated: 2026-07-29
+updated: 2026-09-18
 component: tooling
 source: ["intake 2026-07-29: articles repo, quality-without-reading thesis, finding 2"]
 phase: "[[PHASE-999-Parking-Lot]]"
@@ -72,3 +72,9 @@ Additive to `sync-snapshot.py` and `SNAPSHOT.md`, so every repo picks it up on t
 - [ ] Add `tests_executable` / `tests_manual` to the generator and to `SNAPSHOT.md`.
 - [ ] Measure the fleet-wide ratio once, and record the number — it is the input to any later decision about requiring commands.
 - [ ] Decide whether the ratio is surfaced in the validator summary, the cockpit, or neither.
+
+## Fixed, 2026-09-18
+
+3e12cff: the snapshot can count `tests_executable` and `tests_manual`. A repo gets them by listing them in `metrics.counts`. Tested by `test-metric-counts.sh`.
+
+Checked as part of FEAT-0036 (TASK-0140).

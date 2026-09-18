@@ -3,12 +3,12 @@ type: "[[issue]]"
 id: ISS-0049
 aliases: ["ISS-0049"]
 title: "The schema claims a refusal the shipped validator does not make"
-status: triage
+status: fixed
 phase: "[[PHASE-0003]]"
 severity: high
 owner: user:edwin
 created: 2026-09-04
-updated: "2026-09-04"
+updated: 2026-09-18
 component: tooling
 source: ["The ISS-0048 drift sweep, pass 11, run 2026-09-04 in a clean context over template 19ba330"]
 related: ["[[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File]]", "[[ADR-0024-A-Normative-Rule-Is-Stated-Once]]", "[[ADR-0025-An-Executable-Test-Records-No-Verdict]]"]
@@ -61,3 +61,9 @@ Sibling found: [[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-Fil
 ## Risk scan
 
 One new hazard, recorded here rather than as a `RISK-*` because it is bounded by this issue: whichever way the decision goes, the canonical validator and the bundled copy drift again unless something checks them against each other. No new dependency, env var, path or credential.
+
+## Fixed, 2026-09-18
+
+The validator half was done in d2f78bc (LEDGER-FIELD, twelve fields). 3e12cff corrects SCHEMAS.md, which still said seven fields and that the validator rejected none, and seeds `docs/releases/ledgers/README.md` (with ISS-0059). SCHEMAS.md is merge-owned, so repos pick the correction up on their next hand-merge.
+
+Checked as part of FEAT-0036 (TASK-0140).

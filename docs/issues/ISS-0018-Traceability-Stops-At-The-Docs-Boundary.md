@@ -7,7 +7,7 @@ status: open
 severity: medium
 owner: user:edwin
 created: 2026-07-29
-updated: 2026-07-29
+updated: 2026-09-18
 component: tooling
 source: ["landscape review 2026-07-29: OpenFastTrace coverage tags, StrictDoc requirement-to-source links"]
 phase: "[[PHASE-999-Parking-Lot]]"
@@ -55,3 +55,13 @@ The second caveat is cost. Coverage tags mean editing source files to carry docu
 - [ ] Decide the "not code-covered" class for policy/convention requirements, and whether it is a status, a field, or a requirement type. See [[ISS-0005-Feature-Less-Requirement-Triage]] for the population.
 - [ ] Prototype against one fleet repo with real application code before touching the template.
 - [ ] Reconcile with [[ADR-0014-Evidence-Is-Typed-And-Checkable|ADR-0014]]: a coverage tag is arguably an evidence token, and if so this is a sixth token rather than a new subsystem.
+
+## Checked against the template, 2026-09-18: still true
+
+**What someone notices:** A requirement can reach `implemented` with no code behind it, and every check passes.
+
+`covers:` links a test to what it covers, but no field or check links a requirement to source code, and TRACEABILITY.md has no link type that points at code.
+
+**Next:** Keep it parked; try it on one fleet repo with real application code before changing the template.
+
+Checked as part of FEAT-0036 (TASK-0140).

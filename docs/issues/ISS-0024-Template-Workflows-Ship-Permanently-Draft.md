@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0024
 aliases: ["ISS-0024"]
 title: "The template ships three WF notes at status: draft that nothing links and no repo has ever touched — 8 of 8 adopting repos still carry them unedited at draft since 2026-01-29, and the two repos that actually used docs/workflows/ deleted them first"
-status: open
+status: fixed
 severity: low
 owner: user:edwin
 created: 2026-07-30
-updated: 2026-07-30
+updated: 2026-09-18
 component: docs
 source: ["project-os-cockpit PHASE-010 (surface ownership), 2026-07-29: deciding where the [[workflow]] type belongs in the cockpit's IA required measuring whether the type is used at all"]
 phase: "[[PHASE-999-Parking-Lot]]"
@@ -92,3 +92,9 @@ docs/changes/CHG-20260717-Manifest-Sync-And-Fleet-Validation.md:45: ... (WF-0002
 - [ ] If 1: remove the three notes, rewrite `docs/workflows/README.md`'s index section, drop `WF: 3` from the template's `counters` (or keep it — counters only ever rise, and an allocated ID is not freed by deletion)
 - [ ] If 2: advance to `active`, add inbound links from `SYNCING.md`, `HANDOFF.md` and the two skills, and note the ongoing sync obligation in `SYNCING.md`
 - [ ] Either way, decide whether adopting repos are expected to inherit the change on next sync (`sync-project-os.sh` copies `tools/`, not `docs/`, so `docs/workflows/` in existing repos will not update on its own)
+
+## Checked against the template, 2026-09-18: already fixed
+
+Later work fixed this and the note was never updated. `project-os/docs/workflows/` holds only README.md. Commit 0a44cdd (2026-08-14) removed WF-0001 to 0003 from the template, which was this note's option 1. Six repos still carry their old copies at draft, because the sync never deletes a file; removing them is each repo's own tidying.
+
+Checked as part of FEAT-0036 (TASK-0140).

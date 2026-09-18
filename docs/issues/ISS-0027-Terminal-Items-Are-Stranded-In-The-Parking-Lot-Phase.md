@@ -7,7 +7,7 @@ status: open
 severity: medium
 owner: user:edwin
 created: 2026-07-30
-updated: 2026-07-30
+updated: 2026-09-18
 component: docs
 source: ["project-os-cockpit, 2026-07-30 — Edwin: 'if a feature is complete but it was never planned, it will for always stay in the unplanned/future phase'"]
 phase: "[[PHASE-999-Parking-Lot]]"
@@ -82,3 +82,13 @@ That is the shape of the escape hatch: not an exemption, a record.
 ## Notes
 
 Found by a user reading the surface, not by validation — the phase strip rendering shipped work under "Future" is what made it visible, and no check anywhere reports it. That is the third time in one week in this fleet that a rendering caught what the validator could not ([[ISS-0025]], and `project-os-cockpit`'s ISS-0072 and ISS-0073).
+
+## Checked against the template, 2026-09-18: still true
+
+**What someone notices:** The phase strip keeps showing finished work under "Future / Unphased", and the count grows: project-os-cockpit has 44 such notes, against 16 when this was filed.
+
+The parking-lot phase is only used to excuse items; no rule rejects a finished note that names it, and close-out has no step to move it.
+
+**Next:** A rule that a finished note may not name the parking lot, with a dated cutover for the backlog, and a close-out step that moves the item to the phase that delivered it.
+
+Checked as part of FEAT-0036 (TASK-0140).

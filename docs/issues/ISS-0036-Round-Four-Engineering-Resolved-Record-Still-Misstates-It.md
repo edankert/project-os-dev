@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0036
 aliases: ["ISS-0036"]
 title: "Round-four review of the ISS-0035 fixes: all four blocking items are resolved on the merits — twelve bundled validators patched, deferred protection structural and now genuinely guarded, 1,351 removals with nothing lost — but the rewritten fleet figure is 100 bytes off a git-immutable constant, the condition-(4) sentence round three quoted as false is unchanged, and ADR-0018 still authorises a six-condition rule the code no longer implements"
-status: open
+status: fixed
 severity: low
 owner: user:edwin
 created: 2026-08-04
-updated: 2026-08-04
+updated: 2026-09-18
 component: tooling
 source: ["review:2026-08-04-independent-review-round-four-FEAT-0022", "23 mutations + full fleet re-measurement 2026-08-04 over 12 repos"]
 phase: "[[PHASE-999]]"
@@ -214,3 +214,9 @@ Round four found **no code defect**; every property it attacked held. These are 
 - **Two gaps promoted from findings to recorded debt**: ADR-0018 authorises six conditions where the code implements seven, and its condition 5 no longer describes the code; and the twelve bundled validators are no longer verbatim copies. Both are in the CHG note's "Known gaps" section with the fix named, because the honest close is to record them, not to let a fifth round rediscover them.
 
 Stays **open**: the author does not clear a verdict on their own work.
+
+## Fixed, 2026-09-18
+
+ADR-0018's list of conditions now matches `prunable_ids`: condition 3 is kept through condition 5, and condition 7, owing no verification, is added. The bundled-copy point (#6) no longer applies: every fleet repo runs its own `tools/scripts/validate-docs.py`.
+
+Checked as part of FEAT-0036 (TASK-0140).

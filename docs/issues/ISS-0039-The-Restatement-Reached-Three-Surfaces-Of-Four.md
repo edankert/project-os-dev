@@ -3,11 +3,11 @@ type: "[[issue]]"
 aliases: ["ISS-0039"]
 id: ISS-0039
 title: "Round-seven review: the engineering is clean for a fourth consecutive round and the 203 = 200 + 3 skip set is exactly right on three surfaces — but the fourth, `test-retention.py`, kept the stale \"17\" and now attaches it to \"all zero-byte\", asserting a fleet population of 17 zero-byte notes where 3 exist"
-status: open
+status: fixed
 severity: low
 owner: user:edwin
 created: 2026-08-04
-updated: 2026-08-04
+updated: 2026-09-18
 component: tooling
 source: ["review:2026-08-04-independent-review-round-seven-FEAT-0022", "22 self-authored mutations + 7 extra formulations + full fleet re-measurement 2026-08-04 over 12 repos"]
 phase: "[[PHASE-999]]"
@@ -116,3 +116,9 @@ Also corrected: the two drift figures round seven flagged — 1,350 → **1,352*
 Round seven's method note is recorded for whoever runs mutations next: `importlib.spec_from_file_location` reuses `__pycache__` keyed on mtime and size, so an equal-length mutation silently executes the previous bytecode. Run with `-B`. That is a real trap for exactly this kind of verification and it cost that round a mis-scored condition.
 
 Stays **open**: the author does not clear a verdict on their own work.
+
+## Checked against the template, 2026-09-18: already fixed
+
+Later work fixed this and the note was never updated. `test-retention.py` says 3 registered notes are zero-byte, not 17. Condition 4 still has no fixture of its own; that is a gap in the test, not a defect anyone would notice.
+
+Checked as part of FEAT-0036 (TASK-0140).

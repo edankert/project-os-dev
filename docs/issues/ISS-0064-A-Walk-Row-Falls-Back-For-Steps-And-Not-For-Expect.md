@@ -3,10 +3,10 @@ type: "[[issue]]"
 id: ISS-0064
 aliases: ["ISS-0064"]
 title: "35 of 39 owed rows on a real walk sheet say the note states no expected result, and for some of them the note does state one under a heading nobody anticipated"
-status: triage
+status: fixed
 owner: user:edwin
 created: 2026-09-13
-updated: 2026-09-13
+updated: 2026-09-18
 source: ["Independent review of FEAT-0029, 2026-09-13, finding F3"]
 severity: medium
 component: tooling
@@ -40,3 +40,9 @@ It shows "the note states no expected result" whenever the note says it under a 
 - [ ] Re-count the two headings over the 39 owed rows; the reviewer's figure predates the retired-check fix.
 - [ ] Decide whether the fix belongs in the template or in the corpus. A per-repo list of extra Expect headings puts product vocabulary into a template that should not know it; rewriting those twelve notes on contact is ADR-0027's own rule and costs nothing to the template.
 - [ ] If neither, say so in `TESTING.md` rule 5 so the asymmetry is stated rather than discovered.
+
+## Checked against the template, 2026-09-18: already fixed
+
+Later work fixed this and the note was never updated. TESTING.md rule 5 now states the asymmetry this note asked for. `walk-sheet.py --release REL-0017 --platform android` in your-trainer prints 39 owed rows, none of them "states no expected result". Notes with older headings are rewritten when next walked (ADR-0027).
+
+Checked as part of FEAT-0036 (TASK-0140).

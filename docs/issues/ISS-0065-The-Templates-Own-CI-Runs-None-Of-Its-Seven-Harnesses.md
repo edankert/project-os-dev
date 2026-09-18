@@ -3,11 +3,12 @@ type: "[[issue]]"
 id: ISS-0065
 aliases: ["ISS-0065"]
 title: "The template repo ships seven test scripts and its own CI runs none of them, because nothing in its docs/ declares a command:"
-status: triage
+status: open
 owner: user:edwin
 created: 2026-09-13
-updated: 2026-09-13
+updated: 2026-09-18
 source: ["Independent review of FEAT-0029, 2026-09-13, consistency finding"]
+question: "How should the template's own CI run its test scripts? Recommendation: one workflow step that runs tools/scripts/test-* only in the template repository itself, rather than a TST note per script in every new project."
 severity: medium
 component: tooling
 related: ["[[FEAT-0029-The-Walk-Sheet]]", "[[ADR-0025-An-Executable-Test-Records-No-Verdict]]", "[[TST-0009-The-Sheet-Is-The-Ledgers-Owed-Set-In-The-Authored-Order]]"]
@@ -32,3 +33,9 @@ They are not unrun: every one of them is the `command:` on a `TST-*` note in **p
 
 - [ ] Decide where the template's own harnesses are declared. A `TST-*` note per script in the template's `docs/tests/` would make its CI run them, and would also be seeded into every new project created from the template, which is noise those projects do not want — so the choice is between that noise and a CI step that names the scripts directly.
 - [ ] Whichever wins, say it once, so the next person adding a harness knows where its note goes. TASK-0113's Definition of Done guessed wrong about this and had to be reconciled.
+
+## Checked against the template, 2026-09-18: a question for Edwin
+
+The template has 17 test scripts. Its CI runs only `test-codex-adapter.sh`; the others run only here, each as a TST note's `command:`.
+
+Checked as part of FEAT-0036 (TASK-0140).

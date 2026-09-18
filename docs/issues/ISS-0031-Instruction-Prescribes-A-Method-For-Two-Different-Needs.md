@@ -7,7 +7,7 @@ status: open
 severity: medium
 owner: user:edwin
 created: 2026-08-03
-updated: 2026-08-03
+updated: 2026-09-18
 component: docs
 source: ["fleet measurement 2026-08-03: 590 sessions", "ISS-0030 correction"]
 phase: "[[PHASE-999-Parking-Lot]]"
@@ -77,3 +77,13 @@ Until it runs, this issue records an open question, not a defect with a known fi
 - [ ] Add the grep-only arm to `project-os-bench` TASK-0008. Still wanted: it does not gate TASK-0081 (format-dependent lookup is a defect on its own evidence) but it is the only thing that would *quantify* TASK-0080's value, which FEAT-0021 records as sound-but-unmeasured.
 - [ ] Reconcile the startup instruction surface once the hook serves orientation — `CLAUDE.md`, the user-level `CLAUDE.md`, `CONTEXT.md` and HC-002 — stated once per REQ-0018. Tracked on TASK-0080; if it is not done, this issue reappears with the roles reversed.
 - [ ] Check whether the same instruction/behaviour gap exists for `tools/instructions/` and `tools/skills/` — measured at 0.5% of context, which is either healthy selectivity or evidence the playbooks are not being read at all. The instruction surface says "read them when relevant" and nothing verifies that judgement.
+
+## Checked against the template, 2026-09-18: still true
+
+**What someone notices:** A new session is told to read a snapshot of up to 536 KB, searches it instead, and may never see `focus:`.
+
+The start-of-session hook still prints only a reminder to read SNAPSHOT.yaml.
+
+**Next:** Stays with FEAT-0021, where printing the focus and the items in flight is already planned.
+
+Checked as part of FEAT-0036 (TASK-0140).

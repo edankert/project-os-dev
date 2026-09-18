@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0029
 aliases: ["ISS-0029"]
 title: "LIFECYCLE says when a phase note is needed and never when one is too small, so an agent under the document-first rule mints a phase per request — measured at nine in a day against nine in the preceding twelve weeks"
-status: open
+status: fixed
 severity: medium
 owner: user:edwin
 created: 2026-07-30
-updated: 2026-07-30
+updated: 2026-09-18
 component: docs
 source: ["project-os-cockpit ISS-0077, 2026-07-30 — counted after Edwin asked to review phase granularity"]
 phase: "[[PHASE-999-Parking-Lot]]"
@@ -69,3 +69,9 @@ The split in that repo's own data shows it: `PHASE-011/012/013` were **planned t
 Running downstream since 2026-07-30 in that repo's `CLAUDE.md`, with a worked example: PHASE-016 absorbed PHASE-017/018/019, nineteen phases to sixteen. Two guards there hold the merge invariants — no note may name a superseded phase, and a superseded phase must say what absorbed it.
 
 Fourth in the same family as [[ISS-0025]], [[ISS-0027]] and [[ISS-0028]]: a close-out or planning obligation the template states half of.
+
+## Fixed, 2026-09-18
+
+3e12cff: the phase-planning skill has a section, "When a phase is too small", taken from project-os-cockpit's CLAUDE.md, so every repo gets it through the sync.
+
+Checked as part of FEAT-0036 (TASK-0140).

@@ -3,11 +3,11 @@ type: "[[issue]]"
 aliases: ["ISS-0038"]
 id: ISS-0038
 title: "Round-six review: the engineering is clean for a third consecutive round and the two notes now agree with each other on every figure I could measure — but the restated \"seventeen\" names fourteen files that demonstrably DO supply titles, so the fail-safe's population is now wrong in a new way on four surfaces, and round five's reading was refuted on a technicality rather than on the substance"
-status: open
+status: fixed
 severity: low
 owner: user:edwin
 created: 2026-08-04
-updated: 2026-08-04
+updated: 2026-09-18
 component: tooling
 source: ["review:2026-08-04-independent-review-round-six-FEAT-0022", "22 mutations + 4 extra formulations + full fleet re-measurement 2026-08-04 over 12 repos"]
 phase: "[[PHASE-999]]"
@@ -114,3 +114,9 @@ The true population, measured across all twelve repos: derivation skips **203** 
 The transferable lesson is the one this whole review chain keeps teaching in different costumes: **a plausible number repeated across documents is not evidence, and neither is a reviewer's correction to it.** Five rounds discussed this figure. None of them ran `note_fields` against the files in question, which took one command and ended the argument.
 
 Stays **open**: the author does not clear a verdict on their own work.
+
+## Checked against the template, 2026-09-18: already fixed
+
+Later work fixed this and the note was never updated. `sync-snapshot.py` says 203 registered entries are skipped (200 CHG notes and 3 zero-byte notes); no "seventeen" survives in either script.
+
+Checked as part of FEAT-0036 (TASK-0140).

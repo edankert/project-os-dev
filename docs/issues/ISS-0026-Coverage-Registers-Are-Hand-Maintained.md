@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0026
 aliases: ["ISS-0026"]
 title: "A TST note's ## Coverage section is a hand-written register of its own suite's assertions that nothing derives or checks, and other notes cite its entries as evidence — one register was wrong in three consecutive review rounds"
-status: open
+status: fixed
 severity: medium
 owner: user:edwin
 created: 2026-07-30
-updated: 2026-07-30
+updated: 2026-09-18
 component: docs
 source: ["project-os-cockpit ISS-0066, 2026-07-30 — four independent-review rounds on one TST note"]
 phase: "[[PHASE-999-Parking-Lot]]"
@@ -57,3 +57,9 @@ Either the register is derived from the suite, or it stops being cited as eviden
 ## Notes
 
 The narrow alternative — "review harder" — is what produced four rounds. The reviewer read the shrinking error count as convergence rather than a treadmill, which is fair for one note and does not scale to a fleet where nobody reviews four times.
+
+## Checked against the template, 2026-09-18: already fixed
+
+Later work fixed this and the note was never updated. The test template has no `## Coverage` heading. Only the surface template has one, and it says the list is derived from `area:` (surface.md, SCHEMAS.md, ADR-0032).
+
+Checked as part of FEAT-0036 (TASK-0140).

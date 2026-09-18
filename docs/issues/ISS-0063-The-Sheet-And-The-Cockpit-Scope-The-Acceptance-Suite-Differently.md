@@ -3,11 +3,12 @@ type: "[[issue]]"
 id: ISS-0063
 aliases: ["ISS-0063"]
 title: "The walk sheet reads every acceptance note under docs/ and the cockpit reads only docs/tests/acceptance/; no repo has such a note today, so the divergence is latent rather than live"
-status: triage
+status: open
 owner: user:edwin
 created: 2026-09-13
-updated: 2026-09-13
+updated: 2026-09-18
 source: ["Measured while landing TASK-0113 against your-trainer, 2026-09-13"]
+question: "Should walked acceptance checks be allowed outside docs/tests/acceptance/? Recommendation: no. TESTING.md already says walked checks live there; automated ones with a command: may stay beside their feature."
 severity: low
 component: tooling
 related: ["[[ADR-0029-The-Walk-Sheet-Is-Derived-And-Its-Order-Is-Authored-Once]]", "[[FEAT-0029-The-Walk-Sheet]]", "[[TASK-0113-The-Generator-And-Its-Fixture-Test]]"]
@@ -36,3 +37,9 @@ What is left is latent. Counted across the fleet the same day, **zero** acceptan
 
 - [ ] Decide which scoping is the rule: the cockpit widens to every acceptance note under `docs/`, or `TESTING.md` narrows acceptance checks to `docs/tests/acceptance/` and `LIFECYCLE.md`'s hybrid rule stops applying to them. The second is closer to what all four repos already do.
 - [ ] Whichever wins, state it once in `TESTING.md` and make both readers cite it.
+
+## Checked against the template, 2026-09-18: a question for Edwin
+
+The cockpit reads acceptance checks from one folder, while `walk-sheet.py` reads every `level: acceptance` note, and LIFECYCLE.md allows them inside a feature folder. This repo has 7 such notes, all automated, and keeps no ledgers, so nothing differs yet.
+
+Checked as part of FEAT-0036 (TASK-0140).

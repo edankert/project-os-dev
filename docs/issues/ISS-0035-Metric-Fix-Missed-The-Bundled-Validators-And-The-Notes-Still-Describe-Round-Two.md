@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0035
 aliases: ["ISS-0035"]
 title: "Round-three review of the ISS-0034 fixes: both blocking defects are genuinely fixed and the fleet is clean, but the metric fix never reached the two bundled validator copies — project-os-cockpit's own cockpit reports `ERROR [METRICS] features_done is 55 but computed 54` today — and `TST-0003`/`CHG-20260804` still describe round two's artifact while six of ISS-0034's next actions are ticked without being done"
-status: open
+status: fixed
 severity: medium
 owner: user:edwin
 created: 2026-08-04
-updated: 2026-08-04
+updated: 2026-09-18
 component: tooling
 source: ["review:2026-08-04-independent-review-round-three-FEAT-0022", "23 mutations + fleet re-measurement 2026-08-04 over 12 repos"]
 phase: "[[PHASE-999]]"
@@ -168,3 +168,9 @@ Open. Findings 1-4 block; the verdict is recorded on `CHG-20260804-Retention-And
 5. **Non-blocking.** `compute_metric_counts` re-parsing every claimant costs runtime at pre-commit — recorded as a known cost rather than optimised under review pressure, since correctness came first and the measurement (+37% on the largest repo) is now on record to act on deliberately.
 
 Stays **open** pending round four; the author does not clear a verdict on their own work.
+
+## Fixed, 2026-09-18
+
+3e12cff: the metric count reuses the frontmatter the note index already parsed. your-trainer's validator ran in 17.0 s instead of 20.9 s. Tested by `test-metric-counts.sh`, which fails if the parse is repeated or taken from the wrong file.
+
+Checked as part of FEAT-0036 (TASK-0140).

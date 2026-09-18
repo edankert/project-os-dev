@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0034
 aliases: ["ISS-0034"]
 title: "Round-two review of the ISS-0033 fixes: the fixes hold, but project-os-cockpit still reports one done feature short while CHG-20260804 says the metric is restored, and TST-0003 guards neither of the two blocking fixes — reverting condition (5) to `index` or `_scalar_span` to the original brace test leaves the suite green"
-status: open
+status: fixed
 severity: medium
 owner: user:edwin
 created: 2026-08-04
-updated: 2026-08-04
+updated: 2026-09-18
 component: tooling
 source: ["review:2026-08-04-independent-review-round-two-FEAT-0022", "fleet re-measurement 2026-08-04 over 12 repos"]
 phase: "[[PHASE-999]]"
@@ -188,3 +188,9 @@ Round three found that four of the six ticked next actions had not been done. Th
 That is the failure ADR-0006 names — *"ticking to fit"* — committed on an issue whose own subject is claims nothing verifies. The four were the CHG update, `focus.note`, ISS-0033's duplicate `## Status`, and the condition-(5)/(3) decision record. Three were then done; the CHG update was still incomplete when round four checked, so this paragraph was itself premature — a correction that over-claimed while correcting an over-claim. All four are done as of round four's fixes. The lesson is why this note keeps its history rather than being tidied: a tick is a claim, and neither a regex nor a confident sentence makes one true.
 
 Everything above is now complete, verified individually. Round three's own findings are on [[ISS-0035]].
+
+## Checked against the template, 2026-09-18: already fixed
+
+Later work fixed this and the note was never updated. The METRICS finding is gone in project-os-cockpit, and round eight measured that reverting condition 5 fails 4 assertions and reverting the title derivation fails 2.
+
+Checked as part of FEAT-0036 (TASK-0140).

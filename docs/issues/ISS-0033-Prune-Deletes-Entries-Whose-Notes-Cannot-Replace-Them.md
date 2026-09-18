@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0033
 aliases: ["ISS-0033"]
 title: "Independent review of the FEAT-0022 implementation: the prune deleted three entries whose notes are zero-byte files, derivation silently stops working for any block-style value containing a brace (live in yourtrainer-mcp today), the migration record is empty in four repos that replaced 45 values, and TST-0003 never executes either destructive writer"
-status: open
+status: fixed
 severity: high
 owner: user:edwin
 created: 2026-08-04
-updated: 2026-08-04
+updated: 2026-09-18
 component: tooling
 source: ["review:2026-08-04-independent-review-FEAT-0022-implementation", "fleet re-measurement 2026-08-04 over 12 repos"]
 phase: "[[PHASE-999]]"
@@ -201,3 +201,9 @@ Open. Findings 1-5 block; the review verdict is recorded on `CHG-20260804-Retent
 
 
 All findings addressed by the authoring session on 2026-08-04, including the two that caused real damage (three entries deleted against zero-byte notes; derivation silently dead in block style). The issue stays **open**: the author does not clear the verdict on their own work, and `TST-0003` currently fails the `REVIEW` gate as an error precisely because that verdict still says `changes-requested` — which is the gate working. A fresh clean-context round settles it.
+
+## Checked against the template, 2026-09-18: already fixed
+
+Later work fixed this and the note was never updated. `python3 -B tools/scripts/test-retention.py` passes. Condition 5 reads the claiming note's status, block-style titles are derived correctly, and the banner no longer stacks. Round eight approved the work (TST-0003). One case is left and is not fixed: an inline snapshot entry followed by a `# comment` gets the previous entry's title. No snapshot in the fleet has an entry of that shape, and the fix changes a pattern three parsers share, so it is declined here rather than kept open.
+
+Checked as part of FEAT-0036 (TASK-0140).

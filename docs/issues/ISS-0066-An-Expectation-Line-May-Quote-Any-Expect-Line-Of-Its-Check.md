@@ -2,12 +2,13 @@
 type: "[[issue]]"
 id: ISS-0066
 title: "An expectation line may quote any Expect line of the check it cites, not the one its step is about"
-status: triage
+status: open
 phase: "[[PHASE-999-Parking-Lot]]"
 owner: user:edwin
 created: 2026-09-14
-updated: 2026-09-14
+updated: 2026-09-18
 source: ["Independent review of PHASE-0005, 2026-09-14 (model:claude-opus-5)"]
+question: "Must a walk step quote the Expect line that belongs to it? Recommendation: no. Leave the check as it is and add a sentence to TESTING.md rule 9: the quote proves the words are the check's own, not which step they belong to."
 severity: medium
 component: tooling
 parent: ""
@@ -50,3 +51,9 @@ Option 2 is the one worth costing. It is Edwin's call, and nothing is blocked wh
 
 - [ ] Decide between the three options above, or a fourth.
 - [ ] If option 2: measure how many of your-trainer's 39 owed checks state more Expect lines than their procedure would naturally quote.
+
+## Checked against the template, 2026-09-18: a question for Edwin
+
+`walk-sheet.py` checks the quote against all of the check's Expect lines; TESTING.md says only that it quotes one line of the check's own Expect section.
+
+Checked as part of FEAT-0036 (TASK-0140).

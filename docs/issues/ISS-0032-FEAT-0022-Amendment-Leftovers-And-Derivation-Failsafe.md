@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0032
 aliases: ["ISS-0032"]
 title: "Independent review of FEAT-0022/ADR-0018: ADR-0018 still publishes the pre-amendment hold table, TASK-0082 contradicts itself on whether `goal:` holds, three tasks carry Definitions of Done that require the task depending on them, and title derivation has no fail-safe for the 9 notes fleet-wide that yield no title"
-status: open
+status: fixed
 severity: high
 owner: user:edwin
 created: 2026-08-04
-updated: 2026-08-04
+updated: 2026-09-18
 component: docs
 source: ["review:2026-08-04-independent-review-FEAT-0022", "fleet re-measurement 2026-08-04 over 12 repos"]
 phase: "[[PHASE-999-Parking-Lot]]"
@@ -154,3 +154,9 @@ Recorded so a later reader can tell verification from assumption. All figures re
 All twelve findings addressed by the authoring session on 2026-08-04. The issue stays **open**: the author fixing findings does not close them, and a fresh clean-context round is what settles whether the fixes hold — the pattern ISS-0022/ISS-0023 established on ADR-0017.
 
 One finding was worse than reported. #5 counted 9 entries whose notes cannot supply a title; re-measuring found **17** — 3 zero-byte in project-os-cockpit and 14 with unparseable frontmatter across your-trainer (8), your-health (5) and your-applications.com (1).
+
+## Checked against the template, 2026-09-18: already fixed
+
+Later work fixed this and the note was never updated. Every finding in its Next Actions is ticked, and FEAT-0022 with TASK-0082 to 0085 is done. The later review rounds were filed separately as ISS-0033 to 0039.
+
+Checked as part of FEAT-0036 (TASK-0140).

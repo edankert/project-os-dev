@@ -45,7 +45,8 @@ counters:
 focus:
   # Goal 1 of PHASE-0007 closed 2026-09-18: FEAT-0035's tasks and FEAT-0034 TASK-0126 to TASK-0130 are done, and the template is committed (project-os 3c979ee, db98f46) and synced to your-trainer (5b317fb4) and project-os-cockpit (f120f35).
   # 2026-09-18: FEAT-0036 widened by Edwin to the seven repos with open issues; your-trainer goes first (its own task records the leg).
-  task: "TASK-0140"
+  # 2026-09-18: the project-os-dev leg (TASK-0140) is done. Left: project-os-cockpit (35 open issues), your-sudoku (17), project-os-deck (17), articles (3).
+  task: ""
   feature: "FEAT-0036"
   phase: "PHASE-0007"
   issue: ""
@@ -379,7 +380,7 @@ items:
   tasks:
     TASK-0140:
       file: docs/features/backlog-clearance/plan/tasks/TASK-0140-Project-Os-Devs-Open-Issues-Are-Checked-Against-The-Template.md
-      status: doing
+      status: done
       parent: FEAT-0036
       phase: "[[PHASE-0007]]"
     TASK-0139:
@@ -884,33 +885,33 @@ items:
       parent: FEAT-0037
     ISS-0066:
       file: "docs/issues/ISS-0066-An-Expectation-Line-May-Quote-Any-Expect-Line-Of-Its-Check.md"
-      status: triage
+      status: open
       severity: medium
       phase: "[[PHASE-999]]"
       note: "From the PHASE-0005 review. A procedure line tagged TST-0401.1 may quote any line of that check's Expect section, including step 3's, and the validator compares the quote against the set. Three options costed in the note; option 2 (each Expect line quoted exactly once across the procedure) is the one worth measuring. Edwin's call, and nothing waits on it."
     ISS-0067:
       file: "docs/issues/ISS-0067-Git-Rename-Detection-Can-Hide-A-New-Change-Note-From-The-Survey.md"
-      status: triage
+      status: open
       severity: low
       phase: "[[PHASE-999]]"
       note: "From the PHASE-0005 review. Deleting a change note in the same range as adding one can make git pair them as a rename, so --diff-filter=A misses the new note and the survey silently loses its screens. Reachable only by deleting a change note, which LIFECYCLE forbids. The fix is one flag; the question is whether a renamed note counts as new."
     ISS-0065:
       file: "docs/issues/ISS-0065-The-Templates-Own-CI-Runs-None-Of-Its-Seven-Harnesses.md"
-      status: triage
+      status: open
       severity: medium
       component: tooling
       note: "From the independent review of FEAT-0029. The template ships seven harnesses and its own CI runs run-tests.py --ci, which finds no command: note in its docs/ and runs nothing. They are not unrun -- each is the command: on a TST-* note here, and this repo's workflow checks the template out beside itself -- so a broken harness goes red in the wrong repo. The open question is whether the template declares its own TST notes, which every new project would then inherit, or names the scripts in a CI step."
       related: [FEAT-0029, ADR-0025, TST-0009]
     ISS-0064:
       file: "docs/issues/ISS-0064-A-Walk-Row-Falls-Back-For-Steps-And-Not-For-Expect.md"
-      status: triage
+      status: fixed
       severity: medium
       component: tooling
       note: "From the independent review of FEAT-0029. 57 of 61 rows on your-trainer's real sheet say the note states no expected result; for at least twelve the note does say it, under 'What a failure looks like' or 'What a rider still judges'. Steps gained a prose fallback because 53 rows would have been empty; Expect did not, and the asymmetry was decided without the measurement. The choice is a template that learns product vocabulary, or twelve notes rewritten on contact under ADR-0027's own rule."
       related: [FEAT-0029, ADR-0027, ADR-0029]
     ISS-0063:
       file: "docs/issues/ISS-0063-The-Sheet-And-The-Cockpit-Scope-The-Acceptance-Suite-Differently.md"
-      status: triage
+      status: open
       severity: medium
       component: tooling
       note: "Found while landing TASK-0113. The template's generator reads every level: acceptance note under docs/, which LIFECYCLE.md 'Test storage' allows; the cockpit reads docs/tests/acceptance/ alone. 649 notes against 431 on your-trainer, with every note both see resolving identically -- so no wrong number today, and two owed counts for one corpus as soon as somebody files an acceptance check beside its feature. Which scoping is the rule is the open question."
@@ -933,7 +934,7 @@ items:
     ISS-0059:
       file: "docs/issues/ISS-0059-A-New-Project-Starts-On-The-Pre-Ledger-Write-Path.md"
       title: "A new project starts with no acceptance ledger, so its first verdict takes the pre-migration write path — the one kept for repositories that have not migrated, which a project created today has not"
-      status: triage
+      status: fixed
       owner: user:edwin
       severity: medium
       component: templates
@@ -1003,7 +1004,7 @@ items:
       related: [FEAT-0002, FEAT-0027, TST-0007]
     ISS-0054:
       file: "docs/issues/ISS-0054-Nine-Residue-Findings-Have-No-Open-Item.md"
-      status: open
+      status: fixed
       severity: medium
       phase: "[[PHASE-0003]]"
       component: docs
@@ -1011,7 +1012,7 @@ items:
       related: [ISS-0048, ADR-0026]
     ISS-0053:
       file: "docs/issues/ISS-0053-A-Note-With-Unparseable-Frontmatter-Passes-Silently.md"
-      status: triage
+      status: open
       severity: high
       phase: "[[PHASE-0003]]"
       component: tooling
@@ -1035,7 +1036,7 @@ items:
       related: [ISS-0048, ISS-0049, ADR-0025]
     ISS-0050:
       file: "docs/issues/ISS-0050-Surface-Statuses-Live-Outside-The-File-That-Enforces-Them.md"
-      status: triage
+      status: fixed
       severity: low
       phase: "[[PHASE-0003]]"
       component: docs
@@ -1043,7 +1044,7 @@ items:
       related: [ISS-0048, ADR-0024]
     ISS-0049:
       file: "docs/issues/ISS-0049-The-Schema-Claims-A-Refusal-The-Shipped-Validator-Does-Not-Make.md"
-      status: triage
+      status: fixed
       severity: high
       phase: "[[PHASE-0003]]"
       component: tooling
@@ -1091,7 +1092,7 @@ items:
       related: [ISS-0006, ADR-0013, ADR-0024]
     ISS-0039:
       file: "docs/issues/ISS-0039-The-Restatement-Reached-Three-Surfaces-Of-Four.md"
-      status: open
+      status: fixed
       severity: low
       phase: "[[PHASE-999]]"
       component: tooling
@@ -1099,7 +1100,7 @@ items:
       related: [FEAT-0022, ADR-0018, ISS-0026, ISS-0033, ISS-0034, ISS-0035, ISS-0036, ISS-0037, ISS-0038, TST-0003, CHG-20260804-Retention-And-Field-Derivation]
     ISS-0038:
       file: "docs/issues/ISS-0038-The-Seventeen-Names-Fourteen-Files-That-Do-Supply-Titles.md"
-      status: open
+      status: fixed
       severity: low
       phase: "[[PHASE-999]]"
       component: tooling
@@ -1107,7 +1108,7 @@ items:
       related: [FEAT-0022, ADR-0018, ISS-0026, ISS-0033, ISS-0034, ISS-0035, ISS-0036, ISS-0037, TST-0003, CHG-20260804-Retention-And-Field-Derivation]
     ISS-0037:
       file: "docs/issues/ISS-0037-Round-Five-Corrections-Landed-On-One-Note-Of-Two.md"
-      status: open
+      status: fixed
       severity: low
       phase: "[[PHASE-999]]"
       component: tooling
@@ -1116,7 +1117,7 @@ items:
     ISS-0036:
       file: "docs/issues/ISS-0036-Round-Four-Engineering-Resolved-Record-Still-Misstates-It.md"
       title: "Round-four review of the ISS-0035 fixes: all four blocking items are resolved on the merits — twelve bundled validators patched, deferred protection structural and now genuinely guarded, 1,351 removals with nothing lost — but the rewritten fleet figure is 100 bytes off a git-immutable constant, the condition-(4) sentence round three quoted as false is unchanged, and ADR-0018 still authorises a six-condition rule the code no longer implements"
-      status: open
+      status: fixed
       severity: low
       phase: "[[PHASE-999]]"
       component: tooling
@@ -1125,7 +1126,7 @@ items:
     ISS-0035:
       file: "docs/issues/ISS-0035-Metric-Fix-Missed-The-Bundled-Validators-And-The-Notes-Still-Describe-Round-Two.md"
       title: "Round-three review of the ISS-0034 fixes: both blocking defects are genuinely fixed and the fleet is clean, but the metric fix never reached the two bundled validator copies — project-os-cockpit's own cockpit reports `ERROR [METRICS] features_done is 55 but computed 54` today — and `TST-0003`/`CHG-20260804` still describe round two's artifact while six of ISS-0034's next actions are ticked without being done"
-      status: open
+      status: fixed
       severity: medium
       phase: "[[PHASE-999]]"
       component: tooling
@@ -1134,7 +1135,7 @@ items:
     ISS-0034:
       file: "docs/issues/ISS-0034-Cockpit-Features-Done-Still-Short-And-The-Suite-Does-Not-Guard-Either-Fix.md"
       title: "Round-two review of the ISS-0033 fixes: the fixes hold, but project-os-cockpit still reports one done feature short while CHG-20260804 says the metric is restored, and TST-0003 guards neither of the two blocking fixes — reverting condition (5) to `index` or `_scalar_span` to the original brace test leaves the suite green"
-      status: open
+      status: fixed
       severity: medium
       phase: "[[PHASE-999]]"
       component: tooling
@@ -1143,7 +1144,7 @@ items:
     ISS-0033:
       file: "docs/issues/ISS-0033-Prune-Deletes-Entries-Whose-Notes-Cannot-Replace-Them.md"
       title: "Independent review of the FEAT-0022 implementation: the prune deleted three entries whose notes are zero-byte files, derivation silently stops working for any block-style value containing a brace (live in yourtrainer-mcp today), the migration record is empty in four repos that replaced 45 values, and TST-0003 never executes either destructive writer"
-      status: open
+      status: fixed
       severity: high
       phase: "[[PHASE-999]]"
       component: tooling
@@ -1152,7 +1153,7 @@ items:
     ISS-0032:
       file: "docs/issues/ISS-0032-FEAT-0022-Amendment-Leftovers-And-Derivation-Failsafe.md"
       title: "Independent review of FEAT-0022/ADR-0018: ADR-0018 still publishes the pre-amendment hold table, TASK-0082 contradicts itself on whether `goal:` holds, three tasks carry Definitions of Done that require the task depending on them, and title derivation has no fail-safe for the 9 notes fleet-wide that yield no title"
-      status: open
+      status: fixed
       severity: high
       phase: "[[PHASE-999]]"
       component: docs
@@ -1168,14 +1169,14 @@ items:
     ISS-0030:
       file: "docs/issues/ISS-0030-Retention-Is-Policy-Nothing-Performs.md"
       title: "Retention is a policy nothing performs, configured by three flags no code reads, and its normative rule still names the `closed` status ADR-0008 deleted — so snapshots accumulate until most of what a query matches is finished work"
-      status: open
+      status: fixed
       severity: medium
       phase: "[[PHASE-999-Parking-Lot]]"
       note: "Upstream cause of your-trainer ISS-0371. The four largest snapshots are the four oldest repos (97k/50k/44k/38k tok) — accumulation, not complexity. CORRECTED 2026-08-03: the original 're-served on every request' cost model was never measured and is false. Nothing injects the snapshot, agents grep it 255x per 5 full reads, and all project-os artefacts are ~8% of what enters context (source code 46%, command output 44%). The surviving case is retrieval quality — a two-thirds-terminal snapshot returns mostly finished work to every grep. Does NOT relitigate TASK-0063: the whole-file generator was rejected on evidence and stays rejected; the gap is that the motivation its cancellation preserved (REQ-0020 amendment) was never built. Three options, none requiring generation."
     ISS-0029:
       file: "docs/issues/ISS-0029-Lifecycle-Says-When-A-Phase-Is-Needed-Never-When-One-Is-Too-Small.md"
       title: "LIFECYCLE says when a phase note is needed and never when one is too small, so an agent under the document-first rule mints a phase per request — measured at nine in a day against nine in the preceding twelve weeks"
-      status: open
+      status: fixed
       severity: medium
       phase: "[[PHASE-999-Parking-Lot]]"
       note: "Filed from project-os-cockpit ISS-0077: nine phases in a day against nine in twelve weeks, median 4 items vs 21. Structural, not careless — document-first needs a focus item and an open phase is the cheapest way to get one. The missing mechanism is the STANDING phase; without somewhere to put a small thing, minting a phase is the only move."
@@ -1196,21 +1197,21 @@ items:
     ISS-0026:
       file: "docs/issues/ISS-0026-Coverage-Registers-Are-Hand-Maintained.md"
       title: "A TST note's ## Coverage section is a hand-written register of its own suite's assertions that nothing derives or checks, and other notes cite its entries as evidence — one register was wrong in three consecutive review rounds"
-      status: open
+      status: fixed
       severity: medium
       phase: "[[PHASE-999-Parking-Lot]]"
       note: "Filed from project-os-cockpit ISS-0066. Same dual-write class ADR-0009 and ADR-0010 already solved for statuses and test results — the suite is the truth, the prose is an unchecked copy, and only the copy is read. Four review rounds on one note, wrong in three of them."
     ISS-0025:
       file: "docs/issues/ISS-0025-Review-Verdict-Vocabulary-Is-Unvalidated.md"
       title: "The validator checks that review_verdict is PRESENT but never that it is a DEFINED value, so any string reads as a satisfied review — 10 notes in one repo carried `CLOSE`, which QUALITY.md does not define"
-      status: open
+      status: fixed
       severity: medium
       phase: "[[PHASE-999-Parking-Lot]]"
       note: "Filed from project-os-cockpit ISS-0069. The trap is that a union check is not enough: a plan-acceptance value must not satisfy a close-out gate, and a downstream implementation that claimed to split by context was shown by mutation to be checking a union. Three contexts, not two — design acceptance is the one that gets missed."
     ISS-0024:
       file: "docs/issues/ISS-0024-Template-Workflows-Ship-Permanently-Draft.md"
       title: "The template ships three WF notes at status: draft that nothing links and no repo has ever touched — 8 of 8 adopting repos still carry them unedited at draft since 2026-01-29, and the two repos that actually used docs/workflows/ deleted them first"
-      status: open
+      status: fixed
       severity: low
       phase: "[[PHASE-999-Parking-Lot]]"
       note: "Filed from project-os-cockpit PHASE-010, which had to measure whether the [[workflow]] type is used at all before deciding where it belongs in that app's IA. Every authored workflow across the fleet is `active`; every template one is `draft`. The three are single-entrypoint wrappers around a skill or script that instructions already own, and nothing links them — SYNCING.md does not link WF-0002. Recommendation is to ship the README only; the honest alternative is to make them active and linked. Not decided here."
@@ -1218,7 +1219,7 @@ items:
     ISS-0023:
       file: "docs/issues/ISS-0023-Three-Question-Test-Contradicts-The-Amended-Clause-3.md"
       title: "Round two on ADR-0017: the frontmatter three-question test still asks who writes the field, which the amended clause 3 abandoned, so it fails the two mechanisms the body calls compliant; two notes still quote the superseded clause; and ISS-0021's new provenance paragraph mis-cites TASK-0070 and claims months of drift where the tree shows three days"
-      status: open
+      status: declined
       severity: medium
       phase: "[[PHASE-999]]"
       note: "Round-two independent review of ADR-0017 (verdict changes-requested, superseding round one). All five ISS-0022 findings verified resolved; the fixes introduced five new ones, three blocking. The pattern worth watching: each round's fix has reintroduced the previous round's defect class one level along — a mis-cited ID, and a claim wider than the tree."
@@ -1226,14 +1227,14 @@ items:
     ISS-0022:
       file: "docs/issues/ISS-0022-ADR-0017-Ratifies-A-Proposed-ADR-And-Clause-3-Has-No-Scope.md"
       title: "ADR-0017 is accepted while ratifying ADR-0014, which is only proposed; clause 3 has no stated subject, so read literally it forbids the waiver and manual-test paths the same ADR says it preserves; and a consequence names ISS-0020 for ISS-0019's defect"
-      status: open
+      status: fixed
       severity: medium
       phase: "[[PHASE-999]]"
       note: "Independent-review findings on ADR-0017 (verdict changes-requested). Three blocking, two corrections; the ADR's three-decisions-one-rule thesis survived refutation. Also carries the correction that this repo has 19 waivers, not the 15 ISS-0021 and the intake note record."
     ISS-0021:
       file: "docs/issues/ISS-0021-Verification-Waivers-Have-No-Budget.md"
       title: "Verification waivers expire individually but nothing bounds how many are outstanding, and a batch stamped with one date is indistinguishable from waivers considered one at a time — all 19 in this repo expire 2026-10-23, the migration default no waiver has diverged from since"
-      status: open
+      status: fixed
       severity: low
       phase: "[[PHASE-999]]"
       note: "Intake finding 8, narrowed — the expiry half was stale (waiver_expires errors since TASK-0068). Blocked behind ISS-0019 by sequencing: capping the visible exit while the silent one is open is a regression."
@@ -1241,7 +1242,7 @@ items:
     ISS-0020:
       file: "docs/issues/ISS-0020-Nothing-Requires-A-Test-To-Be-Executable.md"
       title: "Nothing requires a `TST-*` to carry a `command:`, and no metric distinguishes executable from manual tests — so the project cannot report how much of its verification actually runs"
-      status: open
+      status: fixed
       severity: medium
       phase: "[[PHASE-999]]"
       note: "Intake finding 2, scoped to the derived metric only. Requiring command: is deliberately out of scope — ADR-0010 rejected fake automation and ADR-0017 clause 2 says label the unexecutable, don't outlaw it."
@@ -1277,7 +1278,7 @@ items:
     ISS-0005:
       file: docs/issues/ISS-0005-Feature-Less-Requirement-Triage.md
       title: "Feature-less requirement triage (ADR-0007 follow-up): 14 of 23 resolved mechanically; 9 are a real residue — 5 policies, 3 conventions, 1 unscheduled deliverable"
-      status: open
+      status: declined
       severity: low
       phase: PHASE-999
     ISS-0015:
@@ -1921,12 +1922,12 @@ metrics:
     phases_total: 8
     phases_done: 4
     tasks_total: 140
-    tasks_done: 128
+    tasks_done: 129
     tests_total: 10
     tests_passing: 0
     tests_failing: 0
-    issues_open: 26
-    issues_triage: 13
+    issues_open: 12
+    issues_triage: 3
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 31

@@ -3,12 +3,12 @@ type: "[[issue]]"
 id: ISS-0059
 aliases: ["ISS-0059"]
 title: "A new project starts with no acceptance ledger, so its first verdict takes the pre-migration write path — the one kept for repositories that have not migrated, which a project created today has not"
-status: triage
+status: fixed
 phase: ""
 severity: medium
 owner: user:edwin
 created: 2026-09-06
-updated: 2026-09-06
+updated: 2026-09-18
 component: templates
 source: ["Edwin, 2026-09-06, recording the first acceptance verdict in a project initialised from the template three days earlier: 'why did this happen for a new project, is this an issue with the project-os functionality, what do we need to do to fix this?'"]
 related: ["[[project-os-cockpit#ISS-0285]]", "[[project-os-cockpit#ISS-0286]]", "[[project-os-cockpit#ADR-0037]]"]
@@ -43,3 +43,9 @@ Option 1 is recommended, and it composes with either of the others.
 ## What the platform should be called
 
 Related but separate: [[project-os-cockpit#ISS-0286]]. A project with one codebase should record its suite once, against the application, and keep per-operating-system ledgers for the few checks that are genuinely about an operating system. If the template ships an example, it should show that shape rather than an operating-system name, or every new project will copy the wrong default.
+
+## Fixed, 2026-09-18
+
+3e12cff: the template seeds `docs/releases/ledgers/README.md` into any repo without one, with the file format, an example using the platform `app`, and what the validator does once a ledger exists. `test-sync-stale.sh` checks the file and its seed entry.
+
+Checked as part of FEAT-0036 (TASK-0140).

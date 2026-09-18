@@ -3,12 +3,12 @@ type: "[[issue]]"
 id: ISS-0005
 aliases: ["ISS-0005"]
 title: "Feature-less requirement triage (ADR-0007 follow-up): 14 of 23 resolved mechanically; 9 are a real residue — 5 policies, 3 conventions, 1 unscheduled deliverable"
-status: open
+status: declined
 phase: "[[PHASE-999-Parking-Lot]]"
 severity: low
 owner: user:edwin
 created: 2026-07-24
-updated: 2026-07-24
+updated: 2026-09-18
 reviewed_by: "model:claude-fable-5"
 review_date: 2026-07-24
 review_verdict: approved
@@ -90,3 +90,9 @@ Superseding (not deleting) preserves the audit trail: the note stays, `status: s
 ## Also found
 
 `your-applications.com` has **stale feature statuses**: FEAT-0001 *Site infrastructure*, FEAT-0002 *Homepage*, and FEAT-0006 *Our Promise pledge* are all `backlog`, yet `public/` contains `index.html`, `our-promise.html`, two `privacy.html` pages and the shared stylesheet — the work shipped. The category-B links are correct regardless, but they now point `implemented` requirements at `backlog` features. Closing those features properly means ticking their requirements' criteria with evidence, which is close-out work rather than triage. Filed here rather than forced.
+
+## Checked against the template, 2026-09-18: declined
+
+None of the nine leftover requirements was superseded, and none blocks a check: your-applications.com validates with one REQ-BOXES warning and your-trainer says nothing about REQ-0151. The note itself concludes that no template mechanism is needed; moving them is each repo's own tidying.
+
+Checked as part of FEAT-0036 (TASK-0140).

@@ -8,7 +8,7 @@ phase: "[[PHASE-0003]]"
 severity: medium
 owner: user:edwin
 created: 2026-09-04
-updated: "2026-09-04"
+updated: 2026-09-18
 component: tooling
 source: ["[[ADR-0026-When-A-Drift-Sweep-Stops]] acceptance criterion 1, decided 2026-09-04", "The ISS-0048 drift sweep, passes 11 and 12"]
 related: ["[[ADR-0026-When-A-Drift-Sweep-Stops]]", "[[ADR-0024-A-Normative-Rule-Is-Stated-Once]]", "[[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File]]"]
@@ -60,3 +60,13 @@ Siblings found: [[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-Fi
 ## Risk scan
 
 One hazard, and it is the reason for the grandfathering note above: a new check that errors from day one breaks every downstream repo already violating it. `BASE-STATUS` was safe because the template and this repo both measured zero after the fix. Checks 1 and 2 have not been measured across the fleet and should be, before they error rather than warn.
+
+## Checked against the template, 2026-09-18: still true
+
+**What someone notices:** Sessions trip over fields no schema explains, and index pages silently miss files.
+
+The validator has no check for undocumented fields, unresolved citations or incomplete indexes. INDEX.md omits OBSIDIAN.md and TESTING.md today, and `fixes:` is documented only in HOOKS.md.
+
+**Next:** Three warning-first checks, the index check first because it is cheapest, each measured across the fleet before it becomes an error.
+
+Checked as part of FEAT-0036 (TASK-0140).

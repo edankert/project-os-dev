@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0023
 aliases: ["ISS-0023"]
 title: "Round two on ADR-0017: the frontmatter three-question test still asks who writes the field, which the amended clause 3 abandoned, so it fails the two mechanisms the body calls compliant; two notes still quote the superseded clause; and ISS-0021's new provenance paragraph mis-cites TASK-0070 and claims months of drift where the tree shows three days"
-status: open
+status: declined
 severity: medium
 owner: user:edwin
 created: 2026-07-29
-updated: 2026-07-29
+updated: 2026-09-18
 component: docs
 source: ["review:2026-07-29-independent-re-review-ADR-0017"]
 phase: "[[PHASE-999-Parking-Lot]]"
@@ -108,3 +108,9 @@ Noted, not a defect of this change: `SCHEMAS.md` declares `reviewed_by`/`review_
 - [ ] Correct ISS-0021 and the reference note to attribute the waiver dating to FEAT-0016 / TASK-0068 / REQ-0023's amendment, with FEAT-0017 / TASK-0069 as the promotion record.
 - [ ] Restate ISS-0021's title and line 48 so the finding is the uniform migration date and the absent renewal forcing-function, not months of drift — the commit is three days old.
 - [ ] Re-review once applied. Two rounds have now each found the fix for the previous round's finding introducing a fresh one of the same class, which is itself worth a note on the review loop rather than a third round of the same shape.
+
+## Checked against the template, 2026-09-18: declined
+
+The points are about wording in older notes, which ADR-0047 says is not an issue. The one point of substance, that ADR-0017's third question rejects `waiver_expires`, belongs with ADR-0017 if it is revisited.
+
+Checked as part of FEAT-0036 (TASK-0140).
