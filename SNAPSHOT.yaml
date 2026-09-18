@@ -38,7 +38,7 @@ counters:
   REL: 0
   REQ: 31
   RISK: 3
-  TASK: 125
+  TASK: 131
   TST: 12
   WF: 3
 
@@ -62,6 +62,7 @@ items:
       order: 7
       owner: user:edwin
       features: [FEAT-0034, FEAT-0035, FEAT-0036]
+      tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131]
       issues: [ISS-0028, ISS-0062, ISS-0033, ISS-0034, ISS-0035, ISS-0036, ISS-0037, ISS-0038, ISS-0039]
       related: [ADR-0047]
     PHASE-0006:
@@ -145,6 +146,7 @@ items:
       status: backlog
       owner: user:edwin
       phase: "[[PHASE-0007]]"
+      tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131]
       related: [ADR-0047]
     FEAT-0033:
       file: docs/features/walk-preparation/FEAT-0033-A-Walk-Keeps-Required-Preparation.md
@@ -367,6 +369,54 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0131:
+      file: docs/features/review-cost/plan/tasks/TASK-0131-Roll-Out-And-Measure-Five-Reviews.md
+      status: backlog
+      parent: FEAT-0034
+      phase: "[[PHASE-0007]]"
+      effort: M
+      depends: [TASK-0129, TASK-0130]
+      blocks: []
+    TASK-0130:
+      file: docs/features/review-cost/plan/tasks/TASK-0130-Re-Run-The-FEAT-0107-Review-The-New-Way.md
+      status: backlog
+      parent: FEAT-0034
+      phase: "[[PHASE-0007]]"
+      effort: S
+      depends: [TASK-0126, TASK-0127, TASK-0128]
+      blocks: [TASK-0131]
+    TASK-0129:
+      file: docs/features/review-cost/plan/tasks/TASK-0129-Round-Two-Verifies-Fixes-Only.md
+      status: backlog
+      parent: FEAT-0034
+      phase: "[[PHASE-0007]]"
+      effort: S
+      depends: [TASK-0126, TASK-0128]
+      blocks: [TASK-0131]
+    TASK-0128:
+      file: docs/features/review-cost/plan/tasks/TASK-0128-A-Hook-Stops-The-Reviewer-At-Its-Budget.md
+      status: backlog
+      parent: FEAT-0034
+      phase: "[[PHASE-0007]]"
+      effort: S
+      depends: [TASK-0127]
+      blocks: [TASK-0130]
+    TASK-0127:
+      file: docs/features/review-cost/plan/tasks/TASK-0127-The-Reviewer-Checks-A-List-Of-Claims.md
+      status: backlog
+      parent: FEAT-0034
+      phase: "[[PHASE-0007]]"
+      effort: M
+      depends: [TASK-0126]
+      blocks: [TASK-0128, TASK-0130]
+    TASK-0126:
+      file: docs/features/review-cost/plan/tasks/TASK-0126-The-Review-Packet-Script.md
+      status: backlog
+      parent: FEAT-0034
+      phase: "[[PHASE-0007]]"
+      effort: M
+      depends: []
+      blocks: [TASK-0127, TASK-0129, TASK-0130]
     TASK-0125:
       file: docs/features/walk-preparation/plan/tasks/TASK-0125-Retain-Declared-Preparation-And-Relevant-Setup.md
       status: doing
@@ -537,13 +587,6 @@ items:
       phase: "[[PHASE-0003]]"
       effort: M
       tests: [TST-0008]
-    TASK-0105:
-      file: "docs/features/delegation-hint/plan/tasks/TASK-0105-The-Issue-Template-Quotes-The-Prompt.md"
-      title: "The issue template quotes the prompt under 'As reported'"
-      status: done
-      phase: "[[PHASE-0003]]"
-      parent: FEAT-0027
-      effort: S
     TASK-0104:
       file: "docs/features/delegation-hint/plan/tasks/TASK-0104-Delegation-Carries-The-Prompt-And-The-Reason.md"
       title: "Delegation carries the user's prompt verbatim and the reason"
@@ -569,13 +612,6 @@ items:
       parent: FEAT-0027
       effort: S
       note: "Also writes the fixture harness behind TST-0007, so the two later hook tasks land against an existing test."
-    TASK-0101:
-      file: "docs/features/instruction-weight/plan/tasks/TASK-0101-Generated-Skill-Bodies-Stop-Repeating-Close-Out.md"
-      title: "Generated skill bodies stop repeating the close-out steps"
-      status: done
-      phase: "[[PHASE-0003]]"
-      parent: FEAT-0026
-      effort: S
     TASK-0099:
       file: "docs/features/instruction-weight/plan/tasks/TASK-0099-The-Same-Pass-Over-Four-More-Files.md"
       title: "The same pass over STATUSES, TESTING, QUALITY and DECISIONS"
@@ -1863,7 +1899,7 @@ metrics:
     features_done: 28
     phases_total: 8
     phases_done: 4
-    tasks_total: 125
+    tasks_total: 131
     tasks_done: 117
     tests_total: 5
     tests_passing: 0

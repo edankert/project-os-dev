@@ -12,10 +12,25 @@ related: ["[[PHASE-0007-Reviews-That-Fix-And-A-Backlog-That-Is-True]]"]
 
 # Delivery plan: a review costs what the change is worth
 
-1. **The rule text.** Change `QUALITY.md` so a review gate is one feature. Put the procedure and the budget into `independent-review/SKILL.md` and into the reviewer agent that `generate-adapters.py` emits. All of this is in `~/Dev/repos/project-os`.
-2. **Round counts.** Add a `review_rounds:` field to the note frontmatter and have the validator report a value above 2 ([[ISS-0062-A-Reviews-Round-Count-Is-Recorded-Nowhere|ISS-0062]]).
-3. **Sync** to `your-trainer` and `project-os-cockpit`. Re-copy the agent file by hand in the cockpit, because its sync does not touch `.claude/`.
-4. **The model trial**, run on the next three small reviews.
-5. **Measure** the next five reviews and write the numbers into PHASE-0007.
+## Where the work lands
 
-Tasks are minted when step 1 starts, after Edwin accepts ADR-0047.
+Every file this feature changes is in `~/Dev/repos/project-os`, the template repo:
+- the script and the hook under `tools/`;
+- the skill;
+- the reviewer agent emitted by `generate-adapters.py`.
+
+This repo holds the record. `your-trainer` and `project-os-cockpit` receive the files at the sync in TASK-0131. The cockpit's `.claude/agents/` copy is re-copied by hand, because its sync never touches `.claude/`.
+
+## Delivery sequence
+
+1. **[[TASK-0126-The-Review-Packet-Script|TASK-0126]]: the packet.** First, because everything else assumes the reviewer starts from it.
+2. **[[TASK-0127-The-Reviewer-Checks-A-List-Of-Claims|TASK-0127]]: the procedure.** The claims list, targeted tests, context rules, and `effort: medium` in the agent file.
+3. **[[TASK-0128-A-Hook-Stops-The-Reviewer-At-Its-Budget|TASK-0128]]: the hook.** It can be built in parallel with step 2. Its messages quote the skill's wording, so it is finished after step 2.
+4. **[[TASK-0129-Round-Two-Verifies-Fixes-Only|TASK-0129]]: round two.** A packet mode for fixes, a 15-call limit, and the round number recorded.
+5. **[[TASK-0130-Re-Run-The-FEAT-0107-Review-The-New-Way|TASK-0130]]: the proof.** The gate before rollout. If the re-run misses the known defect, go back to step 2 or 3 before continuing.
+6. **[[TASK-0131-Roll-Out-And-Measure-Five-Reviews|TASK-0131]]: rollout.** Sync, the Sonnet trial, and five measured reviews.
+
+## Dependencies
+
+- ADR-0047 should be accepted before step 6, because the rollout changes what every repo's reviewer does. Steps 1–5 are reversible and can run before that.
+- The measurement query is in the reference note. Keep it unchanged, so the numbers compare with the baseline.

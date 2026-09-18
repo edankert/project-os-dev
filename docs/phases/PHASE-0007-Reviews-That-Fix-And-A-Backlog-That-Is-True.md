@@ -10,7 +10,7 @@ updated: 2026-09-18
 goal: "A review costs what the change is worth and its findings are fixed in the feature that caused them, so the open issues in every repo are real, readable, and mostly reported by a person."
 features: [FEAT-0034, FEAT-0035, FEAT-0036]
 requirements: []
-tasks: []
+tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131]
 issues: [ISS-0028, ISS-0062, ISS-0033, ISS-0034, ISS-0035, ISS-0036, ISS-0037, ISS-0038, ISS-0039]
 related: ["[[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It]]", "[[ADR-0028-A-Review-Gate-Runs-Two-Rounds]]", "[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]"]
 tags: [review, issues, fleet]
@@ -26,7 +26,7 @@ This phase fixes both problems at the rule level, in the template, so every repo
 
 ## Scope
 
-- [[FEAT-0034-A-Review-Costs-What-The-Change-Is-Worth|FEAT-0034]]: a review covers one feature's diff, follows a fixed procedure and stops at a budget. This includes recording round counts ([[ISS-0062-A-Reviews-Round-Count-Is-Recorded-Nowhere|ISS-0062]]) and a trial of a cheaper reviewer model.
+- [[FEAT-0034-A-Review-Costs-What-The-Change-Is-Worth|FEAT-0034]]: a review starts from a generated packet holding the diff, gives a verdict on a fixed list of claims, runs only targeted tests, and is stopped by a hook at 40 tool calls. Round two only verifies fixes, with a 15-call limit. Before rollout, the new review is re-run against FEAT-0107's code as it was before the fixes, and must find the defects the old review found. Six tasks, TASK-0126 to TASK-0131.
 - [[FEAT-0035-A-Finding-Is-Fixed-Before-It-Is-Filed|FEAT-0035]]: a finding in the feature's own code is fixed before the feature closes. What may be filed, how an issue is written, and how a question reaches Edwin all change. This absorbs [[ISS-0028-Close-Out-Has-No-Answer-For-Cannot-Fix|ISS-0028]].
 - [[FEAT-0036-The-Backlogs-Are-Cleared-Once|FEAT-0036]]: every open issue in `your-trainer`, `project-os-cockpit` and this repo is checked against the current code. Each one is then fixed, closed as obsolete, or kept with a plain title and a stated question. `your-trainer` goes first.
 - The seven issues left by the eight-round review, ISS-0033 to ISS-0039, are settled as part of this repo's leg of FEAT-0036.
