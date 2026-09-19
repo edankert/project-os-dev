@@ -37,6 +37,8 @@ CURSOR_RULES = [
     ("TRACEABILITY.md", "traceability", ["docs/**/*.md"]),
     ("OBSIDIAN.md", "obsidian", ["docs/**/*.md"]),
     ("MARKDOWN.md", "markdown", ["**/*.md"]),
+    # Prose, commit messages and replies (project-os-cockpit ISS-0273).
+    ("WRITING.md", "writing", ["**/*"]),
 ]
 
 # Model pins for the two subagents (HC-008 delegation hint). The lifecycle

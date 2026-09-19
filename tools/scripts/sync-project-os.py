@@ -8,11 +8,12 @@ baseline (the template commit recorded in .project-os-sync at the last sync).
   target missing                          -> copied (seed paths: only ever copied once)
   target == baseline version              -> safe fast-forward, overwritten
   target == an OLDER template version     -> stale, fast-forwarded: nobody edited it,
-                                             an earlier sync skipped it (FEAT-0037)
+                                             an earlier sync skipped it (FEAT-0037);
+                                             'merge' paths too (ISS-0071)
   target listed under keep_local:          -> kept, reported, never touched
   target != baseline (locally modified)   -> SKIPPED and reported for hand-merge
                                              (--force overwrites template-owned only)
-  'merge'-owned path, diverged            -> ALWAYS skipped, even with --force: real project
+  'merge'-owned path, locally edited      -> ALWAYS skipped, even with --force: real project
                                              content lives here and would be destroyed
 
 Ownership per path comes from tools/sync/MANIFEST.yaml in the UPSTREAM template
@@ -74,7 +75,17 @@ def ownership_for(rel, owners):
     return best
 
 
+#: Build output that exists in a working copy of the template but is never
+#: template content. The sync walks the upstream files on disk, so without this
+#: a `__pycache__` left by running a script upstream was copied into every repo
+#: (project-os-cockpit ISS-0257). The manifest's `excludes:` covers only the
+#: paths it names; these apply everywhere.
+ALWAYS_EXCLUDED = ("__pycache__", "*.pyc", ".pytest_cache", ".DS_Store")
+
+
 def excluded(rel, src_base, excludes):
+    if any(fnmatch.fnmatch(part, pat) for part in rel.split("/") for pat in ALWAYS_EXCLUDED):
+        return True
     for base, patterns in excludes.items():
         if not (rel + "/").startswith(base):
             continue
@@ -260,8 +271,12 @@ def main(argv=None):
         # edits: an earlier sync skipped it and then recorded a later
         # baseline, so it can never equal the baseline again. Measured
         # 2026-09-18: 51 such files across the fleet, every one reported as
-        # locally edited. Not for 'merge' paths, which may hold project data.
-        if owner != "merge" and blob_id(current) in template_history(src, rel):
+        # locally edited. This holds for 'merge' paths too (project-os-dev
+        # ISS-0071): a byte-for-byte copy of an old template version holds no
+        # project content, and skipping it left SCHEMAS.md 150 lines out of
+        # date in four repos while the sync reported them up to date. A merge
+        # path with any local edit still falls through to MERGE below.
+        if blob_id(current) in template_history(src, rel):
             updated.append(rel + " (was an older template version)")
             if not args.dry_run:
                 shutil.copy2(src_file, target)

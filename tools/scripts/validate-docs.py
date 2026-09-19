@@ -1492,6 +1492,22 @@ def load_yaml(text):
         return parse_yaml_subset(text)
 
 
+def load_snapshot_yaml(text):
+    """Parse SNAPSHOT.yaml, and raise when it does not parse (project-os-dev ISS-0070).
+
+    `load_yaml` falls back to the lenient subset parser on *any* error, which
+    is right for a machine without PyYAML and wrong for a snapshot with a
+    syntax error: the subset parser read a broken snapshot without complaint,
+    so the validator and `sync-snapshot.py --check` both passed it. Here the
+    fallback is taken only when PyYAML is not installed.
+    """
+    try:
+        import yaml  # type: ignore
+    except ImportError:
+        return parse_yaml_subset(text)
+    return yaml.safe_load(text)
+
+
 def parse_frontmatter(path):
     try:
         text = path.read_text(encoding="utf-8")
@@ -2763,9 +2779,9 @@ def validate(root, report):
         report.error("SNAP-MISSING", "SNAPSHOT.yaml not found at repo root")
         return
     try:
-        snap = load_yaml(snap_path.read_text(encoding="utf-8"))
+        snap = load_snapshot_yaml(snap_path.read_text(encoding="utf-8"))
     except Exception as exc:  # noqa: BLE001
-        report.error("SNAP-PARSE", "SNAPSHOT.yaml failed to parse: %s" % exc)
+        report.error("SNAP-PARSE", "SNAPSHOT.yaml failed to parse: %s" % str(exc).splitlines()[0])
         return
     if not isinstance(snap, dict):
         report.error("SNAP-PARSE", "SNAPSHOT.yaml did not parse to a mapping")

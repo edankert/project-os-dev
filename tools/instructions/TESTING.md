@@ -40,6 +40,7 @@ A check is not filed into a section. Its section is computed from two fields it 
 - **Say which change did it, in the same action**: the invalidation is a dated event in the release ledger naming the check and the change (`TAXONOMY.md`, "Acceptance outcomes (the ledger's vocabulary)"), and it is refused without a change id; no field on the note records it (ADR-0037). Reason: clearing a tick otherwise destroys the only record the check ever passed, and the re-check never happens (measured in project-os CHG-20260903-Instruction-Weight).
 - Best done at the close-out of the work that caused it, as one sweep over the areas touched.
 - A regression test is not invalidated by a later change; a returned defect files a new issue.
+- **A regression test that also states current behaviour is split when a change overlaps it** (project-os-dev ISS-0069, Edwin, 2026-09-18). A regression test's claim should be only that the defect stays fixed. If it also asserts how the product behaves now, a change to that behaviour leaves it ticked though it no longer holds. At the close-out sweep, split it: the regression test keeps only the defect's own assertion, and a new feature test, with `covers:` naming the `FEAT-*`, carries the behaviour, and is invalidated like any other.
 
 ### When to remove
 - **Nothing removes a check.** A check whose subject is gone goes `retired`; one a machine now covers gets a `command:`. Reason: a deleted check cannot report that its covering test was renamed.

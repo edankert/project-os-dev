@@ -48,7 +48,7 @@ that is not passing. Eighteen validator codes are emitted from the walk over
 `items.*`, so a pruned entry stops being checked -- without those holds,
 pruning silenced 12 waiver expiries and 3 VERIFY warnings in testing.
 
-Exit codes: 0 = clean/updated, 1 = --check found drift, 2 = usage error.
+Exit codes: 0 = clean/updated, 1 = --check found drift or SNAPSHOT.yaml does not parse, 2 = usage error.
 
 Stdlib only. Usage:
     sync-snapshot.py [--repo-root PATH] [--check] [--quiet]
@@ -650,6 +650,13 @@ def main(argv=None):
         return 2
 
     text = snap_path.read_text(encoding="utf-8")
+    try:
+        _vd.load_snapshot_yaml(text)
+    except Exception as exc:  # noqa: BLE001
+        # ISS-0070: a snapshot that does not parse is an error, not drift-free.
+        print("sync-snapshot: SNAPSHOT.yaml does not parse (%s); fix it by hand"
+              % str(exc).splitlines()[0], file=sys.stderr)
+        return 1
     lines = text.splitlines(keepends=True)
     statuses, index, claimants = note_statuses(root)
     fields = note_fields(root)
