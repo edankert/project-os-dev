@@ -136,6 +136,12 @@ out="$(validate "$TMP/manual-stale")"; code=$?
 check "a manual test at passing but stale still fails the gate" "$( { [[ $code -ne 0 ]] && printf '%s' "$out" | grep -q 'stale'; }; echo $?)"
 
 # 4. the runner writes nothing and exits 1 on a failure
+# A repo that keeps its own run-tests.py (keep_local: in .project-os-sync)
+# runs a different runner on purpose and tests it itself, so the template
+# runner's contract below does not apply there (project-os-cockpit, its ADR-0038).
+if grep -qE '^[[:space:]]*-[[:space:]]*"?tools/scripts/run-tests\.py' "$ROOT/.project-os-sync" 2>/dev/null; then
+  echo "  skip the runner checks: this repo keeps its own tools/scripts/run-tests.py (keep_local)"
+else
 fixture "$TMP/run" $'status: active' 'command: "false"'
 before="$(cat "$TMP/run/docs/tests/TST-0001-X.md")"
 python3 "$RUNNER" --repo-root "$TMP/run" >/dev/null 2>&1; code=$?
@@ -204,6 +210,8 @@ fixture "$TMP/run-quiet" $'status: active' 'command: "echo fine"'
 out="$(python3 "$RUNNER" --repo-root "$TMP/run-quiet" 2>&1)"
 check "a passing command does not echo its output" \
   "$(printf '%s' "$out" | grep -q '      | ' && echo 1 || echo 0)" "$out"
+
+fi
 
 echo "test-verdict-model: $assertions assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]
