@@ -12,7 +12,7 @@ tags: [skills, issues]
 
 ## When to use
 - A prompt reports a bug, mismatch, broken workflow, unclear documentation, or unexpected behavior.
-- An agent or a review finds a defect it will not fix now. **First apply the filing bar** in `../../instructions/QUALITY.md` ("The filing bar"): a defect in code the current feature changed is fixed in that feature, not filed. File only when the fix needs the owner's decision, the defect is in code the work did not change, or the fix is too large for the session.
+- An agent or a review finds a defect it will not fix now. **First apply the filing bar** in `../../instructions/QUALITY.md` ("The filing bar"): a defect in code the current feature changed is fixed in that feature, not filed.
 
 ## Inputs
 - User prompt, repro steps/logs, and any affected repo paths.

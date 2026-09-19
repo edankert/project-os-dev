@@ -15,6 +15,9 @@ baseline (the template commit recorded in .project-os-sync at the last sync).
                                              (--force overwrites template-owned only)
   'merge'-owned path, locally edited      -> ALWAYS skipped, even with --force: real project
                                              content lives here and would be destroyed
+  gone upstream, never a template file    -> the project's own: not reported
+  gone upstream, an unedited old version  -> removed (REMOVED)
+  gone upstream, edited here              -> reported GONE, left in place
 
 Ownership per path comes from tools/sync/MANIFEST.yaml in the UPSTREAM template
 (more specific path wins). After a non-dry run the upstream HEAD sha is recorded
@@ -145,10 +148,12 @@ def blob_id(data):
 
 
 def template_history(src_repo, rel):
-    """Every blob id `rel` has had in the template's history."""
+    """Every blob id `rel` has had in the template's history on HEAD. Empty if it never existed there."""
     try:
         out = subprocess.run(
-            ["git", "-C", str(src_repo), "log", "--all", "--format=", "--raw", "--no-abbrev", "--", rel],
+            # HEAD, not --all: a blob that only ever lived on an unmerged
+            # branch is not a template version (FEAT-0037 review).
+            ["git", "-C", str(src_repo), "log", "HEAD", "--format=", "--raw", "--no-abbrev", "--", rel],
             capture_output=True, check=True, text=True,
         ).stdout
     except (subprocess.CalledProcessError, OSError):
@@ -236,7 +241,7 @@ def main(argv=None):
     keep_local = set(state.get("keep_local") or [])
 
     copied, updated, seeded, uptodate, kept = [], [], [], [], []
-    diverged, merge_pending, gone = [], [], []
+    diverged, merge_pending, gone, removed = [], [], [], []
     processed = set()
 
     def sync_file(rel, owner):
@@ -322,7 +327,21 @@ def main(argv=None):
                     if ".git" in f.parts or excluded(rel, rel_base, excludes):
                         continue
                     if ownership_for(rel, owners) == "template" and not (src / rel).is_file():
-                        gone.append(rel)
+                        # FEAT-0037 review: GONE listed ~150 files a person had
+                        # to read, most of them the repo's own scripts. A file
+                        # the template never shipped is the project's own and
+                        # is not reported. A file that is exactly an old
+                        # template version was never edited, so it goes. Only
+                        # a template file someone edited is left for a person.
+                        hist = template_history(src, rel)
+                        if not hist:
+                            continue
+                        if blob_id(f.read_bytes()) in hist:
+                            removed.append(rel)
+                            if not args.dry_run:
+                                f.unlink()
+                        else:
+                            gone.append(rel)
         elif base_path.is_file():
             sync_file(rel_base, owner)
 
@@ -350,8 +369,12 @@ def main(argv=None):
         print("%sExpected-divergence (merge-owned) files left alone (--force does not touch these) — merge upstream changes by hand if relevant:" % prefix)
         for rel in merge_pending:
             print("%s  MERGE  %s" % (prefix, rel))
+    if removed:
+        print("%sRemoved: the template no longer ships these, and each was an unedited template copy:" % prefix)
+        for rel in removed:
+            print("%s  REMOVED  %s" % (prefix, rel))
     if gone:
-        print("%sUpstream no longer ships (left in place; remove manually if obsolete):" % prefix)
+        print("%sUpstream no longer ships, and the copy here was edited (left in place; remove by hand if obsolete):" % prefix)
         for rel in gone:
             print("%s  GONE  %s" % (prefix, rel))
 

@@ -76,7 +76,7 @@ It holds only round one's `## Review` section and the source diff since that com
 ## After the review: fix, then file what is left
 1. **Combine the two reports, then transcribe; never anticipate a verdict.** A claim either reviewer marked *refuted* with evidence is *refuted*. A claim one marked *holds* and the other *not checked* is *holds*. Where they disagree, *holds* against *refuted*, the refutation's command decides: run it. Write one combined `## Review` section, and record `changes-requested` if any claim is *refuted*. List both reviewers in `reviewed_by`.
 2. **Fix every finding about code the feature changed before the feature closes**, whether or not it refuted a claim (`../../instructions/QUALITY.md`, "A finding is fixed in the feature that caused it"). A refuted claim also sends the fixes to round two.
-3. **File only what the filing bar admits** (`../../instructions/QUALITY.md`, "The filing bar"): the fix needs the owner's decision, the defect lies in code the feature did not change, or the fix is too large for the session. Everything else stays in the note's `## Review` section. An issue opens with what a user would notice (`../issue-intake/SKILL.md`).
+3. **File only what the filing bar in `../../instructions/QUALITY.md` admits** ("The filing bar"). Everything else stays in the note's `## Review` section. An issue opens with what a user would notice (`../issue-intake/SKILL.md`).
 4. **Ask the owner, don't file for them.** A question goes in the close-out summary with a recommendation. If a sensible default exists, take it and say so.
 5. If `approved`: continue with `../close-out/SKILL.md`.
 

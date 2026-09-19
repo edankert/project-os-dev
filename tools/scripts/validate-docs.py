@@ -2097,11 +2097,15 @@ def validate_review_and_issue_fields(note_index, grandfathered, report):
         name = owner.split(":", 1)[1].strip() if owner.startswith("user:") else ""
         waits = r"\b(owner|user)'?s (call|decision|input)\b|\bwaits? on (the )?(owner|user)\b|\bneeds? (the )?(owner|user)'?s? (input|decision)\b"
         if name:
-            waits += r"|\b%s'?s (call|decision|input|choice)\b|\b(for|ask|awaiting|needs?|waits? on) %s\b" % ((re.escape(name),) * 2)
+            waits += r"|\b%s'?s (call|decision|input|choice)\b|\b(ask|awaiting|needs?|waits? on) %s\b" % ((re.escape(name),) * 2)
         try:
-            body = path.read_text(encoding="utf-8")
+            text = path.read_text(encoding="utf-8")
         except OSError:
             continue
+        # The body only: the issue template's own comment on `question:`
+        # says "only when it waits on the owner", so reading the frontmatter
+        # warned on every new issue made from the template (FEAT-0035 review).
+        body = text.split("\n---", 1)[1] if text.startswith("---") and "\n---" in text else text
         if re.search(waits, body, re.I):
             promotion_emit(report, "ISSUE-QUESTION", grandfathered, note_id)(
                 "ISSUE-QUESTION", "%s says it waits on the owner but has no `question:`. State the question, the "

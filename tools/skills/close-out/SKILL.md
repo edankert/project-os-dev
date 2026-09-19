@@ -56,7 +56,7 @@ tags: [skills, closeout]
    - If no trigger applies, record the negative result (`../../instructions/LIFECYCLE.md`, "Risk scan triggers").
 8. **Mechanical validation:**
    - Run `bash tools/scripts/validate-docs.sh` and fix every reported error before finishing.
-   - An error you cannot fix gets an `ISS-*` only under the filing bar in `../../instructions/QUALITY.md` ("The filing bar"): it needs the owner's decision, or it lies outside this work. The issue carries the error's code and message word for word, and one open issue per code and subject is enough; add to it instead of filing a second. An error this work caused is fixed, never filed.
+   - An error you cannot fix gets an `ISS-*` only under the filing bar in `../../instructions/QUALITY.md` ("The filing bar"). The issue carries the error's code and message word for word, and one open issue per code and subject is enough; add to it instead of filing a second. An error this work caused is fixed, never filed.
    - Before pushing and after, follow `../../instructions/LIFECYCLE.md` close-out steps 8 and 9 (`--as-committed`, then confirm the CI run went green).
 9. **Independent review:**
    - At the review gates stated once in `../../instructions/QUALITY.md` ("Independent review (clean-context)"), run `../independent-review/SKILL.md` before applying the terminal status.

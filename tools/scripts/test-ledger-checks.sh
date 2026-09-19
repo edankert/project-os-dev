@@ -109,6 +109,23 @@ def vouched(edit=None):
     r = vd.Report(); vd.validate_vouched_ledgers(root, r, idx); return r.errors + r.warnings
 check("a sealed ledger matching its release note's hash draws nothing", vouched() == [])
 check("a sealed ledger edited after sealing draws LEDGER-SEALED", "LEDGER-SEALED" in codes(vouched(lambda b: b.replace(b"pass", b"fail"))))
-print("test-ledger-checks: %d assertions, %d failure(s)" % (n, failures))
+print("test-ledger-checks: %d unit assertions, %d failure(s)" % (n, failures))
 sys.exit(1 if failures else 0)
 PYEOF
+unit=$?
+# End to end (FEAT-0037 review): the validator's own run reaches the checks.
+# The cases above call each function directly, so they would pass even if
+# the validator stopped calling it.
+REPO="$(cd "$HERE/../.." && pwd)"; T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
+cp -R "$REPO/SNAPSHOT.yaml" "$REPO/docs" "$T/"; mkdir -p "$T/tools"; cp -R "$REPO/tools/scripts" "$REPO/tools/instructions" "$T/tools/"
+mkdir -p "$T/docs/releases/ledgers" "$T/docs/issues"
+printf '{"platform": "app", "entries": [{"check": "TST-0001", "mark": "fail", "date": "2026-09-20", "by": "user:x", "method": "walked"}]}\n' > "$T/docs/releases/ledgers/WORKING-app.json"
+printf -- '---\ntype: "[[issue]]"\nid: ISS-0902\ntitle: "Retire "walk" from it"\n---\n' > "$T/docs/issues/ISS-0902-x.md"
+out="$(PYTHONDONTWRITEBYTECODE=1 python3 "$T/tools/scripts/validate-docs.py" --repo-root "$T" 2>&1)"
+e2e=0
+python3 -c 'import yaml' 2>/dev/null && want="LEDGER-REASON NOTE-FRONTMATTER" || want="LEDGER-REASON"
+for code in $want; do
+  if grep -q "\[$code\]" <<<"$out"; then echo "  ok   the validator's run reports $code"; else echo "  FAIL the validator's run reports $code"; e2e=$((e2e + 1)); fi
+done
+echo "test-ledger-checks: end to end, $e2e failure(s)"
+[ "$unit" -eq 0 ] && [ "$e2e" -eq 0 ]

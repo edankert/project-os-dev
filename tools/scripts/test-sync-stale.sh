@@ -22,17 +22,17 @@ paths:
   ".github/workflows/validate-docs.yml": template
 EOF
 w() { mkdir -p "$(dirname "$1")"; printf '%s\n' "$2" > "$1"; }
-w tools/instructions/A.md "A v1"; w tools/instructions/B.md "B v1"; w tools/instructions/C.md "C v1"; w docs/PHASES.md "P v1"; w docs/SCHEMAS.md "S v1"; w .github/workflows/validate-docs.yml "W v1"; w LLM_BRIEF.md "REPLACE ME"
+w tools/instructions/A.md "A v1"; w tools/instructions/B.md "B v1"; w tools/instructions/C.md "C v1"; w tools/instructions/D.md "D v1"; w tools/instructions/E.md "E v1"; w docs/PHASES.md "P v1"; w docs/SCHEMAS.md "S v1"; w .github/workflows/validate-docs.yml "W v1"; w LLM_BRIEF.md "REPLACE ME"
 git add -A && git commit -qm v1
 w tools/instructions/A.md "A v2"; w tools/instructions/B.md "B v2"; w docs/PHASES.md "P v2"; w .github/workflows/validate-docs.yml "W v2"
 git add -A && git commit -qm v2; V2="$(git rev-parse HEAD)"
-w tools/instructions/A.md "A v3"; w tools/instructions/B.md "B v3"; w tools/instructions/C.md "C v3"; w docs/PHASES.md "P v3"; w docs/SCHEMAS.md "S v3"; w .github/workflows/validate-docs.yml "W v3"
+git rm -q tools/instructions/D.md tools/instructions/E.md; w .github/workflows/own-ci.yml "template CI"; w tools/instructions/A.md "A v3"; w tools/instructions/B.md "B v3"; w tools/instructions/C.md "C v3"; w docs/PHASES.md "P v3"; w docs/SCHEMAS.md "S v3"; w .github/workflows/validate-docs.yml "W v3"
 git add -A && git commit -qm v3
 # downstream: A stale at v1, B locally edited, C at the v2 baseline (v1 content, unchanged in v2),
 # PHASES stale at v1 (merge-owned), a kept workflow that is an older template version
 # (so without keep_local it would be fast-forwarded), a brief filled with project facts
 mkdir -p "$D/tools/instructions" "$D/docs" "$D/.github/workflows"
-w "$D/tools/instructions/A.md" "A v1"; w "$D/tools/instructions/B.md" "B local edit"; w "$D/tools/instructions/C.md" "C v1"
+w "$D/tools/instructions/D.md" "D v1"; w "$D/tools/instructions/E.md" "E v1 edited here"; w "$D/tools/instructions/ours.py" "our own script"; w "$D/tools/instructions/A.md" "A v1"; w "$D/tools/instructions/B.md" "B local edit"; w "$D/tools/instructions/C.md" "C v1"
 w "$D/docs/PHASES.md" "P v1"; w "$D/docs/SCHEMAS.md" "S v1 plus our own fields"; w "$D/.github/workflows/validate-docs.yml" "W v1"; w "$D/.github/workflows/own-ci.yml" "our CI"; w "$D/LLM_BRIEF.md" "Name: down"
 printf 'baseline_sha: "%s"\nkeep_local:\n  - ".github/workflows/validate-docs.yml"   # runs its own suite\n' "$V2" > "$D/.project-os-sync"
 mkdir -p "$U/tools/instructions/__pycache__"; w "$U/tools/instructions/__pycache__/x.cpython-39.pyc" "bytecode"; w "$U/tools/instructions/.DS_Store" "finder"
@@ -42,6 +42,12 @@ check "and reported as updated from an older version" grep -q "A.md (was an olde
 check "a file at the baseline is fast-forwarded as before" grep -qx "C v3" "$D/tools/instructions/C.md"
 check "build output on disk upstream is not copied (cockpit ISS-0257)" test ! -e "$D/tools/instructions/__pycache__/x.cpython-39.pyc"
 check "nor a .DS_Store" test ! -e "$D/tools/instructions/.DS_Store"
+check "an unedited copy of a file the template dropped is removed" test ! -e "$D/tools/instructions/D.md"
+check "and reported as removed" grep -q "REMOVED  tools/instructions/D.md" <<<"$out"
+check "an edited copy of a dropped template file stays" grep -qx "E v1 edited here" "$D/tools/instructions/E.md"
+check "and is reported GONE" grep -q "GONE  tools/instructions/E.md" <<<"$out"
+check "the project's own file in a template folder stays" grep -qx "our own script" "$D/tools/instructions/ours.py"
+check "and is not reported" bash -c "! grep -q 'ours.py' <<<\"\$1\"" _ "$out"
 check "a real local edit is left alone" grep -qx "B local edit" "$D/tools/instructions/B.md"
 check "and still reported for a hand-merge" grep -q "B.md" <<<"$(grep -A20 'ACTION REQUIRED' <<<"$out")"
 check "a merge-owned stale file (an older template version) is fast-forwarded" grep -qx "P v3" "$D/docs/PHASES.md"
