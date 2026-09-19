@@ -53,22 +53,6 @@ KINDS: tuple[str, ...] = ("review", "question", "annotation")
 ANCHOR_KEYS: frozenset[str] = frozenset({"variant", "path", "quote"})
 
 
-def normalise_anchor(raw: object) -> dict[str, str]:
-    """Keep only the anchor keys, as strings, dropping empties.
-
-    A coordinate arriving under any name is dropped with everything else that
-    is not in `ANCHOR_KEYS` — the schema is an allow-list precisely so a caller
-    cannot smuggle `{x, y}` in and have it silently persisted.
-    """
-    if not isinstance(raw, dict):
-        return {}
-    out: dict[str, str] = {}
-    for key in sorted(ANCHOR_KEYS):
-        value = str(raw.get(key) or "").strip()
-        if value:
-            out[key] = value[:300]
-    return out
-
 #: Terminal outcomes, recorded for ADR-0007's advisory-phase measurement:
 #: the decision to gate (or not) should rest on how often review actually
 #: changes a plan, which is only knowable if outcomes are counted.
@@ -82,6 +66,28 @@ OUTCOMES: tuple[str, ...] = (
 
 _ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 _MAX_REQUESTS = 200
+
+
+def normalise_anchor(raw: object) -> dict[str, str]:
+    """Keep only the anchor keys, as strings, dropping empties.
+
+    A coordinate arriving under any name is dropped with everything else that
+    is not in `ANCHOR_KEYS` — the schema is an allow-list precisely so a caller
+    cannot smuggle `{x, y}` in and have it silently persisted.
+
+    **Outlived the design bench** (FEAT-0148 / TASK-0615). Its sibling
+    `resolve_anchor` re-resolved an anchor against a design's text at render
+    time, and went with the surface that rendered it; this one is still called
+    by `ReviewStore.add` for any request carrying an anchor, so it stays.
+    """
+    if not isinstance(raw, dict):
+        return {}
+    out: dict[str, str] = {}
+    for key in sorted(ANCHOR_KEYS):
+        value = str(raw.get(key) or "").strip()
+        if value:
+            out[key] = value[:300]
+    return out
 
 
 def _utc_now_iso() -> str:
@@ -295,36 +301,3 @@ class ReviewStore:
         return counts
 
 
-def resolve_anchor(anchor: dict[str, str], design_text: str) -> dict[str, object]:
-    """Re-find an annotation's anchor in the design as it stands now.
-
-    **Never floats to the wrong spot** (TASK-0308). An anchor is re-resolved at
-    render, and when it cannot be found the annotation says so — because a
-    comment silently re-attached to different content is worse than one that
-    admits it is lost: the reader trusts it and it is about something else.
-
-    Resolution is deliberately in this order, weakest claim last:
-
-    1. the **quote** still appears — the strongest evidence the thing being
-       commented on survived, and independent of any structure;
-    2. otherwise the **variant** still exists — the comment is still about a
-       shape that is present, but the exact spot moved;
-    3. otherwise **lost**.
-    """
-    from .cockpit import design_variants
-
-    quote = (anchor or {}).get("quote", "")
-    variant = (anchor or {}).get("variant", "")
-    names = [v["name"] for v in design_variants(design_text)]
-
-    if quote and quote in design_text:
-        return {"state": "found", "by": "quote", "variant": variant}
-    if variant and variant in names:
-        return {
-            "state": "moved", "by": "variant", "variant": variant,
-            "detail": "the quoted text is gone; the variant it was in still exists",
-        }
-    return {
-        "state": "lost", "by": "", "variant": variant,
-        "detail": "neither the quoted text nor the variant it named is in the design now",
-    }

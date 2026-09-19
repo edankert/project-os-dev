@@ -1643,6 +1643,7 @@ details:not([open]) > summary .group-chevron::before {
 .group-icon[data-status="superseded"],
 .group-icon[data-status="declined"],
 .group-icon[data-status="reverted"],
+.group-icon[data-status="abandoned"],
 .group-icon[data-status="rolled-back"],
 .group-icon[data-status="reconciled"],
 .group-icon[data-status="deprecated"] { color: var(--status-archived); }

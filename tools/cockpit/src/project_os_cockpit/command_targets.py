@@ -66,6 +66,23 @@ def targets(command: str) -> list[tuple[str, str]]:
     return out
 
 
+#: Folders a test's source never lives in, the same set the validator skips
+#: (`_CMD_SKIP_DIRS`). Searching them made the validator take 197 s instead of
+#: 9 s on your-health (project-os-dev ISS-0068). The validator lists the tree
+#: once per run; this module serves a long-running sidecar, so it walks fresh
+#: each time and a rename is seen at once.
+_SKIP_DIRS = frozenset({".git", "build", "node_modules", ".venv", "venv",
+                        ".gradle", "__pycache__", ".pytest_cache", "dist",
+                        "DerivedData", "Pods", ".idea"})
+
+
+def _file_names(root: Path):
+    import os
+    for _dir, dirs, files in os.walk(root):
+        dirs[:] = [d for d in dirs if d not in _SKIP_DIRS]
+        yield from files
+
+
 def _exists(kind: str, value: str, root: Path) -> bool:
     if kind == "path":
         if (root / value).exists():
@@ -73,9 +90,11 @@ def _exists(kind: str, value: str, root: Path) -> bool:
         # A command may `cd` first (`cd android && ./gradlew …`), so a relative
         # path can be rooted anywhere. Fall back to the basename, which is what
         # a rename actually changes.
-        return any(root.rglob(Path(value).name))
+        name = Path(value).name
+        return any(f == name for f in _file_names(root))
     leaf = value.rsplit(".", 1)[-1]
-    return any(any(root.rglob(leaf + suffix)) for suffix in _JVM_SUFFIXES)
+    wanted = {leaf + suffix for suffix in _JVM_SUFFIXES}
+    return any(f in wanted for f in _file_names(root))
 
 
 def _checkable(kind: str, value: str, root: Path) -> bool:
@@ -95,7 +114,7 @@ def _checkable(kind: str, value: str, root: Path) -> bool:
     if kind == "path":
         parent = (root / value).parent
         return parent.is_dir()
-    return any(any(root.rglob("*" + suffix)) for suffix in _JVM_SUFFIXES)
+    return any(f.endswith(_JVM_SUFFIXES) for f in _file_names(root))
 
 
 def resolve(command: str, root: Path) -> str:

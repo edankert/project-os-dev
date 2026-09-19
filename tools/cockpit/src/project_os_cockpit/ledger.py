@@ -438,6 +438,33 @@ def working_path(docs_root: Path, platform: str) -> Path:
     return ledgers_dir(docs_root) / f"{WORKING_PREFIX}-{platform}.json"
 
 
+def ensure_working(docs_root: Path, platform: str) -> Path:
+    """Create the open ledger for a platform if it does not exist yet, and
+    return its path ([[ISS-0290]]).
+
+    **A release that exists can be walked.** `append` has always created the
+    file on its first write, so nothing was ever *blocked* by a missing
+    ledger — but `platforms()` reads the directory, and a platform with no
+    file is a platform the tool does not know it has. That is what turned a
+    walker's first mark into a refusal: with two ledgers and no way to choose
+    between them, the client sent none and the write path refused.
+
+    Called when a release declares its platform, so the ledger the release
+    will be walked against exists from the moment the release does.
+
+    Idempotent, and it never touches a ledger that is already there — an
+    existing file is somebody's record.
+    """
+    path = working_path(docs_root, platform)
+    if path.exists():
+        return path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"platform": platform, "entries": []}, indent=2) + "\n",
+        encoding="utf-8")
+    return path
+
+
 def working(docs_root: Path, platform: str) -> Ledger:
     """The open ledger for a platform, created in memory if it has none yet."""
     path = working_path(docs_root, platform)
@@ -719,3 +746,49 @@ def owed(docs_root: Path, platform: str, checks: Iterable[str]) -> list[str]:
     found = verdicts(docs_root, platform)
     return [c for c in checks
             if (v := found.get(c)) is None or not v.clears]
+
+
+def events_by_check(
+    docs_root: Path, platform: str | None = None,
+) -> dict[str, list[dict[str, Any]]]:
+    """Every event ever recorded against each check, newest first.
+
+    **The comments are all here and no surface showed one of them.** A walker
+    writes a reason with every verdict that does not simply pass — 28 of them
+    in `your-trainer` by 2026-09-06 — and the only one any surface rendered was
+    whatever `resolve` currently reports. Mark a check `fail` with a paragraph
+    saying what broke, come back after the fix and mark it `pass`, and the
+    paragraph is unreachable from the app: it is in the file, and nothing reads
+    it back.
+
+    So this is deliberately the raw log rather than a resolution: superseded
+    verdicts, expired excuses and invalidations all stay, because *what did we
+    say about this check before* is a question about history and `resolve`
+    answers a different one — *what does the platform say now*.
+
+    Newest first, and ties inside a date break on the append order reversed:
+    the file is append-only, so the last line written on a day is the last
+    thing somebody decided that day.
+    """
+    rows: dict[str, list[tuple[str, int, dict[str, Any]]]] = {}
+    seq = 0
+    for led in load(docs_root, platform):
+        for entry in led.entries:
+            seq += 1
+            rows.setdefault(entry.check, []).append((entry.date, seq, {
+                "platform": led.platform,
+                #: `""` is the working ledger — the release it belongs to has
+                #: not been decided yet, which is what sealing does.
+                "release": led.release,
+                "date": entry.date,
+                "mark": entry.mark,
+                "reason": entry.reason,
+                "by": entry.by,
+                "method": entry.method,
+                "invalidated_by": entry.invalidated_by,
+            }))
+    return {
+        check: [row for _, _, row in sorted(items, key=lambda r: (r[0], r[1]),
+                                            reverse=True)]
+        for check, items in rows.items()
+    }

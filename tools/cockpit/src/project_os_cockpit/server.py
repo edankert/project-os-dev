@@ -664,28 +664,12 @@ def _make_handler(
             if path == "/api/cockpit/tab-state":
                 self._serve_cockpit_tab_state()
                 return
-            if path == "/api/design/verdict":
-                self._serve_design_verdict()
-                return
-
             if path == "/api/inbox/store":
                 self._serve_inbox_store()
                 return
 
             if path == "/api/inbox/discard":
                 self._serve_inbox_discard()
-                return
-
-            if path == "/api/design/offer-review":
-                self._serve_design_offer_review()
-                return
-
-            if path == "/api/design/comment":
-                self._serve_design_comment()
-                return
-
-            if path == "/api/design/capture":
-                self._serve_design_capture()
                 return
 
             if path == "/api/notes/check-toggle":
@@ -726,10 +710,6 @@ def _make_handler(
                 return
             if path == "/api/cockpit/approve":
                 self._serve_approve()
-                return
-
-            if path == "/api/notes/choose-variant":
-                self._serve_choose_variant()
                 return
 
             if path == "/api/notes/attach":
@@ -775,6 +755,22 @@ def _make_handler(
 
             if path == "/api/notes/release-prepare":
                 self._serve_release_prepare()
+                return
+
+            if path == "/api/notes/release-update":
+                self._serve_release_update()
+                return
+
+            if path == "/api/notes/release-abandon":
+                self._serve_release_abandon()
+                return
+
+            if path == "/api/notes/release-delete":
+                self._serve_release_delete()
+                return
+
+            if path == "/api/notes/release-settle":
+                self._serve_release_settle()
                 return
             # Unknown POST. Drain the request body before responding so
             # HTTP/1.1 keep-alive framing stays intact: an undrained body
@@ -1013,10 +1009,30 @@ def _make_handler(
                 # read as cleared. That is how a release which has not said
                 # what it ships fails closed rather than inheriting the
                 # loosest platform's answer.
-                _platform = (urllib.parse.parse_qs(parsed.query)
-                             .get("platform", [""])[0]).strip().lower()
+                #: **Absent is not the same as `all`** ([[ISS-0289]]). Both
+                #: used to collapse to `""`, so a client that simply did not
+                #: send the parameter got the union — and both of the
+                #: renderer's callers are exactly that client
+                #: (`mountReleaseGate`, `renderChecksPage`). On a two-ledger
+                #: repo the union is every check owed: `../your-trainer` read
+                #: **544 unchecked** where its open Android release owes 67.
+                #:
+                #: So an absent parameter now asks the record the same
+                #: question the release page asks — *what does the open
+                #: release ship?* — and grades on that. `all` still means the
+                #: union, because a person choosing it has said so.
+                _params = urllib.parse.parse_qs(parsed.query)
+                _platform = (_params.get("platform", [""])[0]).strip().lower()
                 if _platform == "all":
                     _platform = ""
+                elif not _platform:
+                    from . import publication as _pub_plat
+
+                    _open = _pub_plat.open_releases(index)
+                    _platform = (
+                        str((_open[0].get("platform") or "")).strip().lower()
+                        if _open else ""
+                    )
                 from . import ledger as _led
                 self._respond_json({
                     "schema_version": cockpit.SCHEMA_VERSION,
@@ -1035,6 +1051,97 @@ def _make_handler(
                     #: supply the platform itself when there is only one, and
                     #: the storage decision stops being the walker's problem.
                     "ledger_platforms": _led.platforms(docs_root),
+                })
+                return
+
+            if path == "/api/cockpit/walk":
+                #: **The owed checks as a procedure** ([[FEAT-0149]] /
+                #: [[TASK-0618]]). The same rows `/api/cockpit/acceptance`
+                #: reports as owed, in the order the browsed repo authored in
+                #: `docs/tests/acceptance/WALK.md`, with each check's setup,
+                #: steps and expected result on the row.
+                _params = urllib.parse.parse_qs(parsed.query)
+                _platform = (_params.get("platform", [""])[0]).strip().lower()
+                from . import ledger as _led_walk
+                _known = _led_walk.platforms(docs_root)
+                #: **`all` is refused rather than answered.** The acceptance
+                #: route accepts it because a gate over two ledgers must fail
+                #: closed by taking the union. A walk is a person at one bench
+                #: with one build, and a union walk would ask them to tick a
+                #: check for a platform they are not holding.
+                if _platform == "all":
+                    self._respond_json(
+                        {"ok": False, "error": (
+                            "a walk is on one platform. Ask for one of: "
+                            + (", ".join(_known) or "(this repo keeps no "
+                                                    "ledger)")),
+                         "platforms": _known},
+                        HTTPStatus.BAD_REQUEST)
+                    return
+                #: **Which release this walk is of** ([[TASK-0624]]). It was
+                #: resolved for the platform and not for the release, so a
+                #: caller sending neither got a walk that named no release —
+                #: and the page keys a half-walked sitting's step ticks by
+                #: release, platform, sitting and step. With an empty release
+                #: segment, a tick left over from the last walk would show as
+                #: already ticked on the next one, on a step somebody still
+                #: has to walk.
+                _release = (_params.get("release") or [""])[0].strip()
+                if not _platform or not _release:
+                    from . import publication as _pub_walk
+
+                    _open = _pub_walk.open_releases(index)
+                    if not _platform:
+                        _platform = (
+                            str((_open[0].get("platform") or "")).strip().lower()
+                            if _open else ""
+                        )
+                        if not _platform and len(_known) == 1:
+                            _platform = _known[0]
+                    #: **And it must be a release for THIS platform.**
+                    #: `open_releases` is the whole fleet of drafts, so the
+                    #: first row is whichever version sorts highest — on
+                    #: `your-trainer` that is an Android draft, and
+                    #: `~walk/ios` was headed with it and keyed its iOS step
+                    #: ticks under an Android release id. A note carrying no
+                    #: `platform:` counts for every platform, which is the
+                    #: opt-in rule release contents already use. Found by
+                    #: independent review, 2026-09-14.
+                    if not _release:
+                        _mine = [
+                            r for r in _open
+                            if str(r.get("platform") or "").strip().lower()
+                            in ("", _platform)
+                        ]
+                        if _mine:
+                            _release = str(_mine[0].get("id") or "").strip()
+                #: **An unknown name is refused, never answered.** A ledger
+                #: read for a platform that has none returns no verdicts, so
+                #: every check in the repo comes back owed — 545 rows on
+                #: `your-trainer` for `--platform andriod`, printed with total
+                #: confidence. Upstream refuses the generation for this reason
+                #: and so does this.
+                if _platform not in _known:
+                    self._respond_json(
+                        {"ok": False, "error": (
+                            "no ledger for platform %r. This repo keeps one "
+                            "for: %s" % (_platform, ", ".join(_known)
+                                         or "(none)")),
+                         "platforms": _known},
+                        HTTPStatus.BAD_REQUEST)
+                    return
+                self._respond_json({
+                    "schema_version": cockpit.SCHEMA_VERSION,
+                    **acceptance.walk_payload(
+                        docs_root, index, platform=_platform,
+                        release=_release,
+                        review_ids={value for part in _params.get("review", [])
+                                    for value in part.split(",")
+                                    if re.fullmatch(r"(?:TST|CHK)-[0-9]{4}", value)}
+                        if sum(len(part.split(",")) for part in _params.get("review", [])) <= 1024
+                        else set(),
+                    ),
+                    "platforms": _known,
                 })
                 return
 
@@ -1114,23 +1221,11 @@ def _make_handler(
                 self._serve_cockpit_designs()
                 return
 
-            if path.startswith("/api/cockpit/design-comments/"):
-                self._respond_json(cockpit.design_comments_payload(
-                    docs_root, index,
-                    urllib.parse.unquote(path[len("/api/cockpit/design-comments/"):])))
-                return
-
-            if path.startswith("/api/cockpit/design-revisions/"):
-                self._serve_design_revisions(
-                    path[len("/api/cockpit/design-revisions/"):])
-                return
-
-            if path.startswith("/design-asset-at/"):
-                self._serve_design_asset_at(path[len("/design-asset-at/"):])
-                return
-
-            if path.startswith("/design-asset/"):
-                self._serve_design_asset(path[len("/design-asset/"):])
+            # A file served verbatim for a frame (FEAT-0148). It was
+            # `/design-asset/<rel>` until 2026-09-12, when the design bench was
+            # removed and framing stopped being a design-only idea.
+            if path.startswith("/framed/"):
+                self._serve_framed_file(path[len("/framed/"):])
                 return
 
             if path == "/api/cockpit/dispatch-requests":
@@ -1794,33 +1889,15 @@ def _make_handler(
                     subject_rec = index.get(subject_path) if subject_path else None
                     payload["subject_type"] = (
                         (subject_rec.note_type or "").lower() if subject_rec else "")
-                if subject and asked_at:
-                    revs = cockpit.design_revisions_payload(
-                        docs_root.parent, index, subject)
-                    head = ""
-                    for rev in revs.get("revisions") or []:
-                        head = str(rev.get("sha") or "")
-                        break
-                    payload["at_revision"] = asked_at
-                    payload["head_revision"] = head
-                    payload["revision_moved"] = bool(head and head != asked_at)
-                    payload["dirty"] = bool(revs.get("dirty"))
-                    # ISS-0057: the three signals above describe the ARTIFACT.
-                    # A design's note carries half its substance — Problem,
-                    # Approach, Regions, Tokens — and could be rewritten under a
-                    # reviewer with all of them still reading current. Additive
-                    # by design: `design_revision` keeps its meaning, so no
-                    # existing verdict changes meaning.
-                    subject_path = index.by_id(subject)
-                    subject_rec = index.get(subject_path) if subject_path else None
-                    if subject_rec is not None:
-                        asked_digest = str(request.get("at_note_digest") or "")
-                        now_digest = cockpit.design_note_digest(subject_rec)
-                        payload["at_note_digest"] = asked_digest
-                        payload["note_digest"] = now_digest
-                        payload["note_moved"] = bool(
-                            asked_digest and asked_digest != now_digest
-                        )
+                # **The revision signals went with the design bench**
+                # (FEAT-0148 / TASK-0615). A design review request used to
+                # carry `at_revision` and this branch reported whether the
+                # artifact or the note had moved under the reviewer. There is
+                # no `/api/design/offer-review` to write such a request any
+                # more, and a design verdict no longer names a revision at all
+                # ([[RISK-0009]], Edwin's call: *"Drop the binding for now!"*).
+                # The way back, if that risk is taken up, is a verdict naming
+                # the commit of whatever the design IS.
                 self._respond_json(payload)
                 return
             # Fall back to a note id (a proposed ADR / ready test row).
@@ -2149,6 +2226,9 @@ def _make_handler(
                         previous_release=str(
                             body.get("previous_release") or since.get("id") or ""
                         ),
+                        #: [[ISS-0290]] — the other front door onto the same
+                        #: writer. Optional here too, and for the same reason.
+                        platform=str(body.get("platform") or ""),
                         actor=str(body.get("actor") or ""),
                     )
                 except note_writes.WriteError as exc:
@@ -2220,42 +2300,6 @@ def _make_handler(
             bus.publish(ControlEvent("cockpit:approval", result))
             self._respond_json({"ok": True, "result": result})
 
-        def _serve_choose_variant(self) -> None:
-            """``POST /api/notes/choose-variant`` — record a chosen shape.
-
-            It does NOT accept the design: choosing and accepting are two
-            judgments, and a click on a thumbnail must not carry an
-            acceptance nobody made (TASK-0302).
-            """
-            if not self._require_loopback():
-                return
-            body = self._read_json_body()
-            if body is None:
-                return
-            extra = set(body) - note_writes.CHOOSE_VARIANT_KEYS
-            if extra:
-                self._respond_json(
-                    {"ok": False, "error": f"unsupported fields: {sorted(extra)}"},
-                    status=HTTPStatus.BAD_REQUEST,
-                )
-                return
-            try:
-                result = note_writes.stamp_chosen_variant(
-                    index, str(body.get("id") or ""),
-                    variant=str(body.get("variant") or ""),
-                    actor=str(body.get("actor") or ""),
-                    mtime=body.get("mtime"),
-                )
-            except note_writes.WriteError as exc:
-                self._respond_json({"ok": False, "error": exc.message},
-                                   status=HTTPStatus(exc.status))
-                return
-            except (TypeError, ValueError, OSError) as exc:
-                self._respond_json({"ok": False, "error": str(exc)},
-                                   status=HTTPStatus.BAD_REQUEST)
-                return
-            self._respond_json({"ok": True, "result": result})
-
         def _serve_note_attach(self) -> None:
             """``POST /api/notes/attach`` — file a capture as evidence (TASK-0297).
 
@@ -2263,7 +2307,11 @@ def _make_handler(
             """
             if not self._require_loopback():
                 return
-            body = self._read_json_body()
+            # Base64 expands the permitted 8 MB PNG by about one third. The
+            # generic 2 MB JSON limit would reject a valid screenshot before
+            # `attach_capture` could apply its file-size and PNG checks.
+            body = self._read_json_body(
+                max_bytes=note_writes.MAX_ATTACHMENT_BYTES * 4 // 3 + 4096)
             if body is None:
                 return
             extra = set(body) - note_writes.ATTACH_REQUEST_KEYS
@@ -2484,7 +2532,14 @@ def _make_handler(
                          if body.get("mtime") is not None else None)
                 verdict = str(body.get("verdict") or "")
                 check_id = str(body.get("id") or "")
-                platform = str(body.get("platform") or "")
+                #: **The walker does not have to know the platform**
+                #: ([[ISS-0290]]). An absent one is resolved from the open
+                #: release, then from a sole ledger platform; the resolver
+                #: never overrides what the caller sent, and returns `""` when
+                #: the question is genuinely open, which is where the refusal
+                #: below belongs.
+                platform = note_writes.verdict_platform(
+                    docs_root, index, str(body.get("platform") or ""))
                 if platform:
                     #: **The ledger path** ([[ADR-0037]]). A verdict that names
                     #: its platform is an EVENT and never touches a note; the
@@ -2712,6 +2767,12 @@ def _make_handler(
                     index, docs_root,
                     version=version,
                     title=str(body.get("title") or "").strip() or f"v{version.lstrip('vV')}",
+                    #: **Which platform this release ships** ([[ISS-0290]]).
+                    #: Optional, because a single-platform repo has nothing to
+                    #: say — but naming it here is what gives the gate, the
+                    #: acceptance endpoint and every verdict of this cycle
+                    #: their answer, and it creates the ledger to walk into.
+                    platform=str(body.get("platform") or ""),
                     actor=str(body.get("actor") or ""),
                 )
             except note_writes.WriteError as exc:
@@ -2722,6 +2783,163 @@ def _make_handler(
                 self._respond_json({"ok": False, "error": str(exc)},
                                    status=HTTPStatus.BAD_REQUEST)
                 return
+            self._respond_json({"ok": True, **result})
+
+        def _serve_release_update(self) -> None:
+            """``POST /api/notes/release-update`` — set the version or the
+            platform of a release that already exists ([[FEAT-0145]]).
+
+            **The write path `release-contents` implied and never had.**
+            Composing a release could add and remove features; nothing could
+            change the two fields the gate is graded on. Edwin prepared
+            `your-trainer` 2.2.0 by hand for exactly this reason, and the gate
+            then reported 635 checks owed on a repo with 67 because the
+            platform had never been written ([[ISS-0288]]).
+
+            `version` and `platform` are both optional and both distinguish
+            *absent* from *empty*: omitting a key leaves the field alone,
+            sending `""` for `platform` means **every platform**, which is a
+            choice ([[DES-0012]] D4) rather than the state you get by not
+            choosing.
+            """
+            if not self._require_loopback():
+                return
+            body = self._read_json_body()
+            if body is None:
+                return
+            release_id = str(body.get("release") or body.get("id") or "")
+            try:
+                result = note_writes.update_release(
+                    index, docs_root, release_id,
+                    version=(None if body.get("version") is None
+                             else str(body.get("version"))),
+                    platform=(None if body.get("platform") is None
+                              else str(body.get("platform"))),
+                    actor=str(body.get("actor") or ""),
+                    mtime=(float(body["mtime"])
+                           if body.get("mtime") is not None else None),
+                )
+            except note_writes.WriteError as exc:
+                self._respond_json({"ok": False, "error": exc.message},
+                                   status=HTTPStatus(exc.status))
+                return
+            except (TypeError, ValueError) as exc:
+                self._respond_json({"ok": False, "error": str(exc)},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            #: The page repaints the moment this resolves, and the repaint
+            #: re-reads the release to redraw the gate against the new
+            #: platform ([[ISS-0264]]).
+            self._reindex(release_id)
+            self._respond_json({"ok": True, **result})
+
+        def _serve_release_abandon(self) -> None:
+            """``POST /api/notes/release-abandon`` — a prepared release that
+            will not ship ([[FEAT-0145]]).
+
+            **Not a delete.** `your-trainer`'s REL-0013 is the precedent: 2.1.7
+            was prepared, never shipped, and its note is the only record of why
+            that version number was skipped. This sets a terminal status, keeps
+            the note, and requires a reason.
+            """
+            if not self._require_loopback():
+                return
+            body = self._read_json_body()
+            if body is None:
+                return
+            release_id = str(body.get("release") or body.get("id") or "")
+            try:
+                result = note_writes.abandon_release(
+                    index, release_id,
+                    reason=str(body.get("reason") or ""),
+                    superseded_by=str(body.get("superseded_by") or ""),
+                    actor=str(body.get("actor") or ""),
+                    mtime=(float(body["mtime"])
+                           if body.get("mtime") is not None else None),
+                )
+            except note_writes.WriteError as exc:
+                self._respond_json({"ok": False, "error": exc.message},
+                                   status=HTTPStatus(exc.status))
+                return
+            except (TypeError, ValueError) as exc:
+                self._respond_json({"ok": False, "error": str(exc)},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            self._reindex(release_id)
+            self._respond_json({"ok": True, **result})
+
+        def _serve_release_delete(self) -> None:
+            """``POST /api/notes/release-delete`` — remove a release note that
+            has not become part of anything ([[FEAT-0145]]).
+
+            The narrow case abandoning does not cover: a release created by a
+            misclick minutes ago that no reader has seen. Three refusals stand
+            behind it — created today, nothing links to it, no ledger sealed
+            against it — and failing any of them routes the caller to abandon,
+            by name.
+            """
+            if not self._require_loopback():
+                return
+            body = self._read_json_body()
+            if body is None:
+                return
+            try:
+                result = note_writes.delete_release(
+                    index, docs_root,
+                    str(body.get("release") or body.get("id") or ""),
+                    actor=str(body.get("actor") or ""),
+                )
+            except note_writes.WriteError as exc:
+                self._respond_json({"ok": False, "error": exc.message},
+                                   status=HTTPStatus(exc.status))
+                return
+            self._respond_json({"ok": True, **result})
+
+        def _serve_release_settle(self) -> None:
+            """``POST /api/notes/release-settle`` — settle owed checks from the
+            release page ([[FEAT-0145]], authorised by [[ADR-0041]]).
+
+            **Three marks, and the endpoint refuses the other four by name.**
+            `na`, `excused` and `blocked` are decisions about scope — does this
+            check apply, is it in this cycle, could it be run — and the release
+            is where that question has an answer. `pass`, `partial` and `fail`
+            attest that somebody walked a procedure, and [[ADR-0035]]'s rule
+            that a release page must not offer that control stands unchanged.
+
+            One reason, typed once, written onto every check in the batch.
+            Each check is reported individually: a ledger is append-only, so a
+            refusal part-way through leaves the events before it standing, and
+            pretending otherwise would be the only dishonest option.
+            """
+            if not self._require_loopback():
+                return
+            body = self._read_json_body()
+            if body is None:
+                return
+            raw = body.get("checks")
+            checks = [str(c) for c in raw] if isinstance(raw, list) else []
+            try:
+                result = note_writes.settle_checks(
+                    docs_root, index,
+                    release_id=str(body.get("release") or ""),
+                    checks=checks,
+                    mark=str(body.get("mark") or body.get("verdict") or ""),
+                    reason=str(body.get("reason") or ""),
+                    by=str(body.get("by") or ""),
+                    platform=str(body.get("platform") or ""),
+                )
+            except note_writes.WriteError as exc:
+                self._respond_json({"ok": False, "error": exc.message},
+                                   status=HTTPStatus(exc.status))
+                return
+            except (TypeError, ValueError) as exc:
+                self._respond_json({"ok": False, "error": str(exc)},
+                                   status=HTTPStatus.BAD_REQUEST)
+                return
+            #: Every check that was actually written, before the response —
+            #: the page repaints the moment this resolves ([[ISS-0264]]).
+            self._reindex(*[str(row.get("id") or "")
+                            for row in result.get("settled") or []])
             self._respond_json({"ok": True, **result})
 
         def _serve_test_run(self) -> None:
@@ -2807,383 +3025,48 @@ def _make_handler(
                 "actions": load_actions(project_root),
             })
 
-        def _serve_design_verdict(self) -> None:
-            """``POST /api/design/verdict`` — record a design review verdict.
-
-            **The revision is required.** A verdict given to v3 says nothing
-            about v6, and a surface that lost that distinction would let an
-            old approval launder a new design — the one way a design review is
-            worse than no review at all. So the caller must name the revision
-            it judged, and it must be one the artifact's history actually has.
-
-            The machine records; it never decides. `accept` comes from the
-            human, and an accepted design becomes `accepted`, not
-            `implemented` — the latter is what the code shipping means and only
-            the parity check can honestly claim it.
-            """
-            if not self._require_loopback():
-                return
-            body = self._read_json_body()
-            if body is None:
-                return
-            design_id = str(body.get("id", "") or "").strip()
-            verdict = str(body.get("verdict", "") or "").strip()
-            revision = str(body.get("revision", "") or "").strip()
-            reviewer = str(body.get("reviewer", "") or "").strip()
-            accept = body.get("accept")
-            if not (design_id and verdict and revision and reviewer):
-                self._respond_json(
-                    {"ok": False, "error": "id, verdict, revision and reviewer "
-                                           "are all required — a verdict with no "
-                                           "revision would launder a later design"},
-                    status=HTTPStatus.BAD_REQUEST)
-                return
-
-            known = {r["sha"] for r in cockpit.design_revisions_payload(
-                docs_root.parent, index, design_id)["revisions"]}
-            if revision not in known:
-                self._respond_json(
-                    {"ok": False,
-                     "error": "revision %r is not in this design's history; a "
-                              "verdict must name a revision that exists" % revision,
-                     "revisions": sorted(known)},
-                    status=HTTPStatus.BAD_REQUEST)
-                return
-            try:
-                result = note_writes.stamp_design_verdict(
-                    index, design_id, reviewer=reviewer, verdict=verdict,
-                    revision=revision,
-                    accept=None if accept is None else bool(accept),
-                    mtime=body.get("mtime"))
-            except note_writes.WriteError as exc:
-                self._respond_json({"ok": False, "error": str(exc)},
-                                   status=getattr(exc, "status", 409))
-                return
-            self._respond_json(result)
-
-        def _serve_design_offer_review(self) -> None:
-            """``POST /api/design/offer-review`` — put a design in front of a
-            human without changing its status (TASK-0229).
-
-            The desk had two entry paths and designs were wired to only one:
-            status intake at `proposed`. No design in this repo has ever been
-            `proposed` — DES-0001 was created at `implemented`, DES-0002 went
-            `draft` → `implemented` — so the review path TASK-0218 built had
-            never been entered by a real design, and the only way in was to
-            change a status to something untrue.
-
-            This is the ledger route FEAT/TASK sets already use (ADR-0007:
-            pending-ness is runtime state, not note state). No new status, no
-            frontmatter written here — the verdict still goes through
-            `note_writes` when a human reaches one.
-
-            **The current revision is recorded on the request.** A review is of
-            a revision, not of "the design": TASK-0218 already requires
-            `design_revision` on accept and validates it against real history.
-            Without the same on the request, a reviewer can accept something
-            other than what they were shown.
-            """
-            if not self._require_loopback():
-                return
-            body = self._read_json_body()
-            if body is None:
-                return
-            design_id = str(body.get("id", "") or "").strip().upper()
-            note = str(body.get("note", "") or "").strip()
-            if not design_id:
-                self._respond_json({"ok": False, "error": "id is required"},
-                                   status=HTTPStatus.BAD_REQUEST)
-                return
-
-            record = next((d for d in cockpit.designs_payload(index)["designs"]
-                           if d["id"].upper() == design_id), None)
-            if record is None:
-                self._respond_json({"ok": False, "error": "unknown design"},
-                                   status=HTTPStatus.NOT_FOUND)
-                return
-
-            # Idempotent: a human asked to look at one thing should see one
-            # row, however many times the button is pressed.
-            existing = review_store.open_for_subject(design_id)
-            if existing is not None:
-                self._respond_json({"ok": True, "already_open": True,
-                                    "request": existing})
-                return
-
-            revisions = cockpit.design_revisions_payload(
-                docs_root.parent, index, design_id)
-            head = ""
-            for rev in revisions.get("revisions") or []:
-                head = str(rev.get("sha") or "")
-                break
-
-            # Refused, not offered-without-one. A request with no revision
-            # produces a 200 indistinguishable from a good one, and every
-            # staleness field then silently disappears — which was DES-0002's
-            # own situation until its `asset` was filled in (ISS-0056).
-            # `/api/design/verdict` already refuses this case; so does this.
-            if not head:
-                self._respond_json(
-                    {"ok": False,
-                     "error": "%s has no committed revision to review — commit "
-                              "the artifact first, or a reviewer would be "
-                              "judging something with no name" % design_id},
-                    status=HTTPStatus.CONFLICT)
-                return
-
-            # Both halves pinned: the artifact revision the reviewer was shown,
-            # and a digest of the note's substance (ISS-0057). Either moving
-            # afterwards means they reviewed something other than what stands.
-            design_rec = index.get(index.by_id(design_id)) if index.by_id(design_id) else None
-            request = review_store.add(
-                "review",
-                items=[design_id],
-                subject=design_id,
-                at_revision=head,
-                at_note_digest=(cockpit.design_note_digest(design_rec)
-                                if design_rec is not None else None),
-                title="Design review: %s" % (record.get("title") or design_id),
-                body=note,
-            )
-            # The surface renders the WORKING COPY, so a design offered dirty
-            # was reviewed against something `at_revision` does not name.
-            # Recorded at offer time because that is the moment it is true;
-            # `dirty` computed at open is a different question.
-            if revisions.get("dirty"):
-                request = dict(request)
-                request["dirty_at_offer"] = True
-                review_store.annotate(request["request_id"], dirty_at_offer=True)
-            self._respond_json({"ok": True, "request": request})
-
-        def _serve_design_comment(self) -> None:
-            """``POST /api/design/comment`` — one region-anchored comment.
-
-            Written as Markdown into the design note's ``## Review`` section,
-            never held as runtime state: REQ-0023's "readable without the tool"
-            clause exists because a link to a hosted artifact already showed
-            what the alternative costs.
-
-            The region must be one the **artifact** declares, or empty for the
-            document-level lane. Accepting an arbitrary string would let a
-            comment anchor to nothing and silently never render.
-            """
-            if not self._require_loopback():
-                return
-            body = self._read_json_body()
-            if body is None:
-                return
-            design_id = str(body.get("id", "") or "").strip()
-            region = str(body.get("region", "") or "").strip()
-            text = str(body.get("text", "") or "").strip()
-            author = str(body.get("author", "") or "").strip()
-            if not design_id or not text:
-                self._respond_json({"ok": False, "error": "id and text are required"},
-                                   status=HTTPStatus.BAD_REQUEST)
-                return
-
-            payload = cockpit.design_comments_payload(docs_root, index, design_id)
-            if region and region not in payload["regions"]:
-                self._respond_json(
-                    {"ok": False,
-                     "error": "unknown region %r — a comment anchored to a region "
-                              "the artifact does not declare would never render"
-                              % region,
-                     "regions": payload["regions"]},
-                    status=HTTPStatus.BAD_REQUEST)
-                return
-
-            record = next((d for d in cockpit.designs_payload(index)["designs"]
-                           if d["id"] == design_id), None)
-            if record is None:
-                self._respond_json({"ok": False, "error": "unknown design"},
-                                   status=HTTPStatus.NOT_FOUND)
-                return
-            note_abs = (docs_root.resolve() / record["rel"]).resolve()
-            try:
-                note_abs.relative_to(docs_root.resolve())
-            except ValueError:
-                self._respond_forbidden("note outside docs root")
-                return
-            try:
-                fm_lines, body_md = note_writes._split_frontmatter(
-                    note_abs.read_text(encoding="utf-8"))
-                new_body = note_writes.append_design_comment(
-                    body_md, region=region, date=_dt.date.today().isoformat(),
-                    author=author, text=text)
-                note_abs.write_text(
-                    "---\n" + "\n".join(fm_lines) + "\n---\n" + new_body,
-                    encoding="utf-8")
-            except note_writes.WriteError as exc:
-                self._respond_json({"ok": False, "error": str(exc)},
-                                   status=HTTPStatus.CONFLICT)
-                return
-            except OSError as exc:
-                self._respond_json({"ok": False, "error": str(exc)},
-                                   status=HTTPStatus.INTERNAL_SERVER_ERROR)
-                return
-            self._respond_json({"ok": True, "id": design_id, "region": region})
-
-        def _serve_design_capture(self) -> None:
-            """``POST /api/design/capture`` — commit one artifact with a reason.
-
-            The gap this closes is the whole point of PHASE-009. TASK-0216
-            renders an artifact's git history; **nothing was depositing it**.
-            An agent iterating against the live surface edits the working copy
-            six times and commits once — which is exactly what happened to
-            DES-0001, the loss this phase exists to prevent. Every exit
-            criterion could have gone green while the next design session lost
-            five revisions again.
-
-            Three rules, each of which a naive version gets wrong:
-
-            * **One artifact per commit.** Committing the asset alongside other
-              files buries the reason in an unrelated message, and the message
-              is the only readable record — two regenerated HTML files diff as
-              a wall of noise.
-            * **A reason is required.** A capture without one produces history
-              that says a revision happened and not why, which is the state
-              this feature exists to escape.
-            * **The note's revision log is written in the same commit.** A log
-              that can drift from git is worse than no log.
-            """
-            if not self._require_loopback():
-                return
-            body = self._read_json_body()
-            if body is None:
-                return
-            design_id = str(body.get("id", "") or "").strip()
-            reason = str(body.get("reason", "") or "").strip()
-            if not design_id or not reason:
-                self._respond_json(
-                    {"ok": False, "error": "id and reason are both required; a "
-                                           "revision without a reason is the state "
-                                           "this exists to escape"},
-                    status=HTTPStatus.BAD_REQUEST)
-                return
-
-            record = next(
-                (d for d in cockpit.designs_payload(index)["designs"]
-                 if d["id"] == design_id), None)
-            if record is None or not record["asset"]:
-                self._respond_json({"ok": False, "error": "unknown design or no asset"},
-                                   status=HTTPStatus.NOT_FOUND)
-                return
-
-            root = docs_root.resolve()
-            asset_abs = (root / record["asset"]).resolve()
-            note_abs = (root / record["rel"]).resolve()
-            for target in (asset_abs, note_abs):
-                try:
-                    target.relative_to(root)
-                except ValueError:
-                    self._respond_forbidden("design path outside docs root")
-                    return
-            if not asset_abs.is_file():
-                self._respond_json({"ok": False, "error": "asset missing"},
-                                   status=HTTPStatus.NOT_FOUND)
-                return
-
-            repo = root.parent
-            try:
-                dirty = subprocess.run(
-                    ["git", "-C", str(repo), "status", "--porcelain", "--",
-                     str(asset_abs)],
-                    capture_output=True, text=True, timeout=10, check=True).stdout
-            except (subprocess.SubprocessError, OSError) as exc:
-                self._respond_json({"ok": False, "error": "git unavailable: %s" % exc},
-                                   status=HTTPStatus.SERVICE_UNAVAILABLE)
-                return
-            if not dirty.strip():
-                self._respond_json(
-                    {"ok": False, "error": "no change to capture — the artifact "
-                                           "matches its last committed revision"},
-                    status=HTTPStatus.CONFLICT)
-                return
-
-            today = _dt.date.today().isoformat()
-            try:
-                text = note_abs.read_text(encoding="utf-8")
-                fm_lines, body_md = note_writes._split_frontmatter(text)
-                new_body = note_writes.append_revision_log(
-                    body_md, date=today, reason=reason)
-                note_abs.write_text(
-                    "---\n" + "\n".join(fm_lines) + "\n---\n" + new_body,
-                    encoding="utf-8")
-                subprocess.run(
-                    ["git", "-C", str(repo), "add", "--", str(asset_abs), str(note_abs)],
-                    capture_output=True, text=True, timeout=10, check=True)
-                subprocess.run(
-                    ["git", "-C", str(repo), "commit", "-m",
-                     "design(%s): %s" % (design_id, reason)],
-                    capture_output=True, text=True, timeout=20, check=True)
-                sha = subprocess.run(
-                    ["git", "-C", str(repo), "rev-parse", "HEAD"],
-                    capture_output=True, text=True, timeout=10, check=True).stdout.strip()
-            except (subprocess.SubprocessError, OSError) as exc:
-                self._respond_json({"ok": False, "error": "capture failed: %s" % exc},
-                                   status=HTTPStatus.INTERNAL_SERVER_ERROR)
-                return
-
-            self._respond_json({"ok": True, "id": design_id, "sha": sha[:7],
-                                "date": today, "reason": reason})
-
         def _serve_cockpit_designs(self) -> None:
             """``GET /api/cockpit/designs`` — the design register
             (FEAT-0042 / TASK-0214). Membership by `type: "[[design]]"`,
             never by path."""
             self._respond_json(cockpit.designs_payload(index))
 
-        def _serve_design_revisions(self, design_id: str) -> None:
-            """``GET /api/cockpit/design-revisions/<DES-id>`` (TASK-0216)."""
-            self._respond_json(cockpit.design_revisions_payload(
-                docs_root.parent, index, urllib.parse.unquote(design_id)))
+        def _serve_framed_file(self, rel: str) -> None:
+            """``GET /framed/<rel>`` — a file served verbatim for framing.
 
-        def _serve_design_asset_at(self, rest: str) -> None:
-            """``GET /design-asset-at/<DES-id>/<sha>`` — the artifact as it was.
-
-            Same register gating as the live asset route: only a design the
-            register knows, and only its own asset. `git show` rather than a
-            checkout, so reading history never touches the working copy.
-            """
-            parts = urllib.parse.unquote(rest).strip("/").split("/")
-            if len(parts) != 2:
-                self._respond_not_found(rest)
-                return
-            design_id, sha = parts
-            body = cockpit.design_asset_at(
-                docs_root.parent, index, design_id, sha)
-            if body is None:
-                self._respond_not_found(rest)
-                return
-            self.send_response(HTTPStatus.OK)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.send_header("X-Content-Type-Options", "nosniff")
-            self.send_header("Cache-Control", "no-store")
-            self.end_headers()
-            self.wfile.write(body)
-
-        def _serve_design_asset(self, rel: str) -> None:
-            """``GET /design-asset/<rel>`` — a design artifact, read-only.
+            Also answers ``/design-asset/<rel>``, the name it had when only a
+            design could be framed. Both spellings reach this one handler so
+            the two cannot drift while the older name is retired.
 
             Deliberately separate from ``/api/render``: that endpoint renders
-            Markdown to the cockpit's own HTML, while this serves an artifact
-            *verbatim* for framing. Two rules, both load-bearing:
+            Markdown to the cockpit's own HTML, while this serves a file *as
+            it is* so a frame can show it.
 
-            * The path must resolve inside ``docs/`` and must be claimed by a
-              design note's ``asset:``. Serving any file under docs/ by path
-              would turn a render surface into a file browser.
-            * Response carries no cookies and the endpoint is GET-only, so a
-              script inside a framed artifact gains nothing by calling it.
+            **Any path that resolves inside ``docs/`` is served**
+            ([[ADR-0042]]). This used to require the path to be claimed by a
+            design note's ``asset:``, on the stated ground that serving any
+            file by path "would turn a render surface into a file browser".
+            Measured 2026-09-12: ``/docs/<rel>`` already serves every file
+            under ``docs/`` by path, with no allowlist and no authentication,
+            on a socket that binds ``0.0.0.0`` by design. The allowlist was
+            therefore protecting nothing — it was deciding which files the
+            cockpit would *present*, which is curation wearing a security
+            rule's clothes. Worse, it was a real cost: a page could not
+            reference an image file beside it, so pages embedded their
+            pictures as base64 and one grew to 4.6 MB ([[ISS-0299]]).
+
+            What remains is the boundary that was doing the work all along:
+
+            * The resolved path must lie inside ``docs_root``. ``..`` and a
+              symlink out both fail this, because the check runs after
+              ``resolve()``.
+            * The response carries no cookies and the endpoint is GET-only, so
+              a script inside a framed page gains nothing by calling it.
+            * The frame itself is sandboxed **without** ``allow-same-origin``
+              ([[RISK-0008]]), which is what keeps a framed document from
+              reading this API at all.
             """
             rel = urllib.parse.unquote(rel).lstrip("/")
-            claimed = {
-                d["asset"] for d in cockpit.designs_payload(index)["designs"]
-                if d["asset"]
-            }
-            if rel not in claimed:
-                self._respond_not_found(rel)
-                return
             root = docs_root.resolve()
             target = (root / rel).resolve()
             try:
@@ -3197,7 +3080,8 @@ def _make_handler(
             ctype, _ = mimetypes.guess_type(str(target))
             # `guess_type` returns "text/html" with no charset, so a document
             # without its own <meta charset> was decoded as latin-1 and
-            # rendered mojibake — while `_serve_design_asset_at` hard-codes
+            # rendered mojibake — while the history route (removed with the
+            # bench) hard-coded
             # utf-8, so the SAME bytes rendered correctly from history and
             # incorrectly live. Revision-compare was comparing two encodings
             # (ISS-0050). Text is utf-8 here; binary assets are untouched.

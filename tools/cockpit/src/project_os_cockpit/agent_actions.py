@@ -151,6 +151,64 @@ DEFAULT_ACTIONS: dict[str, list[dict[str, Any]]] = {
             ),
         },
     ],
+    #: **The release verbs** ([[FEAT-0145]] step 4).
+    #:
+    #: A release had no entry here at all, so the one dispatch a release page
+    #: genuinely wants — *is anything this release ships not covered by a
+    #: check?* — had no prompt behind it.
+    #:
+    #: The split the note argues for is enforced by the wording, not by hope:
+    #: the tool has already computed the gap (`publication.coverage_gaps`) and
+    #: the prompt says so, so the agent is drafting rather than deciding what
+    #: is missing. **Nothing is written into the gate**, and the prompt says
+    #: that too — a generated suite that grows on its own is worse than a short
+    #: one somebody meant.
+    "release": [
+        {
+            "key": "commission-checks", "label": "Commission checks",
+            "default": True,
+            "when": ["draft"],
+            "prompt": (
+                "Read docs/{rel}, then open the release page for {id} in the "
+                "cockpit and read its Coverage section — the tool has already "
+                "computed which features this release carries that no "
+                "acceptance check names, and which requirements have unticked "
+                "criteria. Do not recompute that list; work from it.\n\n"
+                "For each uncovered feature, draft ONE acceptance check note "
+                "from docs/__templates__/, in the repo's own voice, from the "
+                "feature and task notes: what a person does, and what they "
+                "must see. Set `covers:` to the feature and `level: "
+                "acceptance`. **Write no verdict field at all** — no `mark:`, "
+                "no `verdict_date:`. In a repo that keeps ledgers the "
+                "validator refuses one (LEDGER-FIELD, ADR-0037), and a check "
+                "with no entry is owed by construction.\n\n"
+                "Leave every draft in the working tree for review as a diff. "
+                "Do not mark anything, do not seal a ledger, do not change "
+                "the release's contents, and do not add a check for a feature "
+                "carrying an `acceptance_exception:` — somebody already "
+                "answered for that one."
+            ),
+        },
+        {
+            "key": "verify", "label": "Verify the gate",
+            "when": ["draft"],
+            "prompt": (
+                "Read docs/{rel} and report whether {id} can ship: what its "
+                "gate still owes, which of those checks name a feature it "
+                "actually carries, and what it held back and why. Report "
+                "only — settle nothing, and mark nothing."
+            ),
+        },
+        {
+            "key": "close-out", "label": "Close out",
+            "when": ["released"],
+            "prompt": (
+                "Close out {id} per tools/skills/close-out/SKILL.md: read "
+                "docs/{rel}, check its post-release actions, and file an "
+                "ISS-* for anything still owed."
+            ),
+        },
+    ],
     "requirement": [
         {
             # The 120-REQ-BOXES workflow. Default at `implemented` because a

@@ -46,6 +46,17 @@ _ID_PREFIX_RE = re.compile(r"^([A-Z]{2,6}-\d{3,4})(?:-|$)")
 IMAGE_EXTENSIONS: frozenset[str] = frozenset(
     {".svg", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".avif"}
 )
+#: Directories beside a note that may hold its pictures, **in preference
+#: order** — the first one holding the file wins, and the order is the
+#: convention rather than an accident of typing.
+#:
+#: `__attachments__` leads because it is the name the fleet writes down
+#: (`tools/instructions/OBSIDIAN.md`, "Attachments"), and because it matches
+#: `__templates__` and `__bases__`: a double-underscore directory is one the
+#: system owns. The other four are read, not written — an Obsidian vault
+#: configured years ago says `attachments`, and a repo that grew its own
+#: `images/` should not have its notes break on the day this convention
+#: arrived.
 ATTACHMENT_DIR_NAMES: tuple[str, ...] = (
     "__attachments__",
     "__attachments",
@@ -270,8 +281,23 @@ class Index:
 
         Supports normal Markdown image paths and Obsidian embeds. Resolution
         stays inside ``docs_root`` and prefers paths near the source note:
-        explicit relative paths first, common attachment directories next, then
-        a filename/stem search across the docs tree.
+        explicit relative paths first, then ``ATTACHMENT_DIR_NAMES`` beside
+        the note, then the same path from the docs root, and only then a
+        filename search across the whole docs tree.
+
+        **That last step is a last resort and it can be wrong.** Two files
+        named ``plate-3.png`` in different folders are one coin toss -- the
+        nearer one wins, scored by shared path prefix in
+        :meth:`_best_asset_match`, which is a heuristic and not a rule. A note
+        that says ``![](__attachments__/plate-3.png)`` never reaches it, which
+        is why the relative path is the written convention.
+
+        **It stays because it is how Obsidian resolves its own embeds.**
+        Pasting an image into a note produces ``![[plate-3.png]]``, a bare
+        filename Obsidian looks up across the whole vault -- and pasting is the
+        likeliest way a picture ever enters one of these repos. Deleting the
+        search would break the pictures a person adds by hand while leaving the
+        ones an agent writes working, which is precisely the wrong way round.
         """
         raw = (target or "").strip()
         if not raw:

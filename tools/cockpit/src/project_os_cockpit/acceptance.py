@@ -374,6 +374,13 @@ class Item:
     #: required for `/`, `-`, `!` and `?`; the write path refuses without one.
     verdict_date: str = ""
     verdict_reason: str = ""
+    #: How the verdict was recorded — `manual`, `automated`, or `migration`
+    #: ([[ISS-0281]]). A surface needs it to tell a sentence somebody wrote
+    #: from the backfill's boilerplate, which is identical on every check in a
+    #: migrated repo: 584 of `your-trainer`'s 624 carry *"Backfilled from
+    #: `mark: done`…"*, and quoting that on every row buries the 28 comments a
+    #: person actually wrote. Empty on a note-shape item, which has no events.
+    verdict_method: str = ""
     #: **How a machine executes this check, and the field the reader never had**
     #: ([[ISS-0237]]). `item_from_note` did not look at `command:` at all, so
     #: every consumer -- the gate, the sections, the percentage -- treated an
@@ -1132,15 +1139,38 @@ def apply_ledger(items: list[Item], docs_root: Path, platform: str) -> list[Item
         #: because that is the weakest evidence behind the claim.
         #:
         #: Fails closed by construction: a platform that has said nothing has
-        #: no entry, so the check is owed and the intersection is empty.
+        #: no entry, so the check is owed and nothing clears it.
+        #:
+        #: **A verdict that does not clear is reported, not dropped**
+        #: ([[ISS-0281]]). This walked the INTERSECTION and kept a check only
+        #: when every platform cleared it, so a `fail`, a `blocked` or a
+        #: `question` fell out of the result entirely — and a check with no
+        #: entry reads as `todo`, which says *nobody has walked this*. Edwin
+        #: marked `TST-0434` failed on 2026-09-06 with a paragraph saying what
+        #: broke, and the page showed it as unwalked with no comment. Measured
+        #: the same day on `your-trainer`: the ledger resolves `fail 2,
+        #: question 1` and this function reported none of them.
+        #:
+        #: The gate never noticed because both states block. That is exactly
+        #: why it survived: the count was right and the screen was wrong.
         per = [_ledger.verdicts(docs_root, p)
                for p in _ledger.platforms(docs_root)]
         found = {}
         if per:
-            for check in set(per[0]).intersection(*(set(d) for d in per[1:])):
-                verdicts = [d[check] for d in per]
-                if all(v.clears for v in verdicts):
+            for check in set().union(*(set(d) for d in per)):
+                verdicts = [d[check] for d in per if check in d]
+                #: Clearing still takes every platform, and still reports the
+                #: earliest — the weakest evidence behind the claim.
+                if len(verdicts) == len(per) and all(v.clears for v in verdicts):
                     found[check] = min(verdicts, key=lambda v: v.date)
+                    continue
+                #: Otherwise the check is owed, and if a platform said WHY it
+                #: is owed then that is the answer to report. The most recent
+                #: one, because a rig that was down in June and a failure today
+                #: are not equally current.
+                blocking = [v for v in verdicts if not v.clears]
+                if blocking:
+                    found[check] = max(blocking, key=lambda v: v.date)
     by_check: dict[str, list[Any]] = {}
     for led in _ledger.load(docs_root, platform):
         for item in led.evidence:
@@ -1168,6 +1198,7 @@ def apply_ledger(items: list[Item], docs_root: Path, platform: str) -> list[Item
             needs_rerun=False,
             verdict_date=verdict.date if verdict else "",
             verdict_reason=verdict.reason if verdict else "",
+            verdict_method=verdict.method if verdict else "",
             #: [[TASK-0544]]. Evidence follows the verdict it backs, so it is
             #: joined out of the ledger's sibling collection rather than read
             #: from the note — a screenshot proves one walk on one platform on
@@ -1662,6 +1693,92 @@ def section_label(section: str) -> str:
     return SECTION_LABELS.get(section, section)
 
 
+#: Kinds that are not a screen ("The four rules", `TAXONOMY.md`). They sort
+#: after every screen because a reader walking a release walks screens, and a
+#: behaviour with no screen is the tail of that walk rather than a place in it.
+_OFF_SCREEN_KINDS = ("subsystem", "surface-less")
+
+#: What FEAT-0130's 12-to-15 target counts. A `flow` is "a sequence across
+#: screens" (`TAXONOMY.md`) — named because it is walked as one thing, and not
+#: a place you navigate to, so counting it against a target about screens
+#: inflates the number. `your-trainer` would have read 10 screens where 6 are
+#: screens and 4 are flows. Found by independent review, 2026-09-14. A surface
+#: with no `kind:` is a screen, which is the taxonomy's own default.
+_SCREEN_KINDS = ("screen", "")
+
+
+def _surface_map(index: "Any | None") -> tuple[dict[str, Any], dict[str, str],
+                                               dict[str, str]]:
+    """`(surfaces by id, id by title, kind by id)` — the bundled module's.
+
+    **The same lookup the walk sheet uses** ([[TASK-0625]]). `~checks` grouped
+    by the `area:` string until 2026-09-14, so a dialog's checks sat wherever
+    its name sorted — `your-trainer`'s HR-zone interval sheet nowhere near the
+    ride cockpit it opens from. Reading `parent:` here with a second
+    implementation would mean the page and the sheet could come to disagree
+    about which screen a dialog belongs to, which is the drift bundling the
+    module exists to prevent.
+    """
+    walk = _walk_module()
+    raw: dict[str, tuple[Path, dict]] = {}
+    kinds: dict[str, str] = {}
+    if index is not None:
+        for record in index.iter_records():
+            note_id = record.note_id or ""
+            if not note_id:
+                continue
+            raw[note_id] = (record.path, dict(record.frontmatter))
+            if (record.note_type or "").lower() == "surface":
+                kinds[note_id] = str(
+                    record.frontmatter.get("kind") or "screen").strip().lower()
+    surfaces = walk.load_surfaces(raw) if raw else {}
+    by_title = walk.surfaces_by_title(raw) if raw else {}
+    return surfaces, by_title, kinds
+
+
+def _area_place(area: str, surfaces: dict[str, Any], by_title: dict[str, str],
+                kinds: dict[str, str]) -> dict[str, Any]:
+    """Where one `area:` string sits: its surface, its screen, its parent.
+
+    An `area:` naming no surface note keeps its own name as its screen and is
+    marked unresolved, so it renders visibly rather than disappearing into a
+    group it does not belong to ([[ISS-0250]]).
+    """
+    walk = _walk_module()
+    sid = by_title.get(area, "")
+    if not sid:
+        return {"surface": "", "screen": area, "parent": "",
+                "kind": "", "unresolved": True}
+    kind = kinds.get(sid, "screen")
+    top = walk.top_screen(sid, surfaces)
+    parent_id = surfaces[sid].parent if sid in surfaces else ""
+    return {
+        "surface": sid,
+        #: An off-screen surface is its own group: it has no screen to sit
+        #: under, and filing it below one would say it is part of a place.
+        "screen": (surfaces[top].title or top) if (
+            kind not in _OFF_SCREEN_KINDS and top in surfaces) else area,
+        "parent": (surfaces[parent_id].title or parent_id)
+                  if (parent_id and kind not in _OFF_SCREEN_KINDS
+                      and parent_id in surfaces) else "",
+        "kind": kind,
+        "unresolved": False,
+    }
+
+
+def _area_sort_key(area: dict[str, Any]) -> tuple:
+    """Screens first, a child directly under its parent, then the rest.
+
+    Within a screen the parent's own checks come before any child's, which is
+    the order a walker meets them: you are on the screen before you open the
+    dialog.
+    """
+    off = 1 if area.get("kind") in _OFF_SCREEN_KINDS else 0
+    unknown = 1 if area.get("unresolved") else 0
+    return (unknown, off, str(area.get("screen") or ""),
+            1 if area.get("parent") else 0, str(area.get("area") or ""))
+
+
 def view_payload(docs_root: Path, index: "Any | None" = None, *,
                  platform: str = "") -> dict[str, Any]:
     """The suite as a **list somebody walks** (FEAT-0114 / TASK-0464).
@@ -1694,23 +1811,35 @@ def view_payload(docs_root: Path, index: "Any | None" = None, *,
     by_section: dict[str, list[Item]] = {}
     for item in suite.items:
         by_section.setdefault(section_of(item), []).append(item)
+    #: **Screen, then the dialogs that open from it** ([[TASK-0625]]; upstream
+    #: ADR-0044). Read from the bundled module so this page and the walk sheet
+    #: cannot disagree about which screen a dialog belongs to.
+    surfaces, by_title, kinds = _surface_map(index)
     for name in SECTION_ORDER:
         items = by_section.get(name) or []
         if not items:
             continue
         areas: list[dict[str, Any]] = []
+        seen: dict[str, dict[str, Any]] = {}
         for item in items:
             #: **`area` alone** ([[ISS-0224]]). Measured 2026-08-19: areas
             #: spanning more than one section — **0** in all three repos
             #: (21/21, 77/77, 20/20), so `section` added nothing to the key
             #: and only a second thing to keep in step.
             key = item.area
-            if not areas or areas[-1]["area"] != key:
-                areas.append({
+            #: Keyed rather than run-length grouped: sorting by screen brings
+            #: two runs of the same area together, and the old test — is the
+            #: LAST area this one — would then have made two groups with the
+            #: same name.
+            if key not in seen:
+                seen[key] = {
                     "section": item.section, "area": item.area,
                     "refs": list(item.refs), "items": [],
-                })
-            areas[-1]["items"].append(_row(item))
+                    **_area_place(item.area, surfaces, by_title, kinds),
+                }
+                areas.append(seen[key])
+            seen[key]["items"].append(_row(item))
+        areas.sort(key=_area_sort_key)
         #: **Incomplete rows to the top of their own section** ([[TASK-0556]]).
         #:
         #: Edwin scoped this deliberately: the area order and the tier order do
@@ -1765,11 +1894,42 @@ def view_payload(docs_root: Path, index: "Any | None" = None, *,
         "readme": (f"{CHECKS_REL}/README.md"
                    if suite.shape == SHAPE_NOTES else suite_rel(suite)),
         "tiers": tiers,
+        #: **Every comment ever written on a check, keyed by its id**
+        #: ([[ISS-0281]]). A row can only ever show the verdict that stands
+        #: now, so everything said on the way there was in the file and
+        #: reachable from no surface: mark a check `fail` with a paragraph
+        #: saying what broke, fix it, mark it `pass`, and the paragraph is
+        #: gone from the app.
+        #:
+        #: In the list payload rather than behind a lookup, because the dialog
+        #: that needs it opens on a click and a round trip there is a dialog
+        #: that draws its history a moment after the reader has read the
+        #: buttons. Measured on `your-trainer`, 615 events over 624 checks:
+        #: 186 KB against the payload's existing 745 KB, over loopback.
+        #:
+        #: Empty in a repo with no ledger — those keep a single verdict on the
+        #: note and have no history to show.
+        "history": _history(docs_root),
         "facets": _facets(suite),
         "blocking": len(suite.blocking()),
         "total": len(suite.items),
         "settled": sum(1 for i in suite.items if i.settled),
     }
+
+
+def _history(docs_root: Path) -> dict[str, list[dict[str, Any]]]:
+    """Every event recorded against every check, newest first, by check id.
+
+    A thin pass-through to :func:`ledger.events_by_check`, and a repo with no
+    ledger gets `{}` rather than a fabricated single-entry history: a note's
+    own verdict is what the row already shows, and inventing a log from it
+    would put one fact on the screen twice.
+    """
+    from . import ledger as _ledger
+
+    if not _ledger.has_ledger(docs_root):
+        return {}
+    return _ledger.events_by_check(docs_root)
 
 
 def _facets(suite: Suite) -> dict[str, list[dict[str, Any]]]:
@@ -1934,6 +2094,9 @@ def _row(item: "Item", **extra: Any) -> dict[str, Any]:
         "id": item.note_id, "rel": item.rel,
         "verdict_date": item.verdict_date,
         "verdict_reason": item.verdict_reason,
+        #: So the row can tell a walker's sentence from the migration's
+        #: boilerplate ([[ISS-0281]]).
+        "verdict_method": item.verdict_method,
         "automation": item.automation,
         # **What executes it, so the row can say so instead of drawing a
         # checkbox** (ADR-0039). The client cannot tell an automated check
@@ -2305,3 +2468,482 @@ def issue_refs_in(reason: str) -> tuple[str, ...]:
     for the index, which this module deliberately does not import.
     """
     return tuple(dict.fromkeys(_REASON_ID_RE.findall(reason or "")))
+
+
+# ---------------------------------------------------------------- the walk
+#
+# The walk page's payload ([[FEAT-0149]] / [[TASK-0618]]). `view_payload`
+# above is the suite as a list; this is the same rows as a **procedure** — the
+# order a person should walk them in, the state each group of them needs, and
+# each check's setup, steps and expected result on the row.
+#
+# **Every rule it applies is upstream's.** Ordering, placement into sittings,
+# the survey join and the reading of the procedure headings are
+# `tools/scripts/walk-sheet.py` (project-os-dev FEAT-0029), bundled here
+# verbatim as `walk_sheet_bundled.py` the way the validator is. This module
+# supplies three things the template's generator has no access to and which are
+# lookups rather than rules: the cockpit's own check scoping, its ledger
+# reader, and the note index that turns an id into a title.
+
+#: Upstream reads `docs/tests/acceptance/WALK.md`; the constant is its own.
+WALK_REL = "tests/acceptance/WALK.md"
+
+
+def _walk_module() -> "Any":
+    """The bundled walk module, with the bundled validator wired into it.
+
+    Upstream's `_validator()` loads `validate-docs.py` from **its own
+    directory**, which is `tools/scripts/` in a repo and this package here —
+    where the file is named `validate_docs_bundled.py`. Seeding the global is
+    the whole of the adaptation, and it is done here rather than by editing the
+    copy because the copy is asserted byte-identical to upstream
+    (`tests/test_walk_bundle.py`).
+    """
+    from . import validate_docs_bundled as _vd
+    from . import walk_sheet_bundled as _walk
+    if _walk._VD is None:
+        _walk._VD = _vd
+    return _walk
+
+
+def _walk_events(docs_root: Path, platform: str) -> list["Any"]:
+    """The platform's ledger entries as the walk module's `Event`s.
+
+    A field-for-field mapping, not a second reader: `ledger.load` is the
+    cockpit's one ledger parser and it validates what it reads, so a malformed
+    entry is refused here exactly as it is on every other surface.
+    """
+    from . import ledger as _ledger
+    walk = _walk_module()
+    out = []
+    #: Sealed ledgers first, the open one last — the order upstream's
+    #: `load_events` establishes and `resolve` depends on. `ledger.load`
+    #: returns them in filename order, which puts `WORKING` where the W
+    #: happens to sort.
+    ledgers = sorted(_ledger.load(docs_root, platform),
+                     key=lambda l: (l.is_working, l.release))
+    for led in ledgers:
+        for entry in sorted(led.entries, key=lambda e: e.date):
+            out.append(walk.Event(
+                check=entry.check, date=entry.date, mark=entry.mark,
+                reason=entry.reason, invalidated_by=entry.invalidated_by,
+                release=led.release, working=led.is_working,
+            ))
+    return out
+
+
+def _walk_check(item: "Item", body: str, after: tuple[str, ...],
+                frontmatter: dict | None = None) -> "Any":
+    """One cockpit `Item` as the walk module's `Check`.
+
+    The procedure text is read by upstream's `section` and `lead_paragraph`,
+    so the four headings and the fallback for a note that has none are stated
+    once. Nothing here parses a note.
+    """
+    walk = _walk_module()
+    readiness, problems = walk.parse_check_readiness(
+        (frontmatter or {}).get("walk_readiness_for"), item.rel)
+    return walk.Check(
+        id=item.note_id, title=item.name, path=item.rel, area=item.area,
+        after=list(after), covers=list(item.refs), command=item.command,
+        setup=walk.section(body, "Setup"),
+        steps=walk.section(body, "Steps", "Procedure"),
+        expect=walk.section(body, "Expect", "Expected results"),
+        lead=walk.lead_paragraph(body),
+        readiness_for=readiness, readiness_problems=problems,
+    )
+
+
+def _walk_row(item: "Item", check: "Any", platform: str) -> dict[str, Any]:
+    """A `~checks` row plus the procedure, so the page has one row renderer.
+
+    `_row` is reused rather than forked for the reason it was written: every
+    surface that draws a check draws the same shape, and a second one drifts.
+    """
+    return _row(
+        item,
+        setup=check.setup or None,
+        steps=check.steps or None,
+        expect=check.expect or None,
+        #: The note's unheaded description, printed by the page **only** when
+        #: the note states no steps. 53 of `your-trainer`'s 61 owed rows are
+        #: in that shape, and a row that printed nothing for them would be a
+        #: walk sheet nobody can walk.
+        lead=check.lead or None,
+        after=list(check.after),
+        readiness=_walk_module().check_readiness(check, platform) or None,
+    )
+
+
+#: Upstream's wording for an ordering cycle, which is the one warning the
+#: payload reports as an **error** rather than as something to tidy in
+#: `WALK.md`. Pinned by `tests/test_walk_payload.py`, and the bundle is
+#: asserted byte-identical, so a reword upstream fails a test here rather than
+#: silently demoting the report.
+_CYCLE_PHRASE = "forms a cycle"
+
+
+def walk_payload(docs_root: Path, index: "Any | None" = None, *,
+                 platform: str, release: str = "",
+                 review_ids: set[str] | None = None) -> dict[str, Any]:
+    """The owed checks for one platform, as a procedure somebody walks.
+
+    The row set is `ledger.owed` over the manual sections and nothing else —
+    the same predicate the gate reads, so the walk and the gate cannot come to
+    disagree about what a release owes. The order, the sittings and the survey
+    are the template's rules, applied by the bundled module.
+
+    **One platform, never the union.** `/api/cockpit/acceptance` accepts `all`
+    because a gate over two ledgers must fail closed; a walk is a person at one
+    bench with one build, and a union walk would ask them to tick a check for a
+    platform they are not holding.
+    """
+    walk = _walk_module()
+    platform = (platform or "").strip().lower()
+    suite = load(docs_root, index, platform=platform)
+    manual = [i for i in suite.items
+              if i.note_id and section_of(i) in MANUAL_SECTIONS]
+    manual_by_id = {i.note_id: i for i in manual}
+
+    from . import ledger as _ledger
+    owed_ids = set(_ledger.owed(docs_root, platform,
+                                [i.note_id for i in manual]))
+    owed = [i for i in manual if i.note_id in owed_ids]
+
+    bodies, afters, titles, surfaces, raw = _walk_notes(index, docs_root, owed)
+    checks = {i.note_id: _walk_check(i, bodies.get(i.note_id, ""),
+                                     afters.get(i.note_id, ()),
+                                     raw.get(i.note_id, (None, {}))[1])
+              for i in owed}
+    by_id = {i.note_id: i for i in owed}
+
+    walk_path = docs_root / WALK_REL
+    authored = walk_path.is_file()
+    gallery, sittings, warnings = "", [], []
+    if authored:
+        gallery, sittings, warnings = walk.parse_walk_order(
+            walk_path.read_text(encoding="utf-8"))
+    else:
+        sittings = walk.unordered_sittings(list(checks.values()))
+
+    #: The survey and the procedures, read by upstream's own readers so the
+    #: page and the generated sheet answer with the same rules
+    #: (project-os-dev ADR-0045; `TESTING.md`, "The walk", rules 2 and 9).
+    repo_root = docs_root.parent
+    surface_notes = walk.load_surfaces(raw)
+    procedures = walk.load_procedures(docs_root, repo_root)
+    for procedure in procedures:
+        walk.name_surfaces(procedure.steps, surface_notes)
+    survey_release, survey_tag, survey_problem = walk.last_release(
+        docs_root, platform)
+    added: set[str] = set()
+    if survey_tag:
+        added, survey_problem = walk.changes_since(repo_root, survey_tag)
+    usable = bool(survey_tag) and not survey_problem
+    changes = walk.load_changes(docs_root, repo_root,
+                                only=added if usable else set())
+
+    #: **Every check a procedure may legally cite, not only the owed ones.**
+    #: A procedure covers its whole sitting and the sheet prints the owed part
+    #: of it, so its tags name checks that have already passed. Passing only
+    #: `checks` here made every such tag read as naming no check at all, and
+    #: this page and `walk-sheet.py` then disagreed about one procedure —
+    #: which is the thing `TESTING.md` rule 7 says bundling the module
+    #: prevents. Found by independent review, 2026-09-14. Only the checks a
+    #: procedure actually cites are read, so a repo with 431 of them pays for
+    #: the handful its scripts name.
+    cited = {tag[0] for p in procedures for s in p.steps
+             for e in s.expectations for tag in e.tags}
+    extra = [i for i in manual if i.note_id in cited and i.note_id not in by_id]
+    known = dict(checks)
+    if extra:
+        more, more_after, _, _, more_raw = _walk_notes(index, docs_root, extra)
+        for item in extra:
+            known[item.note_id] = _walk_check(
+                item, more.get(item.note_id, ""), more_after.get(item.note_id, ()),
+                more_raw.get(item.note_id, (None, {}))[1])
+
+    sheet = walk.build_walk(
+        checks, _walk_events(docs_root, platform), sittings,
+        release=release, platform=platform,
+        surfaces=surfaces, surface_notes=surface_notes,
+        changes=changes, procedures=procedures, known=known,
+        captures=walk.capture_finder(docs_root, repo_root,
+                                     survey_tag if usable else ""),
+        gallery=gallery, warnings=warnings, authored_order=authored,
+        survey_release=survey_release,
+        survey_tag=survey_tag if usable else "", survey_problem=survey_problem,
+    )
+
+    #: **A row the cockpit says is owed and the module dropped is reported.**
+    #: Both implement `TESTING.md`'s owed predicate — the module from the
+    #: ledger files, this from `ledger.owed` — and they are supposed to agree
+    #: on every corpus. If they ever do not, the walker is entitled to know
+    #: which check went missing rather than to walk a list that is quietly one
+    #: row short.
+    errors = [w for w in sheet.warnings if _CYCLE_PHRASE in w]
+    errors.extend(problem for check in checks.values()
+                  for problem in check.readiness_problems)
+    kept = {c.id for p in sheet.sittings for c in p.rows}
+    kept.update(c.id for c in sheet.unplaced)
+    dropped = sorted(owed_ids - kept)
+    if dropped:
+        errors.append(
+            "the ledger says %s %s owed and the walk module resolved %s as "
+            "settled; the walk is showing the smaller set"
+            % (", ".join(dropped), "is" if len(dropped) == 1 else "are",
+               "it" if len(dropped) == 1 else "them"))
+
+    out_sittings = []
+    for placed in sheet.sittings:
+        out_sittings.append({
+            "name": placed.sitting.name,
+            "state": placed.sitting.state,
+            "bench": list(placed.sitting.bench),
+            "surfaces": list(placed.sitting.surfaces),
+            "checks": list(placed.sitting.checks),
+            "rows": [_walk_row(by_id[c.id], c, platform) for c in placed.rows],
+            #: The sitting's written script, where it has one that holds up
+            #: ("The walk", rule 9). `steps` is already filtered to the steps
+            #: citing something this release owes, so a page renders it as it
+            #: comes; `problems` non-empty means the rows above are what to
+            #: read instead.
+            "procedure": _walk_procedure(placed),
+        })
+    unplaced = [_walk_row(by_id[c.id], c, platform) for c in sheet.unplaced]
+    placed_n = sum(len(s["rows"]) for s in out_sittings)
+
+    #: A completed check stops being owed, but the person may still need to
+    #: correct the step that settled it. The browser supplies only the ids it
+    #: recorded in this workspace; the server admits only current, settled,
+    #: manual checks that a current procedure cites. Build that correction
+    #: view with the same upstream generator and fresh procedure objects. It
+    #: cannot enlarge the owed rows or use a saved copy of old instructions.
+    review_checks = {check_id: known[check_id]
+                     for check_id in (review_ids or set())
+                     if check_id in manual_by_id and check_id in cited
+                     and check_id not in owed_ids and check_id in known}
+    review_sittings: list[dict[str, Any]] = []
+    if review_checks:
+        review_procedures = walk.load_procedures(docs_root, repo_root)
+        for procedure in review_procedures:
+            walk.name_surfaces(procedure.steps, surface_notes)
+        review_sheet = walk.build_walk(
+            review_checks, [], sittings, release=release, platform=platform,
+            surfaces=surfaces, surface_notes=surface_notes,
+            procedures=review_procedures, known=known,
+            authored_order=authored,
+        )
+        for placed in review_sheet.sittings:
+            if not placed.procedure or placed.procedure.problems or not placed.steps:
+                continue
+            review_sittings.append({
+                "name": placed.sitting.name,
+                "state": placed.sitting.state,
+                "bench": list(placed.sitting.bench),
+                "surfaces": list(placed.sitting.surfaces),
+                "checks": list(placed.sitting.checks),
+                "rows": [_walk_row(manual_by_id[c.id], c, platform) for c in placed.rows],
+                "procedure": _walk_procedure(placed),
+            })
+    reviewed = {row["id"] for sitting in review_sittings
+                for row in sitting["rows"]}
+    review_unavailable: list[dict[str, Any]] = []
+    for check_id in sorted(set(review_checks) - reviewed):
+        placed = next((entry for entry in review_sheet.sittings
+                       if any(check.id == check_id for check in entry.rows)), None)
+        problems = placed.procedure.problems if placed and placed.procedure else []
+        reason = "; ".join(problems) if problems else (
+            "No current procedure places this check in a walk session.")
+        review_unavailable.append({
+            "row": _walk_row(manual_by_id[check_id], review_checks[check_id], platform),
+            "reason": reason,
+        })
+
+    return {
+        "platform": platform,
+        "release": release,
+        #: The command a repo declares for regenerating its screenshots, read
+        #: verbatim from `WALK.md`'s frontmatter and rendered at the head of
+        #: the survey. One field on the payload rather than one per survey
+        #: entry: it is a property of the repo, and repeating it under every
+        #: surface would be one fact printed many times.
+        "gallery": gallery or None,
+        #: The screens the release changed, from the change notes that named
+        #: them ("The walk", rule 2). It carried the checks an invalidation
+        #: reopened until 2026-09-14; an invalidation names a check and never
+        #: a screen, which is what project-os-dev ADR-0045 decision 1 replaced.
+        "survey": [{
+            "surface": entry.title,
+            "surface_note": entry.id or None,
+            "parent": entry.parent or None,
+            "unresolved": entry.unresolved,
+            "changes": [{"id": cid, "title": title or None,
+                         "sentence": sentence or None}
+                        for cid, title, sentence in entry.sentences],
+            "captures": [{"key": c.key, "state": c.state or None,
+                          "before": c.before or None, "after": c.after or None,
+                          "new": c.new} for c in entry.captures],
+        } for entry in sheet.survey],
+        "survey_release": sheet.survey_release or None,
+        "survey_tag": sheet.survey_tag or None,
+        "survey_problem": sheet.survey_problem or None,
+        "sittings": out_sittings,
+        "review_sittings": review_sittings,
+        "review_unavailable": review_unavailable,
+        "unplaced": unplaced,
+        "counts": {
+            "owed": placed_n + len(unplaced),
+            "placed": placed_n,
+            "unplaced": len(unplaced),
+        },
+        "order_source": "walk.md" if authored else "fallback",
+        #: **Every verdict ever recorded against the rows on this page**
+        #: ([[ISS-0281]]). The mark dialog renders it, and it travels with the
+        #: payload rather than behind a lookup for the reason `view_payload`
+        #: gives: the dialog opens on a click, and a round trip there draws the
+        #: history a moment after the reader has read the buttons.
+        #:
+        #: Restricted to the walk's own rows, which `view_payload` cannot do —
+        #: it is the whole suite. 39 owed rows on `your-trainer` against 624
+        #: checks, so the walk carries a fraction of what the list does.
+        "history": {c: h for c, h in _history(docs_root).items()
+                    if c in kept or c in review_checks},
+        #: Where the template's WALK.md lives, so a repo with no walk order
+        #: can be pointed at the file to copy rather than at a sentence about
+        #: it.
+        "walk_rel": WALK_REL,
+        "template_rel": "__templates__/walk.md",
+        "errors": errors,
+        "warnings": [w for w in sheet.warnings if w not in errors],
+        "notices": list(sheet.notices),
+    }
+
+
+def _walk_procedure(placed: "Any") -> "dict[str, Any] | None":
+    """One sitting's procedure as data, or None where it has none.
+
+    Rendered rather than re-parsed: a page that read the markdown itself would
+    be a second implementation of rule 9, which is the thing bundling the
+    module exists to prevent.
+    """
+    procedure = getattr(placed, "procedure", None)
+    if procedure is None:
+        return None
+    return {
+        "path": procedure.path,
+        "sitting": procedure.sitting,
+        "setup": placed.setup,
+        "problems": list(procedure.problems),
+        "remarks": list(procedure.remarks),
+        "omitted": placed.omitted,
+        "requires": {str(number): list(sources)
+                     for number, sources in procedure.requires.items()},
+        "owed_checks": [c.id for c in placed.owed_checks],
+        "steps": [{
+            "number": step.number,
+            "display_number": position,
+            "preparation": not any(e.owed for e in step.expectations),
+            "required_state": step.required_state or None,
+            "capture_prompt": step.capture_prompt if step.capture_needed else None,
+            "use_capture": list(step.uses_capture),
+            "timer_seconds": step.timer_seconds or None,
+            "readiness": dict(step.readiness) if step.readiness else None,
+            "head": step.head,
+            "surface": step.surface_said or None,
+            "surface_note": step.surface_id or None,
+            "lines": [{
+                "text": line,
+                #: **What the line CLAIMS, as the module read it.** The page
+                #: needs the sentence without its tags, and with no `quote`
+                #: here it derived one itself — stripping the tag literals and
+                #: the emphasis markers. That is a second reading of a rule
+                #: the module owns (`quote_of`/`normalise`), and the two
+                #: disagreed: the module reduces `The banner reads **DONE**
+                #: now.` to `The banner reads **DONE** now.` with its own
+                #: whitespace rules, while the page produced `The banner reads
+                #: DONE  now.` — so the walker judged a string the validator
+                #: never compared against the check's Expect text. Found by
+                #: independent review, 2026-09-14.
+                "quote": expectation.quote if expectation is not None else "",
+                "tags": [{"check": check, "step": number or None,
+                          "owed": (check, number) in expectation.owed}
+                         for check, number in expectation.tags]
+                        if expectation is not None else [],
+            } for line, expectation in (
+                (raw, next((e for e in step.expectations if e.raw == raw), None))
+                for raw in step.body)],
+        } for position, step in enumerate(placed.steps, start=1)],
+    }
+
+
+def _walk_notes(
+    index: "Any | None", docs_root: Path, items: list["Item"],
+) -> tuple[dict[str, str], dict[str, tuple[str, ...]], dict[str, tuple[str, Path]],
+           dict[str, str], dict[str, tuple[Path, dict]]]:
+    """The lookups the template's generator gets from the validator.
+
+    Read from the cockpit's own index where there is one, so the walk sees
+    exactly the notes every other surface sees, and off the filesystem when a
+    caller passed none (the tests, and the CLI).
+
+    The last value is the index in the shape upstream's own readers take,
+    `{id: (path, frontmatter)}`, so `load_surfaces` runs here rather than
+    being written a second time (project-os-dev ADR-0045).
+    """
+    bodies: dict[str, str] = {}
+    afters: dict[str, tuple[str, ...]] = {}
+    titles: dict[str, tuple[str, Path]] = {}
+    surfaces: dict[str, str] = {}
+    raw: dict[str, tuple[Path, dict]] = {}
+    wanted = {i.note_id for i in items}
+    if index is not None:
+        for record in index.iter_records():
+            note_id = record.note_id or ""
+            if note_id:
+                titles[note_id] = (str(record.frontmatter.get("title") or ""),
+                                   record.path)
+                raw[note_id] = (record.path, dict(record.frontmatter))
+            if (record.note_type or "").lower() == "surface":
+                title = str(record.frontmatter.get("title") or "").strip()
+                if title and note_id:
+                    surfaces.setdefault(title, note_id)
+            if note_id in wanted:
+                bodies[note_id] = record.body
+                #: Ids, in either the `[[TST-0001]]` or bare form, read by
+                #: upstream's own extractor so the walk order and the sheet
+                #: cannot disagree about what an `after:` names.
+                afters[note_id] = tuple(
+                    _walk_module()._ids(record.frontmatter.get("after")))
+        return bodies, afters, titles, surfaces, raw
+    for item in items:
+        path = docs_root / item.rel
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        bodies[item.note_id] = _split_frontmatter(text)
+        afters[item.note_id] = tuple(
+            _walk_module()._ids(_frontmatter_field(text, "after")))
+    return bodies, afters, titles, surfaces, raw
+
+
+_AFTER_RE = re.compile(r"^\s*after\s*:\s*(.*)$", re.MULTILINE)
+
+
+def _frontmatter_field(text: str, name: str) -> list[str]:
+    """One inline list field, for the index-less path. `after: [A, B]`.
+
+    Deliberately small: the cockpit always has an index in the server, and the
+    tests that exercise this path write the field inline.
+    """
+    if name != "after":
+        return []
+    found = _AFTER_RE.search(text.split("\n---", 2)[0] if text.startswith("---")
+                             else "")
+    if not found:
+        return []
+    raw = found.group(1).strip()
+    if raw.startswith("[") and raw.endswith("]"):
+        raw = raw[1:-1]
+    return [p.strip().strip("\"'") for p in raw.split(",") if p.strip()]

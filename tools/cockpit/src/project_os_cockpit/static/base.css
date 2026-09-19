@@ -395,6 +395,7 @@ details.metadata-strip > summary:hover {
 .status-chip[data-status="reconciled"]  { color: var(--status-archived); }
 .status-chip[data-status="declined"]    { color: var(--status-archived); }
 .status-chip[data-status="reverted"]    { color: var(--status-archived); }
+.status-chip[data-status="abandoned"]   { color: var(--status-archived); }
 .status-chip[data-status="rolled-back"] { color: var(--status-archived); }
 .status-chip[data-status="deprecated"]  { color: var(--status-archived); }
 /* Blocked */

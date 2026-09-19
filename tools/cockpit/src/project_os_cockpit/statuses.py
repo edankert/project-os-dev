@@ -73,6 +73,13 @@ BANDS: dict[str, tuple[str, ...]] = {
     "archived": (
         "obsolete", "retired", "cancelled", "superseded",
         "declined", "reverted", "deprecated",
+        # A release that was prepared and will not ship ([[FEAT-0145]]).
+        # Archived rather than done for the reason the band exists: it is
+        # terminal *without* the thing having happened. `your-trainer`'s
+        # REL-0013 has sat at `draft` in exactly this state for 23 days
+        # (created 2026-08-16, measured 2026-09-08), counted by every
+        # surface that counts open releases.
+        "abandoned",
         # ISS-0141: an acceptance-suite check settled by a decision instead of
         # by being walked (`- [~]`) — terminal, and terminal *without* the
         # thing having been done, which is what the archived band means. Not a

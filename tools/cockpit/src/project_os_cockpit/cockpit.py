@@ -391,7 +391,7 @@ TASK_STATUS_ORDER: tuple[str, ...] = (
     "implemented",
     "verified", "passing", "published", "released", "closed",
     "obsolete", "retired", "cancelled", "superseded", "declined", "reverted",
-    "deprecated", "reconciled",
+    "deprecated", "reconciled", "abandoned",
     "reference",
 )
 _TASK_STATUS_RANK: dict[str, int] = {s: i for i, s in enumerate(TASK_STATUS_ORDER)}
@@ -1868,225 +1868,6 @@ DESIGN_REVISIONS_MAX = 50
 _REGION_RE = re.compile(r'data-design-region="([^"]+)"')
 
 
-def design_regions(docs_root: Path, asset_rel: str) -> list[str]:
-    """Region ids an artifact declares, in document order, deduped.
-
-    Read from the artifact rather than from the note, so the note cannot claim
-    a region the artifact does not have — the note documents what the regions
-    are *for*, the artifact is what actually carries them.
-    """
-    path = docs_root / asset_rel
-    if not path.is_file():
-        return []
-    try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return []
-    seen, out = set(), []
-    for rid in _REGION_RE.findall(text):
-        if rid not in seen:
-            seen.add(rid)
-            out.append(rid)
-    return out
-
-
-def design_comments_payload(
-    docs_root: Path, index: Index, design_id: str,
-) -> dict[str, Any]:
-    """Comments plus the regions they anchor to, with orphans flagged.
-
-    An **orphan** is a comment whose region the artifact no longer declares.
-    It is shown, never dropped: a comment that vanishes because someone renamed
-    a region takes the objection with it, and the reviewer has no way to know
-    it happened. Renaming is indistinguishable from delete-and-add, which is
-    why the authoring contract says a region id is a published name.
-    """
-    from . import note_writes
-
-    record = next((d for d in designs_payload(index)["designs"]
-                   if d["id"] == design_id), None)
-    if record is None:
-        return {"schema_version": SCHEMA_VERSION, "id": design_id,
-                "regions": [], "comments": [], "orphans": []}
-
-    regions = design_regions(docs_root, record["asset"]) if record["asset"] else []
-    note_path = docs_root / record["rel"]
-    comments: list[dict[str, str]] = []
-    if note_path.is_file():
-        try:
-            _fm, body = note_writes._split_frontmatter(
-                note_path.read_text(encoding="utf-8"))
-            comments = note_writes.read_design_comments(body)
-        except Exception:  # noqa: BLE001 — a malformed note must not 500 the surface
-            comments = []
-
-    known = set(regions)
-    for c in comments:
-        # "" is the document lane — deliberately not an orphan.
-        c["orphaned"] = bool(c["region"]) and c["region"] not in known
-    return {
-        "schema_version": SCHEMA_VERSION,
-        "id": design_id,
-        "regions": regions,
-        "comments": comments,
-        "orphans": [c for c in comments if c["orphaned"]],
-    }
-
-
-def design_note_digest(record: NoteRecord) -> str:
-    """A stable digest of a design note's *substance* (ISS-0057).
-
-    `design_revisions_payload` follows the **artifact** path, so `at_revision`,
-    `head_revision` and `design_revision` all describe the artifact and say
-    nothing about the note. A reviewer could accept a design and then have its
-    Problem, Approach, Regions or Tokens rewritten under them, with every
-    staleness signal still reading current.
-
-    Two questions made that hard to fix, and both are answered by making this
-    **additive**:
-
-    * *Does a revision mean the artifact or the pair?* Neither — `design_revision`
-      keeps meaning exactly what it meant, so no existing verdict changes
-      meaning. This is a second, separate signal.
-    * *What about `## Review`, which a review appends to?* Excluded, along with
-      the review frontmatter fields and `## Revisions`. Otherwise filing a
-      review would invalidate itself the instant it was recorded — the objection
-      that kept this in triage.
-
-    So the digest covers the parts a reviewer judged and nothing that recording
-    the judgement touches.
-    """
-    import hashlib
-
-    EXCLUDED_SECTIONS = ("## Review", "## Revisions")
-    # `status` is excluded because `stamp_design_verdict` WRITES it on accept
-    # (draft -> accepted), so leaving it in meant an accepting verdict changed
-    # its own digest — the exact objection ISS-0057 claims to answer, found in
-    # review as ISS-0071. Measured before the fix: 75f3c3b31b1b -> bf126afd62d7,
-    # sole difference `status: draft -> accepted`.
-    EXCLUDED_FIELDS = ("reviewed_by", "review_date", "review_verdict",
-                       "design_revision", "updated", "status",
-                       "superseded_by")
-
-    body_lines: list[str] = []
-    skipping = False
-    for line in (record.body or "").splitlines():
-        if line.startswith("## "):
-            skipping = any(line.startswith(s) for s in EXCLUDED_SECTIONS)
-        if not skipping:
-            body_lines.append(line.rstrip())
-
-    fields = {
-        k: v for k, v in sorted((record.frontmatter or {}).items())
-        if k not in EXCLUDED_FIELDS
-    }
-    material = repr(fields) + "\n" + "\n".join(body_lines).strip()
-    return hashlib.sha256(material.encode("utf-8")).hexdigest()[:12]
-
-
-def design_revisions_payload(
-    project_root: Path, index: Index, design_id: str,
-) -> dict[str, Any]:
-    """An artifact's revision history from git (TASK-0216).
-
-    Reads ``git log --follow`` over the asset path so a rename does not
-    truncate the history — a design that gets renamed has not lost its past.
-
-    Also reports whether the artifact is **dirty**. That matters more than it
-    looks: the render surface shows the working copy, so an uncaptured edit is
-    a revision the compare view cannot see and the log does not record. Saying
-    so is the difference between "this design has three revisions" and "this
-    design has three revisions plus whatever you have not committed".
-
-    Same hardening as ``commits_payload``: fixed argv, no shell, clamped
-    count, and a plain ``available: False`` outside a git repo rather than an
-    exception. The only caller-derived value is the design id, and it is
-    resolved through the register to a path the register already trusts —
-    never interpolated into the command.
-    """
-    import subprocess
-
-    unavailable = {"schema_version": SCHEMA_VERSION, "available": False,
-                   "revisions": [], "dirty": False}
-    record = next((d for d in designs_payload(index)["designs"]
-                   if d["id"] == design_id), None)
-    if record is None or not record["asset"]:
-        return unavailable
-    if not (project_root / ".git").exists():
-        return unavailable
-
-    asset_rel = "docs/" + record["asset"]
-    sep = _COMMIT_FIELD_SEP
-    try:
-        proc = subprocess.run(  # noqa: S603 — fixed argv, no shell
-            ["git", "-C", str(project_root), "log", f"-n{DESIGN_REVISIONS_MAX}",
-             "--follow", f"--format={sep.join(['%h', '%H', '%aI', '%s', '%an'])}",
-             "--", asset_rel],
-            capture_output=True, text=True, timeout=5, check=False,
-        )
-        status = subprocess.run(  # noqa: S603
-            ["git", "-C", str(project_root), "status", "--porcelain", "--", asset_rel],
-            capture_output=True, text=True, timeout=5, check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return unavailable
-    if proc.returncode != 0:
-        return unavailable
-
-    revisions = []
-    for line in proc.stdout.splitlines():
-        parts = line.split(sep)
-        if len(parts) != 5:
-            continue
-        short, full, iso, subject, author = parts
-        # The reason lives in the commit message, which is why capture requires
-        # one: it is the only readable record between two regenerated HTML
-        # files whose diff is a wall of noise.
-        reason = subject.split(": ", 1)[1] if subject.startswith("design(") else subject
-        revisions.append({
-            "sha": short, "full_sha": full, "date": iso[:10],
-            "subject": subject, "reason": reason, "author": author,
-        })
-    return {
-        "schema_version": SCHEMA_VERSION,
-        "available": True,
-        "id": design_id,
-        "asset": record["asset"],
-        "revisions": revisions,
-        "dirty": bool(status.stdout.strip()),
-    }
-
-
-def design_asset_at(
-    project_root: Path, index: Index, design_id: str, sha: str,
-) -> bytes | None:
-    """The artifact as it was at one revision, without touching the tree.
-
-    ``git show <sha>:<path>`` rather than a checkout — reading history must
-    never mutate the working copy, and a compare view that stashed the user's
-    uncommitted work to render a diff would be a data-loss bug wearing a
-    feature's clothes.
-    """
-    import re as _re
-    import subprocess
-
-    if not _re.fullmatch(r"[0-9a-fA-F]{4,40}", sha or ""):
-        return None
-    record = next((d for d in designs_payload(index)["designs"]
-                   if d["id"] == design_id), None)
-    if record is None or not record["asset"]:
-        return None
-    try:
-        proc = subprocess.run(  # noqa: S603 — fixed argv, sha validated above
-            ["git", "-C", str(project_root), "show",
-             f"{sha}:docs/{record['asset']}"],
-            capture_output=True, timeout=5, check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return None
-    return proc.stdout if proc.returncode == 0 else None
-
-
 def commits_payload(
     project_root: Path, index: Index, limit: int = COMMITS_DEFAULT_LIMIT
 ) -> dict[str, Any]:
@@ -3243,6 +3024,32 @@ def _design_groups(index: Index, platform: str | None) -> list[dict[str, Any]]:
                        if _surface_counts.get(r.note_id or "", 0) == 0)
             if bare:
                 head = f"{label} · {bare} with no checks"
+            #: **The 12 to 15 target counts top-level screens only** (Edwin,
+            #: 2026-09-14; upstream ADR-0044, `TAXONOMY.md`). A dialog is a
+            #: child surface, and counting children against a target set for
+            #: screens made a repo that named its dialogs properly look as
+            #: though it had three times too many places. The head says both
+            #: numbers so the reader can see which is being judged.
+            ordered, screens, children = _surface_tree(index, records)
+            if screens:
+                head = (
+                    f"{label} · {screens} "
+                    + ("screen" if screens == 1 else "screens")
+                    + (f" · {children} " + ("child" if children == 1
+                                            else "children") if children else "")
+                    + (f" · {bare} with no checks" if bare else ""))
+                #: **Tree order, not `_open_first`.** A surface is not work
+                #: with a terminal status, so lifting the `active` ones above
+                #: the `retired` ones would split every parent from its
+                #: children for a distinction this group is not about.
+                records = ordered
+                out.append({
+                    "key": key, "label": head, "url": None, "status": None,
+                    "item_layout": "stacked",
+                    "items": [{**_rare_item(index, r), **_owed_flag(r, index)}
+                              for r in records],
+                })
+                continue
         out.append({
             "key": key,
             "label": head,
@@ -3701,10 +3508,20 @@ def _task_records(index: Index) -> list[NoteRecord]:
     """Every task note, typed or not (ISS-0067).
 
     `notes_by_type("task")` reads frontmatter, and three notes under
-    `features/*/plan/tasks/` have none — so they were missing from the Tasks
+    `features/*/plan/tasks/` had none — so they were missing from the Tasks
     mode, and `features/` is a DOC_TREE_EXCLUDED_ROOTS root, so they reached
     no surface at all. Exactly ISS-0062's mechanism, which PHASE-010 fixed for
     plans and not for tasks.
+
+    **Those three notes were zero-byte files, and they are notes again**
+    ([[ISS-0287]]). `TASK-0182`, `TASK-0183` and `TASK-0187` were committed
+    empty in July and restored on 2026-09-07, so this repository now has no
+    untyped task at all and the fallback below sweeps in nothing here. It
+    stays: the type is a claim a note may simply not make, and a repo that
+    scaffolds a task by touching a file needs it. What changed is that the
+    guard for it is now a constructed case rather than these three
+    (`tests/test_surface_ownership.py`), because a test that needs the corpus
+    to stay broken fails when somebody fixes it.
 
     Union rather than a path-only sweep: a task note living somewhere else is
     still a task, and the type is the claim wherever it is written. The path is
@@ -4572,6 +4389,24 @@ _SECTION_ORDER_INDEX: dict[str, int] = {
 #: mode: the suite lives inside Tests, and a ninth mode would put one corpus in
 #: two places — ISS-0068's defect, which this project has already paid for.
 CHECKS_VIEW_ROUTE = "~checks"
+#: The walk page's address ([[FEAT-0149]]). One platform per walk, always —
+#: `~walk` alone lets the sidecar resolve the open release's platform, and the
+#: ladder names the platform it means.
+WALK_VIEW_ROUTE = "~walk"
+
+
+def _ledger_platforms(index: Index) -> list[str]:
+    """Which platforms this repo keeps a ledger for.
+
+    Wrapped so the one caller that needs it does not import the ledger module
+    for a single call, and so a repo with no ledger answers `[]` rather than
+    raising on a surface that is only offering a link.
+    """
+    from . import ledger as _ledger
+    try:
+        return _ledger.platforms(index.docs_root)
+    except OSError:
+        return []
 
 
 def _area_slug(area: str) -> str:
@@ -5156,6 +4991,37 @@ def _publication_groups(
             "default_open": False,
         })
 
+    #: **An abandoned release still appears** ([[FEAT-0145]]).
+    #:
+    #: The whole argument for abandoning rather than deleting is that the note
+    #: is the record of why a version number was skipped. This loop built rows
+    #: for open drafts, released releases and overtaken drafts — three
+    #: populations that between them do not include `abandoned` — so the
+    #: navigator's answer to *"what happened to 2.1.7"* was silence, on the one
+    #: surface whose whole subject is releases. Found by independent review,
+    #: 2026-09-08.
+    #:
+    #: Below the shipped ones and closed by default: it is a fact about the
+    #: past, not work. The row says what it was and offers the note.
+    for gone in _pub._releases(index):
+        if gone["status"] != "abandoned":
+            continue
+        out.append({
+            "key": f"abandoned-{gone['id']}",
+            "label": f"Abandoned · {gone['id']} {gone['version']}".rstrip(),
+            "url": f"/docs/{gone['rel']}",
+            "status": "abandoned", "type": "release", "item_layout": "stacked",
+            "default_open": False,
+            "items": [{
+                "id": gone["id"], "title": gone["title"],
+                "subtitle": "prepared and never shipped — the note records "
+                            "why this version number was skipped, and the "
+                            "number stays taken",
+                "status": "abandoned", "type": "release",
+                "url": f"/docs/{gone['rel']}",
+            }],
+        })
+
     for stale in _pub.stale_drafts(index):
         out.append({
             "key": f"stale-draft-{stale['id']}",
@@ -5289,6 +5155,46 @@ def _release_content_rows(
             # FILES under a label that reads as a count of TESTS.
             label = (f"Acceptance tests · {unchecked} unchecked" if unchecked
                      else "Acceptance tests · all settled")
+            #: **The door to the walk** ([[TASK-0621]]). The row above says how
+            #: many are owed and opens the list; this one opens the procedure —
+            #: the same rows in the order the repo authored, with each check's
+            #: setup and steps on it.
+            #:
+            #: Only while a release is in preparation, and only while something
+            #: is owed: a link to an empty walk is the permanent blank button
+            #: FEAT-0102 records the rule about twice. And only when the repo
+            #: keeps a ledger for the platform, because a walk asked for by a
+            #: name no ledger carries reads no verdicts and reports every check
+            #: in the repo as owed.
+            _draft = _pub.preparing(index)
+            _draft_platform = str((_draft or {}).get("platform") or "").strip().lower()
+            if _draft and _draft_platform in _ledger_platforms(index):
+                #: **The count is the walk's own, taken on the walk's
+                #: platform.** `unchecked` above is the UNION across every
+                #: ledger, because this call passes no platform — 327 on
+                #: `your-trainer`, where its open Android release owes **39**.
+                #: Printing the union beside a link to a page that renders 39
+                #: would put two answers to one question a click apart, which
+                #: is [[ISS-0289]] one surface over. Same computation as the
+                #: walk payload's row set: `gate_payload` on the platform and
+                #: `ledger.owed` return the same 39.
+                _owed = sum(
+                    int(c.get("unchecked") or 0) for c in
+                    (_acceptance.gate_payload(
+                        index.docs_root, index=index,
+                        platform=_draft_platform).get("counts") or {}).values())
+                if _owed:
+                    tests.append({
+                        "id": "",
+                        "title": "Walk them",
+                        "subtitle": (
+                            f"{_owed} owed on {_draft_platform} — the checks in "
+                            "walking order, each with its setup, steps and "
+                            "expected result"),
+                        "status": "blocked",
+                        "type": "test",
+                        "url": f"{WALK_VIEW_ROUTE}/{_draft_platform}",
+                    })
     if tests:
         groups.append({"key": "rel-tests",
                        "label": label,
@@ -6248,6 +6154,74 @@ def surface_coverage(index: Index) -> dict[str, int]:
         title = str(record.title or "").strip().lower()
         counts[record.note_id or ""] = areas.get(title, 0)
     return counts
+
+
+def _surface_tree(
+    index: Index, records: list[NoteRecord],
+) -> tuple[list[NoteRecord], int, int]:
+    """Surfaces as screens with their children under them ([[TASK-0625]]).
+
+    Returns `(the records in tree order, how many are top-level screens, how
+    many are children)`. **The screen count is the one FEAT-0130's 12 to 15
+    target is about** — Edwin, 2026-09-14: children sit under their parent and
+    do not count toward it. Counting every surface against that target told a
+    repo that had named its dialogs properly that it had three times too many
+    places, which is the opposite of what the target is for.
+
+    `parent:` is resolved by the bundled walk module, the same lookup the walk
+    sheet and `~checks` use, so the three cannot come to disagree about which
+    screen a dialog belongs to.
+
+    A repo whose surfaces resolve no parents at all gets `(records, 0, 0)` and
+    the caller keeps its existing order — there is no tree to draw.
+    """
+    from . import acceptance as _acc
+
+    surfaces, _by_title, kinds = _acc._surface_map(index)
+    here = {r.note_id or "": r for r in records if r.note_id}
+    if not here:
+        return list(records), 0, 0
+    kids: dict[str, list[str]] = {}
+    roots: list[str] = []
+    for note_id in sorted(here):
+        surface = surfaces.get(note_id)
+        parent = surface.parent if surface else ""
+        #: A parent outside this group — filtered by platform, or simply not a
+        #: surface note — leaves the child a root. It is visible either way,
+        #: which is the rule ISS-0250 exists for one surface over.
+        if parent and parent in here:
+            kids.setdefault(parent, []).append(note_id)
+        else:
+            roots.append(note_id)
+    ordered: list[NoteRecord] = []
+    children = 0
+
+    def place(note_id: str, depth: int) -> None:
+        nonlocal children
+        ordered.append(here[note_id])
+        if depth:
+            children += 1
+        #: A cycle cannot repeat a note, because `seen` is the output list.
+        for kid in sorted(kids.get(note_id, [])):
+            if here[kid] not in ordered:
+                place(kid, depth + 1)
+
+    for note_id in roots:
+        place(note_id, 0)
+    #: Anything a cycle among parents kept out of the walk above, appended so
+    #: no surface is dropped from the group by a mistake in its frontmatter.
+    for note_id in sorted(here):
+        if here[note_id] not in ordered:
+            ordered.append(here[note_id])
+    #: **Only a `screen` counts.** A `flow` and a `subsystem` are surfaces
+    #: without being places, so neither belongs in a target about screens —
+    #: this asked which kinds to exclude and missed `flow`, which is the
+    #: failure mode of a deny-list. Asking which kind IS a screen cannot miss
+    #: a kind added later: a new one simply does not count until somebody
+    #: says it should.
+    screens = sum(1 for note_id in roots
+                  if kinds.get(note_id, "screen") in _acc._SCREEN_KINDS)
+    return ordered, screens, children
 
 
 def _rare_item(index: Index, record: NoteRecord) -> dict[str, Any]:

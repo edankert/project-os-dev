@@ -910,6 +910,176 @@ def _ships_on(feature_platform: str, release_platform: str) -> bool:
     return f in _EVERY_PLATFORM or f == r
 
 
+def platform_candidates(index: "Index") -> list[dict[str, Any]]:
+    """The platforms this repo has **evidence for**, for the release picker
+    ([[FEAT-0145]] step 2).
+
+    `platform:` on a release is free text today, and a text box for a value
+    that becomes a ledger filename is how [[ISS-0142]] happened one type
+    earlier. So the workflow offers what the repo can be shown to use rather
+    than asking somebody to spell it:
+
+    * every platform that already has a ledger (`ledger.platforms`), and
+    * every `platform:` value the notes carry (`cockpit.available_platforms`).
+
+    The two sets are usually the same and they answer different questions. A
+    ledger platform is one a verdict has been recorded against; a note platform
+    is one somebody has tagged work with. `../your-trainer` on 2026-09-08 has
+    ledgers for `android` and `ios` and notes carrying `web`, `marketing` and
+    `docs` as well — offering only the ledgers would hide three real answers,
+    and offering only the notes would hide a platform whose ledger exists
+    because a release was drafted against it.
+
+    **The `every platform` option is the empty string**, which is what
+    `_ships_on` and `gate_payload` already read as *"this release has not said,
+    so it takes them all"* ([[DES-0012]] D4). It is offered explicitly rather
+    than left as the state you get by not choosing, because *not chosen* and
+    *deliberately all* look identical in the note and only one of them is a
+    decision.
+
+    A name that could not be a ledger filename is dropped rather than offered:
+    the picker must not present a value the write path will refuse.
+    """
+    from . import ledger as _ledger
+    from .cockpit import available_platforms
+
+    with_ledger = set(_ledger.platforms(index.docs_root))
+    in_notes = {p for p in available_platforms(index) if p not in _EVERY_PLATFORM}
+    rows: list[dict[str, Any]] = [{
+        "id": "",
+        "label": "every platform",
+        "ledger": False,
+        "in_notes": False,
+        "why": "the release does not say, so the gate takes every platform",
+    }]
+    for name in sorted(with_ledger | in_notes):
+        if not _LEDGER_NAME_RE.match(name):
+            continue
+        has_ledger = name in with_ledger
+        used = name in in_notes
+        rows.append({
+            "id": name,
+            "label": name,
+            "ledger": has_ledger,
+            "in_notes": used,
+            "why": (
+                "keeps a ledger, and notes use it" if has_ledger and used
+                else "keeps a ledger" if has_ledger
+                else "notes use it; its ledger is created when a release "
+                     "names it"
+            ),
+        })
+    return rows
+
+
+#: The shape a platform must have to become part of a ledger filename. The same
+#: expression `ledger.working_path` refuses on, stated here so the picker never
+#: offers a value the write path will reject.
+_LEDGER_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
+
+
+def coverage_gaps(
+    index: "Index", release_id: str = "", content_ids: "set[str] | None" = None,
+) -> dict[str, Any]:
+    """What this release ships that nothing verifies ([[FEAT-0145]] step 4).
+
+    Edwin, after preparing `your-trainer` 2.2.0 by hand: three of PHASE-021's
+    claims had no acceptance check at all, and finding that took a deliberate
+    read of thirty task notes against nine checks.
+
+    **Computed mechanically, and that is the whole of the tool's half.** Two
+    populations, both already in the index:
+
+    * **uncovered** — a feature this release carries that no acceptance check
+      names in `covers:`. The predicate is `Suite.items`' own `refs`, which is
+      the reverse index [[ADR-0032]] settled on and the same one
+      `_open_tests_for_contents` reads; a second walk over `covers:` here would
+      be [[REQ-0059]]'s forbidden shape.
+    * **unmet** — a requirement constraining one of those features with
+      criteria nobody has ticked, from `criteria.payload`. A criterion of
+      record with no verification record is the state that module exists to
+      move out of, and a release is when it stops being theoretical.
+
+    **No model runs here.** Drafting the missing checks is an agent's job and
+    it happens through the dispatch queue, as a diff a person accepts — see the
+    `commission-checks` verb in `agent_actions`. This function only says what
+    is missing, so the number on the page is reproducible and the same on every
+    machine.
+
+    A feature carrying `acceptance_exception:` is not a gap: somebody wrote
+    down why it needs no check, which is the answer, not the absence of one.
+    """
+    from . import criteria as _criteria
+
+    ids = content_ids
+    if ids is None:
+        ids = {
+            str(row.get("id") or "")
+            for row in shipping_in(index, release_id)
+        }
+    ids = {i for i in ids if i}
+    if not ids:
+        return {"uncovered": [], "unmet": [], "scoped": False}
+
+    suite = _acc_module().load(index.docs_root, index=index)
+    covered: set[str] = set()
+    for item in suite.items:
+        for ref in item.refs:
+            for match in re.finditer(r"FEAT-\d+", str(ref)):
+                covered.add(match.group(0))
+
+    uncovered: list[dict[str, Any]] = []
+    unmet: list[dict[str, Any]] = []
+    for fid in sorted(ids):
+        path = index.by_id(fid)
+        record = index.get(path) if path is not None else None
+        title = (record.title if record else fid) or fid
+        rel = (record.rel_path if record else "") or ""
+        excused = str(
+            (record.frontmatter.get("acceptance_exception") if record else "")
+            or "").strip()
+        if fid not in covered and not excused:
+            uncovered.append({"id": fid, "title": title, "rel": rel})
+        #: **Read per feature, not once over every requirement.** The question
+        #: is what THIS release owes, and a requirement constraining a feature
+        #: no release carries is debt somebody else's cycle will meet —
+        #: `criteria.debt_payload` is the surface for that one.
+        answer = _criteria.payload(index, fid)
+        for req in (answer.get("requirements") or []):
+            open_rows = [c for c in (req.get("criteria") or [])
+                         if str(c.get("state") or "") == "open"]
+            if not open_rows:
+                continue
+            unmet.append({
+                "id": str(req.get("id") or ""),
+                "title": str(req.get("title") or ""),
+                "rel": str(req.get("rel") or ""),
+                "feature": fid,
+                "open": len(open_rows),
+                "total": len(req.get("criteria") or []),
+                #: The first three, verbatim. A count says how much is owed and
+                #: nothing about whether it is owed by this release; the words
+                #: are what a reader judges that on.
+                "sample": [str(c.get("text") or "") for c in open_rows[:3]],
+            })
+    #: Deduped on the requirement: `specifies:` is routinely plural, so one
+    #: requirement constraining three features in this release would otherwise
+    #: be listed three times as three different debts.
+    seen: set[str] = set()
+    deduped: list[dict[str, Any]] = []
+    for row in unmet:
+        if row["id"] in seen:
+            continue
+        seen.add(row["id"])
+        deduped.append(row)
+    return {
+        "uncovered": uncovered,
+        "unmet": deduped,
+        "scoped": True,
+        "features": len(ids),
+    }
+
+
 def _platform_of_release(index: "Index", release_id: str) -> str:
     path = index.by_id(release_id) if release_id else None
     record = index.get(path) if path is not None else None
@@ -1010,6 +1180,109 @@ def _open_tests_for_contents(
     return rows
 
 
+def _settle_key(row: dict[str, Any]) -> str:
+    """One check's address on a gate row — the note id when it has one, the
+    number otherwise. Both come off `acceptance._row`, so this never has to
+    decide which of two disagreeing values is meant."""
+    return str(row.get("id") or "") or str(row.get("number") or "")
+
+
+def settle_rows(
+    gate: dict[str, Any], content_ids: "set[str] | None" = None,
+) -> list[dict[str, Any]]:
+    """The checks a person can settle from the release page, grouped by area
+    ([[FEAT-0145]] step 3, authorised by [[ADR-0041]]).
+
+    **The LIVE blocking rows, and only those.** `gate["blocking"]` still holds
+    the quiet and resting rows — they are blocking checks that are not being
+    asked about — and offering a settle button on a check whose subject has not
+    been built yet would be asking a person to excuse work nobody has started.
+    They keep their own collapsed groups, where they say why they are resting.
+
+    **Grouped by area, because the wall was the problem.** Measured on
+    `../your-trainer` 2026-09-08 with REL-0017 open on Android: **52 rows
+    across 15 areas** on the page somebody opens to ask *can I ship*, and the
+    shape is not flat — `Riding — simulation` holds 16 and `Riding — routes`
+    14, so two areas are more than half of it. A reader can act on that shape;
+    scrolling 52 rows is a mood.
+
+    Each row carries `covers_release`: does this check name a feature the
+    release actually carries? **9 of those 52** do. That is not a
+    filter — every blocking check still has to reach a mark before the gate
+    clears — but it is the difference between *this release owes it* and *the
+    repo owes it*, and a walker settling 52 rows needs to see which is which.
+    """
+    if not gate or not gate.get("exists"):
+        return []
+    resting_keys = {
+        _settle_key(r) for r in (gate.get("quiet") or [])
+    } | {
+        _settle_key(r) for r in (gate.get("resting") or [])
+    }
+    wanted = {i for i in (content_ids or set()) if i}
+    groups: dict[str, dict[str, Any]] = {}
+    for row in (gate.get("blocking") or []):
+        key = _settle_key(row)
+        if not key or key in resting_keys:
+            continue
+        refs = {
+            m.group(0)
+            for ref in (row.get("refs") or [])
+            for m in re.finditer(r"FEAT-\d+", str(ref))
+        }
+        area = str(row.get("area") or "") or "(no area)"
+        bucket = groups.setdefault(area, {"area": area, "rows": []})
+        bucket["rows"].append({
+            "key": key,
+            "id": str(row.get("id") or ""),
+            "number": str(row.get("number") or ""),
+            "name": str(row.get("name") or ""),
+            "area": area,
+            #: The check's own words, which is what [[ADR-0041]] rests on: the
+            #: settle buttons may sit here **because** the procedure sits
+            #: beside them. A row with no text is still listed and still
+            #: links, and the dialog fetches the rendered note either way.
+            "text": str(row.get("text") or ""),
+            "rel": str(row.get("rel") or ""),
+            "mark": str(row.get("mark") or ""),
+            #: **What was already said about it**, so `blocked` visibly does
+            #: not clear the row ([[TASK-0602]]). A settle that leaves the row
+            #: exactly as it was reads as a button that did nothing; the
+            #: reason beside it is the evidence that it did.
+            "reason": str(row.get("verdict_reason") or ""),
+            "verdict_date": str(row.get("verdict_date") or ""),
+            "command": str(row.get("command") or ""),
+            "features": sorted(refs),
+            "covers_release": bool(refs & wanted),
+        })
+    out = list(groups.values())
+    for bucket in out:
+        bucket["rows"].sort(key=lambda r: (not r["covers_release"], r["number"], r["key"]))
+        bucket["count"] = len(bucket["rows"])
+        bucket["for_release"] = sum(1 for r in bucket["rows"] if r["covers_release"])
+    #: Biggest area first, then by name: the two areas holding half the gate
+    #: are where a walk actually starts.
+    out.sort(key=lambda b: (-b["count"], b["area"]))
+    return out
+
+
+def _delete_refusal(index: "Index", release_id: str) -> str:
+    """`note_writes.delete_refusal`, imported where it is used.
+
+    `note_writes` imports this module lazily inside its own functions; doing
+    the same in the other direction is what keeps the two from importing each
+    other at module scope.
+    """
+    from . import note_writes as _writes
+
+    try:
+        return _writes.delete_refusal(index, index.docs_root, release_id)
+    except Exception:                                # pragma: no cover
+        #: A refusal the tool cannot compute is a refusal. The button is
+        #: hidden, never offered on a guess.
+        return "cannot be checked"
+
+
 def release_payload(
     project_root: Path, index: "Index", release_id: str = "next",
 ) -> dict[str, Any]:
@@ -1037,6 +1310,13 @@ def release_payload(
         held = next((r for r in releases if r["id"] == wanted), None)
 
     shipped = held is not None and held["status"] == "released"
+    #: **Closed is wider than shipped.** `shipped` decides whether the contents
+    #: are a frozen fact and whether today's gate is the right thing to show —
+    #: an abandoned release never froze anything, so those keep their derived
+    #: answers. What `closed` decides is whether anything on this page may be
+    #: WRITTEN, and every write path refuses all three ([[FEAT-0145]]).
+    closed = held is not None and held["status"] in (
+        "released", "reverted", "abandoned")
     if shipped:
         # A shipped release names what it carried; the derived set has moved
         # on. The frozen list is the record and must not be recomputed.
@@ -1163,6 +1443,20 @@ def release_payload(
         )
         contents["held_back"] = _held_back_rows(
             index, held_back, derived_rows, _rel_rec)
+        #: **The gate is graded on the release's own platform** ([[ISS-0288]]).
+        #: `shipping_in` above has read `_platform_of_release` since
+        #: [[ISS-0261]] and this call did not, so one function asked the
+        #: platform question twice and answered it two ways: the contents were
+        #: this platform's and the verdicts were every platform's.
+        #:
+        #: The union is not wrong — [[DES-0012]] D4: *a release that has not
+        #: said which platform it ships takes them all* — and a release with no
+        #: `platform:` still gets it, unchanged. What was wrong is applying it
+        #: to a release that HAS said, in the frontmatter this function already
+        #: read. Measured on `../your-trainer` with one Android release open:
+        #: **635 checks reading unsettled against the union, 67 against its own
+        #: platform**, on a repo whose Android ledger resolves 569 of them. A
+        #: gate at 635 cannot be walked down and cannot go green.
         gate = acceptance.gate_payload(
             index.docs_root,
             index=index,
@@ -1170,6 +1464,7 @@ def release_payload(
             baseline_ref=baseline_ref(project_root, index),
             tags=ordered,
             deselected=held_back,
+            platform=_platform_of_release(index, _rel_id),
         )
     verified: list[dict[str, Any]] = []
     known_issues = ""
@@ -1250,6 +1545,38 @@ def release_payload(
             _acc_module().load(index.docs_root, index=index),
         ),
         "gate": gate,
+        #: **The platforms this release could ship** ([[FEAT-0145]] step 2).
+        #: A picker rather than a text box, because the value becomes a ledger
+        #: filename and the gate is graded on it ([[ISS-0288]]).
+        "platforms": platform_candidates(index),
+        #: **The platform it says it ships**, read back so the picker can show
+        #: which option is the current one. `held` carries it already; naming
+        #: it at the top level keeps the client from digging for it.
+        "platform": str((held or {}).get("platform") or ""),
+        #: **The owed checks, grouped by area, each with its own words**
+        #: ([[FEAT-0145]] step 3 / [[ADR-0041]]). Empty on a release that is
+        #: **closed** — shipped, reverted or abandoned. `shipped` alone was not
+        #: enough: the write path refuses a settle on any of the three, so an
+        #: abandoned release was being offered a list of buttons that exist to
+        #: be refused. Found by walking the endpoints against a live sidecar.
+        "settle": ([] if closed else settle_rows(
+            gate, {str(r.get("id") or "")
+                   for r in (contents.get("rows") or [])})),
+        #: **Why a true delete would be refused, or `""`** ([[FEAT-0145]]).
+        #: Computed by the function the write path raises from, so the control
+        #: is offered exactly when it would work — a client-side guess at
+        #: "created today" is right until midnight.
+        "delete_refusal": ("" if not held or closed else _delete_refusal(
+            index, held["id"])),
+        #: **What this release ships that nothing verifies** ([[FEAT-0145]]
+        #: step 4). Mechanical: features no check names, and requirements with
+        #: criteria nobody ticked. Drafting the missing checks is an agent's
+        #: job and lands as a diff a person accepts.
+        "coverage": ({"uncovered": [], "unmet": [], "scoped": False}
+                     if closed else coverage_gaps(
+                         index, held["id"] if held else "",
+                         {str(r.get("id") or "")
+                          for r in (contents.get("rows") or [])})),
         # What this release verified, and what it shipped with unfixed — the
         # two halves Edwin described, both already in the record and read by
         # nothing until now.
