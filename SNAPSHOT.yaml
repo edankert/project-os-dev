@@ -33,7 +33,7 @@ counters:
   CHG:
     last_date: 20260916
   FEAT: 37
-  ISS: 70
+  ISS: 72
   PHASE: 7
   REL: 0
   REQ: 31
@@ -873,6 +873,12 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0072:
+      file: docs/issues/ISS-0072-PHASES-Md-Repeats-Every-Phase-Status-And-Drifts-From-The-Phase-Notes.md
+      status: open
+    ISS-0071:
+      file: docs/issues/ISS-0071-A-Merge-Owned-File-Nobody-Edited-Never-Receives-Template-Updates.md
+      status: open
     ISS-0070:
       file: docs/issues/ISS-0070-A-Snapshot-That-Does-Not-Parse-Still-Passes-Validation.md
       status: triage
@@ -1926,7 +1932,7 @@ metrics:
     tests_total: 10
     tests_passing: 0
     tests_failing: 0
-    issues_open: 9
+    issues_open: 11
     issues_triage: 2
     tasks_deferred: 0
     issues_deferred: 0
