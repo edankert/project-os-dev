@@ -6,7 +6,7 @@ title: "The validator checks review rounds, who reported an issue, and whether a
 status: active
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-09-19
 source: ["[[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It]]"]
 scope: system
 level: unit
@@ -17,7 +17,7 @@ tasks: [TASK-0129, TASK-0133]
 issues: []
 artifacts: []
 evidence: []
-adequacy: "Checked by breaking the validator on 2026-09-18: removing the cutover date, ignoring a filled question, and allowing round 3 each fail the assertions meant for them; the unbroken validator passes all 15."
+adequacy: "Checked by breaking the validator. 2026-09-18: removing the cutover date, ignoring a filled question, and allowing round 3 each fail the test. 2026-09-19, after the FEAT-0035 review: removing the call from the validator run, dropping triage from the checked statuses, reading the frontmatter again, and matching 'for <name>' each fail it too. 19 unit assertions and 2 end-to-end, all passing."
 related: []
 ---
 

@@ -6,7 +6,7 @@ title: "A finding is fixed in the feature that caused it, and a review is sized 
 status: "accepted"
 owner: user:edwin
 created: 2026-09-18
-updated: "2026-09-18"
+updated: 2026-09-19
 source: ["[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]", "Edwin, 2026-09-18, on review effort and on issues 'not fixed as part of the features they belong to'"]
 decision: "Keep ADR-0028's two-round cap, its adjudication rule and its ban on the author answering the reviewer. Replace its severity bar. A finding about code the feature changed is fixed before the feature closes. It is filed as an ISS-* only when the fix needs a product decision, touches code the feature did not change, or is too large for the session. A finding that is neither fixed nor worth filing is recorded in the feature's review section and dropped. A review covers one feature's diff, follows a fixed procedure and stops at a budget."
 context: "ADR-0028 stopped review loops. It did so by letting every true finding that does not break behaviour be filed at triage while the item closes. In your-trainer, that turned a review's findings into backlog: 55 of 121 open issues come from reviews, and FEAT-0107's main behaviour has no test that can fail, which was filed as ISS-0466 instead of fixed. A single review still takes about 160 turns and 90-100 tool calls, because it has no scope limit, no procedure and no stopping point."
@@ -69,3 +69,9 @@ Decided by Edwin after the measured comparison in [[TASK-0130-Re-Run-The-FEAT-01
 - **A *holds* verdict now cites its evidence**, one per part of a claim with several parts. Three runs marked a partly-false claim *holds* with no evidence for the false part.
 - **The budget warning moved from call 30 to call 36.** A warning to finish up acted as the real limit: every run stopped near call 34.
 - **Instructions under test must not describe the answers.** The first comparison was void because the skill's own examples named FEAT-0107's findings.
+
+## Amendment, 2026-09-19: a failing test is fixed, whoever broke it
+
+Edwin, 2026-09-19, after the project-os-cockpit suite showed six failures that were set aside as "failing before today": "You should not care if those failures were for today, they need to be fixed. Make sure to update the rules around this!"
+
+The filing bar lets a defect in code the feature did not change become an issue. **A failing test is never that case.** A test that fails in any run you make is fixed before the work closes, whoever broke it and whenever. A failure caused by the machine rather than the code (a missing build, a device) skips with its reason, or the run gains the step it needs. Only a fix that needs the owner's decision waits, and it is asked in the same turn. Stated once in `QUALITY.md` (project-os `aa278b5`), with pointers from `LIFECYCLE.md` "Scope of a change" and the close-out skill. Recorded in [[TASK-0144-A-Failing-Test-Is-Fixed-Whoever-Broke-It|TASK-0144]].

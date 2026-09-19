@@ -38,7 +38,7 @@ counters:
   REL: 0
   REQ: 31
   RISK: 3
-  TASK: 143
+  TASK: 144
   TST: 17
   WF: 3
 
@@ -46,7 +46,7 @@ focus:
   # Goal 1 of PHASE-0007 closed 2026-09-18: FEAT-0035's tasks and FEAT-0034 TASK-0126 to TASK-0130 are done, and the template is committed (project-os 3c979ee, db98f46) and synced to your-trainer (5b317fb4) and project-os-cockpit (f120f35).
   # 2026-09-18: FEAT-0036 widened by Edwin to the seven repos with open issues; your-trainer goes first (its own task records the leg).
   # 2026-09-18: the project-os-dev leg (TASK-0140) is done. Left: project-os-cockpit (35 open issues), your-sudoku (17), project-os-deck (17), articles (3).
-  task: "TASK-0141"
+  task: ""
   feature: "FEAT-0036"
   phase: "PHASE-0007"
   issue: ""
@@ -131,7 +131,7 @@ items:
   features:
     FEAT-0037:
       file: docs/features/template-sync-hygiene/FEAT-0037-Every-Repo-Can-Take-The-Template-Again.md
-      status: doing
+      status: done
       owner: user:edwin
       phase: "[[PHASE-0007]]"
       tasks: [TASK-0134, TASK-0135, TASK-0136, TASK-0137, TASK-0142]
@@ -145,8 +145,8 @@ items:
       tasks: [TASK-0138, TASK-0139, TASK-0140, TASK-0141, TASK-0143]
     FEAT-0035:
       file: docs/features/fix-before-filing/FEAT-0035-A-Finding-Is-Fixed-Before-It-Is-Filed.md
-      status: doing
-      tasks: [TASK-0132, TASK-0133]
+      status: done
+      tasks: [TASK-0132, TASK-0133, TASK-0144]
       owner: user:edwin
       phase: "[[PHASE-0007]]"
       related: [ADR-0047]
@@ -384,7 +384,7 @@ items:
       parent: FEAT-0036
     TASK-0141:
       file: docs/features/backlog-clearance/plan/tasks/TASK-0141-The-Last-Four-Repos-Open-Issues-Are-Checked-Against-The-Code.md
-      status: doing
+      status: done
       parent: FEAT-0036
     TASK-0142:
       file: docs/features/template-sync-hygiene/plan/tasks/TASK-0142-A-Merge-File-Nobody-Edited-Takes-The-Template.md
@@ -394,6 +394,10 @@ items:
       file: docs/features/backlog-clearance/plan/tasks/TASK-0143-Template-Fixes-Found-By-The-Cleanup.md
       status: done
       parent: FEAT-0036
+    TASK-0144:
+      file: docs/features/fix-before-filing/plan/tasks/TASK-0144-A-Failing-Test-Is-Fixed-Whoever-Broke-It.md
+      status: done
+      parent: FEAT-0035
       phase: "[[PHASE-0007]]"
     TASK-0139:
       file: docs/features/backlog-clearance/plan/tasks/TASK-0139-Your-Healths-Open-Issues-Are-Checked-Against-The-Code.md
@@ -518,15 +522,6 @@ items:
       depends: [TASK-0116, TASK-0117]
       blocks: [TASK-0123]
       tests: [TST-0011]
-    TASK-0119:
-      file: "docs/features/walk-procedure/plan/tasks/TASK-0119-The-Procedure-Format.md"
-      status: done
-      parent: FEAT-0031
-      phase: "[[PHASE-0005]]"
-      effort: M
-      depends: []
-      blocks: [TASK-0120, TASK-0121]
-      tests: []
     TASK-0120:
       file: "docs/features/walk-procedure/plan/tasks/TASK-0120-The-Procedure-Validator.md"
       status: done
@@ -1918,11 +1913,11 @@ items:
 metrics:
   counts:
     features_total: 37
-    features_done: 28
+    features_done: 30
     phases_total: 8
     phases_done: 4
-    tasks_total: 143
-    tasks_done: 132
+    tasks_total: 144
+    tasks_done: 134
     tests_total: 10
     tests_passing: 0
     tests_failing: 0

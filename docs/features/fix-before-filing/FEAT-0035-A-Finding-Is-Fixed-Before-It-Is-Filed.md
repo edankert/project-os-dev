@@ -2,7 +2,7 @@
 type: "[[feature]]"
 id: FEAT-0035
 title: "A finding is fixed before it is filed"
-status: doing
+status: done
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
@@ -10,9 +10,13 @@ updated: 2026-09-19
 source: ["[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]", "Edwin, 2026-09-18: issues 'not reported by me or written in a way that I can understand ... not fixed as part of the features they belong to and often they are marked as needing my input'"]
 goal: "A defect found in a feature's own code is fixed before the feature closes. Only what needs a decision, lies outside the feature, or is too big is filed. Each issue says what a user would notice, and a question for Edwin reaches him in chat with a recommendation."
 requirements: []
-tasks: [TASK-0132, TASK-0133]
+tasks: [TASK-0132, TASK-0133, TASK-0144]
 release: ""
 acceptance_exception: "A process rule with no product surface. It is checked by what the next five features close with, as PHASE-0007's exit criteria state."
+reviewed_by: ["model:claude-opus-5 (reviewer A)", "model:claude-opus-5 (reviewer B)", "model:claude-opus-5 (round 2)"]
+review_date: "2026-09-19"
+review_round: 2
+review_verdict: approved
 related: ["[[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It]]", "[[ADR-0028-A-Review-Gate-Runs-Two-Rounds]]", "[[ISS-0028-Close-Out-Has-No-Answer-For-Cannot-Fix]]"]
 ---
 
@@ -44,6 +48,28 @@ Today a review's findings, and an agent's own discoveries, become issues at `tri
 ## Verification
 
 - 2026-09-19, in `~/Dev/repos/project-os` at `01031af`: `for t in tools/scripts/test-*.sh; do bash "$t"; done`, `python3 -B tools/scripts/test-retention.py`, `python3 -B tools/scripts/test-walk-preparation.py`, `python3 tools/scripts/generate-adapters.py --check` and `bash tools/scripts/validate-docs.sh`. Every script passed: 16 shell test scripts with 0 failures, retention 26 assertions, walk preparation OK, all 65 generated artifacts current, validator OK. The same code is synced to all twelve fleet repos, each passing `validate-docs.sh --as-committed`.
+
+## Review
+
+**Round 1, 2026-09-19: changes-requested.** Two clean-context reviewers on one packet (template `3c979ee`, FEAT-0035's files), combined here. Both reached the same verdicts.
+
+| # | Claim | Verdict | Evidence |
+|---|---|---|---|
+| 1 | Next five your-trainer features close with no self-filed issue without a `question:` | not checked | Measured in TASK-0131; those features have not closed. |
+| 2 | Every issue created after the sync has `reported_by:` | holds | All 10 fleet issues created from 2026-09-18 carry it. |
+| 3 | The rule is stated once, in `QUALITY.md`; the skills link to it | **refuted** | `independent-review/SKILL.md:79`, `issue-intake/SKILL.md:15` and `close-out/SKILL.md:59` restated the filing bar; the close-out copy had dropped "too large for the session". |
+| 4–6 | `QUALITY.md`, the review skill and `LIFECYCLE.md` carry ADR-0047's rule | holds | Diff lines cited by both reviewers. |
+| 7a | The close-out skill fixes an error the session caused | holds | `close-out/SKILL.md:59`. |
+| 7b | The cockpit's FEAT-0051 rule ("fixed or filed") is changed | **refuted** | project-os-cockpit `CLAUDE.md:137-142` still said it, and `tests/test_coverage_registers.py:366` asserted it. |
+| 8a–b | `reported_by:` and plain titles in the template and intake | holds | Template lines 11, 20; intake step 6. |
+| 8c, 10 | `question:` and the ISSUE-QUESTION warning | **refuted in part** | The template's own comment "only when it waits on the owner" made every new issue warn: the check read the frontmatter. "working for Edwin" also warned. |
+| 9 | Questions go in chat with a recommendation | holds | Skill lines cited. |
+| 11 | TST-0015 fails when its behaviour is broken | **refuted in part** | Removing the call in `validate()` and dropping `triage` both left it passing. |
+| 12 | TST-0006 fails when its behaviour is broken | holds | Ten words over budget fails it. |
+
+**Fixed before round 2** (template `badc195`, cockpit `0e0fb0c`): the skills link to the filing bar; ISSUE-QUESTION reads the body only and no longer matches "for <name>"; TST-0015 gained a triage case, a real-template case and an end-to-end run, each shown to fail without its fix; the cockpit's `CLAUDE.md` rule and its test follow ADR-0047. Observations not acted on: the ISSUE-QUESTION phrase match will miss some wordings (a heuristic by design, as the validator comment says); `LIFECYCLE.md` is near its word budget.
+
+**Round 2, 2026-09-19: approved.** One reviewer, fix diff only, 10 of 15 calls. Claims 3, 7b, 8c/10 and 11: *fixed*, each with its command; the reviewer broke four guards on a copy and each broke the test. Its one note, that the cockpit's `CLAUDE.md` now restated the filing bar's conditions, was fixed at once (cockpit `ea68d80`). Claim 1 stays with [[TASK-0131-Roll-Out-And-Measure-Five-Reviews|TASK-0131]].
 
 ## Links
 

@@ -6,7 +6,7 @@ title: "The sync fast-forwards only what nobody edited"
 status: active
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-09-19
 source: ["[[FEAT-0037-Every-Repo-Can-Take-The-Template-Again]]"]
 scope: system
 level: unit
@@ -17,7 +17,7 @@ tasks: [TASK-0134]
 issues: []
 artifacts: []
 evidence: []
-adequacy: "Checked on 2026-09-18 by disabling each behaviour: with no stale fast-forward, with stale fast-forward applied to merge paths, with keep_local ignored, and with the keep_local block dropped on rewrite, each breaks exactly its own assertions. The unbroken script passes 12 of 12."
+adequacy: "Checked by disabling each behaviour. 2026-09-18: no stale fast-forward, stale fast-forward on merge paths, keep_local ignored. 2026-09-19: the merge-path restriction restored (1 failure), build-output exclusion removed (2), the old GONE rule restored (3). The project-workflow assertion can now fail, because the fixture template ships its own own-ci.yml. 24 assertions, all passing."
 related: []
 ---
 

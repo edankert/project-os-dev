@@ -6,7 +6,7 @@ status: active
 order: 7
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-09-19
 goal: "A review costs what the change is worth and its findings are fixed in the feature that caused them, so the open issues in every repo are real, readable, and mostly reported by a person."
 features: [FEAT-0034, FEAT-0035, FEAT-0036, FEAT-0037]
 requirements: []
@@ -43,10 +43,17 @@ This phase fixes both problems at the rule level, in the template, so every repo
 - [ ] The next five feature reviews in `your-trainer` have a median of 50 tool calls or fewer and 12 minutes or less. The baseline is about 95 tool calls and about 20 minutes.
 - [ ] None of those five features closes with an open issue its own review filed against its own code, unless that issue states a product question.
 - [ ] Every open issue in the seven repos that had any on 2026-09-18 has been checked against the code on or after that date. Each has a `reported_by:` field and a title that names what a user would notice.
-- [ ] Every open issue waiting on Edwin states its question, the options and a recommendation. They are handed to him as one list, not found one at a time.
+- [x] Every open issue waiting on Edwin states its question, the options and a recommendation. They are handed to him as one list, not found one at a time.
 
 ## Notes
 
 - **Order.** The rules go first (FEAT-0035, then FEAT-0034), so the cleanup is not refilled by the old rules while it runs. The `your-trainer` leg of FEAT-0036 can start in parallel, because checking an issue against the code does not depend on the new rules.
 - **Where the work lands.** Rule files live in `~/Dev/repos/project-os`. This repo holds the record. The cleanup work is done in each repo and recorded there, with a pointer back here.
 - **Measuring.** The reference note gives the transcript query. Run it again after five reviews and put the numbers in this note.
+
+## Progress, 2026-09-19
+
+- **FEAT-0035 and FEAT-0037 are done**, each after a two-reviewer round and a round two that approved. FEAT-0034 waits only on [[TASK-0131-Roll-Out-And-Measure-Five-Reviews|TASK-0131]]: the five measured reviews, which also measure FEAT-0035's acceptance. The Sonnet trial is dropped (Edwin, 2026-09-19).
+- **The issue check reached all seven repos.** Open issues went from 290 on 2026-09-18 to 154. Every open issue has `reported_by:` except your-health ISS-0164 and ISS-0180, which another session is working on, so the fourth exit criterion stays unticked for those two. Each repo's questions reached Edwin as one list; the last four repos' are in [[TASK-0141-The-Last-Four-Repos-Open-Issues-Are-Checked-Against-The-Code|TASK-0141]].
+- **A new rule**: a failing test is fixed, whoever broke it and whenever (ADR-0047 amendment, [[TASK-0144-A-Failing-Test-Is-Fixed-Whoever-Broke-It|TASK-0144]]). The cockpit's suite went from 6 failures to none.
+- **Still to do**: the small fixes in the work orders. your-trainer ISS-0484 and your-health ISS-0181 are being worked; cockpit ISS-0313, your-sudoku ISS-0117 and project-os-deck ISS-0089 are written and not started.

@@ -2,7 +2,7 @@
 type: "[[feature]]"
 id: FEAT-0037
 title: "Every repo can take the template again"
-status: doing
+status: done
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
@@ -14,6 +14,10 @@ tasks: [TASK-0134, TASK-0135, TASK-0136, TASK-0137, TASK-0142]
 issues: [ISS-0068]
 release: ""
 acceptance_exception: "Tooling for the template's own sync; it is checked by the sync's fixture test and by the fleet's dry-run results, which the tasks record."
+reviewed_by: ["model:claude-opus-5 (reviewer A)", "model:claude-opus-5 (reviewer B)", "model:claude-opus-5 (round 2)"]
+review_date: "2026-09-19"
+review_round: 2
+review_verdict: approved
 related: ["[[PHASE-0007-Reviews-That-Fix-And-A-Backlog-That-Is-True]]"]
 ---
 
@@ -35,6 +39,7 @@ This feature makes the sync handle the first two groups by itself, and clears th
 - [[TASK-0135-Older-Local-Variants-Take-The-Template|TASK-0135]] (step 2): the older local variants take the template, after a check each.
 - [[TASK-0136-The-Cockpits-Validator-Checks-Reach-The-Template|TASK-0136]] (step 3): the cockpit's four validator checks move to the template, and the cockpit takes the template's validator.
 - [[TASK-0137-Three-Repos-Reach-The-Current-Validator|TASK-0137]] (step 5): edankert.com, your-applications.com and yourtrainer-mcp clear the debt that stops the current validator, then take it.
+- [[TASK-0142-A-Merge-File-Nobody-Edited-Takes-The-Template|TASK-0142]] (2026-09-19): a `merge` file that is exactly an older template version takes the template, build output is never synced, and the sync stops listing a repo's own files as no longer shipped.
 
 ## Out of Scope
 
@@ -49,6 +54,23 @@ This feature makes the sync handle the first two groups by itself, and clears th
 ## Verification
 
 - 2026-09-19, in `~/Dev/repos/project-os` at `01031af`: `for t in tools/scripts/test-*.sh; do bash "$t"; done`, `python3 -B tools/scripts/test-retention.py`, `python3 -B tools/scripts/test-walk-preparation.py`, `python3 tools/scripts/generate-adapters.py --check` and `bash tools/scripts/validate-docs.sh`. Every script passed: 16 shell test scripts with 0 failures, retention 26 assertions, walk preparation OK, all 65 generated artifacts current, validator OK. The same code is synced to all twelve fleet repos, each passing `validate-docs.sh --as-committed`.
+
+## Review
+
+**Round 1, 2026-09-19: changes-requested.** Two clean-context reviewers on one packet (template `9da6c83`, `d2f78bc`, `a978752`, `4b5fa83` and the sync half of `01031af`), combined here.
+
+| # | Claim | Verdict | Evidence |
+|---|---|---|---|
+| 1 | A fleet dry-run lists no template-owned file that equals an older template version | **refuted** (reviewer A) / holds (reviewer B) | Refutation wins: `GONE` still listed `docs/__templates__/dashboard.md` in your-trainer and the cockpit, each an exact old template copy. |
+| 2 | Every file still reported is written up in a task note | **refuted** | About 150 `GONE` lines, mostly a repo's own scripts, `ROADMAP.md` and `PHASES.md` `MERGE`, the cockpit's `test-walk-preparation.py` `SUBSET`: no task note. |
+| 3a–e | TASK-0134's parts | holds | Guards broken by both reviewers each failed TST-0016. |
+| 4–6 | TASK-0135, TASK-0136, TASK-0137 | holds | `cmp` against the template in each repo. |
+| 7 | TST-0016 fails when its behaviour is broken | holds, one vacuous assertion | "a project's own workflow is left alone" could not fail: the fixture template shipped no `own-ci.yml`. |
+| 8 | TST-0017 fails when its behaviour is broken | **refuted** (reviewer B) | Replacing the calls to `validate_frontmatter_parses` and `validate_ledgers` in `main` left it passing. |
+
+**Fixed before round 2** (template `badc195`, cockpit `0e0fb0c`, this repo's notes): the sync no longer reports a file the template never shipped, removes an exact old copy of a dropped template file, and reports only an edited one; `template_history` reads `HEAD`; the cockpit takes the template's `test-walk-preparation.py` and keeps `feature.md` under `keep_local:`; TASK-0142 writes up every file a fleet sync still reports; TST-0016 covers the new rules and its workflow assertion can fail; TST-0017 runs the whole validator end to end. Out-of-date sentences in TASK-0134, TASK-0136 and the TST `adequacy:` fields are corrected, and TASK-0142 is in the Scope.
+
+**Round 2, 2026-09-19: approved.** One reviewer, fix diff only, 10 of 15 calls. Claims 1, 2 and 8: *fixed*. A dry run over the twelve repos printed no `GONE` and no `REMOVED`, lists exactly what TASK-0142 writes up, and every listed file matches no template version. Removing either call in `main` fails `test-ledger-checks.sh`. Its caveat: the NOTE-FRONTMATTER end-to-end case runs only where PyYAML is installed, as the check itself does.
 
 ## Links
 - Tests: [[TST-0016-The-Sync-Fast-Forwards-Only-What-Nobody-Edited|TST-0016]], [[TST-0017-Ledger-And-Frontmatter-Checks-Hold-Their-Rules|TST-0017]]

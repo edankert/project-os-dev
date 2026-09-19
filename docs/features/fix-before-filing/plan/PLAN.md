@@ -1,7 +1,7 @@
 ---
 type: "[[plan]]"
 title: "Delivery plan: a finding is fixed before it is filed"
-status: active
+status: done
 owner: user:edwin
 created: 2026-09-18
 updated: 2026-09-18
