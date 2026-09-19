@@ -1,7 +1,7 @@
 ---
 type: "[[plan]]"
 title: "Delivery plan: a review costs what the change is worth"
-status: draft
+status: active
 owner: user:edwin
 created: 2026-09-18
 updated: 2026-09-18

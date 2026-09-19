@@ -41,6 +41,10 @@ Today a review's findings, and an agent's own discoveries, become issues at `tri
 - Every issue created after the sync has `reported_by:`.
 - The rule is stated once, in `QUALITY.md`. The skills link to it rather than restating it.
 
+## Verification
+
+- 2026-09-19, in `~/Dev/repos/project-os` at `01031af`: `for t in tools/scripts/test-*.sh; do bash "$t"; done`, `python3 -B tools/scripts/test-retention.py`, `python3 -B tools/scripts/test-walk-preparation.py`, `python3 tools/scripts/generate-adapters.py --check` and `bash tools/scripts/validate-docs.sh`. Every script passed: 16 shell test scripts with 0 failures, retention 26 assertions, walk preparation OK, all 65 generated artifacts current, validator OK. The same code is synced to all twelve fleet repos, each passing `validate-docs.sh --as-committed`.
+
 ## Links
 
 - Plan: [[features/fix-before-filing/plan/PLAN|PLAN]]

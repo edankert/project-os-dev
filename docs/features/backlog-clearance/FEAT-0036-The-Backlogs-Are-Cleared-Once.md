@@ -6,11 +6,11 @@ status: doing
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-09-19
 source: ["[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]", "Edwin, 2026-09-18: 'My main concern is with the your-trainer repo'"]
 goal: "Every open issue in the seven fleet repos that have any is checked against today's code, and then fixed, closed as obsolete, or kept with a plain title. Edwin receives one short list of real questions per repo."
 requirements: []
-tasks: [TASK-0138, TASK-0139, TASK-0140]
+tasks: [TASK-0138, TASK-0139, TASK-0140, TASK-0141, TASK-0143]
 release: ""
 acceptance_exception: "A one-time cleanup of the record. It is checked by the exit criteria of PHASE-0007, not by a product check."
 related: ["[[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It]]", "[[ISS-0033-Prune-Deletes-Entries-Whose-Notes-Cannot-Replace-Them]]", "[[ISS-0039-The-Restatement-Reached-Three-Surfaces-Of-Four]]"]

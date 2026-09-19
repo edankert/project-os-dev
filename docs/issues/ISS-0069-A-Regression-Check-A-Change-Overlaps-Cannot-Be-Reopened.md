@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0069
 aliases: ["ISS-0069"]
 title: "A regression check whose claim describes current behaviour is never reopened when that behaviour changes"
-status: "open"
+status: fixed
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
-updated: "2026-09-19"
+updated: 2026-09-19
 source: ["your-trainer ISS-0414, decided by Edwin on 2026-09-18: 'Take your recommendations'"]
 reported_by: user:edwin
 question: ""
@@ -33,3 +33,6 @@ Edwin chose option 2 on 2026-09-18. **When a change overlaps a regression check 
 ## Next Actions
 - [ ] State the split in TESTING.md in project-os, at the rule about regression checks never being invalidated.
 - [ ] Sync to the fleet. Then your-trainer's ISS-0414 closes, and TST-0642 is split as the first case.
+
+## Fixed, 2026-09-19
+`TESTING.md`, "When to invalidate", now says to split a regression check that also states current behaviour when a change overlaps it (project-os `01031af`), and it reached every fleet repo in the same sync. your-trainer's ISS-0414 and TST-0642 are that repo's first case, and are split there when the next change overlaps them.

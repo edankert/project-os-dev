@@ -6,11 +6,11 @@ status: doing
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-09-19
 source: ["Edwin, 2026-09-18: 'Can you enumerate the changes needed for the template files in the different projects and suggest how to resolve?', then 'Implement as suggested.'", "[[TASK-0131-Roll-Out-And-Measure-Five-Reviews]] hand-merge list"]
 goal: "The template sync fast-forwards every file that has no local edits. Files that belong to a project stop being reported. Work that was built in a project first reaches the template. So a sync reports only files that really need a person."
 requirements: []
-tasks: [TASK-0134, TASK-0135, TASK-0136, TASK-0137]
+tasks: [TASK-0134, TASK-0135, TASK-0136, TASK-0137, TASK-0142]
 issues: [ISS-0068]
 release: ""
 acceptance_exception: "Tooling for the template's own sync; it is checked by the sync's fixture test and by the fleet's dry-run results, which the tasks record."
@@ -45,6 +45,10 @@ This feature makes the sync handle the first two groups by itself, and clears th
 
 - A fleet dry-run lists no template-owned file that equals an older template version.
 - Every file still reported is written up in a task note, with the reason it needs a person.
+
+## Verification
+
+- 2026-09-19, in `~/Dev/repos/project-os` at `01031af`: `for t in tools/scripts/test-*.sh; do bash "$t"; done`, `python3 -B tools/scripts/test-retention.py`, `python3 -B tools/scripts/test-walk-preparation.py`, `python3 tools/scripts/generate-adapters.py --check` and `bash tools/scripts/validate-docs.sh`. Every script passed: 16 shell test scripts with 0 failures, retention 26 assertions, walk preparation OK, all 65 generated artifacts current, validator OK. The same code is synced to all twelve fleet repos, each passing `validate-docs.sh --as-committed`.
 
 ## Links
 - Tests: [[TST-0016-The-Sync-Fast-Forwards-Only-What-Nobody-Edited|TST-0016]], [[TST-0017-Ledger-And-Frontmatter-Checks-Hold-Their-Rules|TST-0017]]

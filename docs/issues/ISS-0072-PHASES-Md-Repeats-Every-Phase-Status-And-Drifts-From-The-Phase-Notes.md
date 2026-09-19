@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0072
 aliases: ["ISS-0072"]
 title: "docs/PHASES.md repeats every phase's status by hand, and in your-health it drifted from the phase notes"
-status: open
+status: fixed
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-19
@@ -39,3 +39,8 @@ FEAT-0008 (done) had "Replace `docs/PHASES.md` registry with individual phase no
 - [ ] Update the template's `PHASES.md` to say so, and drop the example table or mark it for repos with no phase notes.
 - [ ] Optionally, have the validator warn when `PHASES.md` has a status column and `docs/phases/` exists.
 - [ ] Remove the tables in project-os-dev, project-os-bench and articles.
+
+## Fixed, 2026-09-19
+The template's `PHASES.md` says a phase's status lives only in its note, and ships no example table (project-os `01031af`). project-os-dev's table of statuses is removed (`0581ccc`). your-trainer's copy was an unedited template copy and took the new one. The optional validator warning was not built.
+
+**project-os-bench and articles keep their tables.** Their tables list number, name and deliverables, with no status column, so there is nothing in them that can drift from a note's status. The template allows that shape.

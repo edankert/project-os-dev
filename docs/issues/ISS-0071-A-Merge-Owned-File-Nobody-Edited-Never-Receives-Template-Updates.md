@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0071
 aliases: ["ISS-0071"]
 title: "A merge-owned file nobody edited never receives template updates, so 10 of 12 repos read field definitions months out of date"
-status: open
+status: fixed
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-19
@@ -54,3 +54,10 @@ A `merge` file the project never edited updates like a template-owned file. The 
 - [ ] Otherwise, fast-forward a `merge` file when the repo's copy matches the baseline version. Change the `test-sync-stale.sh` case to expect that.
 - [ ] In the dry run, say which `MERGE` files have local edits and which are only behind.
 - [ ] Bring the ten repos above up to date, checking cockpit, sudoku and deck for local additions first.
+
+## Fixed, 2026-09-19
+The sync now fast-forwards a `merge` file that is exactly an older template version (project-os `01031af`, [[TASK-0142-A-Merge-File-Nobody-Edited-Takes-The-Template|TASK-0142]]). `test-sync-stale.sh` asserts that, and that a `merge` file with local edits is still left for a hand-merge.
+
+**The rule alone reached one repo.** Only project-os-deck's `SCHEMAS.md` was an exact older version. In the others, a fleet-wide edit for ADR-0034 had removed the `kind` field by hand, so each copy counted as edited. The template has since made the same removal, word for word. So seven repos whose only local change was that line took the template's copy in the same sync: project-os-dev, articles, obsidian-supernote-sync, project-os-bench, edankert.com, your-applications.com and yourtrainer-mcp. your-health and your-trainer were already current.
+
+**Two repos still need a hand-merge**, recorded in TASK-0142: your-sudoku (36 lines differ) and project-os-cockpit (87). Their copies mix older template wording with lines that may be the project's own.
