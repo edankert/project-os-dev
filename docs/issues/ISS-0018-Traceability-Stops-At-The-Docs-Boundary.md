@@ -7,9 +7,10 @@ status: open
 severity: medium
 owner: user:edwin
 created: 2026-07-29
-updated: 2026-09-18
+updated: 2026-09-19
 component: tooling
 source: ["landscape review 2026-07-29: OpenFastTrace coverage tags, StrictDoc requirement-to-source links"]
+reported_by: agent
 phase: "[[PHASE-999-Parking-Lot]]"
 related: [ADR-0007, ADR-0010, ADR-0014, REQ-0006]
 tests: []

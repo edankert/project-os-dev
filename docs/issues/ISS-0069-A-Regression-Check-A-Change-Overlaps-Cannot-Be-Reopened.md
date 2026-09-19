@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0069
 aliases: ["ISS-0069"]
 title: "A regression check whose claim describes current behaviour is never reopened when that behaviour changes"
-status: triage
+status: "open"
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-18
+updated: "2026-09-19"
 source: ["your-trainer ISS-0414, decided by Edwin on 2026-09-18: 'Take your recommendations'"]
 reported_by: user:edwin
 question: ""

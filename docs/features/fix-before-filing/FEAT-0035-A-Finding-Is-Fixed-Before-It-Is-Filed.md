@@ -6,7 +6,7 @@ status: doing
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-09-19
 source: ["[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]", "Edwin, 2026-09-18: issues 'not reported by me or written in a way that I can understand ... not fixed as part of the features they belong to and often they are marked as needing my input'"]
 goal: "A defect found in a feature's own code is fixed before the feature closes. Only what needs a decision, lies outside the feature, or is too big is filed. Each issue says what a user would notice, and a question for Edwin reaches him in chat with a recommendation."
 requirements: []
@@ -37,7 +37,7 @@ Today a review's findings, and an agent's own discoveries, become issues at `tri
 
 ## Acceptance
 
-- None of the next five features closed in `your-trainer` leaves open an issue that its own review filed against its own code, unless that issue carries a `question:`.
+- None of the next five features closed in `your-trainer` leaves open an issue that its own review filed against its own code, unless that issue carries a `question:`. This is measured in [[TASK-0131-Roll-Out-And-Measure-Five-Reviews|TASK-0131]], with the review measurements over the same five features, so this feature closes without waiting for it (2026-09-19).
 - Every issue created after the sync has `reported_by:`.
 - The rule is stated once, in `QUALITY.md`. The skills link to it rather than restating it.
 

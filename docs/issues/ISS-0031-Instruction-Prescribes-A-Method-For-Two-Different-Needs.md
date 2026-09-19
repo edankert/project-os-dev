@@ -7,9 +7,10 @@ status: open
 severity: medium
 owner: user:edwin
 created: 2026-08-03
-updated: 2026-09-18
+updated: 2026-09-19
 component: docs
 source: ["fleet measurement 2026-08-03: 590 sessions", "ISS-0030 correction"]
+reported_by: agent
 phase: "[[PHASE-999-Parking-Lot]]"
 related: [ISS-0030, ADR-0009, ADR-0017]
 tests: []

@@ -7,9 +7,10 @@ status: open
 severity: medium
 owner: user:edwin
 created: 2026-07-30
-updated: 2026-09-18
+updated: 2026-09-19
 component: docs
 source: ["project-os-cockpit, 2026-07-30 — Edwin: 'if a feature is complete but it was never planned, it will for always stay in the unplanned/future phase'"]
+reported_by: user:edwin
 phase: "[[PHASE-999-Parking-Lot]]"
 related: []
 depends: []

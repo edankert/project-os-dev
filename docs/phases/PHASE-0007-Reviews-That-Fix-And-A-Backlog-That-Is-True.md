@@ -39,7 +39,7 @@ This phase fixes both problems at the rule level, in the template, so every repo
 
 ## Exit Criteria
 
-- [ ] Edwin has accepted or amended ADR-0047. The rule text is in `~/Dev/repos/project-os` and synced to `your-trainer` and `project-os-cockpit`, including the cockpit's `QUALITY.md`, which is two months behind.
+- [x] Edwin has accepted or amended ADR-0047. The rule text is in `~/Dev/repos/project-os` and synced to `your-trainer` and `project-os-cockpit`, including the cockpit's `QUALITY.md`, which is two months behind.
 - [ ] The next five feature reviews in `your-trainer` have a median of 50 tool calls or fewer and 12 minutes or less. The baseline is about 95 tool calls and about 20 minutes.
 - [ ] None of those five features closes with an open issue its own review filed against its own code, unless that issue states a product question.
 - [ ] Every open issue in the seven repos that had any on 2026-09-18 has been checked against the code on or after that date. Each has a `reported_by:` field and a title that names what a user would notice.

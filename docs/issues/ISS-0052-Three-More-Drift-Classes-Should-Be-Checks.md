@@ -8,9 +8,10 @@ phase: "[[PHASE-0003]]"
 severity: medium
 owner: user:edwin
 created: 2026-09-04
-updated: 2026-09-18
+updated: 2026-09-19
 component: tooling
 source: ["[[ADR-0026-When-A-Drift-Sweep-Stops]] acceptance criterion 1, decided 2026-09-04", "The ISS-0048 drift sweep, passes 11 and 12"]
+reported_by: agent
 related: ["[[ADR-0026-When-A-Drift-Sweep-Stops]]", "[[ADR-0024-A-Normative-Rule-Is-Stated-Once]]", "[[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File]]"]
 tasks: []
 tests: []

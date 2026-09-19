@@ -7,9 +7,10 @@ status: open
 severity: medium
 owner: user:edwin
 created: 2026-07-29
-updated: 2026-09-18
+updated: 2026-09-19
 component: tooling
 source: ["landscape review 2026-07-29: Doorstop item fingerprints and suspect links"]
+reported_by: agent
 phase: "[[PHASE-999-Parking-Lot]]"
 related: [ADR-0014, ADR-0010, ADR-0013]
 tests: []

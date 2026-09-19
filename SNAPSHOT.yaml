@@ -50,7 +50,7 @@ focus:
   feature: "FEAT-0036"
   phase: "PHASE-0007"
   issue: ""
-  note: "What remains of FEAT-0034 happens as features close: the Sonnet trial and five measured two-reviewer reviews in your-trainer (TASK-0131). FEAT-0035's acceptance is measured over the same five features. Goal 2, the your-trainer leg of FEAT-0036, is next."
+  note: "2026-09-19, Edwin: do the five steps in order. 1 record-keeping; 2 one template release (ISS-0070 with ISS-0053, ISS-0069, ISS-0072, ISS-0071) and one fleet sync, then FEAT-0035 and FEAT-0037 close under one review; 3 the last four repos' issues (cockpit, sudoku, deck, articles); 4 the small-fix work orders your-trainer ISS-0484 and your-health ISS-0181; 5 TASK-0131 measures the next five your-trainer reviews as they happen. The Sonnet trial is dropped (TASK-0131)."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -152,7 +152,7 @@ items:
       related: [ADR-0047]
     FEAT-0034:
       file: docs/features/review-cost/FEAT-0034-A-Review-Costs-What-The-Change-Is-Worth.md
-      status: backlog
+      status: doing
       owner: user:edwin
       phase: "[[PHASE-0007]]"
       tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131]
@@ -390,7 +390,7 @@ items:
       phase: "[[PHASE-0007]]"
     TASK-0138:
       file: docs/features/backlog-clearance/plan/tasks/TASK-0138-Your-Trainers-Open-Issues-Are-Checked-Against-The-Code.md
-      status: doing
+      status: done
       parent: FEAT-0036
       phase: "[[PHASE-0007]]"
     TASK-0137:
@@ -881,10 +881,10 @@ items:
       status: open
     ISS-0070:
       file: docs/issues/ISS-0070-A-Snapshot-That-Does-Not-Parse-Still-Passes-Validation.md
-      status: triage
+      status: open
     ISS-0069:
       file: docs/issues/ISS-0069-A-Regression-Check-A-Change-Overlaps-Cannot-Be-Reopened.md
-      status: triage
+      status: open
     ISS-0068:
       file: docs/issues/ISS-0068-The-Cockpits-Validator-Carries-Rules-The-Template-Lacks.md
       status: fixed
@@ -1928,12 +1928,12 @@ metrics:
     phases_total: 8
     phases_done: 4
     tasks_total: 140
-    tasks_done: 129
+    tasks_done: 130
     tests_total: 10
     tests_passing: 0
     tests_failing: 0
-    issues_open: 11
-    issues_triage: 2
+    issues_open: 13
+    issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0
     requirements_total: 31

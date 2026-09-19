@@ -7,9 +7,10 @@ status: open
 severity: high
 owner: user:edwin
 created: 2026-07-29
-updated: 2026-09-18
+updated: 2026-09-19
 component: tooling
 source: ["intake 2026-07-29: articles repo, quality-without-reading thesis, finding 7"]
+reported_by: agent
 phase: "[[PHASE-999-Parking-Lot]]"
 related: [ADR-0017, ADR-0010, REQ-0006, ISS-0021]
 tests: []

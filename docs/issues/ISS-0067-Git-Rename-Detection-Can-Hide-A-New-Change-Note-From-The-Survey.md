@@ -6,8 +6,9 @@ status: open
 phase: "[[PHASE-999-Parking-Lot]]"
 owner: user:edwin
 created: 2026-09-14
-updated: 2026-09-18
+updated: 2026-09-19
 source: ["Independent review of PHASE-0005, 2026-09-14 (model:claude-opus-5)"]
+reported_by: review
 severity: low
 component: tooling
 parent: ""

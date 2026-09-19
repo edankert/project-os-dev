@@ -3,11 +3,11 @@ type: "[[task]]"
 id: TASK-0138
 aliases: ["TASK-0138"]
 title: "your-trainer's open issues are checked against the code"
-status: doing
+status: done
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-09-19
 source: ["[[FEAT-0036-The-Backlogs-Are-Cleared-Once]]", "Edwin, 2026-09-18: 'I agree, please widen'"]
 parent: "[[FEAT-0036-The-Backlogs-Are-Cleared-Once]]"
 effort: "Large"
@@ -21,11 +21,11 @@ tests: []
 # your-trainer's open issues are checked against the code
 
 ## Definition of Done
-- [ ] The 34 March review issues (ISS-0070 to ISS-0106) are each obsolete, fixed, kept or a question, with evidence dated 2026-09-18 or later in the issue's own note. How they split is recorded here, and it calibrates the method.
-- [ ] The other open issues, 116 in all on 2026-09-18, are done the same way, grouped by area.
-- [ ] Each fix is small and in one place, with a test that fails without it; anything bigger is kept, with a plain title and a link to its feature.
-- [ ] Edwin has received one list of the questions that remain, each with a recommendation.
-- [ ] The open count and origin mix are measured again.
+- [x] The 34 March review issues (ISS-0070 to ISS-0106) are each obsolete, fixed, kept or a question, with evidence dated 2026-09-18 or later in the issue's own note. How they split is recorded here, and it calibrates the method.
+- [x] The other open issues, 116 in all on 2026-09-18, are done the same way, grouped by area.
+- [x] Each fix is small and in one place, with a test that fails without it; anything bigger is kept, with a plain title and a link to its feature.
+- [x] Edwin has received one list of the questions that remain, each with a recommendation.
+- [x] The open count and origin mix are measured again.
 
 ## Calibration: the 35 March issues, 2026-09-18
 
@@ -58,3 +58,14 @@ Eight read-only reviewers checked ten issues each: 256 seconds, about 760k token
 **These differ from the March batch.** Only 20% were stale, against 80% of March's. Newer issues are mostly real, because they were filed recently and against code that has not moved since. So from here the cost is the fixing and the deciding, not the checking. That is what the next legs should expect.
 
 **Where the 17 small fixes belong.** Four fall inside features that are still in progress in another session: ISS-0374 (high: a paying rider drops to FREE when the Play Store errors) and ISS-0411 under FEAT-0104, and ISS-0464 and 0466 under FEAT-0107. Under ADR-0047 they are fixed in those features. ISS-0379 is the cockpit's code, and ISS-0276 is yourtrainer-mcp's. That leaves 11 fixes in your-trainer for the cleanup.
+
+## Decisions, 2026-09-18, and the count after
+
+Edwin took all fifteen recommendations ("Take your recommendations"), committed as your-trainer `4b04f41d`. Each issue records its decision under "Decided":
+- **Closed:** ISS-0090 (the iOS minimum stays at 17), 0304, 0327, 0413, and 0286 (deferred until the library passes about 200 workouts).
+- **Done at once:** ISS-0437 and ISS-0422.
+- **Become fixes:** ISS-0248, 0277 and 0287, added to the work order [[your-trainer#ISS-0484]] (commit `b9759767`), which now lists fifteen small fixes.
+- **Recorded for the in-progress features that own them:** ISS-0376 (FEAT-0104), 0423 and 0465 (FEAT-0107), and 0444 (FEAT-0122).
+- **Filed upstream:** [[ISS-0069-A-Regression-Check-A-Change-Overlaps-Cannot-Be-Reopened|ISS-0069]], the rule for splitting a regression check.
+
+**Open count, 2026-09-19:** 59, down from 116. Every one has `reported_by:`: 35 `agent`, 16 `review`, 8 `user:edwin`. The fifteen fixes in ISS-0484 are not made yet. They are PHASE-0007 step 4 and are recorded there, not here, because this task was the check.

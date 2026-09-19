@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0070
 aliases: ["ISS-0070"]
 title: "A SNAPSHOT.yaml that does not parse still passes the validator and the snapshot check, in every repo"
-status: triage
+status: "open"
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-18
+updated: "2026-09-19"
 source: ["your-health ISS-0112, confirmed in the template during the issue review of 2026-09-18 (FEAT-0036, TASK-0139)"]
 reported_by: review
 question: ""

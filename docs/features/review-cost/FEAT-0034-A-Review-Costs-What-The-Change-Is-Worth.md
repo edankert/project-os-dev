@@ -2,11 +2,11 @@
 type: "[[feature]]"
 id: FEAT-0034
 title: "A review costs what the change is worth"
-status: backlog
+status: doing
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-09-19
 source: ["[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]", "Edwin, 2026-09-18: 'the review step/agent after doing an implementation seems to still take way too much effort (time and tokens)'", "Edwin, 2026-09-18: 'I think we need to ground / constrain it more because it does still go on for too long and takes too many tokens'"]
 goal: "A feature review starts from a generated packet holding the diff, checks a fixed list of claims, runs only targeted tests, and is stopped by a hook at 40 tool calls. A review then costs about 5-7M context tokens instead of 20-32M, and still finds what the current reviews find."
 requirements: []

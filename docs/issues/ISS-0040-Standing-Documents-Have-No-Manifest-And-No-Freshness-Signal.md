@@ -7,9 +7,10 @@ status: open
 severity: medium
 owner: user:edwin
 created: 2026-08-10
-updated: 2026-09-18
+updated: 2026-09-19
 component: tooling
 source: ["project-os-cockpit ISS-0125 / REQ-0033 / FEAT-0091", "fleet measurement over 12 repos, 2026-08-10"]
+reported_by: agent
 phase: "[[PHASE-999]]"
 parent: ""
 related: [ISS-0026]

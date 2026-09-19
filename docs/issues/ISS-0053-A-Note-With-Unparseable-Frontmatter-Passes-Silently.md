@@ -8,9 +8,10 @@ phase: "[[PHASE-0003]]"
 severity: high
 owner: user:edwin
 created: 2026-09-04
-updated: 2026-09-18
+updated: 2026-09-19
 component: tooling
 source: ["Found by the independent review of REQ-0027, 2026-09-04, which noticed ISS-0048's own frontmatter had been corrupted and nothing reported it"]
+reported_by: review
 related: ["[[ISS-0052-Three-More-Drift-Classes-Should-Be-Checks]]", "[[ADR-0026-When-A-Drift-Sweep-Stops]]"]
 tasks: []
 tests: []

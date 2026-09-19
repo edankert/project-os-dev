@@ -7,7 +7,7 @@ status: backlog
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-09-19
 source: ["[[FEAT-0034-A-Review-Costs-What-The-Change-Is-Worth]]"]
 parent: "[[FEAT-0034-A-Review-Costs-What-The-Change-Is-Worth]]"
 effort: "Medium"
@@ -23,9 +23,10 @@ tests: []
 ## Definition of Done
 - [ ] ADR-0047 is accepted, or Edwin has said to roll this out without it.
 - [ ] The template changes are synced to `your-trainer` and `project-os-cockpit`, together with the cockpit's `QUALITY.md`, which is two months behind. The cockpit's `.claude/agents/independent-reviewer.md` is re-copied by hand and the hook is installed in both repos.
-- [ ] **Sonnet trial.** The next three small reviews run on Sonnet. Each has an Opus review of the same packet to compare against. Sonnet is kept for small features only if it missed nothing the Opus review marked *refuted*. The result is recorded here.
+- [x] ~~**Sonnet trial.**~~ Dropped on 2026-09-19; see "The Sonnet trial is dropped" below.
 - [ ] **Five measured reviews.** The next five `your-trainer` feature reviews are measured with the reference note's query. The numbers go into PHASE-0007: median tool calls, minutes, total context tokens, and whether any review hit the limit.
 - [ ] The acceptance targets in FEAT-0034 are met, or the gap is recorded with what to change.
+- [ ] **FEAT-0035's acceptance is measured over the same five features**: none of them closes with an open issue its own review filed against its own code, unless that issue carries a `question:`. FEAT-0035 itself closes without waiting for this (2026-09-19).
 
 ## Steps
 - [ ] Run `tools/scripts/sync-project-os.sh` in each repo and review the diff before committing.
@@ -67,3 +68,9 @@ Edwin, 2026-09-18: "Is this up-streamed and down-streamed to all projects?", the
 - **yourtrainer-mcp**: `AGENTS.md`, `docs/__templates__/acceptance-tests.md`, `tools/instructions/WRITING.md`, `tools/scripts/migrate-status-vocabulary.py`, `tools/instructions/SNAPSHOT.md` (both sides changed), `tools/instructions/STATUSES.md` (both sides changed), `tools/instructions/TESTING.md` (both sides changed)
 - **project-os-cockpit** (partial sync, so every diverged file is still here): `AGENTS.md`, `CONTEXT.md`, `SECURITY.md`, `docs/INDEX.md`, `docs/README.md`, `docs/__templates__/acceptance-tests.md`, `tools/instructions/STATUSES.md`, `tools/instructions/TAXONOMY.md`, `tools/instructions/WRITING.md`, `tools/scripts/run-tests.py`, `LLM_BRIEF.md` (both sides changed), `docs/__templates__/feature.md` (both sides changed), `docs/__templates__/test.md` (both sides changed), `tools/adapters/codex/ADAPTER.md` (both sides changed), `tools/instructions/QUALITY.md` (both sides changed), `tools/instructions/TESTING.md` (both sides changed), `tools/scripts/test-walk-sheet.sh` (both sides changed), `tools/scripts/validate-docs.py` (both sides changed), `tools/scripts/walk-sheet.py` (both sides changed)
 - **your-trainer** (partial sync, so every diverged file is still here): `AGENTS.md`, `tools/cockpit/src/project_os_cockpit/publication.py`, `tools/cockpit/src/project_os_cockpit/server.py`, `tools/instructions/WRITING.md`, `.github/workflows/validate-docs.yml` (both sides changed), `LLM_BRIEF.md` (both sides changed), `docs/__templates__/test.md` (both sides changed), `tools/instructions/TESTING.md` (both sides changed), `tools/scripts/validate-docs.py` (both sides changed), `tools/scripts/walk-sheet.py` (both sides changed)
+
+## The Sonnet trial is dropped, 2026-09-19
+
+The trial planned three small reviews on Sonnet, each compared with one Opus review of the same packet. TASK-0130 showed after this was written that it could not give an answer. A single run of the same reviewer found ISS-0463 only half the time, so single runs vary more than two setups differ. Three comparisons cannot tell a weaker model from that noise. The decision that stands is Edwin's of 2026-09-18: two reviewers per packet, on the model the agent file names (`claude-opus-5`, `effort: medium`). Edwin asked on 2026-09-19 that nothing already decided be done again, and this was the one step that would have re-opened the choice of reviewer.
+
+**Still to do, and nothing to run for it.** The five measurements come from your-trainer's next five feature reviews as they happen in normal work. None has happened since 2026-09-18.
