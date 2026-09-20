@@ -13,7 +13,15 @@ For the `independent-reviewer` subagent only, counted per `agent_id`:
   - PreToolUse past the budget denies the call with an instruction to write
     the report. Edits to notes under docs/ are still allowed, so the verdict
     and findings can be recorded, up to GRACE more calls; then everything is
-    denied. Writing the report itself needs no tool call.
+    denied.
+  - **The call that returns the report is never denied.** A subagent hands its
+    report back with a tool call (`SubagentHandback`), so denying it past the
+    budget loses the whole review: the reviewer is told to write its report
+    and then refused the only way to deliver it. Seen on 2026-09-20, when a
+    FEAT-0034 reviewer was denied nine handbacks in a row and about 120k
+    tokens of finished review went nowhere, four runs running. This exemption
+    has no grace limit, because a reviewer that has spent its grace still owes
+    its report.
 
 Round two has a smaller budget. The hook knows it is round two when the
 reviewer reads a round-two packet (a path containing `review-packet-...-r2`),
@@ -60,6 +68,15 @@ def load(path):
         return {"count": 0, "round": 1}
 
 
+#: The tool a subagent uses to hand its report back to the author. Never
+#: denied: see the module docstring.
+REPORT_TOOLS = ("SubagentHandback",)
+
+
+def is_report(tool):
+    return tool in REPORT_TOOLS
+
+
 def is_note_edit(tool, tool_input):
     if tool not in ("Edit", "Write", "MultiEdit"):
         return False
@@ -97,6 +114,8 @@ def main():
         except OSError:
             return 0
         if count <= budget:
+            return 0
+        if is_report(tool):
             return 0
         if count <= budget + GRACE and is_note_edit(tool, tool_input):
             return 0

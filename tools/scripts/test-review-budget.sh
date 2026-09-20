@@ -37,9 +37,13 @@ out="$(pre Edit '{"file_path":"/repo/docs/features/x/FEAT-0001-X.md"}')"
 check "a verdict edit to a note is still allowed past the budget" test -z "$out"
 out="$(pre Bash '{"command":"./gradlew test"}')"
 check "a test run past the budget is denied" grep -q deny <<<"$out"
+out="$(pre SubagentHandback '{"report":"the claims table"}')"
+check "the reviewer can still hand its report back past the budget" test -z "$out"
 for i in $(seq 1 10); do pre Edit '{"file_path":"/repo/docs/x.md"}' >/dev/null; done
 out="$(pre Edit '{"file_path":"/repo/docs/x.md"}')"
 check "note edits stop after the grace calls" grep -q deny <<<"$out"
+out="$(pre SubagentHandback '{"report":"the claims table"}')"
+check "the report still gets out after the grace calls are spent" test -z "$out"
 
 AGENT="test-$$-r2"
 pre Read '{"file_path":"/tmp/review-packet-FEAT-0001-r2.md"}' >/dev/null

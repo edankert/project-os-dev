@@ -38,7 +38,7 @@ counters:
   REL: 0
   REQ: 31
   RISK: 3
-  TASK: 144
+  TASK: 145
   TST: 17
   WF: 3
 
@@ -155,7 +155,7 @@ items:
       status: doing
       owner: user:edwin
       phase: "[[PHASE-0007]]"
-      tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131]
+      tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0145]
       related: [ADR-0047]
     FEAT-0033:
       file: docs/features/walk-preparation/FEAT-0033-A-Walk-Keeps-Required-Preparation.md
@@ -398,6 +398,10 @@ items:
       file: docs/features/fix-before-filing/plan/tasks/TASK-0144-A-Failing-Test-Is-Fixed-Whoever-Broke-It.md
       status: done
       parent: FEAT-0035
+    TASK-0145:
+      file: docs/features/review-cost/plan/tasks/TASK-0145-The-Budget-Never-Blocks-The-Report.md
+      status: done
+      parent: FEAT-0034
       phase: "[[PHASE-0007]]"
     TASK-0139:
       file: docs/features/backlog-clearance/plan/tasks/TASK-0139-Your-Healths-Open-Issues-Are-Checked-Against-The-Code.md
@@ -1916,8 +1920,8 @@ metrics:
     features_done: 30
     phases_total: 8
     phases_done: 4
-    tasks_total: 144
-    tasks_done: 135
+    tasks_total: 145
+    tasks_done: 136
     tests_total: 10
     tests_passing: 0
     tests_failing: 0

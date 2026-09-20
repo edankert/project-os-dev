@@ -10,8 +10,12 @@ updated: 2026-09-20
 source: ["[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]", "Edwin, 2026-09-18: 'the review step/agent after doing an implementation seems to still take way too much effort (time and tokens)'", "Edwin, 2026-09-18: 'I think we need to ground / constrain it more because it does still go on for too long and takes too many tokens'"]
 goal: "A feature review starts from a generated packet holding the diff, checks a fixed list of claims, runs only targeted tests, and is stopped by a hook at 40 tool calls. A review then costs about 5-7M context tokens instead of 20-32M, and still finds what the current reviews find."
 requirements: []
-tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131]
+tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0145]
 release: ""
+reviewed_by: ["model:claude-opus-5"]
+review_date: 2026-09-20
+review_round: 1
+review_verdict: changes-requested
 acceptance_exception: "A process rule with no product surface. It is checked by TASK-0130's known-answer re-run, as PHASE-0007's exit criteria state. The plan to also measure the next five reviews was cancelled on 2026-09-20 (TASK-0131)."
 related: ["[[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It]]", "[[ADR-0028-A-Review-Gate-Runs-Two-Rounds]]", "[[ADR-0013-Independence-Is-Clean-Context]]", "[[ISS-0062-A-Reviews-Round-Count-Is-Recorded-Nowhere]]"]
 ---
@@ -78,6 +82,54 @@ The seven parts below are the change. Each names the task that builds it.
 `python3 tools/scripts/run-tests.py`, 2026-09-20: **passing=17 failing=0 unrunnable=0** over 15 commands. The checks that cover this feature are TST-0013 (the packet: 24 assertions), TST-0014 (the budget hook: 13 assertions) and TST-0015 (the review and issue fields: end to end). `bash tools/scripts/validate-docs.sh` is OK.
 
 The feature's rule text and scripts live in `~/Dev/repos/project-os` and are synced to the fleet; this repo holds the record and runs the template's harnesses against it.
+
+## Review
+
+**Round 1, 2026-09-20. Verdict: `changes-requested`.** One reviewer of two delivered a report. The second could not, and that is the feature's most serious finding.
+
+### The reviewer could not hand its report back
+
+Four runs — two fresh agents, then two direct requests for the text alone — each did 30-odd tool calls of real review work and returned nothing. `review-budget.py` denied every call past 40 except a note edit, and a subagent delivers its report with a `SubagentHandback` call. The hook told the reviewer to write its report and refused the only way to deliver it. The last run's transcript holds nine handback attempts against 22 denials; about 120k tokens of finished review was lost per run.
+
+Fixed in [[TASK-0145-The-Budget-Never-Blocks-The-Report|TASK-0145]] before this feature closes, as ADR-0047 requires of a finding in the feature's own code. `test-review-budget.sh` is 15 assertions, and the two new ones fail without the fix.
+
+This is why the review gate is worth its cost. Three tasks, a known-answer replay and a fleet rollout all passed over it, because every review that had ever run stayed under the budget.
+
+### The reviewer that did report
+
+| Claim | Verdict | Evidence |
+|---|---|---|
+| A review never runs a third round | holds | `validate-docs.py` raises `REVIEW-ROUND`; the "round 3 is refused" case in `test-review-and-issue-fields.sh` passes. |
+| A review is never a phase review, and always starts from a packet — "the validator's checks hold them" | **refuted in part** | The validator holds the round count only. Nothing mechanical refuses a phase review or a review with no packet; both rest on prose in `QUALITY.md` and the agent file. The criterion claims more than the code does. |
+| The procedure and the packet are stated once in the skill | holds | `QUALITY.md`, `HOOKS.md` and the agent file all point at the skill rather than restating it. |
+| **The budget** is stated once | **refuted** | 40 appears at five non-test sites: the skill, `HOOKS.md` twice, `review-packet.py`, the agent file and `generate-adapters.py`. Changing the budget means editing five places. |
+| The cockpit and `your-trainer` carry the same text after the sync | holds | `md5` of `independent-review/SKILL.md` is identical across all 13 fleet repos. |
+| The packet carries the source diff, criteria word for word, the linked tests and the author's last run | **refuted for a cross-repo feature; holds in-repo** | See "The packet gap" below. |
+| The hook counts per `agent_id` and refuses past 40 | holds | `test-review-budget.sh`, including "call 40 is still allowed" and "call 41 is denied". Live state files written by real sessions confirm it is registered and counting. |
+| Scope part 4: "at call 30 it warns that 10 calls are left" | **refuted** | It warns at 36. Part 6b of the same section already said 36; part 4 predated the two-reviewer decision. Corrected 2026-09-20. |
+| Round two carries only round one's findings and the diff since, at a budget of 15 | holds | The round-two branch of `review-packet.py`, and three assertions over it. |
+| TST-0013, TST-0014 and TST-0015 fail when the behaviour they guard is broken | holds | Each inverted in turn; each failed only its own assertions and was restored. |
+
+### The packet gap
+
+For a feature whose notes and code live in different repos, `review-packet.py` produces no diff at all. From this repo its exclude filter strips everything the commits touched; from the template repo it exits 1 with "no note found". One `--repo-root` feeds both the note lookup and the git calls, and no option bridges them.
+
+The reviewer's sharper point is that the author's workaround *was* the defect: the skill says brief the reviewer with the packet "and nothing more" and forbids handing it folders to explore, and the paragraph naming the other repo is what made the review possible at all. `project-os-dev` is by design the notes repo for template code, so every feature here meets this.
+
+Not fixed in this round: a `--code-root` option and a hard error on an empty diff are a change to the packet's contract, which is the owner's call. It is in the close-out summary with a recommendation.
+
+### Fixed after the review
+
+- TASK-0145, above: the budget no longer blocks the report.
+- Scope part 1 said `review-packet.sh`; the script is `review-packet.py`.
+- Scope part 4's warning point corrected from 30 to 36.
+- Scope part 7 and the `acceptance_exception:` still promised the cancelled Sonnet trial and five measured reviews.
+
+### Open, and waiting on the owner
+
+- **"The budget is stated once" is false**, and REQ-0027 says a normative rule is stated once. Either the five sites derive from one, or the criterion stops claiming it. The first is right and is more than a round-one fix.
+- **The packet gap** above.
+- **Round one is incomplete**: only one reviewer's report exists, because the other could not deliver until TASK-0145 landed. A second reviewer can run now.
 
 ## Links
 
