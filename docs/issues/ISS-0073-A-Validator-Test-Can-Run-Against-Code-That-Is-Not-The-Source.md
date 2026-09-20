@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0073
 aliases: ["ISS-0073"]
 title: "A validator test can pass or fail against a stale compiled copy instead of the code on disk"
-status: open
+status: fixed
 phase: "[[PHASE-0007]]"
 owner: unassigned
 created: 2026-09-20
@@ -15,7 +15,7 @@ severity: high
 component: "tools/scripts"
 parent: ""
 related: ["[[ISS-0065-The-Templates-Own-CI-Runs-None-Of-Its-Seven-Harnesses]]", "[[FEAT-0036-The-Backlogs-Are-Cleared-Once]]"]
-tests: []
+tests: ["[[TST-0020]]"]
 ---
 
 # A validator test can pass or fail against a stale compiled copy instead of the code on disk
@@ -60,3 +60,16 @@ Small, and in one place each:
 - Wire `test-metric-counts.sh` to a `TST-*` note so `run-tests.py` actually runs it (ISS-0065's work).
 
 The fix belongs in `~/Dev/repos/project-os` and reaches the fleet at the next sync.
+
+## Fixed, 2026-09-20
+
+[[TASK-0149-No-Harness-Runs-Against-A-Cached-Compile|TASK-0149]], template `436ddf6`, synced to all twelve.
+
+**Write no bytecode, so none can go stale.** `-B` alone would not have done it — it stops writing, not reading — but a cache that is never written can never be read. Seven shell harnesses now export `PYTHONDONTWRITEBYTECODE=1` and five Python tools set `sys.dont_write_bytecode = True` before loading anything by path, each with the reason in a comment.
+
+Verified by clearing every cache, in the repo and under Apple's `sys.pycache_prefix`, running all ten affected harnesses green, and confirming none came back.
+
+**The proposed fix listed three things and one was already done**: the template has gitignored `__pycache__/` and `*.py[cod]` for some time. The in-repo directories the issue counted in five other repos are ignored, not committed.
+
+**The third item is done too**: `test-metric-counts.sh` was wired to no `TST-*` note, so `run-tests.py` never ran it and the recorded "17 passing, 0 failing" covered it in neither direction. [[TST-0020]] now carries it.
+

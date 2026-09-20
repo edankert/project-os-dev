@@ -38,8 +38,8 @@ counters:
   REL: 0
   REQ: 31
   RISK: 3
-  TASK: 148
-  TST: 19
+  TASK: 149
+  TST: 20
   WF: 3
 
 focus:
@@ -58,7 +58,7 @@ items:
     PHASE-0007:
       file: docs/phases/PHASE-0007-Reviews-That-Fix-And-A-Backlog-That-Is-True.md
       title: "Reviews that fix, and a backlog that is true"
-      status: active
+      status: done
       order: 7
       owner: user:edwin
       features: [FEAT-0034, FEAT-0035, FEAT-0036]
@@ -414,6 +414,10 @@ items:
       file: docs/features/template-sync-hygiene/plan/tasks/TASK-0148-One-Test-Runner-For-The-Fleet.md
       status: done
       parent: ISS-0075
+    TASK-0149:
+      file: docs/features/template-sync-hygiene/plan/tasks/TASK-0149-No-Harness-Runs-Against-A-Cached-Compile.md
+      status: done
+      parent: ISS-0073
       phase: "[[PHASE-0007]]"
     TASK-0139:
       file: docs/features/backlog-clearance/plan/tasks/TASK-0139-Your-Healths-Open-Issues-Are-Checked-Against-The-Code.md
@@ -1913,13 +1917,13 @@ metrics:
     features_total: 37
     features_done: 32
     phases_total: 8
-    phases_done: 4
-    tasks_total: 148
-    tasks_done: 139
-    tests_total: 12
+    phases_done: 5
+    tasks_total: 149
+    tasks_done: 140
+    tests_total: 13
     tests_passing: 0
     tests_failing: 0
-    issues_open: 11
+    issues_open: 10
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0

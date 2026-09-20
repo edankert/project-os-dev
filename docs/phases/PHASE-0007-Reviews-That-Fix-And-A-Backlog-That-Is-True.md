@@ -2,7 +2,7 @@
 type: "[[phase]]"
 id: PHASE-0007
 title: "Reviews that fix, and a backlog that is true"
-status: active
+status: done
 order: 7
 owner: user:edwin
 created: 2026-09-18
@@ -89,7 +89,9 @@ With this, FEAT-0034 has no outstanding work and its acceptance is met.
 
 ## Closed out, 2026-09-20
 
-**All four features are `done` and all five exit criteria are ticked.** The phase note stays `active` until Edwin closes it; closing a phase is a scope judgment, not a close-out step.
+**All four features are `done`, all five exit criteria are ticked, and the phase is closed** (Edwin, 2026-09-20).
+
+Closing it needed one more thing than the features did. `PHASE-CHILDREN` refuses a `done` phase while any note naming it is unresolved, and [[ISS-0073-A-Validator-Test-Can-Run-Against-Code-That-Is-Not-The-Source|ISS-0073]] was sitting in it, `open`. That was an inconsistency of mine: ISS-0074, ISS-0075 and ISS-0076 were filed the same day into `PHASE-999`, and ISS-0073 into this phase. Re-homing it to clear the way is the bypass the rule exists to catch, so it was fixed instead ([[TASK-0149-No-Harness-Runs-Against-A-Cached-Compile|TASK-0149]]): no harness writes bytecode any more, so none can go stale, and `test-metric-counts.sh` finally has a note that runs it.
 
 - [[FEAT-0035-A-Finding-Is-Fixed-Before-It-Is-Filed|FEAT-0035]] and [[FEAT-0037-Every-Repo-Can-Take-The-Template-Again|FEAT-0037]] closed 2026-09-19.
 - [[FEAT-0034-A-Review-Costs-What-The-Change-Is-Worth|FEAT-0034]] and [[FEAT-0036-The-Backlogs-Are-Cleared-Once|FEAT-0036]] closed 2026-09-20, each after two rounds with two reviewers. Both rounds returned `changes-requested`; the verdicts stand as written, and what was done about each finding is in the notes' `review_response:`.
