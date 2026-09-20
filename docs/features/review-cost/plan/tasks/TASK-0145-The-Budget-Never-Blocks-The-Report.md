@@ -39,12 +39,19 @@ Reviews that stayed under 40 calls were unaffected, which is why this survived T
 - [x] Both fail when the exemption is removed and pass when it is restored.
 - [x] The docstring says why the exemption exists, so the next person does not remove it as dead weight.
 - [x] Nothing else about the budget changes: the limit, the warning point, round two and the note-edit grace are untouched.
+- [x] All thirteen fleet repos carry the fix, each with its test run there.
 
 ## Verification
 
 `bash tools/scripts/test-review-budget.sh`, 2026-09-20: **15 assertions, 0 failures** (13 before this task).
 
 Both ways, as the rule requires. With the three added lines removed from the hook: `15 assertions, 2 failure(s)` — "the reviewer can still hand its report back past the budget" and "the report still gets out after the grace calls are spent". Restored: 0 failures.
+
+## The fleet sync, 2026-09-20
+
+The fix reached only `project-os` and `project-os-dev` at first, and round one's second reviewer refuted the "same text after the sync" criterion on exactly that: eleven repos had no exemption. All eleven took it the same day, listed in [[CHG-20260920-The-Review-Budget-Never-Blocks-The-Report|the change note]], each verified by running its own `test-review-budget.sh` (15 assertions, 0 failures) and by a re-scan of every copy: 13 OK, 0 stale.
+
+Five of the eleven held another session's uncommitted work, so each commit staged the two paths only and ran with hooks disabled, then was checked to contain two files. This is the hazard your-health recorded on 2026-09-19, when its pre-commit hook swept a working `SNAPSHOT.yaml` into two commits.
 
 ## Notes
 

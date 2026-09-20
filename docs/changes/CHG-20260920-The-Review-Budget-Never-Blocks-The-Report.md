@@ -28,4 +28,8 @@ Anyone running a review gate. A long review used to end in silence: the author w
 
 ## Where it landed
 
-`~/Dev/repos/project-os` and `project-os-dev`. **The other eleven fleet repos still carry the old hook**, so a long review in any of them still loses its report. They take it at the next sync.
+All thirteen fleet repos, 2026-09-20. `~/Dev/repos/project-os` `33f61d1`, `project-os-dev` `b905b88`, then the other eleven: your-trainer `2679465b`, project-os-cockpit `d1f31d6`, your-health `128262a`, your-sudoku `e2330e9`, project-os-deck `9250e44`, articles `6a85dad`, edankert.com `f9a22d7`, obsidian-supernote-sync `5f0c047`, project-os-bench `0e48cde`, your-applications.com `97b5031`, yourtrainer-mcp `9af5d28`.
+
+Each repo's copy was byte-identical to the pre-fix template first, so every sync was a clean fast-forward of two files with nothing to merge. `test-review-budget.sh` was run in each repo after the copy: 15 assertions, 0 failures, thirteen times.
+
+**Five of the eleven held another session's uncommitted work**, and your-health's own repair note records that repo's pre-commit hook sweeping a working `SNAPSHOT.yaml` into a commit on 2026-09-19. So each commit staged exactly the two paths and ran with `core.hooksPath=/dev/null`, and each was checked afterwards to contain two files and no more. Nothing else in any tree was staged, committed or reverted.

@@ -135,7 +135,9 @@ It refuted a claim the first reviewer had marked *holds*, and the refutation sta
 
 The first reviewer had checked this criterion with an `md5` of `SKILL.md` alone, which is the file the sync always carries. The file that actually enforces the budget was never compared. Both readings were honest; the second asked the better question.
 
-**The consequence is live.** Until the fleet takes this hook, a review in any of those eleven repos that passes 40 calls still loses its report — the failure this feature's own review just spent four runs and about 480k tokens demonstrating.
+**The consequence was live** until the same day: a review in any of those eleven repos that passed 40 calls still lost its report, the failure this feature's own review had just spent four runs and about 480k tokens demonstrating.
+
+**Fixed 2026-09-20.** All thirteen repos now carry the hook, each verified by running `test-review-budget.sh` there (15 assertions, 0 failures, thirteen times) and by re-scanning every copy for the exemption: 13 OK, 0 stale. The commits are listed in [[CHG-20260920-The-Review-Budget-Never-Blocks-The-Report|the change note]]. The reviewer's verdict stands as written; this records what was done about it.
 
 ### Also found, to fix before this feature closes
 
@@ -147,8 +149,7 @@ The first reviewer had checked this criterion with an `md5` of `SKILL.md` alone,
 
 - **"The budget is stated once" is false**, and REQ-0027 says a normative rule is stated once. Either the five sites derive from one, or the criterion stops claiming it. The first is right and is more than a round-one fix.
 - **The packet gap** above.
-- **The fleet sync.** Eleven repos still run the old hook. The fix is not finished until it reaches the repos where reviews actually run, and the second reviewer names this as what to do before close. It touches eleven repos that hold other sessions' uncommitted work, so it waits for the owner.
-- **A check that the fleet's adapter hooks match the template.** The existing comparison covers `SKILL.md` and missed the file that enforces the budget.
+- **A check that the fleet's adapter hooks match the template.** The sync is done, but nothing would have caught the drift: the comparison that declared the fleet identical covered `SKILL.md` and missed the file that enforces the budget. Until an adapter-hook check exists, the same gap reopens at the next hook change.
 
 ## Links
 
