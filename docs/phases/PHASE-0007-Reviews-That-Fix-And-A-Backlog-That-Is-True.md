@@ -42,7 +42,7 @@ This phase fixes both problems at the rule level, in the template, so every repo
 - [x] Edwin has accepted or amended ADR-0047. The rule text is in `~/Dev/repos/project-os` and synced to `your-trainer` and `project-os-cockpit`, including the cockpit's `QUALITY.md`, which is two months behind.
 - [ ] The next five feature reviews in `your-trainer` have a median of 50 tool calls or fewer and 12 minutes or less. The baseline is about 95 tool calls and about 20 minutes.
 - [ ] None of those five features closes with an open issue its own review filed against its own code, unless that issue states a product question.
-- [ ] Every open issue in the seven repos that had any on 2026-09-18 has been checked against the code on or after that date. Each has a `reported_by:` field and a title that names what a user would notice.
+- [x] Every open issue in the seven repos that had any on 2026-09-18 has been checked against the code on or after that date. Each has a `reported_by:` field and a title that names what a user would notice. The last two without a reporter, your-health ISS-0164 and ISS-0180, were named on 2026-09-20 (your-health `f8a3404`).
 - [x] Every open issue waiting on Edwin states its question, the options and a recommendation. They are handed to him as one list, not found one at a time.
 
 ## Notes
@@ -59,3 +59,20 @@ This phase fixes both problems at the rule level, in the template, so every repo
 - **Step 4, the small fixes.** your-trainer [[your-trainer#ISS-0484]]: 13 of 15 fixed (your-trainer `060e7ea0`); ISS-0429 (the paywall sentence) and ISS-0248 (the ride screen's font cap) are made and wait for Edwin to see them. Android 1,377 tests and iOS 877 pass, with no failures. your-health [[your-health#ISS-0181]]: 14 of 18 fixed (your-health `b1df1df`); ISS-0152 and ISS-0158 wait for Edwin to see them, and ISS-0132 and ISS-0173 wait for another session's meal work. 2,810 tests pass. Each fix has a test that fails without it.
 - **Found on the way**: your-trainer's git hooks were committed without the executable bit, so a fresh clone or worktree never ran them (fixed, `eaf9c304`). your-health's checkout was switched from `food-diary-phases-16-17` to `main` at 18:56 on 2026-09-19 by someone else, so today's syncs and fixes are on `main`.
 - **Still to do**: the work orders cockpit ISS-0313 (7), your-sudoku ISS-0117 (5) and project-os-deck ISS-0089 (3) are written and not started. TASK-0131 measures the next five your-trainer reviews.
+
+## Progress, 2026-09-20
+
+**The last three work orders are worked.** Thirteen of their fifteen issues are fixed, each with a test that fails when the fix is taken out; the other two are made and wait for Edwin to look at them. All five repos' small-fix lists are now done, and open issues across the seven repos are down from 290 on 2026-09-18 to 112.
+
+| Repo | Work order | Fixed | Waiting for Edwin | Commits |
+|---|---|---|---|---|
+| `project-os-cockpit` | [[project-os-cockpit#ISS-0313]] | 6 of 7 | ISS-0301, the write guard | `2c6059a` … `34ba0ce` |
+| `your-sudoku` | [[your-sudoku#ISS-0117]] | 4 of 5 | ISS-0092, the loading grid | `0c87512` … `ec0fa2c` |
+| `project-os-deck` | [[project-os-deck#ISS-0089]] | 3 of 3 | none | `90cac9b` … `3b859d7` |
+
+- **One of the fifteen was a live defect, not a latent one.** In the cockpit, ticking a checkbox on a page whose task list opens directly after a paragraph wrote to a different row in the file and still answered `{"ok": true}` (ISS-0184). The issue's own withdrawn section had said the counts agreed; they agree only on the file it was tested against.
+- **The product id is now the one the requirement registers.** Android sold `premium` and iOS sold `com.yoursudoku.premium`; both now sell `com.yoursudoku.pro`, which [[your-sudoku#REQ-0109]] names, and a CI script compares the two strings on every push (your-sudoku TST-0084). This had to land before TASK-0168 creates the Play Console product, because a product id cannot be renamed afterwards.
+- **The cockpit's write guard is wider than its ticket described.** Five write handlers kept a private copy of the body reader and would have kept the hole; all five now go through the guarded reader and gain a size cap they never had. Every client already sent `Content-Type: application/json`, so nothing broke.
+- **Deck's smoke run stops taking the keyboard.** On macOS `run-smoke.sh` now hands over to `smoke-in-a-box.sh` instead of calling `app.focus({steal:true})` 24 times. It needs Docker running locally; CI is Linux and unaffected.
+- **Left for Edwin to see, across all five repos**: cockpit ISS-0301, your-sudoku ISS-0092, your-trainer ISS-0429 and ISS-0248, your-health ISS-0152 and ISS-0158. Each is fixed in code and held open only until he has looked.
+- **Nothing is pushed.** All four repos were already ahead of origin before this work, so the commits are local.

@@ -104,3 +104,22 @@ Four rules send findings into the backlog instead of into the fix:
 4. The FEAT-0051 close-out rule says every validator error is "fixed or filed".
 
 Nothing brings a `triage` issue back for a decision. "Edwin's call" is the easy way for an agent to close without deciding.
+
+## Measured again, 2026-09-20
+
+The cleanup ([[FEAT-0036-The-Backlogs-Are-Cleared-Once|FEAT-0036]]) checked every issue open on 2026-09-18 against the code, then fixed, closed or rewrote it. Counting the same way as above (`triage` or `open`), the seven repos held **290 issues on 2026-09-18 and hold 112 now**, a fall of 61%.
+
+| Repo | 2026-09-18 | 2026-09-20 |
+|---|---|---|
+| `your-trainer` | 116 | 46 |
+| `your-health` | 65 | 22 |
+| `project-os-dev` | 37 | 9 |
+| `project-os-cockpit` | 35 | 18 |
+| `your-sudoku` | 17 | 9 |
+| `project-os-deck` | 17 | 6 |
+| `articles` | 3 | 2 |
+| **Total** | **290** | **112** |
+
+**Where the remaining 112 come from**, by `reported_by:` rather than by parsing `source:` as the 2026-09-18 pass had to: 62 found by an agent doing other work, 31 from a review, 19 from Edwin. Every one of the 112 now carries the field, so this count is read rather than inferred.
+
+The mix has not changed much, and that is the point to watch. The cleanup emptied the backlog once; whether it stays empty depends on [[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It|ADR-0047]] holding at the next five reviews, which [[TASK-0131-Roll-Out-And-Measure-Five-Reviews|TASK-0131]] measures. A backlog that refills with agent-found issues at the old rate would mean the rule change did not take.
