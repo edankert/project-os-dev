@@ -412,7 +412,7 @@ items:
       parent: ISS-0074
     TASK-0148:
       file: docs/features/template-sync-hygiene/plan/tasks/TASK-0148-One-Test-Runner-For-The-Fleet.md
-      status: doing
+      status: done
       parent: ISS-0075
       phase: "[[PHASE-0007]]"
     TASK-0139:
@@ -1915,7 +1915,7 @@ metrics:
     phases_total: 8
     phases_done: 4
     tasks_total: 148
-    tasks_done: 138
+    tasks_done: 139
     tests_total: 11
     tests_passing: 0
     tests_failing: 0

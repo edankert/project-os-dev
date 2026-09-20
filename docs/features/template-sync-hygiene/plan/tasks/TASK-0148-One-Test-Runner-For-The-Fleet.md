@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0148
 aliases: ["TASK-0148"]
 title: "One test runner for the fleet, and the cockpit's CI starts running tests"
-status: doing
+status: done
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-20
@@ -54,16 +54,29 @@ The template's runner treats an unrunnable test in CI as a failure, which is ADR
 - [x] The one guard the cockpit had that the template lacked is ported upstream: the runner carries no `fm_set` and no `write_text`. Structural, because a dead writer is one edit away from writing again.
 - [x] The cockpit takes the template's runner.
 - [x] Its `tests/test_runner_writes_nothing.py` passes against it.
-- [ ] Its `SNAPSHOT.yaml` declares `ci.suite_command`, so CI runs the suite once instead of 44 commands it cannot run.
+- [x] Its `SNAPSHOT.yaml` declares `ci.suite_command`, so CI runs the suite once instead of 44 commands it cannot run.
 - [x] Its `keep_local:` list is empty; it keeps nothing back from the template.
 - [x] `REQ-0058`'s two `--write` lines are corrected, and a `CHG-*` records the CI finding.
-- [ ] The template's harness is synced to the fleet.
+- [x] The template's harness is synced to the fleet.
 
 ## Verification
 
 `bash tools/scripts/test-verdict-model.sh`: **32 assertions, 0 failures** (31 before). The new structural assertion fails when `fm_set` is added back to the runner — checked.
 
 `.venv/bin/pytest tests/test_runner_writes_nothing.py -q` in the cockpit, against the template's runner: **6 passed**. Every assertion it made already held for the template's runner except `--write`, which is now asserted to be refused rather than accepted.
+
+## The CI path, verified end to end
+
+`python3 tools/scripts/run-tests.py --ci` in the cockpit, with the venv on `PATH` to stand in for what `pip install -e ".[dev]"` gives a runner:
+
+```
+== RUN  project-os-cockpit (ci: the declared suite, covering 46 test note(s)) ==
+   ci.suite     passing    python3 -m pytest -q  — 2195 passed, 6 skipped in 336.50s
+```
+
+Exit 0. Before the swap this path raised `ValueError: not enough values to unpack`; before the declaration it ran 44 commands it could not execute and called them an environment gap.
+
+**`python3`, not `python`.** The first declaration said `python -m pytest -q`, which is valid on a GitHub runner with `actions/setup-python` and invalid on this machine, where only `python3` exists. Running `--ci` locally reported `command not found` instead of a verdict, which is exactly the class of silent gap this whole task is about. `python3` is right in both places.
 
 ## What was lost
 
