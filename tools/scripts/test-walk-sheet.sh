@@ -22,6 +22,12 @@
 # unplaced row at the same time.
 # Paths resolve from this script's location. Exit 0 = every assertion holds.
 set -uo pipefail
+# No bytecode, ever. This harness loads a module by path, and a cached compile
+# that Python judges current is used in place of the source: on 2026-09-20 this
+# reported two failures against code that passes, from a 14 September compile
+# kept outside the repo (Apple's python3 sets sys.pycache_prefix). Writing no
+# cache means none can go stale (project-os-dev ISS-0073).
+export PYTHONDONTWRITEBYTECODE=1
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
 SHEET="$ROOT/tools/scripts/walk-sheet.py"

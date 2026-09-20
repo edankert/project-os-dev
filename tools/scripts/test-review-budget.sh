@@ -3,6 +3,12 @@
 # It must leave every other session alone, warn the reviewer once, stop it past
 # the budget with an instruction to report, and still let it record a verdict.
 set -uo pipefail
+# No bytecode, ever. This harness loads a module by path, and a cached compile
+# that Python judges current is used in place of the source: on 2026-09-20 this
+# reported two failures against code that passes, from a 14 September compile
+# kept outside the repo (Apple's python3 sets sys.pycache_prefix). Writing no
+# cache means none can go stale (project-os-dev ISS-0073).
+export PYTHONDONTWRITEBYTECODE=1
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="$HERE/../adapters/claude-code/hooks/review-budget.sh"
 failures=0

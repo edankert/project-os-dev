@@ -3,6 +3,12 @@
 # ISS-0050): the template's file agrees with the built-in defaults, and a repo
 # that edits a list there changes what the validator accepts.
 set -uo pipefail
+# No bytecode, ever. This harness loads a module by path, and a cached compile
+# that Python judges current is used in place of the source: on 2026-09-20 this
+# reported two failures against code that passes, from a 14 September compile
+# kept outside the repo (Apple's python3 sets sys.pycache_prefix). Writing no
+# cache means none can go stale (project-os-dev ISS-0073).
+export PYTHONDONTWRITEBYTECODE=1
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 python3 - "$HERE/validate-docs.py" "$HERE/../.." <<'PYEOF'
 import importlib.util, sys, tempfile

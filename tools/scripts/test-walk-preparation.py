@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """Focused regression checks for declared walk preparation and survey nesting."""
 
+import sys as _sys
+# No bytecode, ever: a cached compile Python judges current is used in place of
+# the source, and one from 14 September made a passing check report failures on
+# 2026-09-20 (project-os-dev ISS-0073). Writing none means none can go stale.
+_sys.dont_write_bytecode = True
+
+
 import importlib.util
 import pathlib
 import sys

@@ -29,6 +29,12 @@ Usage: test-decision-rule.py [path-to-validator]
 
 from __future__ import annotations
 
+import sys as _sys
+# No bytecode, ever: a cached compile Python judges current is used in place of
+# the source, and one from 14 September made a passing check report failures on
+# 2026-09-20 (project-os-dev ISS-0073). Writing none means none can go stale.
+_sys.dont_write_bytecode = True
+
 import importlib.util as ilu
 import sys
 import tempfile
