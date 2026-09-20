@@ -120,6 +120,10 @@ The cleanup ([[FEAT-0036-The-Backlogs-Are-Cleared-Once|FEAT-0036]]) checked ever
 | `articles` | 3 | 2 |
 | **Total** | **290** | **112** |
 
-**Where the remaining 112 come from**, by `reported_by:` rather than by parsing `source:` as the 2026-09-18 pass had to: 62 found by an agent doing other work, 31 from a review, 19 from Edwin. Every one of the 112 now carries the field, so this count is read rather than inferred.
+**Where the remaining issues come from**, by `reported_by:` rather than by parsing `source:` as the 2026-09-18 pass had to: 62 found by an agent doing other work, 31 from a review, 19 from Edwin. Every one carries the field, so this count is read rather than inferred.
+
+**Checked by the review of 2026-09-20, and what a recount moves.** Two independent reviewers recounted this table. One reproduced 112 exactly, per repo and in the origin mix. The other counted 113, because `your-trainer` ISS-0487 was filed that morning, after the measurement; it was fixed the same day and the count returned to 112. **112 stands as the figure for 2026-09-20.** A third recount an hour later gives 113 again, this time because [[ISS-0073-A-Validator-Test-Can-Run-Against-Code-That-Is-Not-The-Source|ISS-0073]] was filed here.
+
+That movement is the point, not a defect: an open-issue count is true for an instant, which is why every figure in this note carries its date. The 2026-09-18 baseline behaves the same way — recounted from each repo's last commit of 2026-09-17 it gives 289 rather than 290, because one issue existed only in a working tree at the moment of measuring. The note keeps 290, the number the cleanup was planned against. Neither difference changes what the measurement says: the backlog fell by about 61%.
 
 The mix has not changed much, and that is the point to watch. The cleanup emptied the backlog once; whether it stays empty depends on [[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It|ADR-0047]] holding at the next five reviews, which [[TASK-0131-Roll-Out-And-Measure-Five-Reviews|TASK-0131]] measures. A backlog that refills with agent-found issues at the old rate would mean the rule change did not take.

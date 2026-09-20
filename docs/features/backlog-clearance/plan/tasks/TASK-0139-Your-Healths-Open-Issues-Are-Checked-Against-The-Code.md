@@ -3,11 +3,11 @@ type: "[[task]]"
 id: TASK-0139
 aliases: ["TASK-0139"]
 title: "your-health's open issues are checked against the code"
-status: doing
+status: done
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-09-20
 source: ["[[FEAT-0036-The-Backlogs-Are-Cleared-Once]]", "Edwin, 2026-09-18: 'first check your-health'"]
 parent: "[[FEAT-0036-The-Backlogs-Are-Cleared-Once]]"
 effort: "Large"
@@ -21,10 +21,10 @@ tests: []
 # your-health's open issues are checked against the code
 
 ## Definition of Done
-- [ ] Each of the 63 open issues is obsolete, fixed, kept, declined or a question, with evidence dated 2026-09-18 or later in its own note. ISS-0164 and ISS-0180 are left out: another session has uncommitted work on them, begun 2026-09-13.
-- [ ] Small fixes are either made, each with a test that fails without it, or collected into one work-order issue in your-health, as your-trainer's ISS-0484 was. That is Edwin's choice for your-trainer, and it is expected here.
-- [ ] Edwin has received one list of questions, each with a recommendation.
-- [ ] The uncommitted work in your-health (21 files, including SNAPSHOT.yaml) stays out of every commit.
+- [x] Each of the 63 open issues is obsolete, fixed, kept, declined or a question, with evidence dated 2026-09-18 or later in its own note. **Two exceptions**, ISS-0164 and ISS-0180: another session held uncommitted work on them from 2026-09-13, so neither got a dated verdict. Both were given `reported_by: user:edwin` on 2026-09-20 (your-health `f8a3404`) and both remain `open`. See "Closed out, 2026-09-20" below.
+- [x] Small fixes are collected into one work-order issue, [[your-health#ISS-0181]], which grew to eighteen items after Edwin's decisions. Fourteen were fixed on 2026-09-19 (your-health `b1df1df`), each with a test that fails without it.
+- [x] Edwin has received one list of questions, each with a recommendation. Eight questions; he took all eight recommendations. See "Decisions and a repair" below.
+- [x] The uncommitted work in your-health (21 files, including SNAPSHOT.yaml) stays out of every commit. It leaked twice through the pre-commit hook and was removed in `ab1e790`; see "Repair" below.
 
 ## Result, 2026-09-18
 
@@ -49,3 +49,10 @@ Seven read-only reviewers checked nine issues each, as ordinary agents. Their ev
 Edwin took all eight recommendations ("take your recommendations"). ISS-0026 and ISS-0130 are declined. ISS-0169, 0049, 0150, 0127, 0047 and 0158 become fixes, added to [[your-health#ISS-0181]], which now has eighteen items. Committed as your-health `7357d39`.
 
 **Repair.** The pre-commit hook in your-health runs `sync-snapshot.py` on the working tree and re-adds `SNAPSHOT.yaml`. So `0bdf4af` and `7357d39` both committed the working snapshot, which still held another session's uncommitted focus, a TASK-0446 entry and two statuses, instead of the snapshot built for them. HEAD then failed `--as-committed` with five errors. `ab1e790` removed those lines, committed from a clean worktree at HEAD so the hook could not pull them in again. The other session's change was restored to its working tree, uncommitted. HEAD now passes the full CI step set. your-applications.com, where the same staging was used, was checked and is clean.
+
+## Closed out, 2026-09-20
+
+The task sat at `doing` with every box unticked while its own Result and Decisions sections described a finished leg. Both independent reviewers of [[FEAT-0036-The-Backlogs-Are-Cleared-Once|FEAT-0036]] found the contradiction on 2026-09-20. The boxes above are now ticked against what the sections already recorded, and the status is `done`.
+
+**What the first box does not cover.** ISS-0164 and ISS-0180 were never checked against the code by this leg. They now carry `reported_by:`, which is what PHASE-0007's fourth exit criterion asks of every open issue, but neither carries a dated verdict from the cleanup window. They stay `open` and belong to whoever finishes the meal work. FEAT-0036's acceptance says *every* issue and names no exception, so this is recorded as a gap rather than hidden by a tick.
+

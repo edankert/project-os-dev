@@ -401,7 +401,7 @@ items:
       phase: "[[PHASE-0007]]"
     TASK-0139:
       file: docs/features/backlog-clearance/plan/tasks/TASK-0139-Your-Healths-Open-Issues-Are-Checked-Against-The-Code.md
-      status: doing
+      status: done
       parent: FEAT-0036
       phase: "[[PHASE-0007]]"
     TASK-0138:
@@ -1917,7 +1917,7 @@ metrics:
     phases_total: 8
     phases_done: 4
     tasks_total: 144
-    tasks_done: 134
+    tasks_done: 135
     tests_total: 10
     tests_passing: 0
     tests_failing: 0
