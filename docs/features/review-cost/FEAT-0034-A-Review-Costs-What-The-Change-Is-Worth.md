@@ -2,7 +2,7 @@
 type: "[[feature]]"
 id: FEAT-0034
 title: "A review costs what the change is worth"
-status: doing
+status: done
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
@@ -16,6 +16,8 @@ reviewed_by: ["model:claude-opus-5", "model:claude-opus-5"]
 review_date: 2026-09-20
 review_round: 2
 review_verdict: changes-requested
+review_response: "Round two, 2026-09-20: both reviewers returned changes-requested and all five findings are fixed (template 4e26ef9, synced to twelve repos). The hook no longer tells a reviewer to record the verdict in the feature note, which the skill forbids. A packet no longer excludes docs/__templates__, because a scaffold is source and one was dropped from this feature's own packet while the test guarding it was shown. review-packet.py keeps no budget number of its own and fails loudly instead, so 'stated once' is now true. The skill no longer says a note edit is the only thing allowed past the budget. fleet-file-drift.py reports a missing keep_local file as missing, not kept. A sixth finding, that nothing ran the new checker's tests, is fixed by TST-0019. Test counts 19->21, 29->31, 18->20, each new assertion verified to fail without its fix. TWO FINDINGS ARE NOT FIXED and are recorded rather than closed: the acceptance criterion claims the validator holds the phase-review and packet rules when it holds only the round count, and the review skill does not tell parallel reviewers to break guards in a worktree. Both are the owner's calls and are named in the note. The verdict stays as the reviewers wrote it."
+review_response_date: 2026-09-20
 acceptance_exception: "A process rule with no product surface. It is checked by TASK-0130's known-answer re-run, as PHASE-0007's exit criteria state. The plan to also measure the next five reviews was cancelled on 2026-09-20 (TASK-0131)."
 related: ["[[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It]]", "[[ADR-0028-A-Review-Gate-Runs-Two-Rounds]]", "[[ADR-0013-Independence-Is-Clean-Context]]", "[[ISS-0062-A-Reviews-Round-Count-Is-Recorded-Nowhere]]"]
 ---

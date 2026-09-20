@@ -47,10 +47,10 @@ focus:
   # 2026-09-18: FEAT-0036 widened by Edwin to the seven repos with open issues; your-trainer goes first (its own task records the leg).
   # 2026-09-18: the project-os-dev leg (TASK-0140) is done. Left: project-os-cockpit (35 open issues), your-sudoku (17), project-os-deck (17), articles (3).
   task: ""
-  feature: "FEAT-0036"
+  feature: ""
   phase: "PHASE-0007"
   issue: ""
-  note: "2026-09-19, Edwin: do the five steps in order. 1 record-keeping; 2 one template release (ISS-0070 with ISS-0053, ISS-0069, ISS-0072, ISS-0071) and one fleet sync, then FEAT-0035 and FEAT-0037 close under one review; 3 the last four repos' issues (cockpit, sudoku, deck, articles); 4 the small-fix work orders your-trainer ISS-0484 and your-health ISS-0181; 5 TASK-0131 measures the next five your-trainer reviews as they happen. The Sonnet trial is dropped (TASK-0131). Steps 1 to 4 are done as of 2026-09-20: the last three work orders (cockpit ISS-0313, your-sudoku ISS-0117, project-os-deck ISS-0089) are worked, 13 of 15 fixed and 2 waiting for Edwin to look. Open issues across the seven repos: 290 on 2026-09-18, 112 now. Step 5 is cancelled (Edwin, 2026-09-20): two parallel reviewers is the settled answer, measured in TASK-0130, so five live reviews would re-test it. The review gate itself is unchanged. Left: the six fixes across five repos that wait on Edwin seeing them, and the decision whether FEAT-0034 and FEAT-0036 now close, which owes them a review each."
+  note: "2026-09-20: PHASE-0007's four features are all done and its five exit criteria are ticked. FEAT-0034 and FEAT-0036 closed today, each after two rounds with two reviewers; both rounds returned changes-requested and the notes' review_response records what was done. The phase note stays active until Edwin closes it. Nothing is in flight. Open, each needing a decision: ISS-0076 (the Codex ADAPTER.md, parked until Codex is back, and the only file the fleet drift check reports), ISS-0073 (a validator test can run against stale bytecode), FEAT-0034's criterion that claims the validator holds rules it does not, and the review skill not telling parallel reviewers to use a worktree. Watch: articles ISS-0005 was filed into a repo the cleanup had just emptied, and nothing is measuring the refill rate now TASK-0131 is cancelled."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -138,7 +138,7 @@ items:
       issues: [ISS-0068]
     FEAT-0036:
       file: docs/features/backlog-clearance/FEAT-0036-The-Backlogs-Are-Cleared-Once.md
-      status: doing
+      status: done
       owner: user:edwin
       phase: "[[PHASE-0007]]"
       related: [ADR-0047]
@@ -152,7 +152,7 @@ items:
       related: [ADR-0047]
     FEAT-0034:
       file: docs/features/review-cost/FEAT-0034-A-Review-Costs-What-The-Change-Is-Worth.md
-      status: doing
+      status: done
       owner: user:edwin
       phase: "[[PHASE-0007]]"
       tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0145, TASK-0146]
@@ -1911,7 +1911,7 @@ items:
 metrics:
   counts:
     features_total: 37
-    features_done: 30
+    features_done: 32
     phases_total: 8
     phases_done: 4
     tasks_total: 148

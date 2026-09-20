@@ -2,7 +2,7 @@
 type: "[[feature]]"
 id: FEAT-0036
 title: "The backlogs are cleared once"
-status: doing
+status: done
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
@@ -16,6 +16,8 @@ reviewed_by: ["model:claude-opus-5", "model:claude-opus-5"]
 review_date: 2026-09-20
 review_round: 2
 review_verdict: changes-requested
+review_response: "Round two, 2026-09-20: the two reviewers disagreed, approved against changes-requested, on the same evidence. A refutation with evidence wins, so the verdict is changes-requested; both findings were checked and both were real. Two notes inside this feature still stated the pre-fix situation as fact: this note said the articles leg was unmerged and uncommitted when three of those four statements were false, and TASK-0139 said ISS-0164 and ISS-0180 were never checked when they had been, on 2026-09-20. The task, this note's Acceptance and the your-health notes gave three different answers to one question, which is the failure this feature exists to remove. Both rewritten. Also corrected: the list criterion said 13 questions covered four repos when articles raised none, and 'Two exceptions' named two different pairs. Outside this repo, your-health ISS-0164's body contradicted its own status (9b51047). Both reviewers independently confirmed the substantive work: all three round-one refutations resolved in the repos, no criterion back-dated, and the counts reproducing to 112 once the four issues filed after the measurement are subtracted. The verdict stays as the reviewers wrote it."
+review_response_date: 2026-09-20
 acceptance_exception: "A one-time cleanup of the record. It is checked by the exit criteria of PHASE-0007, not by a product check."
 related: ["[[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It]]", "[[ISS-0033-Prune-Deletes-Entries-Whose-Notes-Cannot-Replace-Them]]", "[[ISS-0039-The-Restatement-Reached-Three-Surfaces-Of-Four]]"]
 ---

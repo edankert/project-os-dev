@@ -86,3 +86,31 @@ Two reviewers on one packet was chosen in [[TASK-0130-Re-Run-The-FEAT-0107-Revie
 **The review gate is untouched.** A feature reaching `done` still owes a review, and that review is still two reviewers run at once. What ends is the plan to re-measure it.
 
 With this, FEAT-0034 has no outstanding work and its acceptance is met.
+
+## Closed out, 2026-09-20
+
+**All four features are `done` and all five exit criteria are ticked.** The phase note stays `active` until Edwin closes it; closing a phase is a scope judgment, not a close-out step.
+
+- [[FEAT-0035-A-Finding-Is-Fixed-Before-It-Is-Filed|FEAT-0035]] and [[FEAT-0037-Every-Repo-Can-Take-The-Template-Again|FEAT-0037]] closed 2026-09-19.
+- [[FEAT-0034-A-Review-Costs-What-The-Change-Is-Worth|FEAT-0034]] and [[FEAT-0036-The-Backlogs-Are-Cleared-Once|FEAT-0036]] closed 2026-09-20, each after two rounds with two reviewers. Both rounds returned `changes-requested`; the verdicts stand as written, and what was done about each finding is in the notes' `review_response:`.
+
+**What the phase set out to do.** A review cost about 95 tool calls and 20 minutes; two reviewers on one packet now cost 64 calls and 6.2 minutes together, and find more than one did. Open issues across the seven repos went from 290 to 112, every one carrying a `reported_by:` and a title naming what a user would notice.
+
+**What it cost to find out the rules worked.** The review gate turned up nine real defects in the machinery meant to enforce it, several invisible to a green suite:
+
+- A reviewer past its budget could not deliver its report at all: the hook denied the handback while telling it to report. Four runs lost about 480k tokens before anyone noticed.
+- The hook's deny message told reviewers to write the verdict into the author's note, the one thing the design prevents.
+- A packet for a feature whose notes and code live in different repos came out empty, and a packet that excluded all of `docs/` hid a scaffold change while showing the test that guarded it.
+- The budget was stated at five sites, then at two after a fix that claimed one.
+- `project-os-cockpit`'s CI had been reporting success without executing a single test.
+- A validator test failed against a stale bytecode cache outside the repo ([[ISS-0073-A-Validator-Test-Can-Run-Against-Code-That-Is-Not-The-Source|ISS-0073]]).
+
+**Left open, each with an owner's decision behind it:**
+
+- [[ISS-0076-The-Codex-Adapter-Note-Says-Two-Different-Things-In-Two-Repos|ISS-0076]], parked until Codex is back. It is the only file the fleet drift check still reports.
+- FEAT-0034's criterion says the validator holds the phase-review and packet rules; it holds only the round count. Add the checks or narrow the criterion.
+- The review skill does not tell parallel reviewers to break guards in a worktree. Two reviewers sharing one tree produced a false fleet-wide reading today.
+- [[ISS-0073-A-Validator-Test-Can-Run-Against-Code-That-Is-Not-The-Source|ISS-0073]], [[ISS-0074-The-Feature-Template-Lacks-The-Acceptance-And-Design-Fields-The-Cockpit-Uses|ISS-0074]] and [[ISS-0075-Two-Test-Runners-Are-Maintained-Against-Two-Decisions|ISS-0075]] were filed and the last two fixed the same day; ISS-0073 is open.
+
+**One to watch.** `articles` ISS-0005 was filed on 2026-09-20 into a repo this cleanup had just emptied. That is the backlog beginning to refill, which is what ADR-0047 exists to prevent and what the cancelled TASK-0131 would have measured. One issue is not a trend. It is the first data point, and nothing is now measuring the rest.
+
