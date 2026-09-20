@@ -57,6 +57,12 @@ Each leg is a task under this feature, here. The repos have no standing phase fo
 - Edwin has received one list per repo of the questions that remain, each with a recommendation.
 - The open count and origin mix are measured again and written into the reference note.
 
+## Verification
+
+`python3 tools/scripts/run-tests.py`, 2026-09-20: **passing=17 failing=0 unrunnable=0** over 15 commands. `bash tools/scripts/validate-docs.sh` is OK, and `--as-committed` passes.
+
+This feature carries an `acceptance_exception:`: it is a one-time cleanup of the record across seven repos, so no command in this repo can check it. Its evidence is the issue notes in each repo, the per-repo counts recorded in the reference note (290 open on 2026-09-18, 112 on 2026-09-20), and PHASE-0007's exit criteria.
+
 ## Links
 
 - Plan: [[features/backlog-clearance/plan/PLAN|PLAN]]

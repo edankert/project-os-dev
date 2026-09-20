@@ -6,13 +6,13 @@ status: doing
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-19
+updated: 2026-09-20
 source: ["[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]", "Edwin, 2026-09-18: 'the review step/agent after doing an implementation seems to still take way too much effort (time and tokens)'", "Edwin, 2026-09-18: 'I think we need to ground / constrain it more because it does still go on for too long and takes too many tokens'"]
 goal: "A feature review starts from a generated packet holding the diff, checks a fixed list of claims, runs only targeted tests, and is stopped by a hook at 40 tool calls. A review then costs about 5-7M context tokens instead of 20-32M, and still finds what the current reviews find."
 requirements: []
 tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131]
 release: ""
-acceptance_exception: "A process rule with no product surface. It is checked by TASK-0130's known-answer re-run and by measuring the next five reviews, as PHASE-0007's exit criteria state."
+acceptance_exception: "A process rule with no product surface. It is checked by TASK-0130's known-answer re-run, as PHASE-0007's exit criteria state. The plan to also measure the next five reviews was cancelled on 2026-09-20 (TASK-0131)."
 related: ["[[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It]]", "[[ADR-0028-A-Review-Gate-Runs-Two-Rounds]]", "[[ADR-0013-Independence-Is-Clean-Context]]", "[[ISS-0062-A-Reviews-Round-Count-Is-Recorded-Nowhere]]"]
 ---
 
@@ -53,9 +53,9 @@ The seven parts below are the change. Each names the task that builds it.
 3. **Targeted tests only** (TASK-0127). The packet carries the author's full-suite result. The reviewer runs only the tests covering the changed code. It breaks at most three guards and runs targeted tests after each. It never re-runs the full Gradle, xcodebuild or pytest suite.
 4. **A hard limit, enforced by a hook** ([[TASK-0128-A-Hook-Stops-The-Reviewer-At-Its-Budget|TASK-0128]]). A `PreToolUse` hook counts tool calls per `agent_id` when `agent_type` is `independent-reviewer`. At call 30 it warns that 10 calls are left. At call 40 it refuses further calls with "budget reached: write your report now; mark unchecked claims *not checked*". `maxTurns: 100` stays in the agent file as a backstop only, because a subagent that hits `maxTurns` stops without writing a report (Claude Code docs, sub-agents page).
 5. **Round two is a smaller job** ([[TASK-0129-Round-Two-Verifies-Fixes-Only|TASK-0129]]). Its packet holds only the fix diff and round one's blocking findings. For each finding it answers *fixed* or *not fixed*. It may raise no new findings, and its limit is 15 calls. The round number is recorded in the note, closing [[ISS-0062-A-Reviews-Round-Count-Is-Recorded-Nowhere|ISS-0062]].
-6. **Keep the context small** (TASK-0127). Read the line ranges around each changed section, not whole files. Keep only the tail of test output. Make independent reads together in one turn. Claude Code does not document a way to force that last one, so it is an instruction, and TASK-0131 measures whether it holds.
+6. **Keep the context small** (TASK-0127). Read the line ranges around each changed section, not whole files. Keep only the tail of test output. Make independent reads together in one turn. Claude Code does not document a way to force that last one, so it is an instruction. TASK-0131 was to measure whether it holds; it was cancelled on 2026-09-20, so this part rests on TASK-0130's runs alone.
 6b. **Two reviewers per packet** (Edwin, 2026-09-18, after the comparison in TASK-0130). Two reviewers run at once and the author combines their reports: a refutation with evidence wins. A single run found the hardest known defect about half the time; two catch it about three times in four. A *holds* verdict cites its evidence, one per part of a claim with several parts. The budget warning is at call 36.
-7. **Tune the reviewer's settings** (TASK-0127 and [[TASK-0131-Roll-Out-And-Measure-Five-Reviews|TASK-0131]]). The reviewer agent file gets `effort: medium`. Sonnet is tried on the next three small reviews, and kept only if it misses nothing that blocked.
+7. **Tune the reviewer's settings** (TASK-0127). The reviewer agent file gets `effort: medium`. A Sonnet trial was planned here and dropped on 2026-09-19; the reviewer stays on the model the agent file names.
 
 **Also in scope:**
 - **One review per feature.** Several small features closing together may share one packet. A phase is never reviewed as a whole again. A test reaching `passing` no longer triggers a review of its own, because the feature review checks its tests.
@@ -72,6 +72,12 @@ The seven parts below are the change. Each names the task that builds it.
 - A review runs two reviewers, and the pair stays at 12M context tokens or fewer, each reviewer at 40 tool calls or fewer, and wall-clock time at 12 minutes or less. **Met by TASK-0130**: the pair on FEAT-0107's known review took 64 calls, 10.1M tokens and 6.2 minutes. The baseline is one reviewer at about 95 calls, about 20 minutes and 16–32M tokens. This was to be confirmed over the next five `your-trainer` reviews; that re-test was cancelled on 2026-09-20 as a repeat of a settled measurement ([[TASK-0131-Roll-Out-And-Measure-Five-Reviews|TASK-0131]]).
 - A review is never a phase review, never runs a third round, and always starts from a packet. The rules are in `QUALITY.md` and the review skill, and the validator's checks hold them.
 - The procedure, the packet and the budget are stated once, in `independent-review/SKILL.md`. The agent file and the hook link to it. The cockpit and `your-trainer` carry the same text after the sync.
+
+## Verification
+
+`python3 tools/scripts/run-tests.py`, 2026-09-20: **passing=17 failing=0 unrunnable=0** over 15 commands. The checks that cover this feature are TST-0013 (the packet: 24 assertions), TST-0014 (the budget hook: 13 assertions) and TST-0015 (the review and issue fields: end to end). `bash tools/scripts/validate-docs.sh` is OK.
+
+The feature's rule text and scripts live in `~/Dev/repos/project-os` and are synced to the fleet; this repo holds the record and runs the template's harnesses against it.
 
 ## Links
 
