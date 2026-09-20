@@ -10,10 +10,13 @@ For the `independent-reviewer` subagent only, counted per `agent_id`:
     calls left, finish up. It was call 30 until 2026-09-18, when measured
     reviews (project-os-dev TASK-0130) all stopped at about 34 calls: an early
     warning to finish makes the real budget the warning point, not the limit.
-  - PreToolUse past the budget denies the call with an instruction to write
-    the report. Edits to notes under docs/ are still allowed, so the verdict
-    and findings can be recorded, up to GRACE more calls; then everything is
-    denied.
+  - PreToolUse past the budget denies the call and tells the reviewer to hand
+    its report back. Edits to notes under docs/ are still allowed for GRACE
+    more calls; then everything is denied. **That grace is not for the
+    reviewer**, which `independent-review/SKILL.md` tells to write nothing in
+    the notes and file no issues -- the deny message used to invite exactly
+    that, which a round-two reviewer caught (FEAT-0034, 2026-09-20). It is for
+    an author who runs the same agent type over their own notes.
   - **The call that returns the report is never denied.** A subagent hands its
     report back with a tool call (`SubagentHandback`), so denying it past the
     budget loses the whole review: the reviewer is told to write its report
@@ -137,9 +140,9 @@ def main():
         if count <= budget + GRACE and is_note_edit(tool, tool_input):
             return 0
         emit("PreToolUse", permissionDecision="deny", permissionDecisionReason=(
-            "Review budget reached (%d tool calls, round %d). Write your report now with what you have: "
-            "the claims table, then at most five other observations. Mark every claim you did not finish "
-            "*not checked*. You may still record the verdict in the feature note; nothing else runs."
+            "Review budget reached (%d tool calls, round %d). Hand your report back now with what you "
+            "have: the claims table, then at most five other observations. Mark every claim you did not "
+            "finish *not checked*. Returning your report is never denied; nothing else runs."
             % (budget, state.get("round", 1))))
         return 0
 

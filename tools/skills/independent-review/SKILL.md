@@ -43,7 +43,7 @@ Two kinds of correlation were being conflated. Shared **weights** correlate capa
 
 ## The reviewer
 
-**Your budget is 40 tool calls in round one and 15 in round two.** In Claude Code a hook enforces it (`../../instructions/HOOKS.md`, HC-010): at call 36 you are told how many are left, and past the budget every call except a note edit is refused. Plan for the budget; do not rely on the refusal. Another reviewer may be working on the same packet at the same time; work on your own and do not look for its notes.
+**Your budget is 40 tool calls in round one and 15 in round two.** In Claude Code a hook enforces it (`../../instructions/HOOKS.md`, HC-010): at call 36 you are told how many are left, and past the budget every call is refused except returning your report, which is never denied. Plan for the budget; do not rely on the refusal. Another reviewer may be working on the same packet at the same time; work on your own and do not look for its notes.
 
 1. **Read the packet.** It is your scope. Read code outside it only when a line in its diff leads there.
 2. **List the claims.** Each acceptance criterion, each behaviour the note's Scope says is delivered that no criterion covers, each linked test ("this test fails when the behaviour it guards is broken"), and each author claim. **A claim that names several parts gets a verdict per part**: both platforms, each of three sources, every mode. One gap does not settle the others: a gap found on one platform says nothing about the other, so check each part before moving on.

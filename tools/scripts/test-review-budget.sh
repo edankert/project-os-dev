@@ -32,7 +32,11 @@ for i in $(seq 37 39); do pre Bash '{"command":"ls"}' >/dev/null; done
 out="$(pre Bash '{"command":"ls"}')"; check "call 40 is still allowed" test -z "$out"
 out="$(pre Read '{"file_path":"src/a.py"}')"
 check "call 41 is denied" grep -q '"permissionDecision": "deny"' <<<"$out"
-check "the denial tells the reviewer to write its report" grep -q "Write your report now" <<<"$out"
+check "the denial tells the reviewer to hand its report back" grep -q "Hand your report back now" <<<"$out"
+# The message used to say "You may still record the verdict in the feature note",
+# which is the one thing independent-review/SKILL.md forbids a reviewer to do
+# (FEAT-0034 round two). A hook must not invite what the skill refuses.
+check "the denial does not invite the reviewer to edit a note" bash -c '! grep -q "record the verdict in the feature note" <<<"$0"' "$out"
 out="$(pre Edit '{"file_path":"/repo/docs/features/x/FEAT-0001-X.md"}')"
 check "a verdict edit to a note is still allowed past the budget" test -z "$out"
 out="$(pre Bash '{"command":"./gradlew test"}')"
@@ -83,8 +87,16 @@ spec = importlib.util.spec_from_file_location('h', '$HERE/../adapters/claude-cod
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
 print(m.budgets()[0])")"
 check "the skill states the budget the hook enforces" grep -q "budget is $budget_one tool calls" "$HERE/../skills/independent-review/SKILL.md"
+# Two checks, because the budget can be restated in prose or copied into code.
+# Prose: no file may repeat the figure the skill states.
 others="$(grep -rln "40 tool calls\|15 in round two\|ROUND_ONE_BUDGET = 40" "$HERE/.." "$HERE/../../.claude" "$HERE/../../.codex" 2>/dev/null | grep -v "/test-" | grep -v "independent-review/SKILL.md" | wc -l | tr -d " ")"
 check "no other file restates the budget" test "$others" -eq 0
+# Code: review-packet.py reads the budget from the hook and keeps no number of
+# its own. It carried `return 40, 15` as a fallback, which the prose check could
+# not see, and which would have printed 40 on a packet while the hook enforced
+# a PROJECT_OS_REVIEW_BUDGET of 30 (FEAT-0034 round two).
+check "review-packet.py keeps no budget number of its own" \
+  bash -c '! grep -qE "return[[:space:]]+[0-9]+,[[:space:]]*[0-9]+" "$0"' "$HERE/review-packet.py"
 
 echo "test-review-budget: $n assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]

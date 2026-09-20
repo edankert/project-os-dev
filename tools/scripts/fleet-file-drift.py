@@ -74,7 +74,11 @@ def drift_for(repo, rels, kept_paths):
         target = repo / rel
         deliberate = rel in kept_paths
         if not target.is_file():
-            (kept if deliberate else missing).append(rel)
+            # An exception says "this repo keeps its own version", not "this repo
+            # may lose the file". A missing file is drift whether or not it is
+            # listed, and counting it as kept hid it twice: from the DRIFT line
+            # and from the count of files that match (FEAT-0034 round two).
+            missing.append(rel)
         elif target.read_bytes() != (TEMPLATE / rel).read_bytes():
             (kept if deliberate else stale).append(rel)
         elif deliberate:

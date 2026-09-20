@@ -142,5 +142,18 @@ P10="$T/p10.md"
 check "--code-root takes the diff from the code repo" grep -q "src/go.py" "$P10"
 check "and the packet says where the code is" grep -q "the code this feature changed is in" "$P10"
 
+# A scaffold is source, not a note. Excluding all of docs/ dropped a commit's
+# only source file out of FEAT-0034's own round-two packet and showed the
+# reviewer a test with nothing behind it (2026-09-20).
+mkdir -p "$R/docs/__templates__"
+printf -- '---\nid: FEAT-0000\nacceptance: ""\n---\n' > "$R/docs/__templates__/feature.md"
+printf 'x\n' >> "$R/src/a.py"
+(cd "$R" && git add -A && git -c core.hooksPath=/dev/null commit -qm "TASK-0001: the scaffold gains a field")
+python3 "$SCRIPT" FEAT-0001 --repo-root "$R" --out "$T/p-scaffold.md" >/dev/null 2>&1
+check "a scaffold change is in the diff, because a scaffold is source" grep -q "docs/__templates__/feature.md" "$T/p-scaffold.md"
+# Scoped to the diff: the note's path legitimately appears in the packet header
+# as "Feature note:", so grepping the whole file proves nothing.
+check "a note is still left out of the diff" bash -c '! grep -q "^+++ b/docs/features/" "$0"' "$T/p-scaffold.md"
+
 echo "test-review-packet: $n assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]

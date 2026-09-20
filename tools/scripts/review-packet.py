@@ -58,8 +58,8 @@ def _budgets():
     The packet prints the budget and the hook applies it. Two copies of 40 drift
     the day someone changes one, and a packet that promises a budget nobody
     enforces is worse than no number at all. `PROJECT_OS_REVIEW_BUDGET` and its
-    round-two twin are honoured here for the same reason. Falls back to the
-    hook's own defaults if it cannot be loaded, so a packet is still written.
+    round-two twin are honoured here for the same reason. If the hook cannot be
+    read the script stops: inventing a number here is what it exists to prevent.
     """
     hook = Path(__file__).resolve().parent.parent / "adapters" / "claude-code" / "hooks" / "review-budget.py"
     try:
@@ -67,12 +67,26 @@ def _budgets():
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         return mod.budgets()
-    except Exception:
-        return 40, 15
+    except Exception as exc:
+        # No fallback number. A literal here was a second copy of the budget,
+        # and the failure it invites is the one this function exists to stop:
+        # with PROJECT_OS_REVIEW_BUDGET=30 and the hook unreadable, the packet
+        # promised 40 while the hook enforced 30 (FEAT-0034 round two).
+        fail("cannot read the review budget from %s (%s).\n"
+             "  The hook holds the budget and this script reads it; there is no default here on purpose." % (hook, exc))
 
 
 ROUND_ONE_BUDGET, ROUND_TWO_BUDGET = _budgets()
-EXCLUDE = [":(exclude)docs", ":(exclude)SNAPSHOT.yaml"]
+#: Notes are excluded from a packet's diff; the underscore directories are not
+#: notes. `docs/__templates__/` is the scaffold every note is made from, so a
+#: change to it is a source change. Excluding all of `docs/` dropped commit
+#: 1f6dff4's only source file out of FEAT-0034's own round-two packet and showed
+#: the reviewer a test with nothing behind it (2026-09-20). The glob keeps
+#: `docs/__templates__` and `docs/__bases__` and drops every note directory.
+#: Both forms are needed: git's glob `*` does not cross a `/`, so the first
+#: drops `docs/PHASES.md` and the second drops `docs/features/x/FEAT-1.md`.
+EXCLUDE = [":(exclude,glob)docs/[!_]*", ":(exclude,glob)docs/[!_]*/**",
+           ":(exclude)SNAPSHOT.yaml"]
 #: Generated and translated files. They are large, a reviewer cannot judge
 #: them by reading, and on your-trainer's FEAT-0107 they were a fifth of the
 #: diff (a Room schema, an .xcstrings catalogue, eight translated strings.xml).

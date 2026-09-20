@@ -112,5 +112,18 @@ out="$(python3 "$DRIFT" --repo "$TMP/moot" 2>&1)"; rc=$?
 check "a keep_local file that matches the template is reported MOOT" grep -q "MOOT" <<<"$out"
 check "and a moot exception alone does not fail the run" test "$rc" -eq 0
 
+# A keep_local file that is MISSING is gone, not kept. Counting it as kept hid
+# it from the DRIFT line and from the "N files match" count (FEAT-0034 r2).
+make_repo lostkept
+rm -f "$TMP/lostkept/.github/workflows/validate-docs.yml"
+cat > "$TMP/lostkept/.project-os-sync" <<'EOS'
+baseline_sha: "0000000000000000000000000000000000000000"
+keep_local:
+  - ".github/workflows/validate-docs.yml"   # kept, but the file is gone
+EOS
+out="$(python3 "$DRIFT" --repo "$TMP/lostkept" 2>&1)"; rc=$?
+check "a keep_local file that is missing is still drift" test "$rc" -eq 1
+check "and it is reported missing, not kept" grep -q "missing .github/workflows/validate-docs.yml" <<<"$out"
+
 echo "test-fleet-file-drift: $n assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]
