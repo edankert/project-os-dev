@@ -1,10 +1,10 @@
 ---
 type: "[[plan]]"
 title: "Delivery plan: the backlogs are cleared once"
-status: active
+status: done
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-09-20
 source: ["[[FEAT-0036-The-Backlogs-Are-Cleared-Once]]"]
 implements: ["[[FEAT-0036-The-Backlogs-Are-Cleared-Once]]"]
 related: ["[[PHASE-0007-Reviews-That-Fix-And-A-Backlog-That-Is-True]]"]

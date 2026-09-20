@@ -43,14 +43,11 @@ counters:
   WF: 3
 
 focus:
-  # Goal 1 of PHASE-0007 closed 2026-09-18: FEAT-0035's tasks and FEAT-0034 TASK-0126 to TASK-0130 are done, and the template is committed (project-os 3c979ee, db98f46) and synced to your-trainer (5b317fb4) and project-os-cockpit (f120f35).
-  # 2026-09-18: FEAT-0036 widened by Edwin to the seven repos with open issues; your-trainer goes first (its own task records the leg).
-  # 2026-09-18: the project-os-dev leg (TASK-0140) is done. Left: project-os-cockpit (35 open issues), your-sudoku (17), project-os-deck (17), articles (3).
   task: ""
   feature: ""
-  phase: "PHASE-0007"
+  phase: ""
   issue: ""
-  note: "2026-09-20: PHASE-0007's four features are all done and its five exit criteria are ticked. FEAT-0034 and FEAT-0036 closed today, each after two rounds with two reviewers; both rounds returned changes-requested and the notes' review_response records what was done. The phase note stays active until Edwin closes it. Nothing is in flight. Open, each needing a decision: ISS-0076 (the Codex ADAPTER.md, parked until Codex is back, and the only file the fleet drift check reports), ISS-0073 (a validator test can run against stale bytecode), FEAT-0034's criterion that claims the validator holds rules it does not, and the review skill not telling parallel reviewers to use a worktree. Watch: articles ISS-0005 was filed into a repo the cleanup had just emptied, and nothing is measuring the refill rate now TASK-0131 is cancelled."
+  note: "2026-09-20: PHASE-0007 is closed and nothing is in flight; the next phase is Edwin's to pick, and PHASE-0006 (Codex) stays active but parked until Codex is back. Four things wait on his decision: ISS-0076, FEAT-0034's criterion claiming validator checks that do not exist, the review skill not sending parallel reviewers to a worktree, and nothing measuring how fast the cleared backlogs refill."
 
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -61,9 +58,9 @@ items:
       status: done
       order: 7
       owner: user:edwin
-      features: [FEAT-0034, FEAT-0035, FEAT-0036]
-      tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0132, TASK-0133]
-      issues: [ISS-0028, ISS-0062, ISS-0033, ISS-0034, ISS-0035, ISS-0036, ISS-0037, ISS-0038, ISS-0039]
+      features: [FEAT-0034, FEAT-0035, FEAT-0036, FEAT-0037]
+      tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0132, TASK-0133, TASK-0134, TASK-0135, TASK-0136, TASK-0137, TASK-0138, TASK-0139, TASK-0140, TASK-0141, TASK-0142, TASK-0143, TASK-0144, TASK-0145, TASK-0146, TASK-0147, TASK-0148, TASK-0149]
+      issues: [ISS-0028, ISS-0062, ISS-0033, ISS-0034, ISS-0035, ISS-0036, ISS-0037, ISS-0038, ISS-0039, ISS-0068, ISS-0069, ISS-0070, ISS-0071, ISS-0072, ISS-0073]
       related: [ADR-0047]
     PHASE-0006:
       file: docs/phases/PHASE-0006-Codex-Native-Adapter.md

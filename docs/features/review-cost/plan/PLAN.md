@@ -1,10 +1,10 @@
 ---
 type: "[[plan]]"
 title: "Delivery plan: a review costs what the change is worth"
-status: active
+status: done
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-09-20
 source: ["[[FEAT-0034-A-Review-Costs-What-The-Change-Is-Worth]]"]
 implements: ["[[FEAT-0034-A-Review-Costs-What-The-Change-Is-Worth]]"]
 related: ["[[PHASE-0007-Reviews-That-Fix-And-A-Backlog-That-Is-True]]"]
