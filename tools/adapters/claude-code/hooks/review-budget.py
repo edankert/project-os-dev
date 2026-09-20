@@ -24,8 +24,12 @@ For the `independent-reviewer` subagent only, counted per `agent_id`:
     its report.
 
 Round two has a smaller budget. The hook knows it is round two when the
-reviewer reads a round-two packet (a path containing `review-packet-...-r2`),
-which the skill makes its first call.
+reviewer READS a round-two packet (a path containing `review-packet-...-r2`),
+which the skill makes its first call. It looks only at the fields that name a
+file, and only on a read: matching the whole tool input let a round-one reviewer
+whose `Bash` command merely mentioned an `-r2` path drop to the round-two budget
+for the rest of its run, since the switch never flips back (project-os-dev
+FEAT-0034 review, 2026-09-20).
 
 Budgets come from PROJECT_OS_REVIEW_BUDGET (default 40) and
 PROJECT_OS_REVIEW_BUDGET_ROUND2 (default 15), so a repo can set its own in
@@ -45,6 +49,12 @@ from pathlib import Path
 AGENT_TYPE = "independent-reviewer"
 GRACE = 10
 ROUND_TWO_PACKET = re.compile(r"review-packet-[^\"'\s]*-r2")
+
+#: Only a read of a file can announce round two, and only through the field that
+#: names the file. A `Bash` command that mentions an `-r2` path is talking about
+#: a packet, not opening one.
+ROUND_TWO_TOOLS = ("Read", "View", "Open")
+ROUND_TWO_FIELDS = ("file_path", "path", "notebook_path")
 
 
 def budgets():
@@ -84,6 +94,13 @@ def is_note_edit(tool, tool_input):
     return "/docs/" in path.replace("\\", "/") or path.startswith("docs/")
 
 
+def announces_round_two(tool, tool_input):
+    if tool not in ROUND_TWO_TOOLS:
+        return False
+    return any(ROUND_TWO_PACKET.search(str(tool_input.get(f, "") or ""))
+               for f in ROUND_TWO_FIELDS)
+
+
 def emit(event, **fields):
     print(json.dumps({"hookSpecificOutput": dict(hookEventName=event, **fields)}))
 
@@ -103,7 +120,7 @@ def main():
     first, second = budgets()
 
     if event == "PreToolUse":
-        if ROUND_TWO_PACKET.search(json.dumps(tool_input)):
+        if announces_round_two(tool, tool_input):
             state["round"] = 2
         budget = second if state.get("round") == 2 else first
         count = state.get("count", 0) + 1

@@ -51,6 +51,20 @@ for i in $(seq 2 15); do pre Bash '{"command":"ls"}' >/dev/null; done
 out="$(pre Bash '{"command":"ls"}')"
 check "round two is denied at call 16" grep -q "round 2" <<<"$out"
 
+# A round-one reviewer that merely MENTIONS an -r2 path keeps its own budget.
+# Matching the whole tool input dropped it to 15 for the rest of the run, and
+# the switch never flips back (project-os-dev FEAT-0034 review, 2026-09-20).
+AGENT="test-$$-mention"
+pre Bash '{"command":"ls /tmp/review-packet-FEAT-0001-r2.md"}' >/dev/null
+for i in $(seq 2 16); do pre Bash '{"command":"ls"}' >/dev/null; done
+out="$(pre Bash '{"command":"ls"}')"
+check "naming an -r2 packet in a command does not start round two" test -z "$out"
+AGENT="test-$$-grep"
+pre Bash '{"command":"grep -rn review-packet-FEAT-0002-r2 docs/"}' >/dev/null
+for i in $(seq 2 30); do pre Bash '{"command":"ls"}' >/dev/null; done
+out="$(pre Bash '{"command":"ls"}')"
+check "a round-one reviewer keeps 40 calls after mentioning one" test -z "$out"
+
 AGENT="test-$$-env"
 for i in $(seq 1 5); do PROJECT_OS_REVIEW_BUDGET=5 pre Bash '{}' >/dev/null; done
 out="$(PROJECT_OS_REVIEW_BUDGET=5 pre Bash '{}')"
@@ -58,6 +72,19 @@ check "a repo can set its own budget" grep -q "(5 tool calls" <<<"$out"
 
 out="$(printf 'not json "independent-reviewer"' | bash "$HOOK")"; rc=$?
 check "bad input fails open" test "$rc" -eq 0 -a -z "$out"
+
+# REQ-0027: the budget is stated once. The hook holds the numbers and the skill
+# states them in prose for the reviewer to read; nothing else may restate them.
+# Before 2026-09-20 the figure 40 sat at five sites and changing it meant editing
+# five files (FEAT-0034 review).
+budget_one="$(python3 -c "
+import importlib.util
+spec = importlib.util.spec_from_file_location('h', '$HERE/../adapters/claude-code/hooks/review-budget.py')
+m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
+print(m.budgets()[0])")"
+check "the skill states the budget the hook enforces" grep -q "budget is $budget_one tool calls" "$HERE/../skills/independent-review/SKILL.md"
+others="$(grep -rln "40 tool calls\|15 in round two\|ROUND_ONE_BUDGET = 40" "$HERE/.." "$HERE/../../.claude" "$HERE/../../.codex" 2>/dev/null | grep -v "/test-" | grep -v "independent-review/SKILL.md" | wc -l | tr -d " ")"
+check "no other file restates the budget" test "$others" -eq 0
 
 echo "test-review-budget: $n assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]

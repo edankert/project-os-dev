@@ -101,5 +101,46 @@ check "round two states a budget of 15" grep -q "Budget: 15 tool calls" "$P3"
 check "round two carries no acceptance criteria to re-check" bash -c "! grep -q 'CRITERION-ALPHA' '$P3'"
 check "round two without --since is refused" bash -c "! python3 '$SCRIPT' FEAT-0001 --repo-root '$R' --round 2 --out '$T/z.md'"
 
+# A feature whose notes and code are in different repos (project-os-dev holds the
+# notes for project-os's code). Without --code-root the diff filter strips
+# everything such a feature touched and the packet arrives empty, which sent four
+# reviewers to read prose in place of code (FEAT-0034 review, 2026-09-20).
+NOTES="$T/notes"; CODE="$T/code"
+mkdir -p "$NOTES/docs/features/y" "$CODE/src"
+(cd "$NOTES" && git init -q && git config user.email t@t && git config user.name t)
+cat > "$NOTES/docs/features/y/FEAT-0009-Y.md" <<'EOF'
+---
+type: "[[feature]]"
+id: FEAT-0009
+title: "The code lives elsewhere"
+goal: "Its notes are here and its code is not."
+tasks: []
+---
+
+# The code lives elsewhere
+
+## Acceptance
+
+- It works.
+EOF
+(cd "$NOTES" && git add -A && git -c core.hooksPath=/dev/null commit -qm "FEAT-0009: the note only")
+(cd "$CODE" && git init -q && git config user.email t@t && git config user.name t)
+printf 'seed\n' > "$CODE/README.md"
+(cd "$CODE" && git add -A && git -c core.hooksPath=/dev/null commit -qm "seed")
+BASE="$(cd "$CODE" && git rev-parse HEAD)"
+printf 'def go():\n    return 1\n' > "$CODE/src/go.py"
+(cd "$CODE" && git add -A && git -c core.hooksPath=/dev/null commit -qm "FEAT-0009: the code")
+
+out="$(python3 "$SCRIPT" FEAT-0009 --repo-root "$NOTES" --out "$T/p9.md" 2>&1)"; rc=$?
+check "a packet with no source diff is refused" test "$rc" -ne 0
+check "the refusal names --code-root" grep -q -- "--code-root" <<<"$out"
+out="$(python3 "$SCRIPT" FEAT-0009 --repo-root "$NOTES" --allow-empty-diff --out "$T/p9.md" 2>&1)"
+check "--allow-empty-diff lets a documentation-only feature through" test -f "$T/p9.md"
+
+python3 "$SCRIPT" FEAT-0009 --repo-root "$NOTES" --code-root "$CODE" --range "$BASE"..HEAD --out "$T/p10.md" >/dev/null 2>&1
+P10="$T/p10.md"
+check "--code-root takes the diff from the code repo" grep -q "src/go.py" "$P10"
+check "and the packet says where the code is" grep -q "the code this feature changed is in" "$P10"
+
 echo "test-review-packet: $n assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]

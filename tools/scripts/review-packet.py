@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 """Write the packet an independent review starts from.
 
+The notes and the code are not always in the same repo: project-os-dev holds the
+notes for code that lives in project-os. `--repo-root` finds the note, and
+`--code-root` is where the commits and the diff come from. Without it the diff
+filter strips everything such a feature touched and the packet arrives empty,
+which is now an error rather than a blank section (FEAT-0034 review, 2026-09-20).
+
 A review used to start from folder names and a request to "reconstruct the
 scope from the notes". Measured on 2026-09-18 (project-os-dev
 REFERENCE-REVIEW-COST-AND-ISSUE-DEBT), a reviewer then spent 30-45 tool calls
@@ -27,6 +33,7 @@ diff; the reviewer reads the notes it needs by name.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import os
 import re
 import subprocess
@@ -43,8 +50,28 @@ LARGE_DIFF_LINES = 1500
 #: 5,500-line diff read at once is 60-70k tokens carried by every later turn.
 INLINE_DIFF_LINES = 400
 MAX_CLAIMS = 3
-ROUND_ONE_BUDGET = 40
-ROUND_TWO_BUDGET = 15
+
+
+def _budgets():
+    """The budgets the hook enforces, read from the hook (project-os-dev REQ-0027).
+
+    The packet prints the budget and the hook applies it. Two copies of 40 drift
+    the day someone changes one, and a packet that promises a budget nobody
+    enforces is worse than no number at all. `PROJECT_OS_REVIEW_BUDGET` and its
+    round-two twin are honoured here for the same reason. Falls back to the
+    hook's own defaults if it cannot be loaded, so a packet is still written.
+    """
+    hook = Path(__file__).resolve().parent.parent / "adapters" / "claude-code" / "hooks" / "review-budget.py"
+    try:
+        spec = importlib.util.spec_from_file_location("_review_budget", hook)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.budgets()
+    except Exception:
+        return 40, 15
+
+
+ROUND_ONE_BUDGET, ROUND_TWO_BUDGET = _budgets()
 EXCLUDE = [":(exclude)docs", ":(exclude)SNAPSHOT.yaml"]
 #: Generated and translated files. They are large, a reviewer cannot judge
 #: them by reading, and on your-trainer's FEAT-0107 they were a fifth of the
@@ -155,7 +182,7 @@ def diff_block(diff, diff_path, empty):
     return out + [""]
 
 
-def build(root, feat_id, rng, claims, round_no, since, diff_path):
+def build(root, feat_id, rng, claims, round_no, since, diff_path, code_root=None):
     note = find_note(root, feat_id)
     if not note:
         fail("no note found for %s under docs/" % feat_id)
@@ -168,15 +195,18 @@ def build(root, feat_id, rng, claims, round_no, since, diff_path):
            "**%s**" % title, ""]
     if goal:
         out += [goal, ""]
+    cr = code_root or root
     out += ["- Feature note: `%s`" % note.relative_to(root),
             "- Budget: %d tool calls. The procedure is `tools/skills/independent-review/SKILL.md`." % budget,
             "- This packet is the review's scope. Read code outside it only when a line in this diff leads there.", ""]
+    if cr != root:
+        out += ["- The notes are in `%s`; the code this feature changed is in `%s`, and every commit and diff below comes from there." % (root, cr), ""]
 
     if round_no == 2:
         findings = section(text, "Review", "Independent review")
         if not findings:
             fail("round two needs round one's findings under '## Review' in %s" % note.relative_to(root))
-        diff = git(root, "diff", "--unified=3", "%s..HEAD" % since, "--", ".", *EXCLUDE_ALL)
+        diff = git(cr, "diff", "--unified=3", "%s..HEAD" % since, "--", ".", *EXCLUDE_ALL)
         out += ["## Round one's findings", "",
                 "Answer *fixed* or *not fixed* for each blocking finding, with the command that shows it. Raise no new findings.", "",
                 findings, "",
@@ -232,20 +262,20 @@ def build(root, feat_id, rng, claims, round_no, since, diff_path):
         out += ["This repo's full suite: `%s`. Do not re-run it." % suite, ""]
 
     if rng:
-        commits = [[c, s] for c, s in (l.split("\t", 1) for l in git(root, "log", "--reverse", "--format=%H%x09%s", rng).splitlines() if l)]
-        diff = git(root, "diff", "--unified=3", rng, "--", ".", *EXCLUDE_ALL)
+        commits = [[c, s] for c, s in (l.split("\t", 1) for l in git(cr, "log", "--reverse", "--format=%H%x09%s", rng).splitlines() if l)]
+        diff = git(cr, "diff", "--unified=3", rng, "--", ".", *EXCLUDE_ALL)
     else:
-        commits = commits_for(root, [feat_id] + tasks)
+        commits = commits_for(cr, [feat_id] + tasks)
         if not commits:
-            fail("no commit reachable from HEAD names %s or its tasks; pass --range A..B" % feat_id)
-        diff = "".join(source_diff_of(root, c) for c, _ in commits)
+            fail("no commit in %s reachable from HEAD names %s or its tasks; pass --range A..B, or --code-root if the code is in another repo" % (cr, feat_id))
+        diff = "".join(source_diff_of(cr, c) for c, _ in commits)
 
     shas = [c for c, _ in commits] if not rng else []
     left_out = set()
     for c in shas:
-        left_out |= set(git(root, "show", "--format=", "--name-only", c, "--", *[":(glob)%s" % g for g in GENERATED]).split())
+        left_out |= set(git(cr, "show", "--format=", "--name-only", c, "--", *[":(glob)%s" % g for g in GENERATED]).split())
     if rng:
-        left_out |= set(git(root, "diff", "--name-only", rng, "--", *[":(glob)%s" % g for g in GENERATED]).split())
+        left_out |= set(git(cr, "diff", "--name-only", rng, "--", *[":(glob)%s" % g for g in GENERATED]).split())
     files = changed_files(diff)
     test_files = [f for f in files if TEST_PATH.search(f)]
     out += ["## Commits", ""] + ["- `%s` %s" % (c[:10], s) for c, s in commits] + [""]
@@ -260,6 +290,10 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("feature")
     ap.add_argument("--repo-root", default=".")
+    ap.add_argument("--code-root", default=None,
+                    help="Repo holding the code, when the notes live elsewhere (project-os-dev is the notes repo for template code)")
+    ap.add_argument("--allow-empty-diff", action="store_true",
+                    help="Accept a packet with no source diff, for a feature whose work really is documentation")
     ap.add_argument("--range", dest="rng")
     ap.add_argument("--claim", action="append", default=[])
     ap.add_argument("--round", type=int, choices=(1, 2), default=1)
@@ -273,10 +307,16 @@ def main(argv=None):
     if args.round == 2 and not args.since:
         fail("--round 2 needs --since <commit>, the commit round one reviewed")
     root = Path(args.repo_root).resolve()
+    code_root = Path(args.code_root).resolve() if args.code_root else None
     out = Path(args.out) if args.out else Path(tempfile.gettempdir()) / (
         "review-packet-%s-r%d.md" % (args.feature, args.round))
     diff_path = out.with_suffix(".diff")
-    packet, diff = build(root, args.feature, args.rng, args.claim, args.round, args.since, diff_path)
+    packet, diff = build(root, args.feature, args.rng, args.claim, args.round, args.since, diff_path, code_root)
+    if not diff.strip() and not args.allow_empty_diff:
+        fail("the packet has no source diff, so a reviewer told to treat it as the scope would have nothing to read.\n"
+             "  If this feature's code lives in another repo, pass --code-root <that repo>.\n"
+             "  If its work really is documentation only, pass --allow-empty-diff and say so in the brief.\n"
+             "  A silent empty diff sent four reviewers to read prose in place of code (project-os-dev FEAT-0034, 2026-09-20).")
     out.write_text(packet, encoding="utf-8")
     if diff.count("\n") > INLINE_DIFF_LINES:
         diff_path.write_text(diff, encoding="utf-8")
