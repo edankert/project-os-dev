@@ -38,7 +38,7 @@ counters:
   REL: 0
   REQ: 31
   RISK: 3
-  TASK: 147
+  TASK: 148
   TST: 18
   WF: 3
 
@@ -134,7 +134,7 @@ items:
       status: done
       owner: user:edwin
       phase: "[[PHASE-0007]]"
-      tasks: [TASK-0134, TASK-0135, TASK-0136, TASK-0137, TASK-0142, TASK-0147]
+      tasks: [TASK-0134, TASK-0135, TASK-0136, TASK-0137, TASK-0142]
       issues: [ISS-0068]
     FEAT-0036:
       file: docs/features/backlog-clearance/FEAT-0036-The-Backlogs-Are-Cleared-Once.md
@@ -409,7 +409,11 @@ items:
     TASK-0147:
       file: docs/features/template-sync-hygiene/plan/tasks/TASK-0147-The-Scaffold-Offers-The-Gates-The-Validator-Runs.md
       status: done
-      parent: FEAT-0037
+      parent: ISS-0074
+    TASK-0148:
+      file: docs/features/template-sync-hygiene/plan/tasks/TASK-0148-One-Test-Runner-For-The-Fleet.md
+      status: doing
+      parent: ISS-0075
       phase: "[[PHASE-0007]]"
     TASK-0139:
       file: docs/features/backlog-clearance/plan/tasks/TASK-0139-Your-Healths-Open-Issues-Are-Checked-Against-The-Code.md
@@ -552,15 +556,6 @@ items:
       depends: [TASK-0119]
       blocks: [TASK-0123]
       tests: [TST-0010]
-    TASK-0123:
-      file: "docs/features/walk-procedure/plan/tasks/TASK-0123-Downstream-To-The-Consumers-And-The-Cockpit.md"
-      status: done
-      parent: FEAT-0031
-      phase: "[[PHASE-0005]]"
-      effort: M
-      depends: [TASK-0118, TASK-0120, TASK-0121, TASK-0122]
-      blocks: []
-      tests: []
     TASK-0113:
       file: "docs/features/walk-sheet/plan/tasks/TASK-0113-The-Generator-And-Its-Fixture-Test.md"
       status: done
@@ -1919,12 +1914,12 @@ metrics:
     features_done: 30
     phases_total: 8
     phases_done: 4
-    tasks_total: 147
+    tasks_total: 148
     tasks_done: 138
     tests_total: 11
     tests_passing: 0
     tests_failing: 0
-    issues_open: 12
+    issues_open: 11
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 0

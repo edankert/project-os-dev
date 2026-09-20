@@ -9,7 +9,7 @@ owner: user:edwin
 created: 2026-09-20
 updated: 2026-09-20
 source: ["[[ISS-0074-The-Feature-Template-Lacks-The-Acceptance-And-Design-Fields-The-Cockpit-Uses]]", "Edwin, 2026-09-20: 'Fix ISS-0074 and ISS-0075 fully!'"]
-parent: "[[FEAT-0037-Every-Repo-Can-Take-The-Template-Again]]"
+parent: "[[ISS-0074-The-Feature-Template-Lacks-The-Acceptance-And-Design-Fields-The-Cockpit-Uses]]"
 effort: "Small"
 due: ""
 depends: []

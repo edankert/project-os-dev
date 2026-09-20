@@ -10,7 +10,7 @@ updated: 2026-09-19
 source: ["Edwin, 2026-09-18: 'Can you enumerate the changes needed for the template files in the different projects and suggest how to resolve?', then 'Implement as suggested.'", "[[TASK-0131-Roll-Out-And-Measure-Five-Reviews]] hand-merge list"]
 goal: "The template sync fast-forwards every file that has no local edits. Files that belong to a project stop being reported. Work that was built in a project first reaches the template. So a sync reports only files that really need a person."
 requirements: []
-tasks: [TASK-0134, TASK-0135, TASK-0136, TASK-0137, TASK-0142, TASK-0147]
+tasks: [TASK-0134, TASK-0135, TASK-0136, TASK-0137, TASK-0142]
 issues: [ISS-0068]
 release: ""
 acceptance_exception: "Tooling for the template's own sync; it is checked by the sync's fixture test and by the fleet's dry-run results, which the tasks record."
