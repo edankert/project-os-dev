@@ -12,7 +12,7 @@ goal: "A feature review starts from a generated packet holding the diff, checks 
 requirements: []
 tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0145]
 release: ""
-reviewed_by: ["model:claude-opus-5"]
+reviewed_by: ["model:claude-opus-5", "model:claude-opus-5"]
 review_date: 2026-09-20
 review_round: 1
 review_verdict: changes-requested
@@ -79,13 +79,13 @@ The seven parts below are the change. Each names the task that builds it.
 
 ## Verification
 
-`python3 tools/scripts/run-tests.py`, 2026-09-20: **passing=17 failing=0 unrunnable=0** over 15 commands. The checks that cover this feature are TST-0013 (the packet: 24 assertions), TST-0014 (the budget hook: 13 assertions) and TST-0015 (the review and issue fields: end to end). `bash tools/scripts/validate-docs.sh` is OK.
+`python3 tools/scripts/run-tests.py`, 2026-09-20: **passing=17 failing=0 unrunnable=0** over 15 commands. The checks that cover this feature are TST-0013 (the packet: 24 assertions), TST-0014 (the budget hook: 15 assertions since TASK-0145; 13 when this run was recorded) and TST-0015 (the review and issue fields: end to end). `bash tools/scripts/validate-docs.sh` is OK.
 
 The feature's rule text and scripts live in `~/Dev/repos/project-os` and are synced to the fleet; this repo holds the record and runs the template's harnesses against it.
 
 ## Review
 
-**Round 1, 2026-09-20. Verdict: `changes-requested`.** One reviewer of two delivered a report. The second could not, and that is the feature's most serious finding.
+**Round 1, 2026-09-20. Verdict: `changes-requested`.** Two reviewers, one packet, clean contexts. The first pair's second reviewer could not deliver a report at all, which became the feature's most serious finding; once that was fixed, a replacement reviewer delivered at 24 tool calls and completed the round.
 
 ### The reviewer could not hand its report back
 
@@ -125,11 +125,30 @@ Not fixed in this round: a `--code-root` option and a hard error on an empty dif
 - Scope part 4's warning point corrected from 30 to 36.
 - Scope part 7 and the `acceptance_exception:` still promised the cancelled Sonnet trial and five measured reviews.
 
+### Round one's second reviewer, once it could report
+
+It refuted a claim the first reviewer had marked *holds*, and the refutation stands:
+
+| Claim | Verdict | Evidence |
+|---|---|---|
+| The cockpit and `your-trainer` carry the same text after the sync | **refuted** | `SKILL.md`, `QUALITY.md`, `HOOKS.md`, `review-packet.py` and the agent file are byte-identical across all 13 repos, but `review-budget.py` is not. Eleven repos have no `SubagentHandback` exemption; only `project-os` and `project-os-dev` do. Re-run independently: 11 STALE, 2 OK. |
+
+The first reviewer had checked this criterion with an `md5` of `SKILL.md` alone, which is the file the sync always carries. The file that actually enforces the budget was never compared. Both readings were honest; the second asked the better question.
+
+**The consequence is live.** Until the fleet takes this hook, a review in any of those eleven repos that passes 40 calls still loses its report — the failure this feature's own review just spent four runs and about 480k tokens demonstrating.
+
+### Also found, to fix before this feature closes
+
+- **A round-one reviewer can be silently demoted to a 15-call budget.** `ROUND_TWO_PACKET` is matched against the whole `tool_input` JSON of every call, so a `Bash` command that merely mentions a path like `review-packet-FEAT-0001-r2.md` flips the hook into round two, and the flip is sticky for the rest of the run. Not fixed in this round; it is a second change to the same hook and is named here so it is not lost.
+- The `PostToolUse` warning fires only when `count == warn_at` exactly, so a single failed state write means the reviewer is never warned at all.
+- `test-review-budget.sh` prints "(early warning at call N)" without asserting anything, so a hook that warned on every call would still pass.
+
 ### Open, and waiting on the owner
 
 - **"The budget is stated once" is false**, and REQ-0027 says a normative rule is stated once. Either the five sites derive from one, or the criterion stops claiming it. The first is right and is more than a round-one fix.
 - **The packet gap** above.
-- **Round one is incomplete**: only one reviewer's report exists, because the other could not deliver until TASK-0145 landed. A second reviewer can run now.
+- **The fleet sync.** Eleven repos still run the old hook. The fix is not finished until it reaches the repos where reviews actually run, and the second reviewer names this as what to do before close. It touches eleven repos that hold other sessions' uncommitted work, so it waits for the owner.
+- **A check that the fleet's adapter hooks match the template.** The existing comparison covers `SKILL.md` and missed the file that enforces the budget.
 
 ## Links
 
