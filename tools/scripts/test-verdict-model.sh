@@ -136,12 +136,6 @@ out="$(validate "$TMP/manual-stale")"; code=$?
 check "a manual test at passing but stale still fails the gate" "$( { [[ $code -ne 0 ]] && printf '%s' "$out" | grep -q 'stale'; }; echo $?)"
 
 # 4. the runner writes nothing and exits 1 on a failure
-# A repo that keeps its own run-tests.py (keep_local: in .project-os-sync)
-# runs a different runner on purpose and tests it itself, so the template
-# runner's contract below does not apply there (project-os-cockpit, its ADR-0038).
-if grep -qE '^[[:space:]]*-[[:space:]]*"?tools/scripts/run-tests\.py' "$ROOT/.project-os-sync" 2>/dev/null; then
-  echo "  skip the runner checks: this repo keeps its own tools/scripts/run-tests.py (keep_local)"
-else
 fixture "$TMP/run" $'status: active' 'command: "false"'
 before="$(cat "$TMP/run/docs/tests/TST-0001-X.md")"
 python3 "$RUNNER" --repo-root "$TMP/run" >/dev/null 2>&1; code=$?
@@ -149,6 +143,12 @@ check "the runner exits 1 when a command fails" "$([[ $code -eq 1 ]]; echo $?)" 
 check "the runner leaves the note byte-identical" "$([[ "$before" == "$(cat "$TMP/run/docs/tests/TST-0001-X.md")" ]]; echo $?)"
 python3 "$RUNNER" --repo-root "$TMP/run" --write >/dev/null 2>&1; code=$?
 check "the runner rejects --write" "$([[ $code -eq 2 ]]; echo $?)" "exit $code"
+# Structural, not behavioural, and it is the one guard the cockpit's own pytest
+# file had that this harness lacked (project-os-dev ISS-0075). A dead `fm_set`
+# left in a script that must not write is one edit away from writing again, and
+# no behavioural test would notice it come back.
+check "the runner carries no way to write frontmatter" \
+  "$( ! grep -qE 'fm_set|write_text' "$RUNNER"; echo $?)"
 fixture "$TMP/run-ok" $'status: active' 'command: "true"'
 before="$(cat "$TMP/run-ok/docs/tests/TST-0001-X.md")"
 python3 "$RUNNER" --repo-root "$TMP/run-ok" >/dev/null 2>&1; code=$?
@@ -211,7 +211,6 @@ out="$(python3 "$RUNNER" --repo-root "$TMP/run-quiet" 2>&1)"
 check "a passing command does not echo its output" \
   "$(printf '%s' "$out" | grep -q '      | ' && echo 1 || echo 0)" "$out"
 
-fi
 
 echo "test-verdict-model: $assertions assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]
