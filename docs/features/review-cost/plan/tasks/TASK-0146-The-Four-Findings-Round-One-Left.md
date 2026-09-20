@@ -59,7 +59,7 @@ Each fix was verified both ways: the test passes with it and fails without it.
 |---|---|---|---|
 | `test-review-budget.sh` | 15 assertions | **19, 0 failures** | 2 fail on whole-input matching; 1 fails when a file restates the budget |
 | `test-review-packet.sh` | 24 assertions | **29, 0 failures** | — |
-| `test-fleet-file-drift.sh` | new | **11, 0 failures** | 4 fail when the content comparison is disabled |
+| `test-fleet-file-drift.sh` | new | **18, 0 failures** | 4 fail when the content comparison is disabled; 5 more when `keep_local` is ignored |
 
 `test-hooks.sh` 80 assertions, the validator clean, all 65 adapter artifacts current.
 
@@ -71,11 +71,20 @@ Template `c264bd6`, then eight files to twelve repos, each committed by named pa
 
 **The first sync attempt was a no-op and looked like a success.** The loop used `for f in $FILES` under zsh, which does not word-split an unquoted variable, so every `cp` failed on one bogus path and every `git commit` found nothing staged. The per-repo test still printed a pass, because the old file was still there. It was caught by the commit hashes not moving. The rewrite uses a shell array.
 
-## What the new checker found
+## What the new checker found, and what it got wrong
 
-Run across the fleet after the sync: **3 repos drifted, 5 files**, none of them from this work.
+Its first run reported **5 files across 3 repos**. Edwin asked why a full review had not already found them. It had: [[TASK-0142-A-Merge-File-Nobody-Edited-Takes-The-Template|TASK-0142]] listed all five on 2026-09-19, and four are recorded decisions with reasons in that repo's `.project-os-sync` under `keep_local:`.
 
-- `project-os-cockpit`: `docs/__templates__/feature.md`, `tools/adapters/codex/ADAPTER.md`, `tools/scripts/run-tests.py`
-- `project-os-dev` and `your-trainer`: `.github/workflows/validate-docs.yml`
+**So the checker was wrong, not the fleet.** It read `MANIFEST.yaml` for ownership and ignored `.project-os-sync`, where a repo records that it diverges on purpose. Re-raising a settled decision is not a harmless false positive: it buries the one file that really is stale among four that are fine, in a tool whose only value is that its output can be trusted.
 
-The cockpit is where validator and tooling work is authored before it is upstreamed, so some of its divergence is expected to be *ahead* rather than behind. Deciding each one is separate work and is in the close-out summary, not done here.
+Fixed the same day (template `2ced0fe`, synced to twelve repos): `keep_local` files are reported as **kept** and do not fail the run, and a kept file that has come back to matching the template is reported **MOOT**, because its exception has nothing left to protect. `test-fleet-file-drift.sh` went 11 → 18 assertions; five fail when `keep_local` is ignored, including "only the real one is called stale".
+
+After the fix, the fleet reads: **1 real drift, 4 kept decisions, 188 template-owned files compared.**
+
+**The four kept decisions were hiding deferred work**, which is the useful thing the run turned up. Each `keep_local:` line reads as settled while naming work nobody had an item for, so each now has one:
+
+- [[ISS-0074-The-Feature-Template-Lacks-The-Acceptance-And-Design-Fields-The-Cockpit-Uses|ISS-0074]] — the cockpit's `feature.md` carries `acceptance:`, `design:`, `reviewed_by:` and `review_date:` that the template lacks. Its own note says "drop this line when the template carries them".
+- [[ISS-0075-Two-Test-Runners-Are-Maintained-Against-Two-Decisions|ISS-0075]] — the cockpit's `run-tests.py` is built to ADR-0038 and the template's to ADR-0025, 170 lines apart. "Reconcile the two designs, then drop this line."
+- The two `validate-docs.yml` exceptions are genuinely per-repo (one checks out the template beside it, the other runs Android and iOS suites) and need nothing.
+
+The one true drift, `tools/adapters/codex/ADAPTER.md` in the cockpit, is [[ISS-0076-The-Codex-Adapter-Note-Says-Two-Different-Things-In-Two-Repos|ISS-0076]]. Both copies were edited after they split, so neither is simply behind. It matters more than its size suggests: it is the only thing keeping the drift check red, and a check that is always red stops being read.
