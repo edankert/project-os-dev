@@ -14,7 +14,7 @@ tasks: [TASK-0138, TASK-0139, TASK-0140, TASK-0141, TASK-0143]
 release: ""
 reviewed_by: ["model:claude-opus-5", "model:claude-opus-5"]
 review_date: 2026-09-20
-review_round: 1
+review_round: 2
 review_verdict: changes-requested
 acceptance_exception: "A one-time cleanup of the record. It is checked by the exit criteria of PHASE-0007, not by a product check."
 related: ["[[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It]]", "[[ISS-0033-Prune-Deletes-Entries-Whose-Notes-Cannot-Replace-Them]]", "[[ISS-0039-The-Restatement-Reached-Three-Surfaces-Of-Four]]"]
@@ -57,8 +57,8 @@ Each leg is a task under this feature, here. The repos have no standing phase fo
 
 ## Acceptance
 
-- Every issue open in the seven repos on 2026-09-18 is in one of the four states, with evidence dated on or after 2026-09-18. **Two exceptions, recorded rather than back-dated**: project-os-cockpit ISS-0310 and ISS-0311 were fixed on 2026-09-19 by other work, so they sit in a correct end state while their evidence is dated 2026-09-16. Writing a later date on them would be a lie about when they were checked.
-- Edwin has received the questions that remain, each with a recommendation, as one list per sitting: your-trainer, your-health and project-os-dev separately, then one combined list of 13 covering project-os-cockpit, your-sudoku, project-os-deck and articles, which were worked in one sitting. **Amended 2026-09-20** from "one list per repo". The point of the criterion is that questions reach Edwin gathered and with recommendations rather than one at a time; four lists arriving together out of a single sitting would have served him worse, and TASK-0141 recorded the choice when it made it.
+- Every issue open in the seven repos on 2026-09-18 is in one of the four states, with evidence dated on or after 2026-09-18. **One exception, recorded rather than back-dated**, the cockpit pair: project-os-cockpit ISS-0310 and ISS-0311 were fixed on 2026-09-19 by other work, so they sit in a correct end state while their evidence is dated 2026-09-16. Writing a later date on them would be a lie about when they were checked.
+- Edwin has received the questions that remain, each with a recommendation, as one list per sitting: your-trainer, your-health and project-os-dev separately, then one combined list of 13 from the sitting that worked project-os-cockpit, your-sudoku, project-os-deck and articles. The 13 questions come from the first three; articles raised none. **Amended 2026-09-20** from "one list per repo". The point of the criterion is that questions reach Edwin gathered and with recommendations rather than one at a time; four lists arriving together out of a single sitting would have served him worse, and TASK-0141 recorded the choice when it made it.
 - The open count and origin mix are measured again and written into the reference note.
 
 ## Verification
@@ -98,11 +98,44 @@ One reviewer counted 113 where the note says 112, because your-trainer ISS-0487 
 
 ### Open, and waiting on the owner
 
-- **The `articles` leg is not in the repo's record.** Its check sits on an unmerged branch `iss-check-0919`, while the repo is checked out on `internal-absorption-thesis` with the same edits uncommitted among another session's twelve modified files. `master` is at 2026-08-04 with no issue notes. Three branches give three answers. Landing it needs a decision about another session's in-flight work, so it is in the close-out summary with options rather than done quietly.
+- ~~**The `articles` leg is not in the repo's record.**~~ **Landed 2026-09-20** (Edwin: "FEAT-0036 move to the main branch"). Its check had been committed to an unmerged side branch, `iss-check-0919`, while the repo worked on `internal-absorption-thesis`. The two issue notes are now committed on that working branch (`3d7f98e`), with a third added by the articles session itself (`95a8c67`), and each carries its dated check. Only the two notes were staged; the other session's files were untouched. **`master` still does not carry any of it** — it sits at 2026-08-04, 36 commits behind — so a reader who takes `master` as the record sees nothing. That is the repo's own branching to settle, not this feature's.
 - ~~**Two criteria are written wider than the work.**~~ Settled 2026-09-20 by Edwin: amend the wording where the wording was wrong, do the work where work was missing.
   - **The list criterion is amended** to one list per sitting.
   - **The your-health gap is closed by doing the check**, not by excusing it. ISS-0164 and ISS-0180 were checked against the code on 2026-09-20 (your-health `521eb34`). Both are real, both are kept, and both stay `open`: each one's fix is written in the working tree, uncommitted, with its task still `doing`. Nothing of that other session's work was touched.
   - **The two cockpit dates are recorded, not back-dated.**
+
+## Review, round 2
+
+**2026-09-20. Two reviewers, one packet, clean contexts. Combined verdict: `changes-requested`, then fixed.**
+
+The two disagreed, which is the case the combining rule exists for. One returned **approved**: all three of round one's refutations resolved in the repos rather than in the prose, and both amended criteria judged to state their shortfall openly rather than hide it. The other returned **changes-requested** on the same evidence, agreeing about the repos and refusing the record: two notes inside this feature still described the pre-fix situation as fact.
+
+A refutation with evidence wins, so the verdict is `changes-requested`. Both findings were checked and both were real.
+
+| What round one refuted | Round two | Evidence |
+|---|---|---|
+| The articles leg is not in the repo's record | **fixed** | Committed on the branch the repo works on: `3d7f98e`, plus `95a8c67` from the articles session itself. Working tree clean apart from an untracked PDF. |
+| your-health ISS-0164 and ISS-0180 carry no dated check | **fixed** | `521eb34`; both notes carry `## Checked against the code, 2026-09-20`, both stay `open` and **kept**, and the other session's five modified files were never staged. |
+| TASK-0139 says `doing` while its body says finished | **fixed** | `status: done`, all four boxes ticked. |
+| One list per repo | **fixed, amendment accurate** | TASK-0141 recorded the one-list-per-sitting choice on 2026-09-19, a day before the review, so the amendment reports a decision rather than retrofitting one. |
+| Cockpit ISS-0310/ISS-0311 dates | **fixed, not back-dated** | Both still read `updated: 2026-09-16`; the fix commit `1d16f08` is dated 2026-09-19. Independently confirmed by both reviewers. |
+
+### What round two refuted, and the fix
+
+**Two notes in this feature still stated the old situation as fact.** This feature's deliverable *is* the record, so that is the defect itself, not a cosmetic one.
+
+- This note's "Open, and waiting on the owner" still said the articles leg was unmerged and uncommitted. Three of its four statements were false by then. Rewritten to say where the leg landed — and that `master` still does not carry it, 36 commits behind, which is the repo's branching to settle.
+- TASK-0139's first box and its "What the first box does not cover" section still said ISS-0164 and ISS-0180 "were never checked against the code". They were, on 2026-09-20. The task, this note's Acceptance and the your-health notes gave three different answers to one question — exactly the failure this feature exists to remove. Commit order explains it: `9ba79a3` edited the task at 11:53, `3077f12` updated only this note and PHASE-0007 at 12:20, and nobody went back.
+
+Also corrected: the amended list criterion said the 13 questions covered four repos when articles raised none, and "Two exceptions" named two different pairs in one feature.
+
+Outside this repo: your-health ISS-0164's body said "the status is `triage`" while its frontmatter read `open` (fixed, your-health `9b51047`).
+
+### The count, recounted twice
+
+Both reviewers recounted and both got **116** today against the note's 112. Both then found the same explanation: four issues created after the measurement, two of them filed by these very reviews (ISS-0073, ISS-0076, cockpit ISS-0314, articles ISS-0005). Subtracting them gives 112 exactly, per repo. The reference note already says a count is true only for the instant it carries.
+
+**One of those four is worth more than its arithmetic.** `articles` ISS-0005 was filed on 2026-09-20 into a repo this cleanup had just emptied. That is the backlog refilling, which is what ADR-0047 exists to prevent and what the cancelled TASK-0131 would have measured. One issue is not a trend; it is the first data point.
 
 ## Links
 

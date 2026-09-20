@@ -21,7 +21,7 @@ tests: []
 # your-health's open issues are checked against the code
 
 ## Definition of Done
-- [x] Each of the 63 open issues is obsolete, fixed, kept, declined or a question, with evidence dated 2026-09-18 or later in its own note. **Two exceptions**, ISS-0164 and ISS-0180: another session held uncommitted work on them from 2026-09-13, so neither got a dated verdict. Both were given `reported_by: user:edwin` on 2026-09-20 (your-health `f8a3404`) and both remain `open`. See "Closed out, 2026-09-20" below.
+- [x] Each of the 63 open issues is obsolete, fixed, kept, declined or a question, with evidence dated 2026-09-18 or later in its own note. **This leg skipped two**, ISS-0164 and ISS-0180, because another session held uncommitted work on them from 2026-09-13. Both were checked on 2026-09-20 (your-health `521eb34`), after the round-one review, and both are **kept**. See "Closed out" below.
 - [x] Small fixes are collected into one work-order issue, [[your-health#ISS-0181]], which grew to eighteen items after Edwin's decisions. Fourteen were fixed on 2026-09-19 (your-health `b1df1df`), each with a test that fails without it.
 - [x] Edwin has received one list of questions, each with a recommendation. Eight questions; he took all eight recommendations. See "Decisions and a repair" below.
 - [x] The uncommitted work in your-health (21 files, including SNAPSHOT.yaml) stays out of every commit. It leaked twice through the pre-commit hook and was removed in `ab1e790`; see "Repair" below.
@@ -54,5 +54,7 @@ Edwin took all eight recommendations ("take your recommendations"). ISS-0026 and
 
 The task sat at `doing` with every box unticked while its own Result and Decisions sections described a finished leg. Both independent reviewers of [[FEAT-0036-The-Backlogs-Are-Cleared-Once|FEAT-0036]] found the contradiction on 2026-09-20. The boxes above are now ticked against what the sections already recorded, and the status is `done`.
 
-**What the first box does not cover.** ISS-0164 and ISS-0180 were never checked against the code by this leg. They now carry `reported_by:`, which is what PHASE-0007's fourth exit criterion asks of every open issue, but neither carries a dated verdict from the cleanup window. They stay `open` and belong to whoever finishes the meal work. FEAT-0036's acceptance says *every* issue and names no exception, so this is recorded as a gap rather than hidden by a tick.
+**What this leg did not do itself.** ISS-0164 and ISS-0180 were not checked while this leg ran, because another session held uncommitted work on both files. That gap was the first thing FEAT-0036's round-one review refuted, and it was closed on 2026-09-20: both are now checked against the code (your-health `521eb34`) and both are **kept**, because each one's fix is written in the working tree, absent from HEAD, and owned by a task that is still `doing` — [[your-health#TASK-0431]] and [[your-health#TASK-0446]].
+
+So the leg's own scope was 61 of 63 issues, and the two it left are accounted for elsewhere rather than forgotten. They stay `open`.
 
