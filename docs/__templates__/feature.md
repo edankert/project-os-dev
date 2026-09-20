@@ -13,6 +13,18 @@ requirements: []
 tasks: []
 release: ""
 acceptance_exception: ""   # leave empty and write the check; fill only where a check can never exist (SCHEMAS.md, feature.md)
+# Optional acceptance gate (FEAT-0064). Absent = no gate, which is the
+# default and stays the default: a mandatory gate on the one unautomatable
+# judgment becomes a rubber stamp. `requested` is stamped at CLOSE-OUT by the
+# agent when the feature opted in — the agent asks, it never answers.
+# `accepted` is written only by a completed acceptance run (REQ-0028).
+# The validator's ACCEPT-STALE warns when a `done` feature has been asking
+# for acceptance too long.
+acceptance: ""
+# Optional design gate (FEAT-0070). Names the `[[design]]` this feature is
+# built against. DESIGN-GATE warns — never blocks — when the feature has left
+# the pending band while that design was never accepted.
+design: ""
 reviewed_by: ""
 review_date: ""
 review_verdict: ""
