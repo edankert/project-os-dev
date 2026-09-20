@@ -2,8 +2,8 @@
 type: "[[issue]]"
 id: ISS-0074
 aliases: ["ISS-0074"]
-title: "A feature scaffolded from the template has no acceptance or design gate, and no place to record its review"
-status: open
+title: "A feature scaffolded from the template had no acceptance or design gate"
+status: fixed
 phase: "[[PHASE-999]]"
 owner: unassigned
 created: 2026-09-20
@@ -15,16 +15,16 @@ severity: medium
 component: "docs/__templates__"
 parent: ""
 related: ["[[TASK-0146-The-Four-Findings-Round-One-Left]]", "[[FEAT-0037-Every-Repo-Can-Take-The-Template-Again]]"]
-tests: []
+tests: ["[[TST-0018]]"]
 ---
 
-# A feature scaffolded from the template has no acceptance or design gate, and no place to record its review
+# A feature scaffolded from the template had no acceptance or design gate
 
 ## Problem
 
-Anyone starting a feature from `docs/__templates__/feature.md` gets a note with no `acceptance:`, no `design:`, and no `reviewed_by:` or `review_date:`. `project-os-cockpit` added all four to its own copy and has carried a `keep_local:` exception ever since, so its features cannot be scaffolded from the template the rest of the fleet uses. The exception's own note says what is owed: *"Drop this line when the template carries them."*
+Anyone starting a feature from `docs/__templates__/feature.md` got a note with no `acceptance:` and no `design:`. `project-os-cockpit` added both to its own copy and has carried a `keep_local:` exception ever since, so its features cannot be scaffolded from the template the rest of the fleet uses. The exception's own note says what is owed: *"Drop this line when the template carries them."*
 
-`QUALITY.md` tells an author to record a review verdict in the reviewed note's frontmatter, and the template a feature is scaffolded from offers no field for it. Every feature note in this repo that carries `reviewed_by:` has it because someone typed it in by hand.
+~~`QUALITY.md` tells an author to record a review verdict in the reviewed note's frontmatter, and the template a feature is scaffolded from offers no field for it.~~ **Wrong, corrected 2026-09-20:** the template has carried `reviewed_by:`, `review_date:`, `review_verdict:` and `review_round:` for some time. Reading the two files side by side before changing anything showed that — and turned up a defect this issue had missed, below.
 
 ## Evidence
 
@@ -47,3 +47,14 @@ It also means the two repos disagree about what a feature *is*. A feature scaffo
 Carry the cockpit's four fields into the template's `feature.md`, with the comments that explain them, check that the validator's `DESIGN-GATE` and acceptance checks read them the same way in both repos, then drop the `keep_local:` line from `project-os-cockpit/.project-os-sync` and let the next sync take the template's copy.
 
 The fields are optional and default to empty in the cockpit's copy, so adding them should change nothing for a repo that ignores them — but that is a claim to verify, not to assume, because the validator's gates key on them.
+
+## Fixed, 2026-09-20
+
+Template `1f6dff4`, synced to all thirteen repos; `project-os-cockpit` `381faea` drops its `keep_local:` line in the same commit and takes the template's copy. Recorded in [[TASK-0147-The-Scaffold-Offers-The-Gates-The-Validator-Runs|TASK-0147]], guarded by [[TST-0018]].
+
+`feature.md` now carries `acceptance:` and `design:`, optional and empty, with the comments that say what writes each one and that the design gate warns rather than blocks. Both validators already implemented the gates identically, so nothing about enforcement changed; only the scaffold that made them reachable.
+
+**A defect this issue had not seen.** The cockpit's copy declared the four review fields *twice* — `reviewed_by`, `review_date`, `review_verdict` and `review_round` each in two consecutive blocks. YAML keeps one and drops the other, so an edit to the first block was silently lost, and nothing in either repo reported it. Taking the template's copy removes it, and `test-note-templates.sh` now refuses any scaffold that declares a key twice.
+
+Verified both ways: the previous scaffold fails 4 of the 9 assertions, the cockpit's old copy fails the duplicate-key one, and the current pair passes in all thirteen repos.
+
