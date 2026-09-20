@@ -14,7 +14,7 @@ tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0
 release: ""
 reviewed_by: ["model:claude-opus-5", "model:claude-opus-5"]
 review_date: 2026-09-20
-review_round: 1
+review_round: 2
 review_verdict: changes-requested
 acceptance_exception: "A process rule with no product surface. It is checked by TASK-0130's known-answer re-run, as PHASE-0007's exit criteria state. The plan to also measure the next five reviews was cancelled on 2026-09-20 (TASK-0131)."
 related: ["[[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It]]", "[[ADR-0028-A-Review-Gate-Runs-Two-Rounds]]", "[[ADR-0013-Independence-Is-Clean-Context]]", "[[ISS-0062-A-Reviews-Round-Count-Is-Recorded-Nowhere]]"]
@@ -161,6 +161,38 @@ All four are fixed in [[TASK-0146-The-Four-Findings-Round-One-Left|TASK-0146]] (
 - **"The budget is stated once" is false**, and REQ-0027 says a normative rule is stated once. Either the five sites derive from one, or the criterion stops claiming it. The first is right and is more than a round-one fix.
 - **The packet gap** above.
 - **Five pre-existing divergences the new checker found**, none from this work: `project-os-cockpit` differs on `docs/__templates__/feature.md`, `tools/adapters/codex/ADAPTER.md` and `tools/scripts/run-tests.py`; `project-os-dev` and `your-trainer` differ on `.github/workflows/validate-docs.yml`. The cockpit is where tooling is authored before upstreaming, so some of that is ahead rather than behind. Each needs a decision: upstream it, sync it, or record it as deliberate.
+
+## Review, round 2
+
+**2026-09-20. Two reviewers, one packet, clean contexts. Both returned `changes-requested`.**
+
+The packet covered everything since round one, not just the fixes: the work had roughly doubled, and a 15-call fix-check would have waved through a fleet drift checker, a runner reconciliation across thirteen repos and a scaffold change that no reviewer had seen.
+
+**Every round-one fix held up under breaking.** Both reviewers removed guards and watched the right tests go red: deleting `is_report(tool)` fails two budget assertions, restoring whole-input matching fails two more, deleting the empty-diff refusal fails two packet assertions, and forcing `deliberate = False` fails five drift assertions. The fleet was confirmed from outside this repo — your-health, articles and project-os-deck each carry the new scripts and the new agent wording.
+
+### What they refuted
+
+Five defects, all in the parts this feature owns.
+
+| Finding | Why it mattered |
+|---|---|
+| **The hook told the reviewer to do what the skill forbids.** Its deny message said "You may still record the verdict in the feature note", while the skill says "Write nothing in the notes" and independence rule 2 has the *author* transcribe the verdict. | A reviewer obeying the deny writes into the note the whole design exists to protect. |
+| **The packet dropped a source change.** `EXCLUDE` removed all of `docs/`, so commit `1f6dff4`'s only source file — `docs/__templates__/feature.md` — was absent from this feature's own round-two packet, while `test-note-templates.sh`, the test guarding it, was present. | The reviewer was shown a guard with nothing behind it. A scaffold is source, not a note. |
+| **"The budget is stated once" was false.** `review-packet.py` carried `return 40, 15` as a fallback, a second copy in code that the prose check could not see. | With `PROJECT_OS_REVIEW_BUDGET=30` and the hook unreadable, a packet would promise 40 while the hook enforced 30 — precisely what that function was written to prevent. |
+| **The skill was wrong about its own escape hatch**, still saying "past the budget every call except a note edit is refused" after the handback exemption landed. | It is the file the reviewer actually reads. |
+| **`fleet-file-drift.py` counted a *missing* `keep_local` file as kept.** | An exception says a repo keeps its own version, not that it may lose the file. It was hidden twice: from the DRIFT line and from the count of files that match. |
+
+All five are fixed in template `4e26ef9` and synced. `test-review-budget.sh` 21 assertions (was 19), `test-review-packet.sh` 31 (was 29), `test-fleet-file-drift.sh` 20 (was 18); each new assertion was verified to fail without its fix.
+
+### The finding that repeated this feature's own mistake
+
+**Nothing ran the new checker's tests.** `fleet-file-drift.py` was written because no one noticed a stale file across eleven repos — and it was left where nothing would run it: no `TST-*` note carried its command, so neither `run-tests.py` nor CI called it. That is [[ISS-0065-The-Templates-Own-CI-Runs-None-Of-Its-Seven-Harnesses|ISS-0065]]'s exact shape, reappearing in new code on the day the rest of it was closed. It now has [[TST-0019]], and this repo's suite went from 18 commands to 19.
+
+### Still true, and not fixed here
+
+- **The acceptance criterion claims more than the validator does.** Both reviewers refuted the same part: "a review is never a phase review, and always starts from a packet — the validator's checks hold them". The validator holds the round count only; the other two are prose. Either add the checks or narrow the criterion. It is a deliberate choice, not an oversight, so it waits for the owner.
+- **Two reviewers share one working tree.** One reviewer's drift run reported eleven repos stale because the *other* reviewer had a guard broken at that moment. It finished its own breaks in a `git worktree` and suggested the skill say so. Worth doing: the skill tells both to break up to three guards and only says "work on your own".
+- The `ADAPTER.md` drift the checker reports is [[ISS-0076-The-Codex-Adapter-Note-Says-Two-Different-Things-In-Two-Repos|ISS-0076]], parked until Codex is back.
 
 ## Links
 

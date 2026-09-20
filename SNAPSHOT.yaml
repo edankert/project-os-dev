@@ -39,7 +39,7 @@ counters:
   REQ: 31
   RISK: 3
   TASK: 148
-  TST: 18
+  TST: 19
   WF: 3
 
 focus:
@@ -1916,7 +1916,7 @@ metrics:
     phases_done: 4
     tasks_total: 148
     tasks_done: 139
-    tests_total: 11
+    tests_total: 12
     tests_passing: 0
     tests_failing: 0
     issues_open: 11
