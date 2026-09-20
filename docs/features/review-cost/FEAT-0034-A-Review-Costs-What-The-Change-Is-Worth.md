@@ -10,7 +10,7 @@ updated: 2026-09-20
 source: ["[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]", "Edwin, 2026-09-18: 'the review step/agent after doing an implementation seems to still take way too much effort (time and tokens)'", "Edwin, 2026-09-18: 'I think we need to ground / constrain it more because it does still go on for too long and takes too many tokens'"]
 goal: "A feature review starts from a generated packet holding the diff, checks a fixed list of claims, runs only targeted tests, and is stopped by a hook at 40 tool calls. A review then costs about 5-7M context tokens instead of 20-32M, and still finds what the current reviews find."
 requirements: []
-tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0145]
+tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0145, TASK-0146]
 release: ""
 reviewed_by: ["model:claude-opus-5", "model:claude-opus-5"]
 review_date: 2026-09-20
@@ -145,11 +145,22 @@ The first reviewer had checked this criterion with an `md5` of `SKILL.md` alone,
 - The `PostToolUse` warning fires only when `count == warn_at` exactly, so a single failed state write means the reviewer is never warned at all.
 - `test-review-budget.sh` prints "(early warning at call N)" without asserting anything, so a hook that warned on every call would still pass.
 
+### Round one's findings are closed
+
+All four are fixed in [[TASK-0146-The-Four-Findings-Round-One-Left|TASK-0146]] (template `c264bd6`, then twelve repos), each with a test that fails without it:
+
+- A new `fleet-file-drift.py` compares every template-owned file across the fleet, so the drift that let a fixed hook sit stale in eleven repos is now a command anyone can run. It is not the cockpit's `fleet-drift.py`, which answers a different question; that name would have overwritten their tool.
+- Only a *read* of a round-two packet starts round two, so a round-one reviewer is no longer demoted to 15 calls by a command that merely mentions an `-r2` path.
+- A packet with no source diff is refused, with `--code-root` for a cross-repo feature and `--allow-empty-diff` for genuine documentation work.
+- The budget is stated once and two assertions hold it there.
+
+`test-review-budget.sh` 19 assertions, `test-review-packet.sh` 29, `test-fleet-file-drift.sh` 11, all green, each verified to fail without its fix.
+
 ### Open, and waiting on the owner
 
 - **"The budget is stated once" is false**, and REQ-0027 says a normative rule is stated once. Either the five sites derive from one, or the criterion stops claiming it. The first is right and is more than a round-one fix.
 - **The packet gap** above.
-- **A check that the fleet's adapter hooks match the template.** The sync is done, but nothing would have caught the drift: the comparison that declared the fleet identical covered `SKILL.md` and missed the file that enforces the budget. Until an adapter-hook check exists, the same gap reopens at the next hook change.
+- **Five pre-existing divergences the new checker found**, none from this work: `project-os-cockpit` differs on `docs/__templates__/feature.md`, `tools/adapters/codex/ADAPTER.md` and `tools/scripts/run-tests.py`; `project-os-dev` and `your-trainer` differ on `.github/workflows/validate-docs.yml`. The cockpit is where tooling is authored before upstreaming, so some of that is ahead rather than behind. Each needs a decision: upstream it, sync it, or record it as deliberate.
 
 ## Links
 
