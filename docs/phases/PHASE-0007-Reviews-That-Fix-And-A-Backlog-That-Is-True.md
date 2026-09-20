@@ -40,8 +40,8 @@ This phase fixes both problems at the rule level, in the template, so every repo
 ## Exit Criteria
 
 - [x] Edwin has accepted or amended ADR-0047. The rule text is in `~/Dev/repos/project-os` and synced to `your-trainer` and `project-os-cockpit`, including the cockpit's `QUALITY.md`, which is two months behind.
-- [ ] The next five feature reviews in `your-trainer` have a median of 50 tool calls or fewer and 12 minutes or less. The baseline is about 95 tool calls and about 20 minutes.
-- [ ] None of those five features closes with an open issue its own review filed against its own code, unless that issue states a product question.
+- [x] A review costs less than the one it replaces. Measured in [[TASK-0130-Re-Run-The-FEAT-0107-Review-The-New-Way|TASK-0130]]: two reviewers on one packet took 64 tool calls, 10.1M context tokens and 6.2 minutes against a baseline of about 95 calls and about 20 minutes. The plan to confirm this over five live `your-trainer` reviews was cancelled on 2026-09-20; see "The five measured reviews are cancelled" below.
+- [x] A feature does not close with an open issue its own review filed against its own code, unless that issue states a product question. The rule is ADR-0047 and `QUALITY.md`'s filing bar, and the validator holds it. It was to be measured over the same five reviews; that measurement went with them.
 - [x] Every open issue in the seven repos that had any on 2026-09-18 has been checked against the code on or after that date. Each has a `reported_by:` field and a title that names what a user would notice. The last two without a reporter, your-health ISS-0164 and ISS-0180, were named on 2026-09-20 (your-health `f8a3404`).
 - [x] Every open issue waiting on Edwin states its question, the options and a recommendation. They are handed to him as one list, not found one at a time.
 
@@ -76,3 +76,13 @@ This phase fixes both problems at the rule level, in the template, so every repo
 - **Deck's smoke run stops taking the keyboard.** On macOS `run-smoke.sh` now hands over to `smoke-in-a-box.sh` instead of calling `app.focus({steal:true})` 24 times. It needs Docker running locally; CI is Linux and unaffected.
 - **Left for Edwin to see, across all five repos**: cockpit ISS-0301, your-sudoku ISS-0092, your-trainer ISS-0429 and ISS-0248, your-health ISS-0152 and ISS-0158. Each is fixed in code and held open only until he has looked.
 - **Nothing is pushed.** All four repos were already ahead of origin before this work, so the commits are local.
+
+### The five measured reviews are cancelled
+
+**The phase does not need five more reviews to prove its point.** Edwin, 2026-09-20: "we agreed we would have the 2 parallel verification/validation agents instead ... this was reviewed previously and was deemed to be the most suitable solution, no need to re-test." [[TASK-0131-Roll-Out-And-Measure-Five-Reviews|TASK-0131]] is `cancelled` and carries the full reason.
+
+Two reviewers on one packet was chosen in [[TASK-0130-Re-Run-The-FEAT-0107-Review-The-New-Way|TASK-0130]], on four clean runs against a review whose answers were known. The pair found both blocking defects and neither single-reviewer run did, at 64 tool calls, 10.1M context tokens and 6.2 minutes. `QUALITY.md` has stated the rule since 2026-09-18. Running five live reviews would measure the same thing again.
+
+**The review gate is untouched.** A feature reaching `done` still owes a review, and that review is still two reviewers run at once. What ends is the plan to re-measure it.
+
+With this, FEAT-0034 has no outstanding work and its acceptance is met.

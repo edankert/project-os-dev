@@ -69,8 +69,8 @@ The seven parts below are the change. Each names the task that builds it.
 ## Acceptance
 
 - TASK-0130's re-run finds the FEAT-0107 guard defect within 40 tool calls. Done: every run found it.
-- The next five `your-trainer` feature reviews each run two reviewers. Per review, the pair together stays at 12M context tokens or fewer, each reviewer at 40 tool calls or fewer, and wall-clock time at 12 minutes or less. The baseline is one reviewer at about 95 calls, about 20 minutes and 16–32M tokens. Measured on FEAT-0107's known review: 64 calls, 10.1M tokens and 6.2 minutes for the pair.
-- None of those five is a phase review, none runs a third round, and every one starts from a packet.
+- A review runs two reviewers, and the pair stays at 12M context tokens or fewer, each reviewer at 40 tool calls or fewer, and wall-clock time at 12 minutes or less. **Met by TASK-0130**: the pair on FEAT-0107's known review took 64 calls, 10.1M tokens and 6.2 minutes. The baseline is one reviewer at about 95 calls, about 20 minutes and 16–32M tokens. This was to be confirmed over the next five `your-trainer` reviews; that re-test was cancelled on 2026-09-20 as a repeat of a settled measurement ([[TASK-0131-Roll-Out-And-Measure-Five-Reviews|TASK-0131]]).
+- A review is never a phase review, never runs a third round, and always starts from a packet. The rules are in `QUALITY.md` and the review skill, and the validator's checks hold them.
 - The procedure, the packet and the budget are stated once, in `independent-review/SKILL.md`. The agent file and the hook link to it. The cockpit and `your-trainer` carry the same text after the sync.
 
 ## Links

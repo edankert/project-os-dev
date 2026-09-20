@@ -3,11 +3,11 @@ type: "[[task]]"
 id: TASK-0131
 aliases: ["TASK-0131"]
 title: "Roll out and measure five reviews"
-status: backlog
+status: cancelled
 phase: "[[PHASE-0007]]"
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-19
+updated: 2026-09-20
 source: ["[[FEAT-0034-A-Review-Costs-What-The-Change-Is-Worth]]"]
 parent: "[[FEAT-0034-A-Review-Costs-What-The-Change-Is-Worth]]"
 effort: "Medium"
@@ -24,13 +24,13 @@ tests: []
 - [ ] ADR-0047 is accepted, or Edwin has said to roll this out without it.
 - [ ] The template changes are synced to `your-trainer` and `project-os-cockpit`, together with the cockpit's `QUALITY.md`, which is two months behind. The cockpit's `.claude/agents/independent-reviewer.md` is re-copied by hand and the hook is installed in both repos.
 - [x] ~~**Sonnet trial.**~~ Dropped on 2026-09-19; see "The Sonnet trial is dropped" below.
-- [ ] **Five measured reviews.** The next five `your-trainer` feature reviews are measured with the reference note's query. The numbers go into PHASE-0007: median tool calls, minutes, total context tokens, and whether any review hit the limit.
-- [ ] The acceptance targets in FEAT-0034 are met, or the gap is recorded with what to change.
-- [ ] **FEAT-0035's acceptance is measured over the same five features**: none of them closes with an open issue its own review filed against its own code, unless that issue carries a `question:`. FEAT-0035 itself closes without waiting for this (2026-09-19).
+- [x] ~~**Five measured reviews.**~~ Cancelled on 2026-09-20; see "Cancelled" below.
+- [x] ~~The acceptance targets in FEAT-0034 are met, or the gap is recorded with what to change.~~ Met by [[TASK-0130-Re-Run-The-FEAT-0107-Review-The-New-Way|TASK-0130]]'s measurement instead.
+- [x] ~~**FEAT-0035's acceptance is measured over the same five features.**~~ Cancelled with the rest. FEAT-0035 closed on 2026-09-19 without waiting for it.
 
 ## Steps
-- [ ] Run `tools/scripts/sync-project-os.sh` in each repo and review the diff before committing.
-- [ ] Run the trial and the measurements as the reviews happen. Nothing needs scheduling, because they are normal feature reviews.
+- [x] Run `tools/scripts/sync-project-os.sh` in each repo and review the diff before committing. Done 2026-09-18; see "Progress" and "Fleet rollout" below.
+- [x] ~~Run the trial and the measurements as the reviews happen.~~ Cancelled.
 
 ## Notes
 - The other nine fleet repos get this at their next sync. That is not part of this task.
@@ -74,3 +74,15 @@ Edwin, 2026-09-18: "Is this up-streamed and down-streamed to all projects?", the
 The trial planned three small reviews on Sonnet, each compared with one Opus review of the same packet. TASK-0130 showed after this was written that it could not give an answer. A single run of the same reviewer found ISS-0463 only half the time, so single runs vary more than two setups differ. Three comparisons cannot tell a weaker model from that noise. The decision that stands is Edwin's of 2026-09-18: two reviewers per packet, on the model the agent file names (`claude-opus-5`, `effort: medium`). Edwin asked on 2026-09-19 that nothing already decided be done again, and this was the one step that would have re-opened the choice of reviewer.
 
 **Still to do, and nothing to run for it.** The five measurements come from your-trainer's next five feature reviews as they happen in normal work. None has happened since 2026-09-18.
+
+## Cancelled, 2026-09-20
+
+**The five measured reviews will not be run.** Two reviewers on one packet is the settled way a review runs, and it was chosen on measured evidence, not on a guess. Edwin, 2026-09-20: "we agreed we would have the 2 parallel verification/validation agents instead ... this was reviewed previously and was deemed to be the most suitable solution, no need to re-test."
+
+The evidence is in [[TASK-0130-Re-Run-The-FEAT-0107-Review-The-New-Way|TASK-0130]], which ran option 1 (one reviewer spending leftover budget attacking its own *holds* verdicts) against option 2 (two reviewers in parallel, findings combined), four clean runs at `your-trainer` `a5425c6e^`. The pair found both blocking defects; neither option-1 run did. The rule that came out of it is stated in `QUALITY.md`: "Each review is two reviewers run at once on the same packet, their reports combined by the author (Edwin, 2026-09-18, after a measured comparison in project-os-dev TASK-0130)."
+
+**FEAT-0034's cost targets are already met by that same measurement.** The pair on FEAT-0107's known review took 64 tool calls, 10.1M context tokens and 6.2 minutes wall-clock, against targets of 40 calls per reviewer, 12M tokens per pair and 12 minutes. The baseline was one reviewer at about 95 calls, about 20 minutes and 16-32M tokens. Five more reviews would repeat a measurement that has already answered the question.
+
+**What is genuinely lost.** TASK-0130 measured a replay of one known review, not five live ones, so nothing here shows the numbers hold across features of different sizes. That is accepted: the cost question is settled well enough to act on, and a cost regression would show up as a slow review rather than as a wrong verdict.
+
+Nothing about the review gate itself changes. A feature reaching `done` still owes a review, and that review is still two reviewers run at once.
