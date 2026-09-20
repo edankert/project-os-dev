@@ -14,6 +14,13 @@ the manifest calls `template` and needs no list of its own. `merge` and `seed`
 paths are expected to diverge and are not reported. A file missing downstream is
 drift too: the sync would have copied it.
 
+**A repo may diverge on purpose**, and says so in its `.project-os-sync` under
+`keep_local:`, with a reason per line. Those files are reported as kept, not as
+drift, and do not fail the run -- reporting a recorded decision as a problem
+buries the one file that really is stale. A kept file that now MATCHES the
+template is reported too, the other way round: its exception has nothing left to
+protect and the line can go.
+
 **Not `fleet-drift.py`**, which project-os-cockpit has carried since 2026-08-29.
 That one asks which validator *rules* each repo runs and reports line divergence;
 this one asks which template-owned *files* differ, byte for byte. Two questions,
@@ -56,16 +63,23 @@ def template_files(sync, owners, excludes):
     return out
 
 
-def drift_for(repo, rels):
-    """(stale, missing) for one repo: template-owned files that differ or are absent."""
-    stale, missing = [], []
+def drift_for(repo, rels, kept_paths):
+    """One repo's template-owned files, split four ways.
+
+    stale/missing are drift. kept/moot are the `keep_local:` decisions: kept is
+    diverging as intended, moot is an exception whose file now matches anyway.
+    """
+    stale, missing, kept, moot = [], [], [], []
     for rel in rels:
         target = repo / rel
+        deliberate = rel in kept_paths
         if not target.is_file():
-            missing.append(rel)
+            (kept if deliberate else missing).append(rel)
         elif target.read_bytes() != (TEMPLATE / rel).read_bytes():
-            stale.append(rel)
-    return stale, missing
+            (kept if deliberate else stale).append(rel)
+        elif deliberate:
+            moot.append(rel)
+    return stale, missing, kept, moot
 
 
 def main():
@@ -94,17 +108,25 @@ def main():
 
     drifted = 0
     for repo in repos:
-        stale, missing = drift_for(repo, rels)
-        if not stale and not missing:
-            if not args.quiet:
-                print("ok    %-28s %d template-owned file(s) match" % (repo.name, len(rels)))
-            continue
-        drifted += 1
-        print("DRIFT %-28s %d stale, %d missing" % (repo.name, len(stale), len(missing)))
-        for rel in stale:
-            print("        stale   %s" % rel)
-        for rel in missing:
-            print("        missing %s" % rel)
+        kept_paths = set(sync.read_state(repo).get("keep_local") or [])
+        stale, missing, kept, moot = drift_for(repo, rels, kept_paths)
+        if stale or missing:
+            drifted += 1
+            print("DRIFT %-28s %d stale, %d missing" % (repo.name, len(stale), len(missing)))
+            for rel in stale:
+                print("        stale   %s" % rel)
+            for rel in missing:
+                print("        missing %s" % rel)
+        elif not args.quiet:
+            print("ok    %-28s %d template-owned file(s) match" % (repo.name, len(rels) - len(kept)))
+        if kept and not args.quiet:
+            print("      kept    %-22s %d file(s) this repo keeps different on purpose (.project-os-sync)"
+                  % (repo.name, len(kept)))
+            for rel in kept:
+                print("        kept    %s" % rel)
+        for rel in moot:
+            print("      MOOT  %-22s keep_local: %s now matches the template; the line can go"
+                  % (repo.name, rel))
 
     print("fleet-file-drift: %d repo(s) checked, %d drifted, %d template-owned file(s) compared"
           % (len(repos), drifted, len(rels)))

@@ -78,5 +78,39 @@ check "the summary counts the drifted repos" grep -q "2 repo(s) checked, 2 drift
 out="$(python3 "$DRIFT" --repo "$TMP/clean" --quiet 2>&1)"
 check "--quiet prints no line for a clean repo" bash -c '! grep -q "^ok " <<<"$0"' "$out"
 
+# A repo may diverge on purpose and says so in .project-os-sync under keep_local:.
+# Reporting a recorded decision as a problem buries the one file that really is
+# stale -- which is what the first version of this script did, re-raising four
+# settled decisions from FEAT-0037 as findings (2026-09-20).
+make_repo deliberate
+printf '\n# this repo runs its own suite\n' >> "$TMP/deliberate/.github/workflows/validate-docs.yml" 2>/dev/null \
+  || { mkdir -p "$TMP/deliberate/.github/workflows"; printf 'local\n' > "$TMP/deliberate/.github/workflows/validate-docs.yml"; }
+cat > "$TMP/deliberate/.project-os-sync" <<'EOS'
+baseline_sha: "0000000000000000000000000000000000000000"
+keep_local:
+  - ".github/workflows/validate-docs.yml"   # runs its own Android suite
+EOS
+out="$(python3 "$DRIFT" --repo "$TMP/deliberate" 2>&1)"; rc=$?
+check "a keep_local file is not drift" test "$rc" -eq 0
+check "and it is reported as kept" grep -q "kept    .github/workflows/validate-docs.yml" <<<"$out"
+check "and not as stale" bash -c '! grep -q "stale   .github/workflows/validate-docs.yml" <<<"$0"' "$out"
+
+# A kept file that is stale HIDES a real one unless the two are separated.
+printf '\n# an edit nobody synced\n' >> "$TMP/deliberate/tools/adapters/claude-code/hooks/review-budget.py"
+out="$(python3 "$DRIFT" --repo "$TMP/deliberate" 2>&1)"; rc=$?
+check "a real stale file beside a kept one still fails" test "$rc" -eq 1
+check "and only the real one is called stale" test "$(grep -c 'stale   ' <<<"$out")" -eq 1
+
+# An exception whose file now matches has nothing left to protect.
+make_repo moot
+cat > "$TMP/moot/.project-os-sync" <<'EOS'
+baseline_sha: "0000000000000000000000000000000000000000"
+keep_local:
+  - ".github/workflows/validate-docs.yml"   # kept, but identical now
+EOS
+out="$(python3 "$DRIFT" --repo "$TMP/moot" 2>&1)"; rc=$?
+check "a keep_local file that matches the template is reported MOOT" grep -q "MOOT" <<<"$out"
+check "and a moot exception alone does not fail the run" test "$rc" -eq 0
+
 echo "test-fleet-file-drift: $n assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]
