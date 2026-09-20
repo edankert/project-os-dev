@@ -49,7 +49,7 @@ The open issues no longer say what is true of the code. `your-trainer` has 121 o
 
 your-applications.com, edankert.com, yourtrainer-mcp, project-os-bench and obsidian-supernote-sync have none.
 
-**your-trainer goes first and calibrates the method.** Its 34 March review issues (ISS-0070 to ISS-0106) go first. The split across the four end states is recorded, and the method is adjusted before the next leg starts. Each repo's questions reach Edwin as one list when its leg ends.
+**your-trainer goes first and calibrates the method.** Its 34 March review issues (ISS-0070 to ISS-0106) go first. The split across the four end states is recorded, and the method is adjusted before the next leg starts. Each sitting's questions reach Edwin as one list when it ends; where several legs run in one sitting, that is one list for the sitting (amended 2026-09-20, with the Acceptance criterion).
 
 **What a leg fixes, and what it keeps** (Edwin, 2026-09-18). A real defect is fixed during the cleanup only when the fix is small and in one place, with a test that fails without it. A defect that needs a build on both platforms, a behaviour Edwin would want to see, or more than a small change is **kept**: its title and first sentence say what a user notices, and it is linked to the feature or phase it belongs to, for normal feature work.
 
@@ -57,8 +57,8 @@ Each leg is a task under this feature, here. The repos have no standing phase fo
 
 ## Acceptance
 
-- Every issue open in the seven repos on 2026-09-18 is in one of the four states, with evidence dated on or after 2026-09-18.
-- Edwin has received one list per repo of the questions that remain, each with a recommendation.
+- Every issue open in the seven repos on 2026-09-18 is in one of the four states, with evidence dated on or after 2026-09-18. **Two exceptions, recorded rather than back-dated**: project-os-cockpit ISS-0310 and ISS-0311 were fixed on 2026-09-19 by other work, so they sit in a correct end state while their evidence is dated 2026-09-16. Writing a later date on them would be a lie about when they were checked.
+- Edwin has received the questions that remain, each with a recommendation, as one list per sitting: your-trainer, your-health and project-os-dev separately, then one combined list of 13 covering project-os-cockpit, your-sudoku, project-os-deck and articles, which were worked in one sitting. **Amended 2026-09-20** from "one list per repo". The point of the criterion is that questions reach Edwin gathered and with recommendations rather than one at a time; four lists arriving together out of a single sitting would have served him worse, and TASK-0141 recorded the choice when it made it.
 - The open count and origin mix are measured again and written into the reference note.
 
 ## Verification
@@ -84,7 +84,7 @@ This feature carries an `acceptance_exception:`: it is a one-time cleanup of the
 
 ### The three issues without a dated check
 
-- **your-health ISS-0164 and ISS-0180.** Another session held uncommitted work on them from 2026-09-13, so the leg skipped them. TASK-0139's first box named the exclusion; the feature's acceptance did not, and says *every* issue. Both now carry `reported_by:` (your-health `f8a3404`) and both stay `open`.
+- **your-health ISS-0164 and ISS-0180.** ~~Skipped.~~ **Checked on 2026-09-20** (your-health `521eb34`), once this review showed the acceptance said *every* issue and named no exception. Both are real and both are **kept**. ISS-0164's anchor fix sits at `LogMealContent.kt:193` in the working tree and not in HEAD; ISS-0180's option-A clamp sits at `MealSpan.kt:86` in the working tree and not in HEAD. A build from committed code still shows both defects, TASK-0431 and TASK-0446 are still `doing`, and both issues stay `open`.
 - **project-os-cockpit ISS-0310 and ISS-0311.** Genuinely fixed, but by other work on 2026-09-19, and their notes still read `updated: 2026-09-16`. The state is right; the date clause is not.
 
 ### What the count disagreement was
@@ -99,7 +99,10 @@ One reviewer counted 113 where the note says 112, because your-trainer ISS-0487 
 ### Open, and waiting on the owner
 
 - **The `articles` leg is not in the repo's record.** Its check sits on an unmerged branch `iss-check-0919`, while the repo is checked out on `internal-absorption-thesis` with the same edits uncommitted among another session's twelve modified files. `master` is at 2026-08-04 with no issue notes. Three branches give three answers. Landing it needs a decision about another session's in-flight work, so it is in the close-out summary with options rather than done quietly.
-- **Two criteria are written wider than the work**: "one list per repo" and "evidence dated on or after 2026-09-18". The work behind both is sound. Whether to amend the criteria or redo four legs is the owner's call.
+- ~~**Two criteria are written wider than the work.**~~ Settled 2026-09-20 by Edwin: amend the wording where the wording was wrong, do the work where work was missing.
+  - **The list criterion is amended** to one list per sitting.
+  - **The your-health gap is closed by doing the check**, not by excusing it. ISS-0164 and ISS-0180 were checked against the code on 2026-09-20 (your-health `521eb34`). Both are real, both are kept, and both stay `open`: each one's fix is written in the working tree, uncommitted, with its task still `doing`. Nothing of that other session's work was touched.
+  - **The two cockpit dates are recorded, not back-dated.**
 
 ## Links
 

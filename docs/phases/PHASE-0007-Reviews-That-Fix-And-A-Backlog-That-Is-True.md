@@ -6,7 +6,7 @@ status: active
 order: 7
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-19
+updated: 2026-09-20
 goal: "A review costs what the change is worth and its findings are fixed in the feature that caused them, so the open issues in every repo are real, readable, and mostly reported by a person."
 features: [FEAT-0034, FEAT-0035, FEAT-0036, FEAT-0037]
 requirements: []
@@ -42,7 +42,7 @@ This phase fixes both problems at the rule level, in the template, so every repo
 - [x] Edwin has accepted or amended ADR-0047. The rule text is in `~/Dev/repos/project-os` and synced to `your-trainer` and `project-os-cockpit`, including the cockpit's `QUALITY.md`, which is two months behind.
 - [x] A review costs less than the one it replaces. Measured in [[TASK-0130-Re-Run-The-FEAT-0107-Review-The-New-Way|TASK-0130]]: two reviewers on one packet took 64 tool calls, 10.1M context tokens and 6.2 minutes against a baseline of about 95 calls and about 20 minutes. The plan to confirm this over five live `your-trainer` reviews was cancelled on 2026-09-20; see "The five measured reviews are cancelled" below.
 - [x] A feature does not close with an open issue its own review filed against its own code, unless that issue states a product question. The rule is ADR-0047 and `QUALITY.md`'s filing bar, and the validator holds it. It was to be measured over the same five reviews; that measurement went with them.
-- [x] Every open issue in the seven repos that had any on 2026-09-18 has been checked against the code on or after that date. Each has a `reported_by:` field and a title that names what a user would notice. The last two without a reporter, your-health ISS-0164 and ISS-0180, were named on 2026-09-20 (your-health `f8a3404`).
+- [x] Every open issue in the seven repos that had any on 2026-09-18 has been checked against the code on or after that date. Each has a `reported_by:` field and a title that names what a user would notice. The last two the cleanup had skipped, your-health ISS-0164 and ISS-0180, were checked on 2026-09-20 (your-health `521eb34`); both are real, both are kept, and each one's fix is written but uncommitted in another session's tree.
 - [x] Every open issue waiting on Edwin states its question, the options and a recommendation. They are handed to him as one list, not found one at a time.
 
 ## Notes
