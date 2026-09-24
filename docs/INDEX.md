@@ -4,7 +4,7 @@ id: INDEX
 status: active
 owner: team:docs
 created: 2026-01-26
-updated: 2026-05-08
+updated: 2026-09-23
 tags: [index]
 ---
 
@@ -19,6 +19,7 @@ Primary entrypoints for this documentation system.
 - Phase registry: `PHASES.md`
 - Workflows: `[[workflows/README]]`
 - Reference area: `reference/README.md`
+- AI modernization review and implementation proposal: [evidence from the in-flight projects](reference/AI-Modernization-And-In-Flight-Evidence-2026-09-23.md)
 - Reference note template: `__templates__/reference.md`
 - Lifecycle rules: `../tools/instructions/LIFECYCLE.md`
 - Markdown authoring rules: `../tools/instructions/MARKDOWN.md`

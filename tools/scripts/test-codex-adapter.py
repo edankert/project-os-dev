@@ -109,6 +109,15 @@ items:
         self.assertIn('SNAPSHOT.yaml', self.call('SessionStart')['hookSpecificOutput']['additionalContext'])
         self.assertIn('TASK-0001', self.call('UserPromptSubmit')['hookSpecificOutput']['additionalContext'])
 
+    def test_prompt_hint_reads_quoted_snapshot_status(self):
+        for status in ('doing', '"doing"', "'doing'"):
+            with self.subTest(status=status):
+                self.set_snapshot('TASK-0001')
+                path = self.repo / 'SNAPSHOT.yaml'
+                path.write_text(path.read_text().replace('status: doing', 'status: ' + status))
+                hint = self.call('UserPromptSubmit')['hookSpecificOutput']['additionalContext']
+                self.assertIn('TASK-0001 is doing,', hint)
+
     def test_generated_codex_files_and_drift(self):
         planner = (ROOT/'.codex/agents/planner.toml').read_text()
         self.assertIn('name = "planner"', planner)

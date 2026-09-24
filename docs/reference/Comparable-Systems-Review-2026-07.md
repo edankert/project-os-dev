@@ -6,7 +6,7 @@ title: "Comparable systems review (July 2026): project-os against the spec-drive
 status: active
 owner: user:edwin
 created: 2026-07-29
-updated: 2026-07-29
+updated: 2026-09-22
 scope: "project"
 source:
   - "https://github.com/github/spec-kit"
@@ -101,3 +101,5 @@ Recorded so a later reader can disagree with them specifically.
 A dated snapshot of a fast-moving field, not a living document. If it is revisited, re-check: whether OpenSpec's proposal model has been adopted more widely, whether any agent-native system has grown code-side traceability, and whether Thoughtworks has moved SDD out of *Assess*. Supersede rather than edit in place.
 
 **Sightings since**, filed separately rather than merged in: [[Comparable-Systems-Sighting-Productics-2026-09-20]] (20 Sep 2026) — a Substack essay describing project-os's own design as the missing primitive of AI engineering, and pitching it as a company. No product, so it fits none of the three families above; fold it in as a fourth if a second instance appears.
+
+**Deep reads since**, same rule: [[Comparable-Systems-Spec-Kit-2026-09-22]] (22 Sep 2026) — GitHub Spec Kit re-read at v1.0.9, after it grew a convergence pass, reviewer-owned checklists and an extension catalog. Five items were filed out of it, including the layered override stack this review left unfiled.

@@ -32,26 +32,35 @@ counters:
   ADR: 47
   CHG:
     last_date: 20260916
-  FEAT: 37
-  ISS: 76
-  PHASE: 7
+  FEAT: 38
+  ISS: 83
+  PHASE: 8
   REL: 0
-  REQ: 31
-  RISK: 3
-  TASK: 149
-  TST: 20
+  REQ: 32
+  RISK: 4
+  TASK: 155
+  TST: 21
   WF: 3
 
 focus:
   task: ""
-  feature: ""
-  phase: ""
+  feature: "FEAT-0038"
+  phase: "PHASE-0008"
   issue: ""
-  note: "2026-09-20: PHASE-0007 is closed and nothing is in flight; the next phase is Edwin's to pick, and PHASE-0006 (Codex) stays active but parked until Codex is back. Four things wait on his decision: ISS-0076, FEAT-0034's criterion claiming validator checks that do not exist, the review skill not sending parallel reviewers to a worktree, and nothing measuring how fast the cleared backlogs refill."
-
+  note: "2026-09-21: PHASE-0008 has its answer and it is negative. TASK-0150, TASK-0151 and TASK-0152 are done; tools/scripts/rank-notes.py, rank-bench.py and rank-bench-sessions.py are built in the template (~/Dev/repos/project-os), stdlib only. TWO INDEPENDENT LABEL SOURCES AGREE THAT A BM25 RANKER DOES NOT BEAT SORTING BY LAST-MODIFIED DATE. Commits, 86 of them: ranker 0.340, recency 0.450 at a 24-note budget. Real sessions, 87 across 7 repos, scored on the task a ranker actually exists for (opening prompt as query, notes the session went on to read as labels, corpus pinned to the commit it started from): ranker 0.253, recency 0.275, wins 32 ties 7 loses 48, gap 1.1 standard errors and so indistinguishable. Every earlier figure claiming otherwise came from indexing the working tree while scoring labels from the past, a train/test leak rank-bench.py --worktree measures. REQ-0032 did exactly what it was written to do. DECISION OWED: run TASK-0154 (the sweep now has a defined job, closing 0.022 rather than 0.115), or close the phase early with 'recency wins' as its finding. TASK-0153 (make the ranker a supported script) is hard to justify at parity with ls -t. The residue worth more than tuning: the per-repo spread, deck +0.091 against cockpit -0.088, which nobody has explained. Three phases active: PHASE-0003 (ISS-0052, ISS-0053 open), PHASE-0006 (parked until Codex is back), this one."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
+    PHASE-0008:
+      file: docs/phases/PHASE-0008-Measured-Note-Ranking.md
+      status: done
+      order: 8
+      owner: user:edwin
+      features: [FEAT-0038]
+      requirements: [REQ-0032]
+      tasks: [TASK-0150, TASK-0151, TASK-0152, TASK-0153, TASK-0154, TASK-0155]
+      related: [TST-0021, RISK-0004, FEAT-0021, ISS-0031]
+      note: "Opened 2026-09-21 on Edwin's decision. The code lands in the template (~/Dev/repos/project-os, tools/scripts/rank-notes.py and rank-bench.py) and is dogfooded here; project-os-bench does not implement it, and the overlap with its FEAT-0007 payoff study is recorded in FEAT-0038 rather than as a new item. RISK-0004 carries this phase, so the phase cannot close while that hazard is open — which is what PHASE_RESOLVED intends for a risk."
     PHASE-0007:
       file: docs/phases/PHASE-0007-Reviews-That-Fix-And-A-Backlog-That-Is-True.md
       title: "Reviews that fix, and a backlog that is true"
@@ -123,9 +132,20 @@ items:
       status: planned
       order: 999
       owner: user:edwin
+      issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083]
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0038:
+      file: docs/features/note-relevance/FEAT-0038-Note-Relevance-Harness.md
+      status: done
+      owner: user:edwin
+      phase: "[[PHASE-0008-Measured-Note-Ranking]]"
+      requirements: [REQ-0032]
+      tasks: [TASK-0150, TASK-0151, TASK-0152, TASK-0153, TASK-0154, TASK-0155]
+      tests: [TST-0021]
+      related: [FEAT-0021, ISS-0031, ISS-0030, RISK-0004]
+      note: "Measured 2026-09-21 before anything was written: at an equal 24-note budget the script ranker recalls 0.582 of what a commit touched against the snapshot ordering's 0.233, and beats a whole 168-item snapshot read (0.535) while naming seven times fewer items. It does NOT beat a finished session's own reading (0.54 against 0.75), so it is a cold-start aid only. The harness is the durable half and is built first; the ranker is the first candidate it scores. Two open questions block doing: the implementing repo (template vs project-os-bench FEAT-0007) and whether this opens PHASE-0008."
     FEAT-0037:
       file: docs/features/template-sync-hygiene/FEAT-0037-Every-Repo-Can-Take-The-Template-Again.md
       status: done
@@ -375,6 +395,57 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0150:
+      file: docs/features/note-relevance/plan/tasks/TASK-0150-Git-History-Benchmark.md
+      status: done
+      parent: FEAT-0038
+      phase: "[[PHASE-0008-Measured-Note-Ranking]]"
+      effort: L
+      depends: []
+      blocks: [TASK-0151, TASK-0152, TASK-0153]
+      tests: [TST-0021]
+    TASK-0151:
+      file: docs/features/note-relevance/plan/tasks/TASK-0151-Cold-Start-Baseline.md
+      status: done
+      parent: FEAT-0038
+      phase: "[[PHASE-0008-Measured-Note-Ranking]]"
+      effort: M
+      depends: [TASK-0150]
+      blocks: [TASK-0154]
+      tests: [TST-0021]
+    TASK-0152:
+      file: docs/features/note-relevance/plan/tasks/TASK-0152-Transcript-Benchmark.md
+      status: done
+      parent: FEAT-0038
+      phase: "[[PHASE-0008-Measured-Note-Ranking]]"
+      effort: L
+      depends: [TASK-0150]
+      blocks: [TASK-0155]
+      tests: [TST-0021]
+    TASK-0153:
+      file: docs/features/note-relevance/plan/tasks/TASK-0153-Supported-Ranker-Script.md
+      status: cancelled
+      parent: FEAT-0038
+      phase: "[[PHASE-0008-Measured-Note-Ranking]]"
+      effort: M
+      depends: [TASK-0150]
+      blocks: [TASK-0154]
+    TASK-0154:
+      file: docs/features/note-relevance/plan/tasks/TASK-0154-Parameter-Sweep.md
+      status: cancelled
+      parent: FEAT-0038
+      phase: "[[PHASE-0008-Measured-Note-Ranking]]"
+      effort: M
+      depends: [TASK-0151, TASK-0153]
+      blocks: [TASK-0155]
+    TASK-0155:
+      file: docs/features/note-relevance/plan/tasks/TASK-0155-First-Run-Recorded.md
+      status: done
+      parent: FEAT-0038
+      phase: "[[PHASE-0008-Measured-Note-Ranking]]"
+      effort: S
+      depends: [TASK-0152, TASK-0154]
+      blocks: []
     TASK-0140:
       file: docs/features/backlog-clearance/plan/tasks/TASK-0140-Project-Os-Devs-Open-Issues-Are-Checked-Against-The-Template.md
       status: done
@@ -861,6 +932,39 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0083:
+      file: docs/issues/ISS-0083-Override-Layering.md
+      status: deferred
+      phase: "[[PHASE-999]]"
+      note: "July's unfiled groomable, finally filed after re-reading Spec Kit on 2026-09-22. MANIFEST ownership is one value per file, so a repo that edits a template-owned skill diverges and hand-merges forever. Measure before designing: how many of the twelve repos actually carry such an edit."
+    ISS-0082:
+      file: docs/issues/ISS-0082-Reviewer-Owned-Notes.md
+      status: deferred
+      phase: "[[PHASE-999]]"
+      note: "review_verdict is somebody else's judgement written by the author, protected by two sentences of prose in the review skill. ADR-0009's argument applied to verdicts. The release ledger is the precedent for moving the field out of the authored note; ISS-0077 is the same defect on requirement approval."
+    ISS-0081:
+      file: docs/issues/ISS-0081-Observable-Criteria.md
+      status: deferred
+      phase: "[[PHASE-999]]"
+      note: "Spec Kit splits FR-### (what the system does) from SC-### (what a person notices, measurably). project-os has one acceptance list. Weakest of the five: this repo's requirements govern a documentation system and mostly have no user-observable outcome. Sample a dozen REQ notes before building anything, and decide it together with EARS."
+    ISS-0080:
+      file: docs/issues/ISS-0080-Ambiguity-Markers.md
+      status: deferred
+      phase: "[[PHASE-999]]"
+      note: "An ambiguity an agent judged tolerable leaves no trace: the assumption goes in a turn summary nobody reads again. Spec Kit leaves [NEEDS CLARIFICATION: ...] inline and gates on it. The seven-category clarify taxonomy is usable on its own and costs no schema change."
+    ISS-0079:
+      file: docs/issues/ISS-0079-Converge-Pass.md
+      status: deferred
+      phase: "[[PHASE-999]]"
+      note: "The one borrow project-os has no partial answer to. Spec Kit's /speckit-converge reads the code against the artifacts after implementation and appends only the work that remains, append-only, byte-for-byte unchanged when clean. Close-out is a checklist the same agent walks; independent review returns a verdict, not work. Weigh against ADR-0016 before building."
+    ISS-0078:
+      file: docs/issues/ISS-0078-Link-And-Name-Forms.md
+      status: open
+      note: "Two conventions nobody wrote down, both found on 2026-09-21 when PHASE-0008 rendered as a dashed label in Obsidian. Edwin ruled a link carries the full filename: 399 bare-ID wikilinks and 1057 non-link bare IDs across 347 of 459 notes, plus 108 snapshot entries. That only reads well if filenames are short, and 187 of 373 descriptors exceed 30 characters (ISS 71/78, TASK 56/155). PHASE-0008's thirteen notes were renamed to 15-25 characters as the reference shape. The checks matter more than the sweeps — without them the next scaffold reintroduces both."
+    ISS-0077:
+      file: docs/issues/ISS-0077-Who-Approves-Requirements.md
+      status: triage
+      note: "Found while scaffolding FEAT-0038: feature-scaffold step 7 tells the agent to approve the requirement, OWNERSHIP.md makes approval the owner's. An agent reading only the skill approves its own acceptance criteria. REQ-0027 family; the question is which file keeps the rule."
     ISS-0072:
       file: docs/issues/ISS-0072-PHASES-Md-Repeats-Every-Phase-Status-And-Drifts-From-The-Phase-Notes.md
       status: fixed
@@ -1314,6 +1418,16 @@ items:
   # Pruned: ISS-0001 (closed, PHASE-0001). Note preserved under docs/issues/.
 
   requirements:
+    REQ-0032:
+      file: docs/requirements/REQ-0032-Ranking-Claims-Measured.md
+      status: implemented
+      owner: user:edwin
+      priority: high
+      phase: "[[PHASE-0008-Measured-Note-Ranking]]"
+      implements: [FEAT-0038]
+      tests: [TST-0021]
+      related: [RISK-0004, FEAT-0021, ISS-0031]
+      note: "Left at draft on purpose: the approval gate keeps FEAT-0038 out of doing until Edwin answers which repo implements it. Approve once that is settled."
     REQ-0031:
       file: docs/requirements/REQ-0031-Preparation-Is-Declared-And-Validated.md
       status: approved
@@ -1555,6 +1669,15 @@ items:
       related: [ADR-0024, REQ-0018, ISS-0041, ISS-0042, ISS-0043]
       note: "ADR-0024 option 1: widens REQ-0018 from state rules to every normative rule. Supersedes it rather than reopening a terminal requirement."
   risks:
+    RISK-0004:
+      file: docs/risks/RISK-0004-Transcript-Privacy.md
+      status: closed
+      owner: user:edwin
+      phase: "[[PHASE-0008-Measured-Note-Ranking]]"
+      likelihood: low
+      impact: high
+      related: [FEAT-0038, TASK-0152, TASK-0155, REQ-0032]
+      note: "The rest of the scan came back negative and the note records it: no new dependency, no env var, no new artifact path, and no long-running step (0.9ms per query; the whole harness runs in seconds) precisely because nothing calls the harness automatically. Wiring it into the pre-commit hook or validate-docs.sh would make runtime a real trigger."
     RISK-0003:
       file: docs/risks/RISK-0003-Codex-Hook-Trust-And-Coverage.md
       title: "Codex hooks can be unavailable or miss edits"
@@ -1581,6 +1704,15 @@ items:
       related: [FEAT-0015, TASK-0060, ADR-0009, REQ-0019]
 
   tests:
+    TST-0021:
+      file: docs/tests/acceptance/TST-0021-Caveat-With-Every-Row.md
+      status: active
+      scope: system
+      level: acceptance
+      phase: "[[PHASE-0008-Measured-Note-Ranking]]"
+      requirements: [REQ-0032]
+      features: [FEAT-0038]
+      tasks: [TASK-0150, TASK-0151, TASK-0152]
     TST-0012:
       file: docs/features/codex-native-adapter/plan/tests/TST-0012-Codex-Adapter-Contracts.md
       status: active
@@ -1911,21 +2043,21 @@ items:
 
 metrics:
   counts:
-    features_total: 37
-    features_done: 32
-    phases_total: 8
-    phases_done: 5
-    tasks_total: 149
-    tasks_done: 140
+    features_total: 38
+    features_done: 33
+    phases_total: 9
+    phases_done: 6
+    tasks_total: 155
+    tasks_done: 144
     tests_total: 13
     tests_passing: 0
     tests_failing: 0
-    issues_open: 10
-    issues_triage: 0
+    issues_open: 11
+    issues_triage: 1
     tasks_deferred: 0
-    issues_deferred: 0
-    requirements_total: 31
-    requirements_implemented: 27
+    issues_deferred: 5
+    requirements_total: 32
+    requirements_implemented: 28
     risks_open: 1
     releases_total: 0
     decisions_total: 33

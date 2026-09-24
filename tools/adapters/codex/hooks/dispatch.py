@@ -71,7 +71,7 @@ def item_status(text, item):
     m = re.search(r"^    " + re.escape(item) + r":\s*\n((?: {6}[^\n]*\n)*)", text, re.M)
     if not m:
         return ""
-    state = re.search(r"^      status:\s*([\w-]+)", m.group(1), re.M)
+    state = re.search(r"^      status:\s*[\"']?([\w-]+)", m.group(1), re.M)
     return state.group(1) if state else ""
 
 
