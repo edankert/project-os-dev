@@ -1127,6 +1127,13 @@ PROMOTIONS = {
     "LEDGER-FIELD": "2026-12-17",
     "LEDGER-SEALED": "2026-12-17",
     "NOTE-FRONTMATTER": "2026-12-17",
+    # project-os-dev ISS-0084. Measured over the fleet on 2026-09-24 before
+    # shipping, each with debt somewhere, so each warns for the 90 days ADR-0011
+    # clause 3 allows:
+    #   TASK-MEMBERSHIP   20: your-health 8, project-os-cockpit 7, your-trainer 5
+    #   FOCUS-MEMBERSHIP   2: your-applications.com 1, yourtrainer-mcp 1
+    "TASK-MEMBERSHIP": "2026-12-23",
+    "FOCUS-MEMBERSHIP": "2026-12-23",
     # Ported from project-os-cockpit's validator (project-os-dev ISS-0068), where
     # they were written and dated for that repo alone. Measured over the fleet on
     # 2026-09-18 before porting, each with debt somewhere, so each warns for the
@@ -3910,6 +3917,46 @@ def validate(root, report):
             for ref in extract_ids(focus.get(key, "")):
                 if not resolves(ref):
                     report.error("FOCUS", "focus.%s = %s resolves to no snapshot item or note" % (key, ref))
+
+    # -- project-os-dev ISS-0084 FOCUS-MEMBERSHIP and TASK-MEMBERSHIP: work in
+    #    progress has a snapshot entry of its own.
+    #
+    #    FOCUS above accepts an id that resolves to a note, and
+    #    SNAPSHOT-MEMBERSHIP compares a feature's `tasks:` list in the note with
+    #    the same list in the snapshot. Neither sees a task that both lists name
+    #    but that has no `items.tasks` entry: on 2026-09-24 five such tasks,
+    #    one of them `focus.task`, passed every gate, and the session-start
+    #    orientation and the close-out hook both lost them. The cause was a
+    #    string replace that matched nothing, as in ISS-0117.
+    def in_items(ref_id):
+        return any(isinstance(c, dict) and ref_id in c for c in items.values())
+
+    if isinstance(focus, dict):
+        for key in ("feature", "task", "issue", "phase"):
+            for ref in extract_ids(focus.get(key, "")):
+                if ref in note_index and not in_items(ref):
+                    promotion_emit(report, "FOCUS-MEMBERSHIP", grandfathered, ref)(
+                        "FOCUS-MEMBERSHIP", "focus.%s = %s has a note but no entry in SNAPSHOT.yaml `items`; "
+                        "add one, since the session-start orientation and the close-out hook read the snapshot (%s)"
+                        % (key, ref, note_index[ref][0].relative_to(root)))
+
+    PARENT_SETTLED = {"done", "cancelled", "superseded", "fixed", "declined", "deferred", "implemented", "retired"}
+    snap_tasks_coll = items.get("tasks") if isinstance(items.get("tasks"), dict) else {}
+    flagged = set()
+    for coll in ("features", "phases", "issues"):
+        for parent_id, entry in sorted(((items or {}).get(coll) or {}).items()):
+            if not isinstance(entry, dict) or str(entry.get("status", "")) in PARENT_SETTLED:
+                continue
+            for ref in extract_ids(entry.get("tasks")):
+                if prefix_of(ref) != "TASK" or ref in snap_tasks_coll or ref in flagged or ref not in note_index:
+                    continue
+                if str((note_index[ref][1] or {}).get("status", "")) not in ("backlog", "doing"):
+                    continue
+                flagged.add(ref)
+                promotion_emit(report, "TASK-MEMBERSHIP", grandfathered, ref)(
+                    "TASK-MEMBERSHIP", "%s is '%s' and %s lists it, but it has no entry under `items.tasks` in "
+                    "SNAPSHOT.yaml; add one (%s)" % (ref, note_index[ref][1].get("status"), parent_id,
+                                                    note_index[ref][0].relative_to(root)))
 
     # -- note frontmatter link integrity for notes referenced by the snapshot
     for item_id, (path, fm) in sorted(note_index.items()):

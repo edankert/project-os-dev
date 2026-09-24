@@ -12,7 +12,7 @@ goal: "Bring the template's instructions, skills, hooks and subagents in line wi
 features: [FEAT-0024, FEAT-0025, FEAT-0026, FEAT-0027, FEAT-0028, FEAT-0039, FEAT-0021]
 requirements: [REQ-0026, REQ-0027]
 tasks: [TASK-0090, TASK-0091, TASK-0092, TASK-0093, TASK-0094, TASK-0095, TASK-0096, TASK-0097, TASK-0098, TASK-0099, TASK-0100, TASK-0101, TASK-0102, TASK-0103, TASK-0104, TASK-0105, TASK-0106, TASK-0107, TASK-0108, TASK-0109, TASK-0156, TASK-0157, TASK-0158, TASK-0159, TASK-0160, TASK-0080]
-issues: [ISS-0003, ISS-0041, ISS-0042, ISS-0043, ISS-0044, ISS-0045, ISS-0046, ISS-0047, ISS-0048]
+issues: [ISS-0003, ISS-0041, ISS-0042, ISS-0043, ISS-0044, ISS-0045, ISS-0046, ISS-0047, ISS-0048, ISS-0084]
 related: [ADR-0024, ADR-0025, "[[Prompting-Guide-Review-2026-09-03]]", "[[Opus-5-5-Prompting-Guide-Review-2026-09-24]]"]
 tags: [phase, prompting-guides]
 ---
@@ -33,7 +33,7 @@ The items were first parked in PHASE-999. Edwin decided the same day that a cohe
 - **Four features** carrying the other findings: FEAT-0024 (one pause rule and the scope rules), FEAT-0025 (writing rules for the final message and length limits), FEAT-0026 (trim the instruction files loaded every session), FEAT-0027 (the hint serves focus state instead of pushing delegation).
 - **Two requirements and one decision**: REQ-0026 (word budgets), REQ-0027 (every normative rule stated once, superseding REQ-0018), ADR-0024 (accepted with option 1).
 
-- **The Opus 5.5 guide, added 2026-09-24.** Edwin asked for a review of the Opus 5.5 prompting guide and then for its changes to be filed and built ([[Opus-5-5-Prompting-Guide-Review-2026-09-24]]). Five of the six changes are [[FEAT-0039-Opus-5-5-Prompting-Guide-Conformance|FEAT-0039]]. The sixth is [[TASK-0080]], which serves the in-flight part of the snapshot at session start; it was already planned under [[FEAT-0021-Serve-Orientation-Answer-Lookup|FEAT-0021]] and moved here from the parking lot. FEAT-0021's other task, TASK-0081 (a lookup query), stays in PHASE-999.
+- **The Opus 5.5 guide, added 2026-09-24.** Edwin asked for a review of the Opus 5.5 prompting guide and then for its changes to be filed and built ([[Opus-5-5-Prompting-Guide-Review-2026-09-24]]). Five of the six changes are [[FEAT-0039-Opus-5-5-Prompting-Guide-Conformance|FEAT-0039]]. The sixth is [[TASK-0080]], which serves the in-flight part of the snapshot at session start; it was already planned under [[FEAT-0021-Serve-Orientation-Answer-Lookup|FEAT-0021]] and moved here from the parking lot. FEAT-0021's other task, TASK-0081 (a lookup query), stays in PHASE-999. Found while building it: [[ISS-0084-An-In-Flight-Task-Can-Be-Missing-From-The-Snapshot|ISS-0084]], a validator gap, fixed the same day by [[TASK-0161]].
 
 ## Out of Scope
 

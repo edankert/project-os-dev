@@ -33,13 +33,13 @@ counters:
   CHG:
     last_date: 20260916
   FEAT: 39
-  ISS: 83
+  ISS: 84
   PHASE: 8
   REL: 0
   REQ: 32
   RISK: 4
-  TASK: 160
-  TST: 21
+  TASK: 161
+  TST: 22
   WF: 3
 
 focus:
@@ -47,7 +47,7 @@ focus:
   feature: ""
   phase: "PHASE-0003"
   issue: ""
-  note: "2026-09-24: FEAT-0039 and TASK-0080 are done, from the Opus 5.5 guide review (docs/reference/Opus-5-5-Prompting-Guide-Review-2026-09-24.md). Sessions now start with the in-flight slice; the Stop hook quotes open boxes; the subagents are pinned to claude-opus-5-5 from the next session. Nothing committed in either repo. PHASE-0003 still has ISS-0052 and ISS-0053 open; FEAT-0021's TASK-0081 stays in PHASE-999."
+  note: "2026-09-24: FEAT-0039 and TASK-0080 are done, from the Opus 5.5 guide review (docs/reference/Opus-5-5-Prompting-Guide-Review-2026-09-24.md). Sessions now start with the in-flight slice; the Stop hook quotes open boxes; the subagents are pinned to claude-opus-5-5 from the next session. ISS-0084 (the validator missed tasks absent from the snapshot) is fixed with two checks that warn until 2026-12-23. PHASE-0003 still has ISS-0052 and ISS-0053 open; FEAT-0021's TASK-0081 stays in PHASE-999."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
@@ -408,6 +408,12 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0161:
+      file: docs/features/derived-state/plan/tasks/TASK-0161-The-Validator-Reports-A-Worked-Task-Missing-From-The-Snapshot.md
+      status: done
+      parent: ISS-0084
+      phase: "[[PHASE-0003]]"
+      effort: S
     TASK-0156:
       file: docs/features/opus-5-5-conformance/plan/tasks/TASK-0156-The-Subagents-Run-On-Opus-5-5.md
       status: done
@@ -975,6 +981,12 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0084:
+      file: docs/issues/ISS-0084-An-In-Flight-Task-Can-Be-Missing-From-The-Snapshot.md
+      status: fixed
+      phase: "[[PHASE-0003]]"
+      tasks: [TASK-0161]
+      tests: [TST-0022]
     ISS-0083:
       file: docs/issues/ISS-0083-Override-Layering.md
       status: deferred
@@ -2090,9 +2102,9 @@ metrics:
     features_done: 34
     phases_total: 9
     phases_done: 6
-    tasks_total: 160
-    tasks_done: 150
-    tests_total: 13
+    tasks_total: 161
+    tasks_done: 151
+    tests_total: 14
     tests_passing: 0
     tests_failing: 0
     issues_open: 11
