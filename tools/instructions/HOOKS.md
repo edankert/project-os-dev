@@ -26,14 +26,17 @@ Contract IDs are `HC-001`..`HC-010`. (Earlier revisions of this file used `CHC-0
 - The target file's repo governs the edit. A file outside every project-os repo is not gated: when the walk up from the target finds no `SNAPSHOT.yaml`, only a relative path or a path under the session repo falls back to the session repo's focus; any other path is allowed (project-os-dev ISS-0003).
 - On failure: block the code edit (or close-out) until the documentation state is explicit.
 
-## HC-002: Startup preflight / snapshot freshness
+## HC-002: Startup orientation
 
 - Trigger: session start or before selecting work.
 - Rule: `LIFECYCLE.md` — "Preflight", step 2 (orchestration check); `SNAPSHOT.md` — "Update rules (agent behavior)".
 - Check logic:
-  - Required context files exist and `SNAPSHOT.yaml` can be read.
-  - Current branch, head, focus, and working tree are visible.
-- Implementations: Claude Code `hooks/snapshot-freshness.sh` (SessionStart reminder); Codex `hooks/dispatch.py` (SessionStart reminder) and `bash tools/agents/bootstrap.sh`; generic uses bootstrap.
+  - Print the part of `SNAPSHOT.yaml` a session needs, from `tools/scripts/snapshot-slice.py`: each focus item with its status and note path, the focus note cut to 400 characters, `metrics.counts`, and every in-flight item (task or feature at `doing`/`review`, issue at `open`/`triage`, phase at `active`) as ID, status and note path. Titles are left out. The output stays under 6,000 characters (about 1,500 tokens); items past that are counted, not listed. It ends by telling the agent to open the notes the working item links before changing anything. Reason: agents followed the instruction to read the whole file in 5 of 260 sessions (project-os-dev ISS-0031), and the file reaches 400 KB.
+  - Name any missing contract file (`AGENTS.md`, `CONTEXT.md`, `docs/INDEX.md`).
+  - Fail open: when the slice prints nothing (no `python3`, no script, an unreadable snapshot), print the old reminder to read `SNAPSHOT.yaml`.
+  - `bootstrap.sh` also shows the branch, head and working tree.
+- Implementations: Claude Code `hooks/snapshot-freshness.sh` (SessionStart); Codex `hooks/dispatch.py` (SessionStart) and `bash tools/agents/bootstrap.sh`; generic uses bootstrap. All three call the same script.
+- Test: `bash tools/scripts/test-hooks.sh` (the Claude Code hook and `bootstrap.sh`) and `python3 tools/scripts/test-codex-adapter.py` (Codex).
 - On failure: stop and fix missing required files before implementation.
 
 ## HC-003: Verification gate
@@ -73,6 +76,8 @@ Contract IDs are `HC-001`..`HC-010`. (Earlier revisions of this file used `CHC-0
 - Trigger: a stop that follows a write. The two halves differ on purpose: the HC-007 validation below runs on **every** stop, because a broken docs invariant is a failure and not a reminder; the focus half runs only when the session has written a file since its last block.
 - Rule: `LIFECYCLE.md` — "Close-out (must happen after work)"; `QUALITY.md` — "Minimum close-out for any implemented task".
 - The block names two actions: if the work is complete, set the status and clear focus now; if stopping mid-flight for the user, write the handoff into the task note (`HANDOFF.md`, "Before stopping work") and stop. The loop guard lets that second stop through.
+- For a focus task, the block also quotes up to five unticked boxes from the task note's `## Definition of Done` and `## Steps` sections and counts the rest, or says that every box is ticked. Boxes inside a fenced code block are not counted, and an empty box is named as one. A focus task with no snapshot item is found by its note's filename (`<ID>-*.md` under `docs/`). When the note cannot be found, or has neither section, the block is the plain one. Reason: the Opus 5.5 prompting guide's pattern for a turn that ends with work open is to reply by naming what is open (project-os-dev TASK-0157).
+- The hook allows one automatic continuation, where that guide allows two or three. A second block would catch the handoff write that the first one asks for.
 - Check logic:
   - Snapshot and note statuses agree.
   - `focus` is cleared or moved to the next active item.
@@ -128,8 +133,9 @@ Contract IDs are `HC-001`..`HC-010`. (Earlier revisions of this file used `CHC-0
 - Check logic:
   1. Ignore every call whose hook input does not carry `agent_type: independent-reviewer` and an `agent_id`. The shell wrapper returns before starting Python for them, because it runs on every tool call of every session.
   2. Count calls per `agent_id`. The budget is the one `../skills/independent-review/SKILL.md` states, and drops to the round-two budget once the reviewer **reads** a round-two packet (a `file_path` matching `review-packet-<FEAT>-r2`). Only a read announces round two: matching the whole tool input demoted a round-one reviewer whose command merely mentioned such a path. `PROJECT_OS_REVIEW_BUDGET` and `PROJECT_OS_REVIEW_BUDGET_ROUND2` override the numbers per repo.
-  3. Near the end of the budget, add context saying how many calls are left. The warning point is derived, not configured: `budget - max(3, budget // 10)`. It was a fixed call 30 until measured reviews all stopped near 34, because a warning to finish up becomes the real limit.
-  4. Past the budget, deny the call with an instruction to write the report and mark unfinished claims *not checked*. Edits to notes under `docs/` are still allowed for 10 more calls, so the verdict can be recorded. **The call that returns the report is never denied**, with no grace limit: denying it told the reviewer to report and refused the only way to deliver it.
+  3. After every call within the budget, add a one-line running count (`Review budget: call 12 of 40.`), after the Opus 5.5 prompting guide's elapsed-against-budget line (project-os-dev TASK-0160). Near the end of the budget, the warning below replaces it for that call.
+  4. Near the end of the budget, add context saying how many calls are left. The warning point is derived, not configured: `budget - max(3, budget // 10)`. It was a fixed call 30 until measured reviews all stopped near 34, because a warning to finish up becomes the real limit.
+  5. Past the budget, deny the call with an instruction to write the report and mark unfinished claims *not checked*. Edits to notes under `docs/` are still allowed for 10 more calls, so the verdict can be recorded. **The call that returns the report is never denied**, with no grace limit: denying it told the reviewer to report and refused the only way to deliver it.
 - Implementations: Claude Code `hooks/review-budget.sh` with `hooks/review-budget.py`, registered for `PreToolUse` and `PostToolUse` with no matcher. Codex has no equivalent: its hook input does not name the subagent, so there the budget is the skill's instruction only.
 - On failure: fail open. A broken budget must not block anyone's work; the skill's stated budget still applies.
 - Why a hook and not `maxTurns`: a subagent that reaches `maxTurns` stops without writing a report. A denied tool call is a message the reviewer reads, and the report it then writes is the review. `maxTurns: 100` stays in the agent file as a backstop.

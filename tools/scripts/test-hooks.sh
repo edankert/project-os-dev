@@ -3,7 +3,9 @@
 #
 # Three Claude Code hooks read a snapshot and print a message, so they are
 # tested directly against fixture repos under a tempdir, never this repo:
-#   HC-006 close-out-check.sh   (Stop)             names two actions, not "acknowledge"
+#   HC-006 close-out-check.sh   (Stop)             names two actions, not "acknowledge",
+#                                                    and quotes the task's open boxes
+#   HC-002 snapshot-freshness.sh (SessionStart)     serves the orientation slice
 #   HC-008 model-routing-hint.sh (UserPromptSubmit) serves focus state; recommends the
 #                                                    planner and the reviewer selectively;
 #                                                    stays within a size bound
@@ -252,6 +254,106 @@ touch_hook "$TMP/other" "$SESSION"
 out="$(stop_with_session "$TMP/doing" "$SESSION")"
 check "a write in one repo does not arm the other repo's check" "$([[ -z "$out" ]]; echo $?)" "got: $out"
 rm -f "$MARKER" "$OTHER"
+
+# -- HC-006: the block quotes the focus task's open boxes (project-os-dev TASK-0157)
+# The fixture above has no task note, so every assertion before this point sees
+# the plain reason; these give the task a note.
+fixture "$TMP/boxes" TASK-0001 doing FEAT-0001 doing ""
+BOXNOTE="$TMP/boxes/docs/features/x/plan/tasks/TASK-0001.md"
+mkdir -p "$(dirname "$BOXNOTE")"
+cat > "$BOXNOTE" <<'MD'
+---
+id: TASK-0001
+---
+# A task
+## Definition of Done
+- [x] Already done
+- [ ] Write the "parser"; test it
+## Steps
+- [ ] Run the suite
+## Notes
+- [ ] Not a work box
+MD
+out="$(stop_hook "$TMP/boxes" false)"
+check "stop hook, open boxes: the block is valid JSON" "$(printf '%s' "$out" | python3 -c 'import json,sys; json.load(sys.stdin)' >/dev/null 2>&1; echo $?)" "$out"
+check "stop hook, open boxes: counts and quotes both open boxes" "$( { has "$out" '2 unticked box(es)' && has "$out" 'Write the \"parser\"; test it' && has "$out" 'Run the suite'; }; echo $?)" "$out"
+check "stop hook, open boxes: leaves out ticked boxes and other sections" "$( { hasnot "$out" 'Already done' && hasnot "$out" 'Not a work box'; }; echo $?)" "$out"
+check "stop hook, open boxes: still names both actions" "$( { has "$out" 'set the task status to done and clear focus now' && has "$out" 'write the handoff'; }; echo $?)" "$out"
+sed -i.bak 's/^- \[ \]/- [x]/' "$BOXNOTE"; rm -f "$BOXNOTE.bak"
+out="$(stop_hook "$TMP/boxes" false)"
+check "stop hook, every box ticked: says so" "$(has "$out" 'every box in its note is ticked'; echo $?)" "$out"
+{ echo '## Steps'; for i in 1 2 3 4 5 6 7; do echo "- [ ] step $i"; done; } >> "$BOXNOTE"
+out="$(stop_hook "$TMP/boxes" false)"
+check "stop hook, more than five open: quotes five and counts the rest" "$( { has "$out" 'step 5' && hasnot "$out" 'step 6' && has "$out" 'and 2 more'; }; echo $?)" "$out"
+# An inline flow-map snapshot (your-trainer's style) resolves the note too.
+sed -i.bak '/^    TASK-0001:$/{N;N;s/.*/    TASK-0001: { file: "docs\/features\/x\/plan\/tasks\/TASK-0001.md", status: doing }/;}' "$TMP/boxes/SNAPSHOT.yaml"; rm -f "$TMP/boxes/SNAPSHOT.yaml.bak"
+out="$(stop_hook "$TMP/boxes" false)"
+check "stop hook, inline snapshot style: still finds the note" "$(has "$out" '7 unticked box(es)'; echo $?)" "$out"
+
+# Review round 1 of FEAT-0039: the cases the first version got wrong.
+cat > "$BOXNOTE" <<'MD'
+# A task
+## Definition of Done
+- [ ]
+```
+- [ ] inside a fence
+```
+MD
+out="$(stop_hook "$TMP/boxes" false)"
+check "stop hook: an empty box is counted and named, fenced lines are not boxes" "$( { has "$out" '1 unticked box(es): \"(a box with no text)\"' && hasnot "$out" 'inside a fence'; }; echo $?)" "$out"
+printf '# A task\n## Notes\nNothing here.\n' > "$BOXNOTE"
+out="$(stop_hook "$TMP/boxes" false)"
+check "stop hook: a note with no box sections gets the plain reason, not 'every box is ticked'" "$( { hasnot "$out" 'every box' && has "$out" 'set the task status to done and clear focus now'; }; echo $?)" "$out"
+printf '# A task\n## Steps\n- [ ] Found by name\n' > "$BOXNOTE"
+sed -i.bak '/TASK-0001: {/d' "$TMP/boxes/SNAPSHOT.yaml"; rm -f "$TMP/boxes/SNAPSHOT.yaml.bak"
+mv "$BOXNOTE" "$(dirname "$BOXNOTE")/TASK-0001-Named.md"
+out2="$(stop_hook "$TMP/boxes" false)"
+check "stop hook: a focus task missing from the snapshot is found by its note's filename" "$(has "$out2" '\"Found by name\"'; echo $?)" "$out2"
+
+# -- HC-002: SessionStart serves the orientation slice (project-os-dev TASK-0080)
+start_hook() { printf '{}' | CLAUDE_PROJECT_DIR="$1" bash "$HOOKS/snapshot-freshness.sh" 2>/dev/null; }
+fixture "$TMP/start" TASK-0001 doing FEAT-0001 doing ""
+mkdir -p "$TMP/start/tools/scripts" "$TMP/start/docs"
+cp "$ROOT/tools/scripts/snapshot-slice.py" "$TMP/start/tools/scripts/"
+touch "$TMP/start/AGENTS.md" "$TMP/start/CONTEXT.md" "$TMP/start/docs/INDEX.md"
+out="$(start_hook "$TMP/start")"
+check "session start: names the focus task, its status and note" "$(has "$out" 'focus.task: TASK-0001 (doing) docs/features/x/plan/tasks/TASK-0001.md'; echo $?)" "$out"
+check "session start: lists in-flight items outside focus" "$(has "$out" 'ISS-0001 (open) docs/issues/ISS-0001.md'; echo $?)" "$out"
+check "session start: no reminder to read the whole file" "$(hasnot "$out" 'REMINDER'; echo $?)" "$out"
+check "session start: says to open the linked notes before changing anything" "$(has "$out" 'the notes it links'; echo $?)" "$out"
+check "session start: no missing-files line when the contract files exist" "$(hasnot "$out" 'MISSING'; echo $?)" "$out"
+rm "$TMP/start/AGENTS.md"
+out="$(start_hook "$TMP/start")"
+check "session start: a missing contract file is named (HC-002 guard)" "$(has "$out" 'MISSING contract files: AGENTS.md'; echo $?)" "$out"
+touch "$TMP/start/AGENTS.md"
+# Budget: 400 in-flight tasks with long paths stay under 6,000 characters.
+python3 - "$TMP/start/SNAPSHOT.yaml" <<'PY'
+import sys
+path = sys.argv[1]
+extra = "".join("    TASK-%04d:\n      file: docs/features/a-rather-long-feature-slug/plan/tasks/TASK-%04d-A-Long-Descriptive-Task-Title-Slug.md\n      status: doing\n" % (i, i) for i in range(2, 402))
+text = open(path).read().replace("  tasks:\n", "  tasks:\n" + extra, 1)
+open(path, "w").write(text)
+PY
+out="$(start_hook "$TMP/start")"
+check "session start: 400 in-flight items stay within 6,000 characters" "$([[ ${#out} -le 6000 ]]; echo $?)" "${#out} chars"
+check "session start: items past the budget are counted, not listed" "$(has "$out" 'more, not listed'; echo $?)" "$out"
+# Inline flow maps, and the fallback when the slice script is absent.
+fixture "$TMP/inline" "" doing FEAT-0001 doing ""
+sed -i.bak '/^    TASK-0001:$/{N;N;s/.*/    TASK-0001: { file: "docs\/t.md", title: "a, b: c", status: doing }/;}' "$TMP/inline/SNAPSHOT.yaml"; rm -f "$TMP/inline/SNAPSHOT.yaml.bak"
+mkdir -p "$TMP/inline/tools/scripts"; cp "$ROOT/tools/scripts/snapshot-slice.py" "$TMP/inline/tools/scripts/"
+out="$(start_hook "$TMP/inline")"
+check "session start: reads inline flow-map items" "$(has "$out" 'TASK-0001 (doing) docs/t.md'; echo $?)" "$out"
+rm "$TMP/inline/tools/scripts/snapshot-slice.py"
+out="$(start_hook "$TMP/inline")"
+check "session start: without the slice script, falls back to the reminder" "$(has "$out" 'REMINDER'; echo $?)" "$out"
+
+# bootstrap.sh prints the same orientation, and its focus lines when the slice prints nothing
+mkdir -p "$TMP/start/tools/agents"; cp "$ROOT/tools/agents/bootstrap.sh" "$TMP/start/tools/agents/"
+out="$(bash "$TMP/start/tools/agents/bootstrap.sh" 2>/dev/null)"
+check "bootstrap: prints the orientation slice" "$(has "$out" 'focus.task: TASK-0001 (doing)'; echo $?)" "$out"
+rm "$TMP/start/tools/scripts/snapshot-slice.py"
+out="$(bash "$TMP/start/tools/agents/bootstrap.sh" 2>/dev/null)"
+check "bootstrap: without the slice, prints project and focus lines" "$( { has "$out" 'focus.task: TASK-0001' && has "$out" 'project:'; }; echo $?)" "$out"
 
 echo "test-hooks: $assertions assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]

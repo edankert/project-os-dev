@@ -109,6 +109,41 @@ items:
         self.assertIn('SNAPSHOT.yaml', self.call('SessionStart')['hookSpecificOutput']['additionalContext'])
         self.assertIn('TASK-0001', self.call('UserPromptSubmit')['hookSpecificOutput']['additionalContext'])
 
+    def test_session_start_serves_the_slice(self):
+        # HC-002 (project-os-dev TASK-0080): with the slice script present, the
+        # context is the orientation itself, not a reminder to go and read it.
+        self.set_snapshot('TASK-0001')
+        (self.repo / 'tools/scripts').mkdir(parents=True)
+        (self.repo / 'tools/scripts/snapshot-slice.py').write_text((ROOT / 'tools/scripts/snapshot-slice.py').read_text())
+        brief = self.call('SessionStart')['hookSpecificOutput']['additionalContext']
+        self.assertIn('focus.task: TASK-0001 (doing)', brief)
+        self.assertNotIn('Read CONTEXT.md', brief)
+
+    def test_stop_quotes_open_boxes(self):
+        # HC-006 (project-os-dev TASK-0157): the block names what is still open.
+        self.set_snapshot('TASK-0001')
+        snap = self.repo / 'SNAPSHOT.yaml'
+        snap.write_text(snap.read_text().replace('      status: doing', '      file: docs/features/x/plan/tasks/TASK-0001.md\n      status: doing'))
+        (self.repo / 'docs/features/x/plan/tasks/TASK-0001.md').write_text('# T\n## Definition of Done\n- [x] Done\n- [ ] Write the parser\n## Notes\n- [ ] Not work\n')
+        self.call('PostToolUse', 'apply_patch', self.patch('package.json', '+hello'))
+        reason = self.call('Stop')['reason']
+        self.assertIn('1 unticked box(es): "Write the parser"', reason)
+        self.assertNotIn('Not work', reason)
+
+    def test_stop_ticked_missing_and_boxless_notes(self):
+        # FEAT-0039 review round 1: the all-ticked branch, a focus task with no
+        # snapshot item, and a note with no box sections.
+        self.set_snapshot('TASK-0001')
+        note = self.repo / 'docs/features/x/plan/tasks/TASK-0001-X.md'
+        note.write_text('# T\n## Steps\n- [x] Done\n')
+        self.call('PostToolUse', 'apply_patch', self.patch('package.json', '+hello'))
+        self.assertIn('every box in its note is ticked', self.call('Stop')['reason'])
+        note.write_text('# T\n## Notes\nnone\n')
+        self.call('PostToolUse', 'apply_patch', self.patch('package.json', '+hello'))
+        reason = self.call('Stop')['reason']
+        self.assertNotIn('every box', reason)
+        self.assertNotIn('unticked', reason)
+
     def test_prompt_hint_reads_quoted_snapshot_status(self):
         for status in ('doing', '"doing"', "'doing'"):
             with self.subTest(status=status):

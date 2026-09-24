@@ -7,13 +7,13 @@ status: active
 order: 3
 owner: user:edwin
 created: 2026-09-03
-updated: 2026-09-03
+updated: 2026-09-24
 goal: "Bring the template's instructions, skills, hooks and subagents in line with the Claude 5 prompting guides: remove the contradictions, state each rule once, trim what every session loads, and stop the hooks and hints from teaching bypasses"
-features: [FEAT-0024, FEAT-0025, FEAT-0026, FEAT-0027, FEAT-0028]
+features: [FEAT-0024, FEAT-0025, FEAT-0026, FEAT-0027, FEAT-0028, FEAT-0039, FEAT-0021]
 requirements: [REQ-0026, REQ-0027]
-tasks: [TASK-0090, TASK-0091, TASK-0092, TASK-0093, TASK-0094, TASK-0095, TASK-0096, TASK-0097, TASK-0098, TASK-0099, TASK-0100, TASK-0101, TASK-0102, TASK-0103, TASK-0104, TASK-0105, TASK-0106, TASK-0107, TASK-0108, TASK-0109]
+tasks: [TASK-0090, TASK-0091, TASK-0092, TASK-0093, TASK-0094, TASK-0095, TASK-0096, TASK-0097, TASK-0098, TASK-0099, TASK-0100, TASK-0101, TASK-0102, TASK-0103, TASK-0104, TASK-0105, TASK-0106, TASK-0107, TASK-0108, TASK-0109, TASK-0156, TASK-0157, TASK-0158, TASK-0159, TASK-0160, TASK-0080]
 issues: [ISS-0003, ISS-0041, ISS-0042, ISS-0043, ISS-0044, ISS-0045, ISS-0046, ISS-0047, ISS-0048]
-related: [ADR-0024, ADR-0025, "[[Prompting-Guide-Review-2026-09-03]]"]
+related: [ADR-0024, ADR-0025, "[[Prompting-Guide-Review-2026-09-03]]", "[[Opus-5-5-Prompting-Guide-Review-2026-09-24]]"]
 tags: [phase, prompting-guides]
 ---
 
@@ -33,11 +33,13 @@ The items were first parked in PHASE-999. Edwin decided the same day that a cohe
 - **Four features** carrying the other findings: FEAT-0024 (one pause rule and the scope rules), FEAT-0025 (writing rules for the final message and length limits), FEAT-0026 (trim the instruction files loaded every session), FEAT-0027 (the hint serves focus state instead of pushing delegation).
 - **Two requirements and one decision**: REQ-0026 (word budgets), REQ-0027 (every normative rule stated once, superseding REQ-0018), ADR-0024 (accepted with option 1).
 
+- **The Opus 5.5 guide, added 2026-09-24.** Edwin asked for a review of the Opus 5.5 prompting guide and then for its changes to be filed and built ([[Opus-5-5-Prompting-Guide-Review-2026-09-24]]). Five of the six changes are [[FEAT-0039-Opus-5-5-Prompting-Guide-Conformance|FEAT-0039]]. The sixth is [[TASK-0080]], which serves the in-flight part of the snapshot at session start; it was already planned under [[FEAT-0021-Serve-Orientation-Answer-Lookup|FEAT-0021]] and moved here from the parking lot. FEAT-0021's other task, TASK-0081 (a lookup query), stays in PHASE-999.
+
 ## Out of Scope
 
 - Harness and API items the guides raise that project-os leaves to the tool (section 10 of the review).
 - The optional cockpit change ISS-0045 mentions (an HTML asset on a reference note). That belongs in project-os-cockpit.
-- FEAT-0021 (snapshot access). FEAT-0027 coordinates with it and does not absorb it.
+- FEAT-0021's TASK-0081 (a lookup query). Its TASK-0080 joined the phase on 2026-09-24.
 
 ## Exit Criteria
 
@@ -47,6 +49,9 @@ The items were first parked in PHASE-999. Edwin decided the same day that a cohe
 - [ ] REQ-0026 and REQ-0027 are implemented, every criterion ticked with evidence — REQ-0026 implemented 2026-09-03 after two amendments recorded on the note; REQ-0027 stays `approved`: its first criterion is not met, the drift sweep at the close of the phase found 36 restatements (ISS-0048), and its third is owed with that issue
 - [x] ADR-0024's two acceptance threads are closed: REQ-0018 superseded by REQ-0027, and a mechanical RULE-ONCE check decided or declined — evidence: ADR-0024 Acceptance, both boxes ticked 2026-09-03; RULE-ONCE declined for now on the drift sweep's count of 36 (ISS-0048), recorded by the implementing session for the owner to overturn
 - [x] The template changes are synced to the downstream repos with the generator re-run — evidence: the validate-fleet.sh summary after the rollout, recorded under "Fleet rollout, 2026-09-03" below; ten repos synced and regenerated, this repo's own sync deferred for the reason given there
+
+- [x] FEAT-0039 is done, its independent review recorded, and TASK-0080 is done with TST-0007 passing — evidence: FEAT-0039 `## Review`, round 1 approved 2026-09-24 by two reviewers; TASK-0080 done; TST-0007 102 of 102
+- [x] The 2026-09-24 template changes are synced to this repo — evidence: `sync-project-os.sh` 2026-09-24; every changed file byte-identical to the template (`cmp`); `run-tests.py` 20 passing, 0 failing
 
 ## Fleet rollout, 2026-09-03
 

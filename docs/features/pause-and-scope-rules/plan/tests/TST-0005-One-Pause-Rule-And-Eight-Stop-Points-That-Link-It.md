@@ -15,7 +15,7 @@ command: "bash ../project-os/tools/scripts/test-pause-rule.sh"
 requirements: []
 features: ["[[FEAT-0024-One-Pause-Rule-And-The-Scope-Rules-The-Guides-State]]"]
 issues: []
-tasks: ["[[TASK-0090]]", "[[TASK-0091]]"]
+tasks: ["[[TASK-0090]]", "[[TASK-0091]]", "[[TASK-0158]]"]
 artifacts: []
 adequacy: "Round 2, 2026-09-03 after review findings 1 to 3, on the template at 79e0332: heading renamed to 'When to ask the user', 1 failure on the new heading assertion (plus the generator check); PHASES.md link dropped, 1 failure naming docs/PHASES.md; release-prep second link dropped, 1 failure (1 link, want 2); LIFECYCLE.md line-61 link dropped, 1 failure (1 link, want 2). 14 of 14 on the pristine tree. Round 1: inverted three ways on 2026-09-03 against the template at commit bb6eb70, each on the working tree and reverted with git checkout: (1) the link deleted from close-out/SKILL.md, 11 assertions, 1 failure, exit 1, naming tools/skills/close-out/SKILL.md; (2) the old phrasing restored in feature-scaffold/SKILL.md, 2 failures, exit 1, the missing link and the stale phrasing both named; (3) the anchor sentence appended to HOOKS.md, 2 failures, exit 1, found 2 files and the wrong-file check. The pristine tree passes 11 of 11."
 related: ["[[Prompting-Guide-Review-2026-09-03]]"]
@@ -43,6 +43,8 @@ The script asserts:
 2. Each of the twelve sites links that heading, at the count each file carries: LIFECYCLE.md (two), `HOOKS.md`, `status-transition/SKILL.md`, `issue-intake/SKILL.md` (two), `feature-scaffold/SKILL.md`, `release-prep/SKILL.md` (two), `close-out/SKILL.md`, the planner prompt string in the generator, and `docs/PHASES.md`.
 3. None of the retired phrasings remains at any of those paths.
 4. `.claude/agents/planner.md` matches what the generator would produce, so the regeneration was not forgotten.
+
+- **The four named early stops** (added 2026-09-24, [[TASK-0158]]): `LIFECYCLE.md` names all four stops the Opus 5.5 prompting guide lists, so a trim for the word budget cannot drop one silently. Adequacy: one stop deleted from the file gives 2 failures ("found 3 of 4", and the generator check, because the Cursor bundle copies the file); restored, 16 of 16.
 
 ## Expected results
 

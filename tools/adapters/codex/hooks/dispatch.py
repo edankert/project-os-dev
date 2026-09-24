@@ -284,7 +284,13 @@ def post(payload, cwd):
 def start(payload, cwd):
     root = root_for("SNAPSHOT.yaml", cwd)
     if root and not placeholder(snapshot(root)):
-        context("SessionStart", "Read CONTEXT.md, docs/INDEX.md, SNAPSHOT.yaml, then run bash tools/agents/bootstrap.sh before work. Inspect the current branch, head, focus, and working tree.")
+        # HC-002: serve the orientation slice (project-os-dev TASK-0080); fall back to the reminder.
+        brief = ""
+        slicer = root / "tools/scripts/snapshot-slice.py"
+        if slicer.is_file():
+            result = subprocess.run([sys.executable, str(slicer), str(root)], capture_output=True, text=True, timeout=20)
+            brief = result.stdout.strip() if result.returncode == 0 else ""
+        context("SessionStart", brief or "Read CONTEXT.md, docs/INDEX.md, SNAPSHOT.yaml, then run bash tools/agents/bootstrap.sh before work. Inspect the current branch, head, focus, and working tree.")
 
 
 def prompt(payload, cwd):
@@ -333,7 +339,45 @@ def stop(payload, cwd):
     if mark is not None:
         mark.unlink(missing_ok=True)
     item = f"task {task}" if task else f"issue {issue}"
-    emit({"decision": "block", "reason": f"Close-out check (HC-006): focus still names {item}. If complete, update its status and clear or move focus. If stopping mid-flight, record a handoff in its note, then stop; the loop guard permits the second stop."})
+    midflight = "If stopping mid-flight, record a handoff in its note, then stop; the loop guard permits the second stop."
+    reason = f"Close-out check (HC-006): focus still names {item}. If complete, update its status and clear or move focus. {midflight}"
+    boxes = open_boxes(root, snap, task) if task else None
+    if boxes:
+        listed = "; ".join(f'"{b}"' for b in boxes[:5])
+        more = f" and {len(boxes) - 5} more" if len(boxes) > 5 else ""
+        reason = f"Close-out check (HC-006): focus still names task {task}, and its note has {len(boxes)} unticked box(es): {listed}{more}. If work remains, carry on with it. If complete, tick each box with its evidence, set the status to done and clear or move focus. {midflight}"
+    elif boxes == []:
+        reason = f"Close-out check (HC-006): focus still names task {task}, and every box in its note is ticked. Set the status to done and clear or move focus. {midflight}"
+    emit({"decision": "block", "reason": reason})
+
+
+def open_boxes(root, text, item):
+    """Unticked boxes under the task note's Definition of Done and Steps, or None
+    when the note cannot be found or has neither section (project-os-dev TASK-0157)."""
+    note = None
+    m = re.search(r"^    " + re.escape(item) + r":(.*)\n((?: {6}[^\n]*\n)*)", text, re.M)
+    if m:
+        path = re.search(r"file:\s*(?:\"([^\"]+)\"|'([^']+)'|([^,}\n]+))", m.group(1) + "\n" + m.group(2))
+        if path:
+            note = root / next(g for g in path.groups() if g).strip()
+    if note is None or not note.is_file():
+        # A focus task with no snapshot item: find its note by filename.
+        note = next((p for p in sorted((root / "docs").rglob(item + "-*.md")) if p.is_file()), None)
+    if note is None:
+        return None
+    boxes, inside, fence, sections = [], False, False, 0
+    for line in note.read_text(encoding="utf-8", errors="replace").splitlines():
+        if line.startswith("```"):
+            fence = not fence
+        elif fence:
+            continue
+        elif line.startswith("## "):
+            inside = line.strip() in ("## Definition of Done", "## Steps")
+            sections += inside
+        elif inside and re.match(r"\s*- \[ \]", line):
+            box = re.sub(r"^\s*- \[ \]\s*", "", line).replace("\r", "").replace("\t", " ").strip()
+            boxes.append(box or "(a box with no text)")
+    return boxes if sections else None
 
 
 def main():

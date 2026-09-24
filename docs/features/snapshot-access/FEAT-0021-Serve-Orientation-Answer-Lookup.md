@@ -3,11 +3,11 @@ type: "[[feature]]"
 id: FEAT-0021
 aliases: ["FEAT-0021"]
 title: "Serve orientation, answer lookup: the startup hook emits the in-flight slice instead of a reminder, and a format-independent query replaces grep against YAML"
-status: backlog
-phase: "[[PHASE-999]]"
+status: doing
+phase: "[[PHASE-0003]]"
 owner: user:edwin
 created: 2026-08-03
-updated: 2026-08-03
+updated: 2026-09-24
 source: ["fleet measurement 2026-08-03: 590 sessions", "user decision 2026-08-03", "ISS-0031"]
 goal: "Stop instructing agents to read the snapshot and start giving them what reading it was for. Orientation is served by the SessionStart hook at 513–3,418 tokens in five of six repos; lookup gets a query interface, because grep against YAML returns different information depending on which of the fleet's two styles a repo uses."
 requirements: []

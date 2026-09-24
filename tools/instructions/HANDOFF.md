@@ -23,7 +23,7 @@ The durable handoff surface is the snapshot plus the notes; anything a successor
 6. Record constraints and user decisions in the user's exact words, in the same section or in the decision callout `DECISIONS.md` describes. Reason: a paraphrase is where a constraint quietly loosens.
 
 ## Recovery checklist
-1. Read `SNAPSHOT.yaml`: `focus`, item statuses, and `updated`.
+1. Start from the orientation the session-start hook printed (`python3 tools/scripts/snapshot-slice.py` prints it again): `focus`, in-flight statuses, and `updated`.
 2. Run `tools/skills/snapshot-sync/SKILL.md` to reconcile notes vs snapshot, then `bash tools/scripts/validate-docs.sh` to find drift mechanically.
 3. Inspect the working tree (`git status`, `git log`) and recent `docs/changes/` notes to see what actually landed.
 4. Resume from the focused item's "Next Actions", or pick the next item by status if `focus` is empty.

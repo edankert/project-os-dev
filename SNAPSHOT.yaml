@@ -32,22 +32,22 @@ counters:
   ADR: 47
   CHG:
     last_date: 20260916
-  FEAT: 38
+  FEAT: 39
   ISS: 83
   PHASE: 8
   REL: 0
   REQ: 32
   RISK: 4
-  TASK: 155
+  TASK: 160
   TST: 21
   WF: 3
 
 focus:
   task: ""
-  feature: "FEAT-0038"
-  phase: "PHASE-0008"
+  feature: ""
+  phase: "PHASE-0003"
   issue: ""
-  note: "2026-09-21: PHASE-0008 has its answer and it is negative. TASK-0150, TASK-0151 and TASK-0152 are done; tools/scripts/rank-notes.py, rank-bench.py and rank-bench-sessions.py are built in the template (~/Dev/repos/project-os), stdlib only. TWO INDEPENDENT LABEL SOURCES AGREE THAT A BM25 RANKER DOES NOT BEAT SORTING BY LAST-MODIFIED DATE. Commits, 86 of them: ranker 0.340, recency 0.450 at a 24-note budget. Real sessions, 87 across 7 repos, scored on the task a ranker actually exists for (opening prompt as query, notes the session went on to read as labels, corpus pinned to the commit it started from): ranker 0.253, recency 0.275, wins 32 ties 7 loses 48, gap 1.1 standard errors and so indistinguishable. Every earlier figure claiming otherwise came from indexing the working tree while scoring labels from the past, a train/test leak rank-bench.py --worktree measures. REQ-0032 did exactly what it was written to do. DECISION OWED: run TASK-0154 (the sweep now has a defined job, closing 0.022 rather than 0.115), or close the phase early with 'recency wins' as its finding. TASK-0153 (make the ranker a supported script) is hard to justify at parity with ls -t. The residue worth more than tuning: the per-repo spread, deck +0.091 against cockpit -0.088, which nobody has explained. Three phases active: PHASE-0003 (ISS-0052, ISS-0053 open), PHASE-0006 (parked until Codex is back), this one."
+  note: "2026-09-24: FEAT-0039 and TASK-0080 are done, from the Opus 5.5 guide review (docs/reference/Opus-5-5-Prompting-Guide-Review-2026-09-24.md). Sessions now start with the in-flight slice; the Stop hook quotes open boxes; the subagents are pinned to claude-opus-5-5 from the next session. Nothing committed in either repo. PHASE-0003 still has ISS-0052 and ISS-0053 open; FEAT-0021's TASK-0081 stays in PHASE-999."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
@@ -103,6 +103,9 @@ items:
       order: 3
       owner: user:edwin
       goal: "Bring the template's instructions, skills, hooks and subagents in line with the Claude 5 prompting guides: remove the contradictions, state each rule once, trim what every session loads, and stop the hooks and hints from teaching bypasses"
+      features: [FEAT-0039, FEAT-0021]
+      tasks: [TASK-0156, TASK-0157, TASK-0158, TASK-0159, TASK-0160, TASK-0080]
+      note: "Reopened for new scope 2026-09-24: the Opus 5.5 guide review. The 2026-09-03 scope (FEAT-0024 to FEAT-0028) is recorded in the phase note."
     PHASE-0004:
       file: docs/phases/PHASE-0004-The-Walk.md
       title: "The walk: a procedure over the owed checks"
@@ -136,6 +139,16 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0039:
+      file: docs/features/opus-5-5-conformance/FEAT-0039-Opus-5-5-Prompting-Guide-Conformance.md
+      status: done
+      owner: user:edwin
+      phase: "[[PHASE-0003]]"
+      requirements: []
+      tasks: [TASK-0156, TASK-0157, TASK-0158, TASK-0159, TASK-0160]
+      tests: [TST-0005, TST-0006, TST-0007, TST-0012, TST-0014]
+      related: [FEAT-0021, TASK-0080]
+      note: "Five of the six changes from the 2026-09-24 Opus 5.5 guide review; the sixth is TASK-0080. All in the template."
     FEAT-0038:
       file: docs/features/note-relevance/FEAT-0038-Note-Relevance-Harness.md
       status: done
@@ -287,8 +300,8 @@ items:
     FEAT-0021:
       file: "docs/features/snapshot-access/FEAT-0021-Serve-Orientation-Answer-Lookup.md"
       title: "Serve orientation, answer lookup: the startup hook emits the in-flight slice instead of a reminder, and a format-independent query replaces grep against YAML"
-      status: backlog
-      phase: "[[PHASE-999]]"
+      status: doing
+      phase: "[[PHASE-0003]]"
       tasks: [TASK-0080, TASK-0081]
       note: "Scopes ISS-0031's two halves. Orientation is SERVED by the hook that already fires (513-3,418 tok in five of six repos) rather than instructed — instructing has ~2% measured uptake. Lookup gets a query because grep is format-dependent: the same query returns status in your-trainer's inline style and not in project-os-dev's block style, silently. TASK-0081 stands on its own evidence; TASK-0080 is sound on ADR-0017 but unquantified until bench TASK-0008 runs."
     FEAT-0020:
@@ -395,6 +408,36 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0156:
+      file: docs/features/opus-5-5-conformance/plan/tasks/TASK-0156-The-Subagents-Run-On-Opus-5-5.md
+      status: done
+      parent: FEAT-0039
+      phase: "[[PHASE-0003]]"
+      effort: S
+    TASK-0157:
+      file: docs/features/opus-5-5-conformance/plan/tasks/TASK-0157-The-Stop-Hook-Quotes-The-Open-Boxes.md
+      status: done
+      parent: FEAT-0039
+      phase: "[[PHASE-0003]]"
+      effort: S
+    TASK-0158:
+      file: docs/features/opus-5-5-conformance/plan/tasks/TASK-0158-The-Pause-Rule-Names-Four-Early-Stops.md
+      status: done
+      parent: FEAT-0039
+      phase: "[[PHASE-0003]]"
+      effort: S
+    TASK-0159:
+      file: docs/features/opus-5-5-conformance/plan/tasks/TASK-0159-External-Material-Is-Evidence-Not-Instructions.md
+      status: done
+      parent: FEAT-0039
+      phase: "[[PHASE-0003]]"
+      effort: S
+    TASK-0160:
+      file: docs/features/opus-5-5-conformance/plan/tasks/TASK-0160-The-Reviewer-Sees-Its-Count-On-Every-Call.md
+      status: done
+      parent: FEAT-0039
+      phase: "[[PHASE-0003]]"
+      effort: S
     TASK-0150:
       file: docs/features/note-relevance/plan/tasks/TASK-0150-Git-History-Benchmark.md
       status: done
@@ -811,8 +854,8 @@ items:
     TASK-0080:
       file: "docs/features/snapshot-access/plan/tasks/TASK-0080-Hook-Serves-The-In-Flight-Slice.md"
       title: "SessionStart emits the in-flight slice instead of a reminder to read the file"
-      status: backlog
-      phase: "[[PHASE-999]]"
+      status: done
+      phase: "[[PHASE-0003]]"
       parent: FEAT-0021
       effort: M
       note: "Changes hook contract HC-002 and both its implementations (ADR-0002). The design constraint is the token budget: your-trainer's slice is 11,573 tok for 58 items where your-health fits 67 in 3,418 — title length, not item count. A hook injecting 11.5k every session has re-created the cost this work was checking for."
@@ -2043,12 +2086,12 @@ items:
 
 metrics:
   counts:
-    features_total: 38
-    features_done: 33
+    features_total: 39
+    features_done: 34
     phases_total: 9
     phases_done: 6
-    tasks_total: 155
-    tasks_done: 144
+    tasks_total: 160
+    tasks_done: 150
     tests_total: 13
     tests_passing: 0
     tests_failing: 0

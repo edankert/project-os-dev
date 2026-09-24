@@ -154,6 +154,11 @@ def main():
             emit("PostToolUse", additionalContext=(
                 "Review budget: %d of %d tool calls used, %d left. Finish the claims you have started; "
                 "mark the rest *not checked*, then write the report." % (count, budget, budget - count)))
+        elif 0 < count <= budget:
+            # The running count (project-os-dev TASK-0160), after the Opus 5.5
+            # guide's elapsed-against-budget line: a model that sees its budget
+            # paces the work to it.
+            emit("PostToolUse", additionalContext="Review budget: call %d of %d." % (count, budget))
     return 0
 
 

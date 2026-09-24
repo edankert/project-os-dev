@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # The review budget hook against recorded hook inputs (project-os-dev TASK-0128).
-# It must leave every other session alone, warn the reviewer once, stop it past
+# It must leave every other session alone, tell the reviewer its count after every
+# call (TASK-0160), warn it once, stop it past
 # the budget with an instruction to report, and still let it record a verdict.
 set -uo pipefail
 # No bytecode, ever. This harness loads a module by path, and a cached compile
@@ -31,7 +32,18 @@ check "a main-session call gets no output" test -z "$out"
 out="$(call PreToolUse Explore other-agent Bash '{"command":"ls"}')"
 check "another subagent gets no output" test -z "$out"
 
-for i in $(seq 1 35); do pre Bash '{"command":"ls"}' >/dev/null; out="$(post Bash)"; [ -n "$out" ] && echo "  (early warning at call $i)"; done
+# Every call before the warning point gets the running count and nothing more
+# (project-os-dev TASK-0160): "call N of 40", never the "left" warning.
+counts_ok=1; early_warning=0
+for i in $(seq 1 35); do
+  pre Bash '{"command":"ls"}' >/dev/null; out="$(post Bash)"
+  grep -q "call $i of 40\." <<<"$out" || counts_ok=0
+  grep -q "left" <<<"$out" && early_warning=1
+done
+check "each of calls 1 to 35 is followed by its running count" test "$counts_ok" -eq 1
+check "no call before 36 carries the warning" test "$early_warning" -eq 0
+out="$(call PostToolUse Explore other-agent Bash '{}')"
+check "another subagent gets no running count" test -z "$out"
 out="$(pre Bash '{"command":"ls"}')"; check "call 36 is allowed" test -z "$out"
 out="$(post Bash)"; check "call 36 is followed by a warning with 4 left" grep -q "4 left" <<<"$out"
 for i in $(seq 37 39); do pre Bash '{"command":"ls"}' >/dev/null; done

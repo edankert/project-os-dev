@@ -6,7 +6,7 @@ title: "The hooks emit what their contracts now say they emit"
 status: active
 owner: user:edwin
 created: 2026-09-03
-updated: 2026-09-04
+updated: 2026-09-24
 source: ["[[FEAT-0027-The-Hint-Serves-Focus-State-Instead-Of-Pushing-Delegation]]", "[[TASK-0102]]"]
 scope: feature
 level: acceptance
@@ -15,7 +15,7 @@ command: "bash ../project-os/tools/scripts/test-hooks.sh"
 requirements: []
 features: ["[[FEAT-0027-The-Hint-Serves-Focus-State-Instead-Of-Pushing-Delegation]]"]
 issues: ["[[ISS-0003-Document-First-Hook-Fragile-Focus-Parsing]]", "[[ISS-0051-The-Verification-Hook-Blocks-Every-Feature-That-Follows-The-Acceptance-Rule]]", "[[ISS-0055-The-Delegation-Hint-Is-Not-Executable-In-Any-Repo]]", "[[ISS-0056-The-Close-Out-Hook-Fires-On-Stops-That-Did-No-Work]]"]
-tasks: ["[[TASK-0102]]", "[[TASK-0103]]", "[[TASK-0104]]"]
+tasks: ["[[TASK-0102]]", "[[TASK-0103]]", "[[TASK-0104]]", "[[TASK-0157]]", "[[TASK-0080]]"]
 artifacts: []
 adequacy: "Round 2, 2026-09-03, against the template at f264cb7 (34 assertions after review finding 9): (A) the sentence Send it to the independent-reviewer subagent appended to the terminal arm, 1 failure; (B) the blocked arm padded with PREFLIGHT three times, 2 failures (names a delegation; 909 chars); (C) both focus_value lines in the Stop hook replaced by the old echo-into-jq form, 4 failures (the hook never blocks: assertions 1, 2, 3 and 6); (D) both block reasons mid-flight sentence replaced by If work is ongoing, this is expected, acknowledge to continue, 3 failures; (E) the echo line tripled to HINT HINT HINT, 4 size-bound failures (empty 890, planning 953, doing 1,073, terminal 1,001 chars; review at 539 stays under). Every mutation confirmed landed by diff against the copy and reverted by copying back. Pristine tree 34 of 34. Round 1 recorded counts of 3, 2 and 4 for C, D and E without naming the mutated text; the review could not reproduce them, and the round-2 record names the text."
 related: ["[[Prompting-Guide-Review-2026-09-03]]"]
@@ -47,12 +47,26 @@ Three hooks change behaviour in [[FEAT-0027-The-Hint-Serves-Focus-State-Instead-
 10. **Every tracked hook is executable in git** (57 to 65): the disk check in 8 is not enough. A repo with `core.fileMode = false` records a new hook as `100644` whatever its mode locally, so a clone gets `Permission denied` while the harness is green. That is how `session-touch.sh` was added an hour after ISS-0055 was fixed.
 11. **The focus half blocks only a stop that follows a write** (66 to 74): added 2026-09-04 for [[ISS-0056-The-Close-Out-Hook-Fires-On-Stops-That-Did-No-Work]]. A stop with no marker goes through; the touch hook records a write; a stop after that write blocks and spends the marker; the next quiet stop goes through; a payload with no `session_id` falls back to blocking; the touch hook records nothing without a session; and a write in one repo does not arm another repo's check.
 
+12. **The Stop hook quotes the focus task's open boxes** (75 to 81): added 2026-09-24 for [[TASK-0157]]. The block is valid JSON with a box that contains quotes and a semicolon; both open boxes are quoted and counted; ticked boxes and boxes under other headings are left out; both actions are still named; a fully ticked note says so; more than five open boxes quotes five and counts the rest; an inline flow-map snapshot still resolves the note.
+13. **SessionStart serves the orientation slice** (82 to 92): added 2026-09-24 for [[TASK-0080]]. The focus task with its status and note path; an in-flight item outside focus; no reminder; the instruction to open linked notes; no missing-files line when the contract files exist and a named one when `AGENTS.md` is gone; 400 in-flight items stay within 6,000 characters and the rest are counted; inline flow maps are read; and without the slice script the old reminder is printed.
+
+14. **FEAT-0039 review fixes** (93 to 97, and 101 to 102 for `bootstrap.sh`): an empty box is named and a fenced box is not counted; a note with no box sections gets the plain reason; a focus task missing from the snapshot is found by its note's filename; `bootstrap.sh` prints the slice, and its project and focus lines without it.
+
 ## Expected results
 
-- Exit 0: every assertion holds. First real run 2026-09-03 against template commit 3e5c1b3, 25 of 25; 34 of 34 at f264cb7 after the review round; 45 of 45 at 2faa90f, with the executable-bit assertions; 74 of 74 at 1e0aef1, with the gitignore, git-mode and write-test assertions.
+- Exit 0: every assertion holds. First real run 2026-09-03 against template commit 3e5c1b3, 25 of 25; 34 of 34 at f264cb7 after the review round; 45 of 45 at 2faa90f, with the executable-bit assertions; 74 of 74 at 1e0aef1, with the gitignore, git-mode and write-test assertions; 97 of 97 on 2026-09-24 in the template's working tree, with the open-box and orientation assertions; 102 of 102 after FEAT-0039's review fixes.
 - Exit 1: at least one failed, each printed as `FAIL <name>: <detail>`.
 
 ## Adequacy (who verifies this test?)
+**Round 5, 2026-09-24, FEAT-0039's review fixes (102 assertions).** (N) the filename fallback removed: 1 failure (found by filename). (O) the box-section check removed: 1 failure (plain reason for a boxless note). (P) fenced lines not skipped: 1 failure (empty and fenced boxes). Each reverted from a scratchpad copy; pristine 102 of 102.
+
+**Round 4, 2026-09-24, the open boxes and the orientation slice (template working tree, 97 assertions).** Four mutations, each confirmed landed with `grep` and reverted by copying the file back from a scratchpad copy; pristine 97 of 97 after each:
+
+- (I) the Stop hook's box extractor made to print nothing: **4 failures** (both boxes quoted, both actions named, more than five, inline style).
+- (J) the slice's 6,000-character cap removed: **2 failures** (48,605 characters; nothing counted as not listed).
+- (K) inline flow maps parsed as empty: **1 failure** (reads inline flow-map items).
+- (L) the in-flight list emptied: **3 failures** (in-flight item listed; past-budget count; inline item).
+
 **Round 3, 2026-09-04, the ISS-0056 write test (template at `1e0aef1`, 74 assertions).** Three mutations against the new logic, each confirmed landed by running the harness and reverted by restoring the file:
 
 - (F) the write test deleted, so the hook consults no marker and blocks every stop as before: **3 failures** — the quiet stop, the quiet stop after a block, and the two-repos case.

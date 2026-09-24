@@ -41,7 +41,7 @@ The `CLAUDE.md` file should import project-os instruction files using `@` import
 ```markdown
 # Project: <project-name>
 
-Read SNAPSHOT.yaml at session start to understand current project state and focus.
+The session-start hook prints the current focus and in-flight work from SNAPSHOT.yaml.
 Read CONTEXT.md for the full project-os contract, edit policy, and invariants.
 
 ## project-os documentation system (core rules -- always active)
@@ -138,7 +138,7 @@ Manual fallback: copy `hooks.json` from this adapter directory into `.claude/set
 | `PostToolUse` | HC-005 Risk Scan Trigger | `command` | Detects package/env/CI file changes |
 | `PostToolUse` | HC-006 Session Touch | `command` | Records that the session wrote a file, so the Stop hook can tell a turn that did work from one that did not |
 | `Stop` | HC-006 Close-out Check + HC-007 Docs Validation | `command` | Runs `tools/scripts/validate-docs.sh` and blocks stop on violations every time; checks focus is cleared, and forces close-out if not — but only on a stop that follows a write |
-| `SessionStart` | HC-002 Snapshot Freshness | `command` | Reminds agent to read SNAPSHOT.yaml |
+| `SessionStart` | HC-002 Startup orientation | `command` | Prints focus, counts and in-flight items from `tools/scripts/snapshot-slice.py`; the old reminder only when that fails |
 | `UserPromptSubmit` | HC-008 Delegation Hint | `command` | Advisory: states the focus item, its status and its phase, and who writes the note for new work; names the planner only for a multi-item scaffold or an ambiguous ask, the reviewer only in review states |
 
 **All hooks are `command` type** (fast shell scripts, no API calls). This avoids LLM cost/latency and 529 overload errors. Stop hooks use `{decision: "block", reason: "..."}` to force continuation. All scripts use `$CLAUDE_PROJECT_DIR` for path resolution. HC-003 and HC-007 need `python3` on PATH (stdlib only); they fail open with a note if it is missing, so a broken runtime never bricks edits — but treat that note as a setup error.
@@ -157,13 +157,13 @@ Claude Code has no built-in "model A for planning, model B for execution" split 
 | Implementation | main session loop | the session model (`model` in `.claude/settings.json`, or `/model`) |
 | Independent review (LIFECYCLE close-out, QUALITY gate) | `independent-reviewer` subagent | pinned — `REVIEWER_MODEL` in the same file |
 
-The pins are a choice revisited at each model release, not a standing claim about the strongest model available. As of 2026-09-05 both are `claude-opus-5` (project-os-dev ISS-0057 for the reviewer, ISS-0058 for the planner): Opus 5 lists at half of Fable 5.1 per token, ADR-0013 makes the reviewer's model a preference rather than a gate, and nothing about the planner is a gate at all. Which model is cheaper *per task* is unmeasured — fewer tokens at a higher price can win — so treat the pins as a current choice, not a finding. Planning and adversarial review reward capability; the model guides also say review quality holds at lower effort, so the reviewer does not need the highest effort the harness allows. Measure on your own work before raising it.
+The pins are a choice revisited at each model release, not a standing claim about the strongest model available. As of 2026-09-24 both are `claude-opus-5-5` at `effort: medium` (project-os-dev TASK-0156; before that `claude-opus-5`, ISS-0057 and ISS-0058): the Opus 5.5 prompting guide reports that at `medium` it matches or beats Opus 5 at `high` with fewer tokens. Opus 5 was first chosen because it lists at half of Fable 5.1 per token, ADR-0013 makes the reviewer's model a preference rather than a gate, and nothing about the planner is a gate at all. Which model is cheaper *per task* is unmeasured — fewer tokens at a higher price can win — so treat the pins as a current choice, not a finding. Planning and adversarial review reward capability; the model guides also say review quality holds at lower effort, so the reviewer does not need the highest effort the harness allows. Measure on your own work before raising it.
 
 **What makes the review independent is stated once, in `QUALITY.md` "Independent review (clean-context)"** (ADR-0013), and a subagent provides it by construction. The pinned model being the same as the authoring model is expected and is not a defect; what must never happen is the authoring session reviewing its own work. `reviewed_by` records the model as provenance, not as a compliance token.
 
 `HC-008` (`hooks/model-routing-hint.sh`) injects a per-prompt line stating the focus item, its status and its phase, and who writes the note for new work; it recommends the planner only for a multi-item scaffold or an ambiguous ask and the reviewer only in review states. A hook cannot change the session model, so the hint is advisory and the pins do the routing. The script keeps its filename so existing `.claude/settings.json` files keep resolving.
 
-Two Claude Code behaviours to know when relying on this. A **resumed** session keeps the model its transcript was saved with, regardless of the `model` key in `.claude/settings.json`; check `/model` if it matters, or start a fresh session. And the agent-file watcher only covers directories that **existed at session start**: creating `.claude/agents/` for the first time needs a new session before the subagents resolve (edits to files in an already-present directory hot-reload within seconds).
+Two Claude Code behaviours to know when relying on this. A **resumed** session keeps the model its transcript was saved with, regardless of the `model` key in `.claude/settings.json`; check `/model` if it matters, or start a fresh session. And the agent-file watcher only covers directories that **existed at session start**: creating `.claude/agents/` for the first time needs a new session before the subagents resolve. Edits to an agent file were expected to hot-reload, but on 2026-09-24 two reviewers launched after `planner.md` and `independent-reviewer.md` were regenerated both ran the old definition, body and model pin (project-os-dev TASK-0156). After retargeting the pins, start a new session before relying on them.
 
 To retarget the pins, edit `PLANNER_MODEL`/`REVIEWER_MODEL` and re-run the generator. Downstream repos inherit both the hook and the pins through the template sync plus a generator run (`tools/skills/adapter-sync/SKILL.md`).
 

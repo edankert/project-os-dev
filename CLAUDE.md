@@ -2,7 +2,7 @@
 
 This repo tracks the development of the [project-os](../project-os) template using project-os's own documentation system.
 
-Read SNAPSHOT.yaml at session start to understand current project state and focus.
+The session-start hook prints the current focus and in-flight work from SNAPSHOT.yaml; open the whole file only to look something up.
 Read CONTEXT.md for the full project-os contract, edit policy, and invariants.
 
 ## project-os documentation system (core rules -- always active)

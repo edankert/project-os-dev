@@ -37,6 +37,13 @@ check "the pause rule is stated in exactly one file" "$([[ "$count" -eq 1 ]]; ec
 check "the one file is $HOME_FILE" "$([[ "$hits" == "$HOME_FILE" ]]; echo $?)" "got '$hits'"
 headings=$(grep -c '^### When to pause for the user$' "$ROOT/$HOME_FILE" 2>/dev/null || true)
 check "the section the links name exists as a heading" "$([[ "${headings:-0}" -eq 1 ]]; echo $?)" "found $headings heading(s)"
+# The four early stops the Opus 5.5 prompting guide says to name (project-os-dev
+# TASK-0158): a later trim for the word budget must not drop them silently.
+named=0
+for stop in "naming the next step without taking it" "an offer to carry on unless told otherwise" "a list of decisions none of which blocks the work" "a report because a milestone is done"; do
+  grep -qF "$stop" "$ROOT/$HOME_FILE" && named=$((named + 1))
+done
+check "the pause rule names the four early stops" "$([[ "$named" -eq 4 ]]; echo $?)" "found $named of 4"
 
 # -- 2. each stop-point links the rule instead of restating it ---------------
 # file:minimum occurrences. LIFECYCLE.md links its own section from two sites

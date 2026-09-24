@@ -81,16 +81,66 @@ focus_value() {
 FOCUS_TASK=$(focus_value task)
 FOCUS_ISSUE=$(focus_value issue)
 
+# The focus task's note path, from its snapshot item: block style (`      file:`)
+# or an inline flow map (`    TASK-0001: { file: "...", ... }`).
+note_path() {
+  awk -v id="$1" '
+    $0 ~ ("^    " id ":") {
+      found = 1
+      if ($0 ~ /file:/) { line = $0; sub(/.*file:[[:space:]]*"?/, "", line); sub(/[",}].*/, "", line); print line; exit }
+      next
+    }
+    found && /^    [^ ]/ { exit }
+    found && /^      file:/ { line = $0; sub(/^      file:[[:space:]]*"?/, "", line); sub(/".*/, "", line); sub(/[[:space:]]+$/, "", line); print line; exit }
+  ' "$SNAPSHOT"
+}
+
+# Unticked boxes under the note's "## Definition of Done" and "## Steps" headings,
+# one per line, JSON-safe (project-os-dev TASK-0157). The Opus 5.5 prompting
+# guide's pattern: when a turn ends with work open, reply by naming what is open.
+open_boxes() {
+  awk '
+    /^```/ { fence = !fence; next }
+    fence { next }
+    /^## / { insec = ($0 ~ /^## (Definition of Done|Steps)[[:space:]]*$/); next }
+    insec && /^[[:space:]]*- \[ \]/ { sub(/^[[:space:]]*- \[ \][[:space:]]*/, ""); if ($0 == "") $0 = "(a box with no text)"; print }
+  ' "$1" | tr -d '\r' | tr '\t' ' ' | sed 's/\\/\\\\/g; s/"/\\"/g'
+}
+
+# Whether the note has a Definition of Done or Steps section at all. A note with
+# neither has no boxes to be ticked, so "every box is ticked" would be false.
+has_box_sections() {
+  grep -qE '^## (Definition of Done|Steps)[[:space:]]*$' "$1"
+}
+
+# A focus task with no snapshot item (never added, or pruned): find its note by
+# filename, the one convention every task note follows.
+find_note() {
+  find "$PROJECT_DIR/docs" -name "$1-*.md" -type f 2>/dev/null | head -1 | sed "s|^$PROJECT_DIR/||"
+}
+
+MIDFLIGHT="If you are stopping mid-flight for the user, write the handoff into the task note (HANDOFF.md, Before stopping work: what was done, what is next, approaches set aside, the user's decisions in their words), then stop; this check lets that second stop through."
+
 if [ -n "$FOCUS_TASK" ] && [ "$FOCUS_TASK" != "" ] && [ "$FOCUS_TASK" != "null" ]; then
   # Focus task is still set — might need close-out. Spend the marker: the next
   # stop is silent until something is written again.
   [ -n "$SESSION_MARKER" ] && rm -f "$SESSION_MARKER"
-  cat <<EOF
-{
-  "decision": "block",
-  "reason": "Close-out check (HC-006): focus.task is still $FOCUS_TASK in SNAPSHOT.yaml. If the work is complete, set the task status to done and clear focus now. If you are stopping mid-flight for the user, write the handoff into the task note (HANDOFF.md, Before stopping work: what was done, what is next, approaches set aside, the user's decisions in their words), then stop; this check lets that second stop through."
-}
-EOF
+  REASON="Close-out check (HC-006): focus.task is still $FOCUS_TASK in SNAPSHOT.yaml. If the work is complete, set the task status to done and clear focus now. $MIDFLIGHT"
+  NOTE="$(note_path "$FOCUS_TASK")"
+  { [ -n "$NOTE" ] && [ -f "$PROJECT_DIR/$NOTE" ]; } || NOTE="$(find_note "$FOCUS_TASK")"
+  if [ -n "$NOTE" ] && [ -f "$PROJECT_DIR/$NOTE" ] && has_box_sections "$PROJECT_DIR/$NOTE"; then
+    BOXES="$(open_boxes "$PROJECT_DIR/$NOTE")"
+    OPEN=$(printf '%s' "$BOXES" | grep -c . )
+    if [ "$OPEN" -gt 0 ]; then
+      LIST="$(printf '%s\n' "$BOXES" | head -5 | awk 'BEGIN { ORS = "" } { if (NR > 1) print "; "; print "\\\"" $0 "\\\"" }')"
+      MORE=""
+      [ "$OPEN" -gt 5 ] && MORE=" and $((OPEN - 5)) more"
+      REASON="Close-out check (HC-006): focus.task is still $FOCUS_TASK, and its note has $OPEN unticked box(es): $LIST$MORE. If work remains, carry on with it. If it is complete, tick each box with its evidence, set the task status to done and clear focus now. $MIDFLIGHT"
+    else
+      REASON="Close-out check (HC-006): focus.task is still $FOCUS_TASK, and every box in its note is ticked. Set the task status to done and clear focus now. $MIDFLIGHT"
+    fi
+  fi
+  printf '{\n  "decision": "block",\n  "reason": "%s"\n}\n' "$REASON"
   exit 0
 fi
 
