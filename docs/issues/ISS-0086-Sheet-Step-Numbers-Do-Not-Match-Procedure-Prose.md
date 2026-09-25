@@ -10,7 +10,7 @@ created: 2026-09-25
 updated: 2026-09-25
 source: ["FEAT-0033 independent review, round 1, reviewer A, 2026-09-24", "Edwin, 2026-09-25: 'do as suggested' (print the procedure's own step number)"]
 reported_by: review
-question: "Edwin agreed on 2026-09-25 that the sheet should print each step's number in the procedure. The cockpit's walk page shows position numbers on purpose, under project-os-cockpit FEAT-0151 criterion B3, and a test pins them. Options: (1) the sheet and the cockpit both show the procedure's number, with the cockpit's progress count (1 of 4) kept separate. That changes FEAT-0151 in a repo where another session is working on it. (2) The sheet only; the cockpit keeps position numbers, so the two show different numbers for the same step. (3) Neither; procedures stop referring to steps by number, which is Your Trainer's TASK-0960 to do. Recommendation: (1), done by the session that owns FEAT-0151, with the generator change landing in the same sync."
+question: ""
 severity: medium
 component: "tools/scripts/walk-sheet.py; project-os-cockpit walk page"
 parent: ""
@@ -31,3 +31,14 @@ The sheet's numbering is one line in `render_procedure`. The cockpit's walk page
 ## Expected
 
 Whatever number a walker sees for a step matches what the procedure's text calls it, and the sheet and the cockpit show the same number.
+
+## Decision and progress, 2026-09-25
+
+Edwin chose option 1: the sheet and the cockpit both show the procedure's step number, and the cockpit keeps its progress count separate.
+
+- **Generator half: done.** [[TASK-0162]], template `cd50653`. It is deliberately not synced to any consumer yet.
+- **Cockpit half: open.** It belongs to the session that owns project-os-cockpit FEAT-0151. This issue is fixed when both halves land in one sync.
+
+### Handoff for the cockpit session
+
+> The template's `walk-sheet.py` at `cd50653` prints each kept procedure step under its number in the procedure (project-os-dev ISS-0086, option 1, Edwin 2026-09-25), because procedure text refers to steps by those numbers ("for step 21"). The walk page should show the same number. In `acceptance.py`, the walk payload's `display_number` is the kept-step position; `renderer.ts` `walkStepPosition` and the card headings use it, and `walk-page.test.mjs` asserts "a display position, not source step 13". Change the headings and "waits on step N" text to the step's own number (`number`), keep "Step 1 of 4" progress as a separate count (FEAT-0151 B3), then sync the template (walk-sheet.py and both bundled copies, test-walk-preparation.py, TESTING.md) in the same commit, so the sheet and the page change together. your-trainer takes the same template sync afterwards.

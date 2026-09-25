@@ -38,7 +38,7 @@ counters:
   REL: 0
   REQ: 32
   RISK: 4
-  TASK: 161
+  TASK: 162
   TST: 23
   WF: 3
 
@@ -410,6 +410,12 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0162:
+      file: docs/features/walk-preparation/plan/tasks/TASK-0162-The-Sheet-Prints-The-Procedures-Own-Step-Numbers.md
+      status: done
+      parent: ISS-0086
+      phase: "[[PHASE-999]]"
+      effort: S
     TASK-0161:
       file: docs/features/derived-state/plan/tasks/TASK-0161-The-Validator-Reports-A-Worked-Task-Missing-From-The-Snapshot.md
       status: done
@@ -988,6 +994,7 @@ items:
       file: docs/issues/ISS-0086-Sheet-Step-Numbers-Do-Not-Match-Procedure-Prose.md
       status: open
       phase: "[[PHASE-999]]"
+      tasks: [TASK-0162]
     ISS-0085:
       file: docs/issues/ISS-0085-Parallel-Reviewers-Mutate-The-Same-Working-Tree.md
       status: open
@@ -2114,8 +2121,8 @@ metrics:
     features_done: 35
     phases_total: 9
     phases_done: 6
-    tasks_total: 161
-    tasks_done: 152
+    tasks_total: 162
+    tasks_done: 153
     tests_total: 15
     tests_passing: 0
     tests_failing: 0
