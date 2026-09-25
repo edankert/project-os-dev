@@ -33,7 +33,7 @@ counters:
   CHG:
     last_date: 20260916
   FEAT: 39
-  ISS: 85
+  ISS: 86
   PHASE: 8
   REL: 0
   REQ: 32
@@ -135,7 +135,7 @@ items:
       status: planned
       order: 999
       owner: user:edwin
-      issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083, ISS-0085]
+      issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083, ISS-0085, ISS-0086]
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
@@ -984,6 +984,10 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0086:
+      file: docs/issues/ISS-0086-Sheet-Step-Numbers-Do-Not-Match-Procedure-Prose.md
+      status: open
+      phase: "[[PHASE-999]]"
     ISS-0085:
       file: docs/issues/ISS-0085-Parallel-Reviewers-Mutate-The-Same-Working-Tree.md
       status: open
@@ -2115,7 +2119,7 @@ metrics:
     tests_total: 15
     tests_passing: 0
     tests_failing: 0
-    issues_open: 12
+    issues_open: 13
     issues_triage: 1
     tasks_deferred: 0
     issues_deferred: 5
