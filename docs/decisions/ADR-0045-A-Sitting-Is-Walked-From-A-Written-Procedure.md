@@ -7,7 +7,7 @@ status: accepted
 decided_option: "3"
 owner: user:edwin
 created: 2026-09-14
-updated: 2026-09-14
+updated: 2026-09-24
 decided: 2026-09-14
 source: ["Edwin, 2026-09-14, approving the goal: 'Then it gives one procedure per sitting (checks sharing one setup): the setup stated once, each step naming the screen it happens on, and each expectation tagged with the check it satisfies.'", "Edwin, 2026-09-14: 'an LLM can always be integrated in these solutions'", "Review of your-trainer's REL-0017 walk sheet, 2026-09-14: 1,331 lines, 39 owed rows, 10 sittings, one setup printed four times in Sitting 2, 25 rows with no Setup"]
 decision: "Option 3, accepted by Edwin 2026-09-14. Amends ADR-0029 rules 2, 5 and 8 and leaves rules 1, 3, 4, 6 and 7 as they are. The survey is built from change notes since the last release tag, grouped by the SUR-* ids their Impact section names, with before and after captures. A sitting may carry a procedure: setup once, numbered steps each naming a surface, and expectation lines tagged TST-####.N that quote the check's own Expect text word for word. A procedure is written once per sitting for the whole product, in one file per sitting under docs/tests/acceptance/walk/, linked from WALK.md. A validator fails when an owed part is cited by no step or by two, when a tag names a retired check or a step that does not exist, or when a quoted expectation does not match the check's Expect text. The sheet prints only the steps that cite an owed part. A sitting without a procedure prints per-check rows as today."
@@ -20,6 +20,8 @@ related: ["[[ADR-0029-The-Walk-Sheet-Is-Derived-And-Its-Order-Is-Authored-Once]]
 ---
 
 # A sitting is walked from a written procedure
+
+> [!note] Amended 2026-09-16 by [[ADR-0046-Declared-Preparation-Survives-Walk-Filtering|ADR-0046]], accepted by Edwin the same day. Decision 5 changed: the sheet still prints the steps that cite an owed part, and it also keeps the earlier steps those steps declare in `requires:`, in authored order, as preparation that records no verdict. Setup prints only where a retained step needs it. The owed set is unchanged. The text below is left as it was decided. This pointer was added on 2026-09-24 (TASK-0125); until then the amendment was recorded only in ADR-0046.
 
 ## Context
 

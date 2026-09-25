@@ -1,7 +1,7 @@
 ---
 type: "[[plan]]"
 title: "Declare the release walk's required preparation"
-status: active
+status: done
 owner: user:edwin
 created: 2026-09-16
 updated: 2026-09-16

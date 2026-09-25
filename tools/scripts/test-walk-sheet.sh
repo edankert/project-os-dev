@@ -1324,5 +1324,27 @@ check "a change note with no Impact list is named even with no release tag" \
   "exit $code: $out_nochg"
 
 
+# --check refuses a check's broken `walk_readiness_for` (FEAT-0033 review,
+# 2026-09-24: removing that line in check_repo failed no test), names a
+# platform the repo has no ledger for, and prints a problem that holds on
+# every platform once rather than once per platform.
+READY="$TMP/proc-readiness"; rm -rf "$READY"; cp -R "$PROC" "$READY"
+FIRST="$(ls "$READY"/docs/tests/acceptance/TST-*.md | head -1)"
+python3 - "$FIRST" <<'PY'
+import sys
+p = sys.argv[1]; lines = open(p).read().split("\n")
+lines[1:1] = ["walk_readiness_for:", "  testbed: {kind: maybe, reason: \"\"}", "  andriod: {kind: decision, reason: \"Choose.\"}"]
+open(p, "w").write("\n".join(lines))
+PY
+out_ready="$(python3 "$SHEET" --check --platform testbed --quiet --repo-root "$READY" 2>&1)"; code=$?
+check "--check fails on a malformed walk_readiness_for" \
+  "$( { [[ $code -eq 1 ]] && printf '%s' "$out_ready" | grep -q "walk_readiness_for\` entry 'testbed' needs"; }; echo $?)" "exit $code: $out_ready"
+check "--check names a walk_readiness_for platform with no ledger" \
+  "$(printf '%s' "$out_ready" | grep -q 'names platform andriod, and this repo keeps ledgers only for testbed'; echo $?)" "$out_ready"
+cp "$READY/docs/releases/ledgers/WORKING-testbed.json" "$READY/docs/releases/ledgers/WORKING-bench.json"
+out_both="$(python3 "$SHEET" --check --quiet --repo-root "$READY" 2>&1)"
+check "a problem that holds on every platform prints once" \
+  "$([[ $(printf '%s\n' "$out_both" | grep -c "entry 'testbed' needs") -eq 1 ]]; echo $?)" "$out_both"
+
 echo "test-walk-sheet: $assertions assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]

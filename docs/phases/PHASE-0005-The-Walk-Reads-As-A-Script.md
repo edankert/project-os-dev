@@ -7,11 +7,11 @@ status: done
 order: 5
 owner: user:edwin
 created: 2026-09-14
-updated: 2026-09-14
+updated: 2026-09-25
 goal: "A person walking a release reads one script: first the app screens the release changed, each with a sentence a rider would understand and before and after pictures, then one procedure per sitting that states the setup once, names the screen for every step and tags each expectation with the check it satisfies. No check note has to be opened."
-features: [FEAT-0030, FEAT-0031]
-requirements: [REQ-0029]
-tasks: [TASK-0116, TASK-0117, TASK-0118, TASK-0119, TASK-0120, TASK-0121, TASK-0122, TASK-0123]
+features: [FEAT-0030, FEAT-0031, FEAT-0033]
+requirements: [REQ-0029, REQ-0031]
+tasks: [TASK-0116, TASK-0117, TASK-0118, TASK-0119, TASK-0120, TASK-0121, TASK-0122, TASK-0123, TASK-0125]
 issues: []
 related: [ADR-0044, ADR-0045, ADR-0029, REQ-0028, FEAT-0029, ADR-0027, ISS-0063, ISS-0064, ISS-0050]
 tags: [phase, acceptance, walk, surfaces]
@@ -86,6 +86,10 @@ Edwin asked whether project-os-dev and the cockpit start first. The answer:
 - **Files change in the template repo** (`~/Dev/repos/project-os`). This repo holds the record, as in PHASE-0004. The template's own `SNAPSHOT.yaml` is a blank template and gets no planning items.
 - **Parallel work downstream.** your-trainer's screen mapping (its TASK-0900, which pauses for Edwin's approval) and the cockpit's step ticks (its TASK-0624, built against a fixture) can start before this phase finishes.
 - **Risk scan.** No new external dependency or environment variable. The generator gains one input (change notes since a git tag), which means it now runs `git` to find the last release tag. That is a new runtime dependency on git history being present, which a shallow CI clone does not have. Recorded on TASK-0118 as a design constraint rather than a `RISK-*`, because the fallback is stated there.
+
+## Added after close: FEAT-0033, 2026-09-25
+
+[[FEAT-0033-A-Walk-Keeps-Required-Preparation|FEAT-0033]], with [[TASK-0125-Retain-Declared-Preparation-And-Relevant-Setup|TASK-0125]] and [[REQ-0031-Preparation-Is-Declared-And-Validated|REQ-0031]], was placed in this phase on 2026-09-25 by Edwin's decision. It had no phase until then. It came out of Your Trainer walking this phase's procedures from 2026-09-16: filtering a procedure to its owed steps dropped the actions needed to reach them. It extends this phase's procedure format with declared prerequisites, scoped setup and platform declarations (ADR-0046). It was done on 2026-09-24 after a two-round independent review. The exit criteria above are this phase's own and are unchanged.
 
 ## What this phase landed, 2026-09-14
 

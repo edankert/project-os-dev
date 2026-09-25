@@ -33,13 +33,13 @@ counters:
   CHG:
     last_date: 20260916
   FEAT: 39
-  ISS: 84
+  ISS: 85
   PHASE: 8
   REL: 0
   REQ: 32
   RISK: 4
   TASK: 161
-  TST: 22
+  TST: 23
   WF: 3
 
 focus:
@@ -47,7 +47,7 @@ focus:
   feature: ""
   phase: "PHASE-0003"
   issue: ""
-  note: "2026-09-24: FEAT-0039 and TASK-0080 are done, from the Opus 5.5 guide review (docs/reference/Opus-5-5-Prompting-Guide-Review-2026-09-24.md). Sessions now start with the in-flight slice; the Stop hook quotes open boxes; the subagents are pinned to claude-opus-5-5 from the next session. ISS-0084 (the validator missed tasks absent from the snapshot) is fixed with two checks that warn until 2026-12-23. PHASE-0003 still has ISS-0052 and ISS-0053 open; FEAT-0021's TASK-0081 stays in PHASE-999."
+  note: "2026-09-24: FEAT-0033 is done (TASK-0125, REQ-0031 implemented) after a two-round review; the walk generator refuses contradictory declarations and is synced to project-os-cockpit and your-trainer, uncommitted in all four repos. FEAT-0033 was placed in PHASE-0005 on 2026-09-25 (Edwin). ISS-0085 (reviewers mutating one working tree) is parked. Earlier today: FEAT-0039, TASK-0080 and ISS-0084, pushed."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
@@ -124,9 +124,9 @@ items:
       order: 5
       owner: user:edwin
       goal: "A person walking a release reads one script: first the app screens the release changed, each with a sentence a rider would understand and before and after pictures, then one procedure per sitting that states the setup once, names the screen for every step and tags each expectation with the check it satisfies. No check note has to be opened."
-      features: [FEAT-0030, FEAT-0031]
-      requirements: [REQ-0029]
-      tasks: [TASK-0116, TASK-0117, TASK-0118, TASK-0119, TASK-0120, TASK-0121, TASK-0122, TASK-0123]
+      features: [FEAT-0030, FEAT-0031, FEAT-0033]
+      requirements: [REQ-0029, REQ-0031]
+      tasks: [TASK-0116, TASK-0117, TASK-0118, TASK-0119, TASK-0120, TASK-0121, TASK-0122, TASK-0123, TASK-0125]
       related: [ADR-0044, ADR-0045, ADR-0029, REQ-0028]
       note: "Planned 2026-09-14 from Edwin's approved goal wording. Both decisions (ADR-0044, ADR-0045) were ACCEPTED by Edwin 2026-09-14. START ORDER: TASK-0116..0120 first; your-trainer TASK-0900 in parallel; cockpit PHASE-044 once TASK-0119 fixes the format; then sync, your-trainer procedures, end-to-end. Downstream: your-trainer PHASE-024 (FEAT-0120, FEAT-0121) and project-os-cockpit PHASE-044 (FEAT-0150)."
     PHASE-999:
@@ -135,7 +135,7 @@ items:
       status: planned
       order: 999
       owner: user:edwin
-      issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083]
+      issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083, ISS-0085]
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
@@ -189,10 +189,12 @@ items:
       related: [ADR-0047]
     FEAT-0033:
       file: docs/features/walk-preparation/FEAT-0033-A-Walk-Keeps-Required-Preparation.md
-      status: doing
+      status: done
       owner: user:edwin
+      phase: "[[PHASE-0005]]"
       requirements: [REQ-0031]
       tasks: [TASK-0125]
+      tests: [TST-0023, TST-0011]
       related: [ADR-0046]
     FEAT-0032:
       file: docs/features/codex-native-adapter/FEAT-0032-Codex-Native-Project-Adapter.md
@@ -636,8 +638,9 @@ items:
       blocks: [TASK-0127, TASK-0129, TASK-0130]
     TASK-0125:
       file: docs/features/walk-preparation/plan/tasks/TASK-0125-Retain-Declared-Preparation-And-Relevant-Setup.md
-      status: doing
+      status: done
       parent: FEAT-0033
+      phase: "[[PHASE-0005]]"
       effort: L
       depends: []
       blocks: []
@@ -981,6 +984,10 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0085:
+      file: docs/issues/ISS-0085-Parallel-Reviewers-Mutate-The-Same-Working-Tree.md
+      status: open
+      phase: "[[PHASE-999]]"
     ISS-0084:
       file: docs/issues/ISS-0084-An-In-Flight-Task-Can-Be-Missing-From-The-Snapshot.md
       status: fixed
@@ -1485,8 +1492,9 @@ items:
       note: "Left at draft on purpose: the approval gate keeps FEAT-0038 out of doing until Edwin answers which repo implements it. Approve once that is settled."
     REQ-0031:
       file: docs/requirements/REQ-0031-Preparation-Is-Declared-And-Validated.md
-      status: approved
+      status: implemented
       owner: user:edwin
+      phase: "[[PHASE-0005]]"
       priority: high
       implements: [FEAT-0033]
     REQ-0030:
@@ -2099,20 +2107,20 @@ items:
 metrics:
   counts:
     features_total: 39
-    features_done: 34
+    features_done: 35
     phases_total: 9
     phases_done: 6
     tasks_total: 161
-    tasks_done: 151
-    tests_total: 14
+    tasks_done: 152
+    tests_total: 15
     tests_passing: 0
     tests_failing: 0
-    issues_open: 11
+    issues_open: 12
     issues_triage: 1
     tasks_deferred: 0
     issues_deferred: 5
     requirements_total: 32
-    requirements_implemented: 28
+    requirements_implemented: 29
     risks_open: 1
     releases_total: 0
     decisions_total: 33

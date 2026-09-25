@@ -141,6 +141,17 @@ class WalkPreparationTest(unittest.TestCase):
         self.assertIn("The same ride is running with the meter connected.", rendered)
         self.assertIn("Bind the power meter from the equipment panel.", rendered)
 
+    def test_setup_for_an_omitted_step_is_left_out(self):
+        # Mutation check, 2026-09-24 (TASK-0125): printing every setup item
+        # passed every other test, because the one negative assertion above is
+        # met by the platform filter. `finish` is scoped to step 4, which a walk
+        # owing only TST-1001 (step 2, needing step 1) leaves out.
+        android = self.placed("android", ["TST-1001"])
+        self.assertEqual([1, 2], [step.number for step in android.steps])
+        self.assertIn("Connect the trainer", android.setup)
+        self.assertIn("Place the meter nearby", android.setup)
+        self.assertNotIn("Keep the ride running", android.setup)
+
     def test_ios_action_and_setup_appear_only_for_ios(self):
         ios = self.placed("ios", ["TST-1002", "TST-1003"])
         self.assertEqual([1, 2, 3, 4], [step.number for step in ios.steps])
@@ -211,6 +222,80 @@ class WalkPreparationTest(unittest.TestCase):
         rendered = walk.render(sheet)
         self.assertIn("no longer matches what the release owes", rendered)
         self.assertIn("TST-1002", rendered)
+
+    def test_two_instructions_for_one_step_are_refused(self):
+        # TASK-0125: the parser keeps the last of two values for one key, so
+        # the first instruction vanished without a word.
+        self.path.write_text(PROCEDURE.replace(
+            'state_for:\n  4: "The same ride is running with the meter connected."',
+            'state_for:\n  4: "Signed in as FREE."\n  4: "Signed in as PRO."'), encoding="utf-8")
+        problems = walk.validate_preparation(self.procedure(), "android")
+        self.assertTrue(any("`state_for` declares 4 twice" in problem for problem in problems))
+        self.path.write_text(PROCEDURE.replace(
+            "step_platforms:\n  3: [ios]", "step_platforms: {3: [ios], 3: [android]}"), encoding="utf-8")
+        problems = walk.validate_preparation(self.procedure(), "android")
+        self.assertTrue(any("`step_platforms` declares 3 twice" in problem for problem in problems))
+        self.path.write_text(PROCEDURE, encoding="utf-8")
+        self.assertEqual([], [problem for problem in walk.validate_preparation(self.procedure(), "android")
+                              if "twice" in problem])
+
+    def test_a_declaration_that_can_never_apply_is_refused(self):
+        procedure = self.procedure()
+        phone = next(item for item in procedure.setup_items if item.id == "phone")
+        phone.platforms = {"android"}
+        procedure.steps[1].platforms = {"android"}
+        procedure.steps[3].platforms = {"ios"}
+        problems = walk.validate_preparation(procedure, "")
+        self.assertTrue(any("setup item phone is limited to android, but none of its steps runs there"
+                            in problem for problem in problems))
+        self.assertTrue(any("step 2 has an `action_for` variant for ios" in problem for problem in problems))
+        self.assertTrue(any("step 4's `readiness_for` is limited to android" in problem for problem in problems))
+        self.assertFalse(any("can never" in problem or "none of its steps" in problem
+                             for problem in walk.validate_preparation(self.procedure(), "")))
+
+    def test_a_platform_the_repo_has_no_ledger_for_is_refused(self):
+        ledgers = self.docs / walk.LEDGERS_REL
+        ledgers.mkdir(parents=True)
+        for name in ("WORKING-android", "WORKING-ios"):
+            (ledgers / (name + ".json")).write_text("{}", encoding="utf-8")
+        self.assertEqual([], [problem for problem in self.procedure().parse_problems if "names platform" in problem])
+        self.path.write_text(PROCEDURE.replace("  3: [ios]", "  3: [andriod]"), encoding="utf-8")
+        problems = walk.validate_preparation(self.procedure(), "android")
+        self.assertTrue(any("`step_platforms` names platform andriod, and this repo keeps ledgers only for android, ios"
+                            in problem for problem in problems))
+
+    def test_prerequisites_are_followed_through_a_chain(self):
+        # FEAT-0033 review, 2026-09-24: the fixture's `4: [2, 1]` names step 1
+        # directly, so a closure that stopped after one hop passed every test.
+        self.path.write_text(PROCEDURE.replace("  4: [2, 1]", "  4: [2]")
+                             .replace("use_capture:\n  4: [1]\n", ""), encoding="utf-8")
+        android = self.placed("android", ["TST-1002"])
+        self.assertEqual([1, 2, 4], [step.number for step in android.steps])
+
+    def test_a_later_step_cannot_be_a_prerequisite(self):
+        procedure = self.procedure()
+        procedure.requires[2] = [3]
+        problems = walk.validate_preparation(procedure, "")
+        self.assertTrue(any("step 2 requires step 3, but a prerequisite must come earlier" in problem
+                            for problem in problems))
+
+    def test_frontmatter_ends_at_its_own_delimiter(self):
+        # A `---` inside a frontmatter string must not cut the text short.
+        self.path.write_text(PROCEDURE.replace(
+            'state_for:\n  4: "The same ride is running with the meter connected."',
+            'state_for:\n  4: "Ride --- then stop."\n  4: "Signed in as PRO."'), encoding="utf-8")
+        problems = walk.validate_preparation(self.procedure(), "android")
+        self.assertTrue(any("`state_for` declares 4 twice" in problem for problem in problems))
+
+    def test_the_numbering_remark_counts_only_this_platforms_steps(self):
+        # FEAT-0033 review round 2: the remark listed every step's written
+        # number but was raised from the platform's steps; nothing held it.
+        self.path.write_text(PROCEDURE.replace("\n3. **Equipment", "\n7. **Equipment")
+                             .replace("\n4. **Ride", "\n9. **Ride"), encoding="utf-8")
+        entry = self.placed("android", ["TST-1002"])
+        remark = next(r for r in entry.procedure.remarks if "numbers its steps" in r)
+        self.assertIn("numbers its steps 1, 2, 9", remark)
+        self.assertIn("prints them 1 to 3", remark)
 
     def test_cross_platform_prerequisite_is_refused(self):
         procedure = self.procedure()

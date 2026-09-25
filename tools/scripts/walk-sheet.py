@@ -263,6 +263,7 @@ def load_checks(docs_root: Path, index=None, repo_root: Path | None = None) -> d
     `path` is recorded relative to ``repo_root`` so a row's link works from a
     checkout rather than from the machine the sheet was generated on.
     """
+    known_platforms = platforms(docs_root)
     vd = _validator()
     if index is None:
         index, _ = vd.build_note_index(docs_root)
@@ -293,6 +294,11 @@ def load_checks(docs_root: Path, index=None, repo_root: Path | None = None) -> d
                 pass
         readiness, readiness_problems = parse_check_readiness(
             fm.get("walk_readiness_for"), str(shown))
+        #: A misspelt platform hid the notice on every platform without a word
+        #: (FEAT-0033 review, 2026-09-24); procedures already refuse one.
+        readiness_problems += ["%s: `walk_readiness_for` names platform %s, and this repo "
+                               "keeps ledgers only for %s" % (shown, name, ", ".join(known_platforms))
+                               for name in sorted(readiness) if known_platforms and name not in known_platforms]
         out[note_id] = Check(
             id=note_id,
             title=_text(fm.get("title")),
@@ -1039,12 +1045,108 @@ def name_surfaces(steps: list[Step], surfaces: dict[str, Surface]) -> None:
                 break
 
 
+#: Every frontmatter map that declares something per step or per setup item.
+_DECLARATION_MAPS = ("requires", "step_platforms", "state_for", "capture_for", "use_capture",
+                     "timer_for", "readiness_for", "action_for", "setup_for", "setup_platforms")
+
+
+def _flow_keys(text: str) -> list[str]:
+    """The top-level keys of a one-line `{a: 1, b: [2, 3]}` map, quotes respected."""
+    body = text.strip()
+    if body.startswith("{"):
+        body = body[1:]
+    if body.endswith("}"):
+        body = body[:-1]
+    keys, depth, quote, start = [], 0, "", 0
+    for i, ch in enumerate(body + ","):
+        if quote:
+            if ch == quote:
+                quote = ""
+        elif ch in "\"'":
+            quote = ch
+        elif ch in "[{":
+            depth += 1
+        elif ch in "]}":
+            depth -= 1
+        elif ch == "," and depth == 0:
+            part = body[start:i]
+            start = i + 1
+            if ":" in part:
+                keys.append(part.split(":", 1)[0].strip().strip("'\""))
+    return keys
+
+
+def duplicate_declarations(front: str, path: str) -> list[str]:
+    """A step or setup id declared twice inside one declaration map.
+
+    **Two instructions for one thing is the contradiction the validator can
+    see** (project-os-dev TASK-0125). The frontmatter parser keeps the last
+    value, so `state_for` with step 2 declared as both "Signed in as FREE"
+    and "Signed in as PRO" printed PRO and dropped FREE without a word.
+    Whether two different steps' prose disagrees ("any tier" against "PRO")
+    is the author's to resolve (ADR-0046: nothing is inferred from prose).
+    """
+    problems: list[str] = []
+    lines = front.splitlines()
+    for i, line in enumerate(lines):
+        found = re.match(r"^([A-Za-z_]+):\s*(.*)$", line)
+        if not found or found.group(1) not in _DECLARATION_MAPS:
+            continue
+        label, rest = found.group(1), found.group(2).strip()
+        keys: list[str] = []
+        if rest.startswith("{"):
+            text, j = rest, i + 1
+            while text.count("{") > text.count("}") and j < len(lines):
+                text += " " + lines[j].strip()
+                j += 1
+            keys = _flow_keys(text)
+        elif not rest or rest.startswith("#"):
+            child = None
+            for following in lines[i + 1:]:
+                if not following.strip() or following.lstrip().startswith("#"):
+                    continue
+                indent = len(following) - len(following.lstrip(" "))
+                if indent == 0:
+                    break
+                child = indent if child is None else child
+                if indent != child or following.strip().startswith("- "):
+                    continue
+                key = re.match(r"\s*([^:#\s][^:]*?)\s*:", following)
+                if key:
+                    keys.append(key.group(1).strip("'\""))
+        for key in sorted({k for k in keys if keys.count(k) > 1}):
+            problems.append("%s: `%s` declares %s twice; the parser would keep one and "
+                            "drop the other instruction without a word" % (path, label, key))
+    return problems
+
+
+def unknown_platforms(procedure: Procedure, known: list[str],
+                      setup_platform_names: set[str]) -> list[str]:
+    """Platform names this repo keeps no ledger for (rule 9, "Platform and state").
+
+    `andriod` in `step_platforms` took the step off both real platforms, and
+    nothing said so until one of its parts happened to be owed.
+    """
+    if not known:
+        return []
+    names: list[tuple[str, str]] = []
+    for step in procedure.steps:
+        names += [("step_platforms", name) for name in step.platforms]
+        names += [("readiness_for", name) for name in step.readiness_declared.get("platforms", [])]
+        names += [("action_for", name) for name in step.action_for]
+    names += [("setup_platforms", name) for name in setup_platform_names]
+    return ["%s: `%s` names platform %s, and this repo keeps ledgers only for %s"
+            % (procedure.path, label, name, ", ".join(known))
+            for label, name in sorted(set(names)) if name not in known]
+
+
 def load_procedures(docs_root: Path, repo_root: Path | None = None) -> list[Procedure]:
     """Every file under `docs/tests/acceptance/walk/`, parsed."""
     root = docs_root / PROCEDURES_REL
     if not root.is_dir():
         return []
     vd = _validator()
+    known_platforms = platforms(docs_root)
     out: list[Procedure] = []
     for path in sorted(root.glob("*.md")):
         fm = vd.parse_frontmatter(path)
@@ -1094,12 +1196,20 @@ def load_procedures(docs_root: Path, repo_root: Path | None = None) -> list[Proc
                                        ("action_for", actions, action_problems)):
             for number in sorted(set(mapping) - {str(step.number) for step in steps}):
                 target.append("%s: `%s` names absent step %s" % (shown_path, label, number))
-        out.append(Procedure(
+        text = path.read_text(encoding="utf-8")
+        lines = text.splitlines()
+        end = next((i for i, line in enumerate(lines[1:], 1) if line.strip() == "---"), 0)
+        front = "\n".join(lines[1:end]) if lines and lines[0].strip() == "---" and end else ""
+        procedure = Procedure(
             path=shown_path, sitting=_text(fm.get("sitting")), setup=setup,
             steps=steps, setup_items=setup_items, requires=requires,
             parse_problems=(require_problems + step_problems + state_problems
                             + capture_problems + use_problems + timer_problems
-                            + setup_problems + readiness_problems + action_problems)))
+                            + setup_problems + readiness_problems + action_problems
+                            + duplicate_declarations(front, shown_path)))
+        procedure.parse_problems += unknown_platforms(
+            procedure, known_platforms, {name for item in setup_items for name in item.platforms})
+        out.append(procedure)
     return out
 
 
@@ -1836,6 +1946,24 @@ def validate_preparation(procedure: Procedure, platform: str = "") -> list[str]:
             if number not in steps:
                 problems.append("%s: setup item %s names absent step %d"
                                 % (procedure.path, item.id, number))
+        #: A declaration that can never apply contradicts another one
+        #: (TASK-0125): the item is limited to platforms none of its steps run on.
+        targets = [steps[n] for n in item.steps if n in steps] if item.steps else list(steps.values())
+        if item.platforms and targets and not any(
+                not step.platforms or step.platforms & item.platforms for step in targets):
+            problems.append("%s: setup item %s is limited to %s, but none of its steps runs there"
+                            % (procedure.path, item.id, ", ".join(sorted(item.platforms))))
+    for step in procedure.steps:
+        if not step.platforms:
+            continue
+        limited = set(step.readiness_declared.get("platforms", []))
+        if limited and not limited & step.platforms:
+            problems.append("%s: step %d's `readiness_for` is limited to %s, but the step runs only on %s"
+                            % (procedure.path, step.number, ", ".join(sorted(limited)),
+                               ", ".join(sorted(step.platforms))))
+        for name in sorted(set(step.action_for) - step.platforms):
+            problems.append("%s: step %d has an `action_for` variant for %s, but the step runs only on %s"
+                            % (procedure.path, step.number, name, ", ".join(sorted(step.platforms))))
     for step in procedure.steps:
         if step.action_for and (not _ACTION_HEAD_RE.match(step.authored_head)
                                 or parse_tags(step.body[0])):
@@ -1895,8 +2023,8 @@ def audit_procedure(procedure: Procedure, sitting: Sitting, owed: list[Check],
         remarks.append(
             "%s numbers its steps %s and the sheet prints them 1 to %d; a "
             "part is counted by position, so cite the position"
-            % (procedure.path, ", ".join(str(s.written) for s in procedure.steps),
-               len(procedure.steps)))
+            % (procedure.path, ", ".join(str(s.written) for s in applicable),
+               len(applicable)))
     for step in applicable:
         if not step.surface_id:
             remarks.append("step %d names no screen; a step says where it "
@@ -2482,6 +2610,7 @@ def run_check(repo_root: Path, platform: str, quiet: bool = False) -> int:
         return 0
     wanted = [platform] if platform else platforms(docs_root)
     status = 0
+    printed: set[str] = set()
     for name in wanted:
         try:
             problems, remarks = check_repo(repo_root, name)
@@ -2498,6 +2627,11 @@ def run_check(repo_root: Path, platform: str, quiet: bool = False) -> int:
             status = 2
             continue
         for problem in problems:
+            #: A check's own readiness problem is the same on every platform;
+            #: printing it once per platform read as two findings (FEAT-0033 review).
+            if problem in printed:
+                continue
+            printed.add(problem)
             print("walk-sheet --check (%s): %s" % (name, problem), file=sys.stderr)
         #: Remarks are printed when something is wrong, or when a person
         #: asked. `validate-docs.sh` runs this on every commit, and a repo
