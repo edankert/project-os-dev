@@ -1982,18 +1982,44 @@ def invalidate_note_index():
     _NOTE_INDEX_MEMO.clear()
 
 
+def _docs_fingerprint(docs_dir):
+    """Every note's path, size and mtime: what the index was built from."""
+    out = []
+    stack = [str(docs_dir)]
+    while stack:
+        try:
+            entries = list(os.scandir(stack.pop()))
+        except OSError:
+            continue
+        for entry in entries:
+            if entry.is_dir(follow_symlinks=False):
+                stack.append(entry.path)
+            elif entry.name.endswith(".md"):
+                try:
+                    st = entry.stat()
+                except OSError:
+                    continue
+                out.append((entry.path, st.st_size, st.st_mtime_ns))
+    return hash(tuple(sorted(out)))
+
+
 def build_note_index(docs_dir):
-    """build_note_index, once per process until a writer invalidates it.
+    """build_note_index, rebuilt only when a note under docs_dir changed.
 
     sync-snapshot.py asked for it five times in one run (statuses twice,
     titles, the reverse lists, the back-pointers): 0.5 s of a warm run on
-    your-trainer (project-os-dev ISS-0093). The dicts are copied, so a caller
-    that edits them edits its own.
+    your-trainer (project-os-dev ISS-0093). The result is kept with the path,
+    size and mtime of every note, and a call that finds any of them changed
+    rebuilds it: a tool that writes notes and asks again gets what is on disk
+    (the cockpit's migrate-fleet-validator.py does exactly that). The dicts are
+    copied, so a caller that edits them edits its own.
     """
     key = str(Path(docs_dir).resolve())
-    if key not in _NOTE_INDEX_MEMO:
-        _NOTE_INDEX_MEMO[key] = _build_note_index(docs_dir)
-    index, claimants = _NOTE_INDEX_MEMO[key]
+    stamp = _docs_fingerprint(docs_dir)
+    held = _NOTE_INDEX_MEMO.get(key)
+    if held is None or held[0] != stamp:
+        held = _NOTE_INDEX_MEMO[key] = (stamp, _build_note_index(docs_dir))
+    index, claimants = held[1]
     return dict(index), {k: list(v) for k, v in claimants.items()}
 
 

@@ -60,6 +60,26 @@ for f in "$TMPDIR"/project-os-note-cache/*.json; do printf '{"tag": ' > "$f"; do
 o="$(st)"
 check "a corrupt cache file is ignored" "$([[ "$o" == "shut $T" ]]; echo $?)" "$o"
 
+# build_note_index is kept per process, and a note written between two calls
+# is seen by the second (project-os-dev TASK-0186: a cached index hid a
+# migration tool's own writes from it).
+o="$(python3 - "$HERE/validate-docs.py" "$R" <<'PY2'
+import importlib.util, sys
+from pathlib import Path
+spec = importlib.util.spec_from_file_location("vd", sys.argv[1]); vd = importlib.util.module_from_spec(spec); spec.loader.exec_module(vd)
+docs = Path(sys.argv[2]) / "docs"
+first = vd.build_note_index(docs)[0]["ISS-0001"][1].get("status")
+p = docs / "issues" / "ISS-0001-One.md"
+p.write_text(p.read_text().replace("status: shut", "status: gone"))
+second = vd.build_note_index(docs)[0]["ISS-0001"][1].get("status")
+(docs / "issues" / "ISS-0009-New.md").write_text("---\nid: ISS-0009\nstatus: open\n---\n# New\n")
+third = "ISS-0009" in vd.build_note_index(docs)[0]
+p.write_text(p.read_text().replace("status: gone", "status: shut")); (docs / "issues" / "ISS-0009-New.md").unlink()
+print(first, second, third)
+PY2
+)"
+check "the note index sees a note edited or added between two calls" "$([[ "$o" == "shut gone True" ]]; echo $?)" "$o"
+
 # The note index: records and backlinks, from frontmatter and body.
 o="$(python3 "$HERE/note-index.py" --repo-root "$R" --json ISS-0001)"
 check "the index gives id, status, path, links and headings" "$(python3 -c 'import json,sys; r=json.loads(sys.argv[1])["ISS-0001"]; sys.exit(0 if r["status"]=="shut" and r["path"]=="docs/issues/ISS-0001-One.md" and r["links"]==["ADR-0002","TASK-0003"] and r["headings"]==["One","Why"] and r["archived"] is False else 1)' "$o"; echo $?)" "$o"
