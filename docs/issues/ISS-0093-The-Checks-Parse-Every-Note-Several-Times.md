@@ -37,3 +37,12 @@ Each note is parsed once per run, with libyaml where present and the current par
 ## Decided
 
 ADR-0048 was accepted with option 4 on 2026-09-26: tickets freeze at release, a tool writes the supersession back-pointer into the old note, and editing a frozen ticket is a warning.
+
+## Widened, 2026-09-26: the cache becomes the note index
+
+Edwin asked whether a database of the links, built before a session starts, would make things faster and reduce reliance on grep. Searching is not the slow part (0.06 to 0.3 s on your-trainer); reading what comes back is. So the parse cache this issue asks for should also be the index the other tools use, rather than a second system:
+
+- **Per note:** id, path, type, status, phase, parent, released or frozen, superseded by, outgoing links (wikilinks and bare ids), and headings. Backlinks are derived from the outgoing links.
+- **Always current, never committed.** Keyed by path, size and mtime, so a run re-reads only changed notes (`stat` on every note: 8 ms; a full rebuild with libyaml: about 0.3 s). It is built on first use; the SessionStart hook may warm it. A missing or unreadable cache is rebuilt, never trusted.
+- **JSON first.** At about 3,000 notes a JSON file is enough; SQLite (standard library) only if the queries grow.
+- **Its readers:** the validator, `walk-sheet.py`, `sync-snapshot.py`, the derived lists and back-pointers (ISS-0095, ISS-0096), and the search in ISS-0101.
