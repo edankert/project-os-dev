@@ -5,7 +5,7 @@ This repository is project-os enabled. Follow this startup sequence before doing
 ## Mandatory First Steps
 1. Read `CONTEXT.md`.
 2. Read `docs/INDEX.md`.
-3. Read the orientation the session-start hook printed from `SNAPSHOT.yaml` (focus and in-flight work). Open the whole file only to look something up.
+3. Read the orientation the session-start hook printed from `SNAPSHOT.yaml` (focus and in-flight work). To look up any other item, run `python3 tools/scripts/snapshot-query.py <ID>`.
 4. Run `bash tools/agents/bootstrap.sh`.
 5. Follow `tools/instructions/MARKDOWN.md`: do not hard-wrap Markdown prose to a fixed column width.
 6. Follow `tools/instructions/WRITING.md`: write so a reader can follow it — point first, one idea per sentence, no undefined jargon.

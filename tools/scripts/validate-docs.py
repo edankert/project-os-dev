@@ -730,6 +730,8 @@ _CHECKED_TABLE_NAMES = frozenset({
 #: own coverage claim false in the same way ISS-0012 did. Type and case are not
 #: what makes something a status table.
 _NON_STATUS_COLLECTIONS = frozenset({
+    "_OPTIONAL_CITATIONS",  # files a citation may name before a repo has them (ISS-0052)
+    "INDEX_COVERAGE",       # index files and the directories they list (ISS-0052)
     # ADR-0037: the acceptance LEDGER's outcome vocabulary, its reason-bearing
     # subset, and how a result arrived. None is a status, and registering them
     # as one would assert the opposite of what they exist to preserve: a
@@ -1133,6 +1135,20 @@ PROMOTIONS = {
     #   TASK-MEMBERSHIP   20: your-health 8, project-os-cockpit 7, your-trainer 5
     #   FOCUS-MEMBERSHIP   2: your-applications.com 1, yourtrainer-mcp 1
     "TASK-MEMBERSHIP": "2026-12-23",
+    # project-os-dev ISS-0052 (TASK-0164), measured 2026-09-25 over 13 repos:
+    # 38 findings, every repo with at least one. The template seeded most of
+    # them: its docs/INDEX.md lacked OBSIDIAN.md and TESTING.md, and the
+    # CLAUDE.md template in ADAPTER.md lacked walk-procedure, MARKDOWN.md,
+    # TESTING.md and WRITING.md; both are fixed in the same change.
+    "INDEX-COVERAGE": "2026-12-24",
+    # ISS-0052 (TASK-0165), same day: 9 undocumented fields in each repo that
+    # has not merged the template's SCHEMAS.md since 2026-09-25 (13 in
+    # project-os-cockpit, 14 in your-sudoku); 0 in the template.
+    "FIELD-UNDOCUMENTED": "2026-12-24",
+    # ISS-0052 (TASK-0166), same day: one finding in each of the 12 other repos,
+    # all the same stale section name in TESTING.md, which the template fixes
+    # and the next sync carries; 0 in the template.
+    "CITATION": "2026-12-24",
     "FOCUS-MEMBERSHIP": "2026-12-23",
     # Ported from project-os-cockpit's validator (project-os-dev ISS-0068), where
     # they were written and dated for that repo alone. Measured over the fleet on
@@ -2582,6 +2598,249 @@ def validate_moved_verdict_fields(root, report, note_index):
                    LEDGERS_REL, rel))
 
 
+def _edit_distance(a, b):
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[-1]
+
+
+def validate_frontmatter_typos(root, report):
+    """A misspelt link field (project-os-dev ISS-0053, TASK-0163).
+
+    `related:` typed as `elated:` parses cleanly, so NOTE-FRONTMATTER cannot
+    see it, and the note silently loses its whole link graph. Reported: a
+    top-level key that no template or SCHEMAS.md defines and that is one
+    letter (two, for a key of six letters or more) from a field that carries
+    links. A singular or plural of the field is not a typo.
+
+    Narrow on purpose. Measured over 8,668 notes in the fleet on 2026-09-25:
+    flagging every unknown key near ANY known key gave about 50 findings,
+    nearly all legitimate project fields (`feature`, `review_note`,
+    `decisions`); this rule gives 0, and still catches `elated:`. So it ships
+    as an error.
+    """
+    templates = root / "docs" / "__templates__"
+    docs = root / "docs"
+    if not templates.is_dir() or not docs.is_dir():
+        return
+    key_re = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*):", re.M)
+    known = set()
+    for tpl in templates.glob("*.md"):
+        text = tpl.read_text(encoding="utf-8", errors="replace")
+        if text.startswith("---"):
+            known |= set(key_re.findall(text.split("---", 2)[1]))
+    schemas = templates / "SCHEMAS.md"
+    if schemas.is_file():
+        known |= set(re.findall(r"`([a-z_]+):?`", schemas.read_text(encoding="utf-8", errors="replace")))
+    links = set(RELATIONSHIP_FIELDS) | {"related"}
+    for path in sorted(docs.rglob("*.md")):
+        if templates in path.parents:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):             # pragma: no cover
+            continue
+        if not text.startswith("---"):
+            continue
+        for key in key_re.findall(text.split("\n---", 1)[0]):
+            if key in known or key in links or len(key) < 4:
+                continue
+            for field in sorted(links):
+                if key + "s" == field or field + "s" == key:
+                    continue
+                if 0 < _edit_distance(key, field) <= (1 if len(field) < 6 else 2):
+                    report.error("FRONTMATTER-TYPO", "%s: frontmatter key `%s:` is defined nowhere and looks like "
+                                 "`%s:`, a field that carries links; as written, the note has no `%s`"
+                                 % (path.relative_to(root), key, field, field))
+                    break
+
+
+#: Which file indexes which directory (project-os-dev ISS-0052, TASK-0164).
+#: (index, directory, "file" for *.md files or "dir" for subdirectories).
+#: A CLAUDE.md counts only once it already lists entries of that directory:
+#: the check keeps an index complete, it does not demand one.
+INDEX_COVERAGE = (
+    ("tools/instructions/README.md", "tools/instructions", "file"),
+    ("docs/INDEX.md", "tools/instructions", "file"),
+    ("tools/skills/README.md", "tools/skills", "dir"),
+    ("CLAUDE.md", "tools/instructions", "file"),
+    ("CLAUDE.md", "tools/skills", "dir"),
+)
+
+
+def validate_index_coverage(root, grandfathered, report):
+    """An index that lists fewer entries than its directory holds.
+
+    Eight instances across two drift sweeps (ISS-0052): docs/INDEX.md without
+    TESTING.md and OBSIDIAN.md, tools/skills/README.md without two skills, a
+    CLAUDE.md without two more. adapter-sync made checking this a manual step,
+    which is the sign it should not be manual.
+    """
+    for index_rel, dir_rel, kind in INDEX_COVERAGE:
+        index, directory = root / index_rel, root / dir_rel
+        if not index.is_file() or not directory.is_dir():
+            continue
+        text = index.read_text(encoding="utf-8", errors="replace")
+        if kind == "file":
+            entries = sorted(p.name for p in directory.glob("*.md") if p.name != "README.md")
+        else:
+            entries = sorted(p.name for p in directory.iterdir()
+                             if p.is_dir() and not p.name.startswith((".", "_")))
+        if index_rel == "CLAUDE.md" and dir_rel + "/" not in text:
+            continue
+        missing = [e for e in entries if e not in text]
+        if missing:
+            promotion_emit(report, "INDEX-COVERAGE", grandfathered, index_rel)(
+                "INDEX-COVERAGE", "%s lists %d of the %d entries in %s/; missing: %s"
+                % (index_rel, len(entries) - len(missing), len(entries), dir_rel, ", ".join(missing)))
+
+
+def frontmatter_fields_read():
+    """Every frontmatter key this validator reads, derived from its own source.
+
+    project-os-dev ISS-0052 (TASK-0165). Walks this file's syntax tree:
+    `.get("key")` and `["key"]` on a variable whose name ends in `fm`, and
+    every string in a constant or table whose name ends in `_FIELDS` or holds
+    "field" (`RELATIONSHIP_FIELDS`, the `back_fields` table that reads
+    `fixes:`). Derived, so a check added tomorrow is covered without a list
+    to remember.
+    """
+    import ast
+    tree = ast.parse(Path(__file__).read_text(encoding="utf-8"))
+    keys = set()
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "get" and node.args
+                and isinstance(node.func.value, ast.Name) and node.func.value.id.endswith("fm")
+                and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str)):
+            keys.add(node.args[0].value)
+        elif (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name)
+                and node.value.id.endswith("fm") and isinstance(node.slice, ast.Constant)
+                and isinstance(node.slice.value, str)):
+            keys.add(node.slice.value)
+        elif isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and (target.id.endswith("_FIELDS") or "field" in target.id.lower()):
+                    keys |= {n.value for n in ast.walk(node.value)
+                             if isinstance(n, ast.Constant) and isinstance(n.value, str)
+                             and re.fullmatch(r"[a-z_]+", n.value)}
+    return keys
+
+
+def validate_fields_documented(root, grandfathered, report):
+    """A frontmatter field the validator enforces that no document defines.
+
+    Pass 12 of the drift sweep found `waiver_expires:` (an error when missing,
+    documented nowhere) and `fixes:` (drives PARENT-BACKLINK, absent from the
+    schema). A reader who follows SCHEMAS.md should never trip a check it
+    never mentioned (ISS-0052).
+    """
+    schemas = root / "docs" / "__templates__" / "SCHEMAS.md"
+    if not schemas.is_file():
+        return
+    text = schemas.read_text(encoding="utf-8", errors="replace")
+    documented = set(re.findall(r"`([a-z_]+)`", text)) | set(re.findall(r"`([a-z_]+):", text))
+    for key in sorted(frontmatter_fields_read() - documented):
+        promotion_emit(report, "FIELD-UNDOCUMENTED", grandfathered, key)(
+            "FIELD-UNDOCUMENTED", "the validator reads frontmatter field `%s:`, and "
+            "docs/__templates__/SCHEMAS.md does not define it" % key)
+
+
+#: Files a citation may name before the repo has them, each with its reason.
+_OPTIONAL_CITATIONS = frozenset({
+    "GRANDFATHERED.yaml",   # written the first time a repo grandfathers a finding
+})
+_CITED_PATH_RE = re.compile(r"`([A-Za-z0-9_.][A-Za-z0-9_./-]*/[A-Za-z0-9_./-]*\.(?:md|py|sh|yaml|yml|json|mjs|base))`")
+_CITED_SECTION_RE = re.compile(r"`([A-Za-z0-9_.][A-Za-z0-9_./-]*\.md)`,?\s+\"([^\"]+)\"")
+_CITATION_PLACEHOLDER_RE = re.compile(r"YYYY|0000|0001|\.\.\.|Short-|[<>*{}]|####")
+
+
+def validate_citations(root, grandfathered, report):
+    """A cited path or section that resolves nowhere (project-os-dev ISS-0052, TASK-0166).
+
+    Twenty-two instances over two drift sweeps: paths that resolve nowhere and
+    section headings that do not exist. Read: the startup files, every
+    instruction and every skill. A backticked path with a folder in it is
+    resolved against the citing file's folder, the repo root, the adapter and
+    agent folders and the templates. Skipped: placeholders, a path whose first
+    folder exists in none of those (it is relative to something the sentence
+    names, like `plan/PLAN.md`), anything that lands in `docs/` outside the
+    templates (a project's own content, which a template may cite before a
+    project has it), and `_OPTIONAL_CITATIONS`. A cited section,
+    `` `FILE.md`, "Heading" ``, must match a heading or a bold lead-in of that
+    file, backticks ignored. Quoted sentences and bare `ADR-####` ids are left
+    alone: the first is prose, the second is CONTEXT.md's citation rule.
+    """
+    files = [root / name for name in ("AGENTS.md", "CONTEXT.md", "CLAUDE.md")]
+    files += sorted((root / "tools" / "instructions").glob("*.md"))
+    files += sorted((root / "tools" / "skills").glob("*/SKILL.md"))
+    docs, templates = (root / "docs").resolve(), (root / "docs" / "__templates__").resolve()
+
+    def bases(src):
+        return [src.parent, root, root / "docs", root / "tools" / "adapters" / "claude-code",
+                root / "tools" / "adapters" / "codex", root / "tools" / "agents", templates]
+
+    def norm(text):
+        return re.sub(r"[`*]", "", text).strip().rstrip(".:").lower()
+
+    anchor_cache = {}
+
+    def anchors(path):
+        if path not in anchor_cache:
+            found = []
+            for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+                if line.startswith("#"):
+                    found.append(norm(re.sub(r"^#+\s*", "", line)))
+                found += [norm(m) for m in re.findall(r"\*\*([^*]+)\*\*", line)]
+            anchor_cache[path] = found
+        return anchor_cache[path]
+
+    for src in files:
+        if not src.is_file():
+            continue
+        fence = False
+        for number, line in enumerate(src.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+            if line.strip().startswith("```"):
+                fence = not fence
+                continue
+            if fence:
+                continue
+            where = "%s:%d" % (src.relative_to(root), number)
+            for match in _CITED_PATH_RE.finditer(line):
+                ref = match.group(1)
+                if _CITATION_PLACEHOLDER_RE.search(ref) or Path(ref).name in _OPTIONAL_CITATIONS:
+                    continue
+                first = ref.split("/")[0]
+                #: Only the bases the path can start from: where its first
+                #: folder exists, or the citing folder for a `..` path.
+                starts = [src.parent] if first in ("..", ".") else [b for b in bases(src) if (b / first).is_dir()]
+                if not starts:
+                    continue
+                hit = next(((b / ref).resolve() for b in starts if (b / ref).exists()), None)
+                if hit is None:
+                    tried = [(b / ref).resolve() for b in starts]
+                    if all(docs in t.parents and templates not in t.parents for t in tried):
+                        continue
+                    promotion_emit(report, "CITATION", grandfathered, where)(
+                        "CITATION", "%s cites `%s`, which resolves to no file" % (where, ref))
+            for match in _CITED_SECTION_RE.finditer(line):
+                ref, heading = match.group(1), match.group(2)
+                target = next(((b / ref) for b in bases(src) if (b / ref).is_file()), None)
+                if target is None and (root / "tools" / "instructions" / Path(ref).name).is_file():
+                    target = root / "tools" / "instructions" / Path(ref).name
+                if target is None:
+                    continue
+                wanted = norm(heading)
+                if not any(a == wanted or a.startswith(wanted) for a in anchors(target)):
+                    promotion_emit(report, "CITATION", grandfathered, where)(
+                        "CITATION", '%s cites `%s`, "%s", and that file has no such heading'
+                        % (where, ref, heading))
+
+
 def validate_frontmatter_parses(root, report):
     """A note whose frontmatter is not YAML ([[ISS-0214]]).
 
@@ -2784,6 +3043,7 @@ def validate(root, report):
     # tables disagree cannot be trusted to report on anything else.
     validate_status_tables(report)
     validate_frontmatter_parses(root, report)
+    validate_frontmatter_typos(root, report)
 
     snap_path = root / "SNAPSHOT.yaml"
     if not snap_path.is_file():
@@ -2813,6 +3073,9 @@ def validate(root, report):
     validate_moved_verdict_fields(root, report, note_index)
     validate_vouched_ledgers(root, report, note_index)
     grandfathered = load_grandfathered(root)
+    validate_index_coverage(root, grandfathered, report)
+    validate_fields_documented(root, grandfathered, report)
+    validate_citations(root, grandfathered, report)
     verification_cfg = snap.get("verification") if isinstance(snap.get("verification"), dict) else {}
     try:
         staleness_days = int(verification_cfg.get("staleness_days", DEFAULT_STALENESS_DAYS))

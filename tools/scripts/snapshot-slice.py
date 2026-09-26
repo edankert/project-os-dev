@@ -34,29 +34,14 @@ IN_FLIGHT = {
 }
 CONTRACT_FILES = ("AGENTS.md", "CONTEXT.md", "docs/INDEX.md")
 ID = re.compile(r"[A-Z]+-\d+")
+#: An item key: a change note's id carries its slug (CHG-20260925-Some-Title),
+#: so a key is matched whole, not cut at the number (FEAT-0021 review).
+ITEM_KEY = re.compile(r"[A-Z]+-\d+[A-Za-z]?(?:-[A-Za-z0-9_.]+)*")  # CHG-20260531e-...: a letter orders one day's changes
 
 
-def scalar(raw):
-    """A YAML scalar as text: comment dropped, quotes removed."""
-    raw = raw.strip()
-    if raw[:1] in ("'", '"'):
-        quote = raw[0]
-        end = raw.find(quote, 1)
-        while quote == '"' and end > 0 and raw[end - 1] == "\\":
-            end = raw.find(quote, end + 1)
-        return raw[1:end] if end > 0 else raw[1:]
-    return raw.split(" #", 1)[0].strip()
-
-
-def flow_map(text):
-    """The top-level key: value pairs of an inline `{ ... }` map."""
-    body = text.strip()
-    if body.startswith("{"):
-        body = body[1:]
-    if body.endswith("}"):
-        body = body[:-1]
-    pairs, depth, quote, start = {}, 0, "", 0
-    parts = []
+def split_top(body):
+    """Split a flow body at its top-level commas, quotes and brackets respected."""
+    parts, depth, quote, start = [], 0, "", 0
     for i, ch in enumerate(body):
         if quote:
             if ch == quote and body[i - 1] != "\\":
@@ -71,17 +56,87 @@ def flow_map(text):
             parts.append(body[start:i])
             start = i + 1
     parts.append(body[start:])
-    for part in parts:
+    return [part for part in parts if part.strip()]
+
+
+def flow_list(text):
+    """`[a, "b, c"]` as a list of scalars."""
+    body = text.strip()
+    body = body[1:-1] if body.startswith("[") and body.endswith("]") else body
+    return [scalar(part) for part in split_top(body)]
+
+
+def scalar(raw):
+    """A YAML scalar as text: comment dropped, quotes removed, escapes read.
+
+    In a double-quoted string, `\\"` is a quote, `\\\\` a backslash, `\\n` and
+    `\\t` a newline and a tab, `\\u2019` and its `\\x`/`\\U` kin the character; in a single-quoted one, `''` is a quote. The
+    FEAT-0021 round-two review found `\\"` kept as written in about 30 prose
+    fields across the fleet.
+    """
+    raw = raw.strip()
+    if raw[:1] == '"':
+        out, i = [], 1
+        while i < len(raw):
+            ch = raw[i]
+            if ch == "\\" and i + 1 < len(raw):
+                code = raw[i + 1]
+                width = {"x": 2, "u": 4, "U": 8}.get(code, 0)
+                digits = raw[i + 2:i + 2 + width]
+                if width and len(digits) == width and all(c in "0123456789abcdefABCDEF" for c in digits):
+                    out.append(chr(int(digits, 16)))
+                    i += 2 + width
+                    continue
+                out.append({"n": "\n", "t": "\t"}.get(code, code))
+                i += 2
+                continue
+            if ch == '"':
+                break
+            out.append(ch)
+            i += 1
+        return "".join(out)
+    if raw[:1] == "'":
+        out, i = [], 1
+        while i < len(raw):
+            if raw[i] == "'":
+                if raw[i + 1:i + 2] == "'":
+                    out.append("'")
+                    i += 2
+                    continue
+                break
+            out.append(raw[i])
+            i += 1
+        return "".join(out)
+    return raw.split(" #", 1)[0].strip()
+
+
+def flow_map(text):
+    """The top-level key: value pairs of an inline `{ ... }` map; lists as lists."""
+    body = text.strip()
+    if body.startswith("{"):
+        body = body[1:]
+    if body.endswith("}"):
+        body = body[:-1]
+    pairs = {}
+    for part in split_top(body):
         if ":" in part:
             key, value = part.split(":", 1)
-            pairs[key.strip()] = scalar(value)
+            value = value.strip()
+            pairs[key.strip()] = flow_list(value) if value.startswith("[") else scalar(value)
     return pairs
 
 
 def parse(text):
-    """updated, focus, metrics.counts and items.<collection>.<id> (status, file)."""
+    """updated, focus, metrics.counts and items.<collection>.<id> -> every field.
+
+    Also the parser behind `snapshot-query.py` (project-os-dev TASK-0081), so
+    the orientation and the lookup read the snapshot the same way. A block
+    item's fields are its 6-space keys: a scalar, an inline list, or a block
+    list of `- value` lines beneath the key.
+    """
     updated, focus, counts, items = "", {}, {}, {}
     section = sub = current = None
+    listing = None
     for line in text.splitlines():
         if not line.strip() or line.lstrip().startswith("#"):
             continue
@@ -91,6 +146,13 @@ def parse(text):
             section, sub, current = stripped.split(":", 1)[0], None, None
             if section == "updated":
                 updated = scalar(stripped.split(":", 1)[1])
+            continue
+        if section == "items" and current and listing and indent >= 6 and stripped.startswith("- "):
+            #: A block list, indented under its key or at the key's own indent
+            #: (PyYAML's default dump style; FEAT-0021 review).
+            if items[sub][current][listing] == "":
+                items[sub][current][listing] = []
+            items[sub][current][listing].append(scalar(stripped[2:]))
             continue
         key, _, value = stripped.partition(":")
         if section == "focus" and indent == 2:
@@ -102,12 +164,21 @@ def parse(text):
         elif section == "items" and indent == 2:
             sub, current = key, None
             items.setdefault(sub, {})
-        elif section == "items" and sub and indent == 4 and ID.fullmatch(key):
-            current = key
+        elif section == "items" and sub and indent == 4 and ITEM_KEY.fullmatch(key):
+            current, listing = key, None
             value = value.strip()
             items[sub][key] = flow_map(value) if value.startswith("{") else {}
-        elif section == "items" and current and indent == 6 and key in ("status", "file"):
-            items[sub][current][key] = scalar(value)
+        elif section == "items" and current and indent == 6:
+            value = value.strip()
+            listing = None
+            if value.startswith("["):
+                items[sub][current][key] = flow_list(value)
+            elif value:
+                items[sub][current][key] = scalar(value)
+            else:
+                #: Empty until a `- ` line makes it a list.
+                items[sub][current][key] = ""
+                listing = key
     return updated, focus, counts, items
 
 
@@ -157,8 +228,11 @@ def render(root):
     flight = [i for col, statuses in IN_FLIGHT.items() for i, f in items.get(col, {}).items()
               if f.get("status") in statuses and i not in focused]
     lines.append("in flight (%d, besides focus):" % len(flight))
-    closing = ("Before changing anything, open the note of the item you are working on and the notes it links, "
-               "including ones the request does not name. For any other item, find its `file:` under its ID in SNAPSHOT.yaml and open the note.")
+    closing = "Before changing anything, open the note of the item you are working on and the notes it links, including ones the request does not name."
+    if (root / "tools" / "scripts" / "snapshot-query.py").is_file():
+        closing += " Look up any other item with `python3 tools/scripts/snapshot-query.py <ID>`."
+    else:
+        closing += " For any other item, find its `file:` under its ID in SNAPSHOT.yaml and open the note."
     budget = MAX_CHARS - len(closing) - 60
     used = sum(len(l) + 1 for l in lines)
     shown = 0

@@ -34,3 +34,7 @@ Each reviewer breaks guards only in a copy of its own: a `git worktree` or a rea
 
 - Both round-one reports on FEAT-0033, recorded in its `## Review` section.
 - `shasum` of every copy of `walk-sheet.py` after both reviews: all identical to the version under review, so no mutation was left behind.
+
+## Also found, 2026-09-25 (FEAT-0021 review)
+
+Breaking guards in a copy has a cost of its own: in a copy made without `.git`, `test-hooks.sh` runs 79 of its 102 assertions, because about 23 check git's view of the hook files (tracked, executable, not ignored). A mutation that only those assertions catch passes in such a copy. A `git worktree` keeps them; the skill's advice should prefer one.

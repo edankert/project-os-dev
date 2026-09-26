@@ -26,7 +26,7 @@ tests: ["[[TST-0023]]", "[[TST-0011]]"]
 - [x] When steps are left out, the sheet says the numbers are the procedure's own and skip.
 - [x] TESTING.md rule 9, "What prints", says so in place of "Display positions are consecutive".
 - [x] TST-0023 asserts the new headings, and a mutation back to positions fails it (1 failure, in a full copy of the template); 21 of 21. Amended from "TST-0023 and TST-0011": TST-0011's fixture keeps every step, so its position and number are the same and it cannot tell them apart. It still passes, 160 of 160.
-- [x] Committed to the template only. Not synced to any consumer until the cockpit's walk page shows the same numbers (the cockpit half of ISS-0086), so the sheet and the page never disagree.
+- [x] Committed to the template, and not synced to any repo with a walk (project-os-cockpit, your-trainer) until the cockpit's walk page shows the same numbers (the cockpit half of ISS-0086), so the sheet and the page never disagree. project-os-dev took it with the 2026-09-25 PHASE-0003 sync: it has no walk procedures, so no walker sees the two disagree.
 
 ## Steps
 - [x] Change `render_procedure`.

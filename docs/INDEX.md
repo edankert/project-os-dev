@@ -34,6 +34,8 @@ Primary entrypoints for this documentation system.
 - Decisions/ADRs: `../tools/instructions/DECISIONS.md`
 - Quality/close-out: `../tools/instructions/QUALITY.md`
 - Hook contracts: `../tools/instructions/HOOKS.md`
+- Obsidian conventions: `../tools/instructions/OBSIDIAN.md`
+- Acceptance tests and the release walk: `../tools/instructions/TESTING.md`
 - Codex adapter: `../tools/adapters/codex/ADAPTER.md`
 - Skills playbooks: `../tools/skills/README.md`
 - Docs cockpit: `../tools/cockpit/README.md`

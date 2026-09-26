@@ -63,6 +63,9 @@ These files contain detailed rules. Read them when performing the related operat
 - Importing from existing projects: tools/instructions/IMPORTING.md
 - Syncing template updates: tools/instructions/SYNCING.md
 - Hook contracts: tools/instructions/HOOKS.md
+- Markdown formatting: tools/instructions/MARKDOWN.md
+- Writing clearly (prose, commit messages, replies): tools/instructions/WRITING.md
+- Acceptance tests and the release walk: tools/instructions/TESTING.md
 
 ## Skill playbooks (read before performing these operations)
 
@@ -91,6 +94,7 @@ These files contain detailed rules. Read them when performing the related operat
 - Project init: tools/skills/project-init/SKILL.md
 - Project derive: tools/skills/project-derive/SKILL.md
 - Design authoring: tools/skills/design-authoring/SKILL.md
+- Walk procedure: tools/skills/walk-procedure/SKILL.md
 ```
 
 ### Notes

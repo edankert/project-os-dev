@@ -6,7 +6,7 @@ title: "When a drift sweep stops"
 status: "accepted"
 owner: user:edwin
 created: 2026-09-04
-updated: "2026-09-04"
+updated: 2026-09-25
 source: ["Edwin, 2026-09-04, asking whether the clean-context review is worth its cost", "[[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File]] passes 1 to 12", "arXiv 2603.16244, More Rounds More Noise", "arXiv 2608.18167, Adversarial Review"]
 decision: "Option 5. A sweep runs one round of three parallel clean-context passes at one commit, unions their findings, requires a reproduction with each, verifies those reproductions, fixes what survives, records the residue and stops. The human sees decisions owed, not findings. Amended at implementation: findings are unioned rather than kept on two-of-three agreement, provisionally, on the reason that discarding a true finding costs more than verifying a false one. Confirmed by the owner 2026-09-04; the overlap it assumes is still unmeasured (acceptance criterion 4)."
 context: "The docs-audit skill says an audit is complete only after two consecutive passes find zero defects. Twelve passes over the project-os template have never produced two clean passes in a row, and the evidence says they cannot: each clean-context pass samples a different part of the corpus rather than converging on it."
@@ -120,3 +120,19 @@ Taken from passes 11 and 12, the two that read the widest domain. A class is wor
 
 > [!note] Correct — 2026-09-04 (model:claude-fable-5-1, independent review)
 > The amendment's stated evidence was invalid: passes 11 and 12 ran at different commits with pass 11's findings already fixed, so their non-overlap was guaranteed and proves nothing about parallel passes at one commit. Union stands as a provisional default on a stated reason; criterion 4 turns it into a measurement. Whether to amend an accepted decision at all was owed a confirmation from user:edwin, given 2026-09-04.
+
+## Follow-up, 2026-09-25: the three checks exist
+
+ISS-0052's checks were built (TASK-0164 to TASK-0166). This section records what they changed; the decision above is left as it was taken.
+
+**Measured 2026-09-25 (TASK-0167).** The four new checks were run, with today's validator, on the template at the two commits the drift passes read: `19ba330` (pass 11) and `e2bee28` (pass 12).
+
+| Class | Checks at `19ba330` | Checks at `e2bee28` | What the passes found by hand |
+|---|---|---|---|
+| Index misses its directory | 4 indexes, 7 entries | 1 index, 2 entries | 8 instances across both passes |
+| Enforced field undocumented | 12 fields | 12 fields | 3 instances, pass 12 |
+| Citation resolves nowhere | 1 | 0 | 22 instances across both passes |
+
+For indexes and fields, the checks find everything the passes found and more, in milliseconds on every commit; those two classes no longer need a sweep. For citations they find a small part: most of the 22 were a quote that does not say what the citing file claims, or a bare `ADR-####` that means a different decision, which only reading can judge. Together with the README trigger-list copies (the fifth class, decided "no") and rules restated in two files (ISS-0048's class, RULE-ONCE declined), the sweep's remaining work is reading for meaning.
+
+**Recommendation.** The drift dimension keeps its cadence slot (release-prep and grooming, ADR-0026), with a narrower brief: skip what INDEX-COVERAGE, FIELD-UNDOCUMENTED, CITATION and BASE-STATUS report, and read for citations that misquote, restated rules and README copies. That cuts a pass's reading without dropping the classes only a reader finds. Changing the docs-audit skill's brief is Edwin's call and is not done here.

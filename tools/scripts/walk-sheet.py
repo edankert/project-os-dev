@@ -2279,14 +2279,18 @@ def render_procedure(placed: Placed, out: list[str]) -> None:
                    % (placed.omitted, _plural(placed.omitted, "step"),
                       _plural(placed.omitted, "is", "are"),
                       _plural(placed.omitted, "it is", "they are")))
+        out.append("")
+        #: project-os-dev ISS-0086: the procedure's own text says "for step 21",
+        #: so a step keeps that number here, and the numbers skip.
+        out.append("Each step keeps its number in the procedure, so the numbers skip "
+                   "where steps are left out.")
     out.append("")
-    for position, step in enumerate(placed.steps, start=1):
+    for step in placed.steps:
         preparation = not any(expectation.owed for expectation in step.expectations)
         out.append("#### Step %d%s%s" % (
-            position,
+            step.number,
             " — %s" % step.surface_said if step.surface_said else "",
-            " (preparation; source step %d)" % step.number if preparation else
-            " (source step %d)" % step.number if position != step.number else ""))
+            " (preparation)" if preparation else ""))
         out.append("")
         if step.required_state:
             out.append("**Required state:** %s" % step.required_state)
@@ -2300,7 +2304,7 @@ def render_procedure(placed: Placed, out: list[str]) -> None:
             out.append("**Capture here for a later comparison:** %s" % step.capture_prompt)
             out.append("")
         if step.uses_capture:
-            out.append("**Compare with evidence from source %s.**" % ", ".join(
+            out.append("**Compare with evidence from %s.**" % ", ".join(
                 "step %d" % source for source in step.uses_capture))
             out.append("")
         if step.timer_seconds:

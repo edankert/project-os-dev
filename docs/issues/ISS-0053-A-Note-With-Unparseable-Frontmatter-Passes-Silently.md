@@ -3,18 +3,18 @@ type: "[[issue]]"
 id: ISS-0053
 aliases: ["ISS-0053"]
 title: "A note with unparseable frontmatter passes validation silently"
-status: open
+status: fixed
 phase: "[[PHASE-0003]]"
 severity: high
 owner: user:edwin
 created: 2026-09-04
-updated: 2026-09-19
+updated: 2026-09-25
 component: tooling
 source: ["Found by the independent review of REQ-0027, 2026-09-04, which noticed ISS-0048's own frontmatter had been corrupted and nothing reported it"]
 reported_by: review
 related: ["[[ISS-0052-Three-More-Drift-Classes-Should-Be-Checks]]", "[[ADR-0026-When-A-Drift-Sweep-Stops]]"]
 tasks: []
-tests: []
+tests: ["[[TST-0025]]"]
 ---
 
 # A note with unparseable frontmatter passes validation silently
@@ -79,3 +79,15 @@ The first half is done: NOTE-FRONTMATTER reports frontmatter that does not parse
 **Next:** Narrowed to the second half: warn on an unknown top-level key, after measuring how many the fleet has.
 
 Checked as part of FEAT-0036 (TASK-0140).
+
+## Tasks, 2026-09-25
+
+Edwin asked for PHASE-0003 to be completed and tested in full. The remaining work is [[TASK-0163]].
+
+## Resolution, 2026-09-25
+
+- **A parse failure is reported.** NOTE-FRONTMATTER (template, 2026-09-18, ported from project-os-cockpit) parses each note's frontmatter with PyYAML and names the file and the error. It warns until 2026-12-17, then errors (ADR-0011 clause 3). The repro above, run on a copy of this repo, is reported.
+- **A misspelt link field is reported.** FRONTMATTER-TYPO ([[TASK-0163]]): a key no template or SCHEMAS.md defines, one or two letters from a field that carries links, is an error naming the field it resembles. `elated:` is caught. The wider rule this issue first proposed, any unknown key near any known key, was measured and rejected: about 50 findings over 8,668 notes, nearly all legitimate project fields.
+- **The cockpit's validator does not have the hole.** All three copies carry NOTE-FRONTMATTER, and the repro is reported by it too.
+
+Tested by [[TST-0025]]. Stays a warning for the parse check until 2026-12-17, as that check's own promotion date sets.

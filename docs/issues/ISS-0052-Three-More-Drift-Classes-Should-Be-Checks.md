@@ -3,18 +3,18 @@ type: "[[issue]]"
 id: ISS-0052
 aliases: ["ISS-0052"]
 title: "Three more drift classes should be checks, not sweep findings"
-status: open
+status: fixed
 phase: "[[PHASE-0003]]"
 severity: medium
 owner: user:edwin
 created: 2026-09-04
-updated: 2026-09-19
+updated: 2026-09-25
 component: tooling
 source: ["[[ADR-0026-When-A-Drift-Sweep-Stops]] acceptance criterion 1, decided 2026-09-04", "The ISS-0048 drift sweep, passes 11 and 12"]
 reported_by: agent
 related: ["[[ADR-0026-When-A-Drift-Sweep-Stops]]", "[[ADR-0024-A-Normative-Rule-Is-Stated-Once]]", "[[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File]]"]
 tasks: []
-tests: []
+tests: ["[[TST-0025]]"]
 ---
 
 # Three more drift classes should be checks, not sweep findings
@@ -71,3 +71,17 @@ The validator has no check for undocumented fields, unresolved citations or inco
 **Next:** Three warning-first checks, the index check first because it is cheapest, each measured across the fleet before it becomes an error.
 
 Checked as part of FEAT-0036 (TASK-0140).
+
+## Tasks, 2026-09-25
+
+Edwin asked for PHASE-0003 to be completed and tested in full. The remaining work is [[TASK-0164]], [[TASK-0165]], [[TASK-0166]], [[TASK-0167]].
+
+## Resolution, 2026-09-25
+
+All three checks exist, each measured over the fleet before shipping, and each warning until 2026-12-24 because other repos carry debt the template seeded:
+
+- **INDEX-COVERAGE** ([[TASK-0164]]): 38 findings in 13 repos. The template's own `docs/INDEX.md` and the CLAUDE.md template in `ADAPTER.md` were missing entries, and both are fixed; so is this repo's `CLAUDE.md`.
+- **FIELD-UNDOCUMENTED** ([[TASK-0165]]): the fields are derived from the validator's syntax tree (55). Nine were undocumented, `fixes:` and `waiver_expires:` among them; all are now in SCHEMAS.md.
+- **CITATION** ([[TASK-0166]]): cited paths and sections. Two real findings in the template, both fixed.
+
+The re-measurement ([[TASK-0167]]) is recorded on ADR-0026: indexes and fields no longer need a sweep; most citation findings were about meaning, so the drift dimension keeps its slot with a narrower brief. Tested by [[TST-0025]].

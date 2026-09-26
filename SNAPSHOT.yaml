@@ -38,16 +38,16 @@ counters:
   REL: 0
   REQ: 32
   RISK: 4
-  TASK: 162
-  TST: 23
+  TASK: 167
+  TST: 25
   WF: 3
 
 focus:
   task: ""
   feature: ""
-  phase: "PHASE-0003"
+  phase: ""
   issue: ""
-  note: "2026-09-24: FEAT-0033 is done (TASK-0125, REQ-0031 implemented) after a two-round review; the walk generator refuses contradictory declarations and is synced to project-os-cockpit and your-trainer, uncommitted in all four repos. FEAT-0033 was placed in PHASE-0005 on 2026-09-25 (Edwin). ISS-0085 (reviewers mutating one working tree) is parked. Earlier today: FEAT-0039, TASK-0080 and ISS-0084, pushed."
+  note: "2026-09-25: PHASE-0003 is done. FEAT-0021 closed after two review rounds; ISS-0052 and ISS-0053 fixed with four validator checks. Nothing in flight. Open elsewhere: ISS-0086's cockpit half; the cockpit's SNAPSHOT.yaml declares items.releases twice; uncommitted work in project-os and project-os-dev; unpushed commits in four repos."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
@@ -99,12 +99,12 @@ items:
     PHASE-0003:
       file: docs/phases/PHASE-0003-Prompting-Guide-Conformance.md
       title: "Prompting-guide conformance"
-      status: active
+      status: done
       order: 3
       owner: user:edwin
       goal: "Bring the template's instructions, skills, hooks and subagents in line with the Claude 5 prompting guides: remove the contradictions, state each rule once, trim what every session loads, and stop the hooks and hints from teaching bypasses"
       features: [FEAT-0039, FEAT-0021]
-      tasks: [TASK-0156, TASK-0157, TASK-0158, TASK-0159, TASK-0160, TASK-0080]
+      tasks: [TASK-0156, TASK-0157, TASK-0158, TASK-0159, TASK-0160, TASK-0080, TASK-0081, TASK-0163, TASK-0164, TASK-0165, TASK-0166, TASK-0167]
       note: "Reopened for new scope 2026-09-24: the Opus 5.5 guide review. The 2026-09-03 scope (FEAT-0024 to FEAT-0028) is recorded in the phase note."
     PHASE-0004:
       file: docs/phases/PHASE-0004-The-Walk.md
@@ -302,7 +302,7 @@ items:
     FEAT-0021:
       file: "docs/features/snapshot-access/FEAT-0021-Serve-Orientation-Answer-Lookup.md"
       title: "Serve orientation, answer lookup: the startup hook emits the in-flight slice instead of a reminder, and a format-independent query replaces grep against YAML"
-      status: doing
+      status: done
       phase: "[[PHASE-0003]]"
       tasks: [TASK-0080, TASK-0081]
       note: "Scopes ISS-0031's two halves. Orientation is SERVED by the hook that already fires (513-3,418 tok in five of six repos) rather than instructed — instructing has ~2% measured uptake. Lookup gets a query because grep is format-dependent: the same query returns status in your-trainer's inline style and not in project-os-dev's block style, silently. TASK-0081 stands on its own evidence; TASK-0080 is sound on ADR-0017 but unquantified until bench TASK-0008 runs."
@@ -410,6 +410,36 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0163:
+      file: docs/features/enforcement-hardening/plan/tasks/TASK-0163-Frontmatter-Typos-And-The-Cockpit-Validator.md
+      status: done
+      parent: ISS-0053
+      phase: "[[PHASE-0003]]"
+      effort: M
+    TASK-0164:
+      file: docs/features/enforcement-hardening/plan/tasks/TASK-0164-Index-Lists-Its-Directory.md
+      status: done
+      parent: ISS-0052
+      phase: "[[PHASE-0003]]"
+      effort: M
+    TASK-0165:
+      file: docs/features/enforcement-hardening/plan/tasks/TASK-0165-Every-Enforced-Field-Is-Documented.md
+      status: done
+      parent: ISS-0052
+      phase: "[[PHASE-0003]]"
+      effort: M
+    TASK-0166:
+      file: docs/features/enforcement-hardening/plan/tasks/TASK-0166-Citations-Resolve.md
+      status: done
+      parent: ISS-0052
+      phase: "[[PHASE-0003]]"
+      effort: M
+    TASK-0167:
+      file: docs/features/enforcement-hardening/plan/tasks/TASK-0167-Drift-Dimension-Remeasured.md
+      status: done
+      parent: ISS-0052
+      phase: "[[PHASE-0003]]"
+      effort: M
     TASK-0162:
       file: docs/features/walk-preparation/plan/tasks/TASK-0162-The-Sheet-Prints-The-Procedures-Own-Step-Numbers.md
       status: done
@@ -503,14 +533,6 @@ items:
       effort: S
       depends: [TASK-0152, TASK-0154]
       blocks: []
-    TASK-0140:
-      file: docs/features/backlog-clearance/plan/tasks/TASK-0140-Project-Os-Devs-Open-Issues-Are-Checked-Against-The-Template.md
-      status: done
-      parent: FEAT-0036
-    TASK-0141:
-      file: docs/features/backlog-clearance/plan/tasks/TASK-0141-The-Last-Four-Repos-Open-Issues-Are-Checked-Against-The-Code.md
-      status: done
-      parent: FEAT-0036
     TASK-0142:
       file: docs/features/template-sync-hygiene/plan/tasks/TASK-0142-A-Merge-File-Nobody-Edited-Takes-The-Template.md
       status: done
@@ -543,16 +565,6 @@ items:
       file: docs/features/template-sync-hygiene/plan/tasks/TASK-0149-No-Harness-Runs-Against-A-Cached-Compile.md
       status: done
       parent: ISS-0073
-      phase: "[[PHASE-0007]]"
-    TASK-0139:
-      file: docs/features/backlog-clearance/plan/tasks/TASK-0139-Your-Healths-Open-Issues-Are-Checked-Against-The-Code.md
-      status: done
-      parent: FEAT-0036
-      phase: "[[PHASE-0007]]"
-    TASK-0138:
-      file: docs/features/backlog-clearance/plan/tasks/TASK-0138-Your-Trainers-Open-Issues-Are-Checked-Against-The-Code.md
-      status: done
-      parent: FEAT-0036
       phase: "[[PHASE-0007]]"
     TASK-0137:
       file: docs/features/template-sync-hygiene/plan/tasks/TASK-0137-Three-Repos-Reach-The-Current-Validator.md
@@ -877,8 +889,8 @@ items:
     TASK-0081:
       file: "docs/features/snapshot-access/plan/tasks/TASK-0081-Format-Independent-Query.md"
       title: "A format-independent query for lookup, because grep returns different information per YAML style"
-      status: backlog
-      phase: "[[PHASE-999]]"
+      status: done
+      phase: "[[PHASE-0003]]"
       parent: FEAT-0021
       effort: M
       note: "Read-only; writes stay in the notes (ADR-0009). Must fall back to note frontmatter like the validator's resolves(), or it answers 'not found' for pruned-but-real items once ISS-0030 is acted on. A query nobody invokes is worse than none, so it is advertised from TASK-0080's hook output."
@@ -1041,19 +1053,6 @@ items:
     ISS-0072:
       file: docs/issues/ISS-0072-PHASES-Md-Repeats-Every-Phase-Status-And-Drifts-From-The-Phase-Notes.md
       status: fixed
-    ISS-0071:
-      file: docs/issues/ISS-0071-A-Merge-Owned-File-Nobody-Edited-Never-Receives-Template-Updates.md
-      status: fixed
-    ISS-0070:
-      file: docs/issues/ISS-0070-A-Snapshot-That-Does-Not-Parse-Still-Passes-Validation.md
-      status: fixed
-    ISS-0069:
-      file: docs/issues/ISS-0069-A-Regression-Check-A-Change-Overlaps-Cannot-Be-Reopened.md
-      status: fixed
-    ISS-0068:
-      file: docs/issues/ISS-0068-The-Cockpits-Validator-Carries-Rules-The-Template-Lacks.md
-      status: fixed
-      parent: FEAT-0037
     ISS-0066:
       file: "docs/issues/ISS-0066-An-Expectation-Line-May-Quote-Any-Expect-Line-Of-Its-Check.md"
       status: fixed
@@ -1182,16 +1181,18 @@ items:
       note: "Triaged 2026-09-04 under Edwin's rule: six rows disagreed and are fixed in template ef1f29f; three are incomplete lists that agree and are left; one remains, the stray research report at the template root."
       related: [ISS-0048, ADR-0026]
     ISS-0053:
+      tasks: [TASK-0163]
       file: "docs/issues/ISS-0053-A-Note-With-Unparseable-Frontmatter-Passes-Silently.md"
-      status: open
+      status: fixed
       severity: high
       phase: "[[PHASE-0003]]"
       component: tooling
       note: "A note whose YAML frontmatter does not parse drops out of every frontmatter-driven check and the validator stays silent. ISS-0048 sat corrupted through eight green runs. Found by the REQ-0027 review."
       related: [ISS-0052, ISS-0049, ADR-0026]
     ISS-0052:
+      tasks: [TASK-0164, TASK-0165, TASK-0166, TASK-0167]
       file: "docs/issues/ISS-0052-Three-More-Drift-Classes-Should-Be-Checks.md"
-      status: open
+      status: fixed
       severity: medium
       phase: "[[PHASE-0003]]"
       component: tooling
@@ -2118,15 +2119,15 @@ items:
 metrics:
   counts:
     features_total: 39
-    features_done: 35
+    features_done: 36
     phases_total: 9
-    phases_done: 6
-    tasks_total: 162
-    tasks_done: 153
-    tests_total: 15
+    phases_done: 7
+    tasks_total: 167
+    tasks_done: 159
+    tests_total: 17
     tests_passing: 0
     tests_failing: 0
-    issues_open: 13
+    issues_open: 11
     issues_triage: 1
     tasks_deferred: 0
     issues_deferred: 5

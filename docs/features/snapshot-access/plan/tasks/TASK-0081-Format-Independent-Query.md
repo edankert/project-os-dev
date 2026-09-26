@@ -3,11 +3,11 @@ type: "[[task]]"
 id: TASK-0081
 aliases: ["TASK-0081"]
 title: "A format-independent query for lookup, because grep returns different information per YAML style"
-status: backlog
-phase: "[[PHASE-999]]"
+status: done
+phase: "[[PHASE-0003]]"
 owner: user:edwin
 created: 2026-08-03
-updated: 2026-08-03
+updated: 2026-09-25
 source: ["fleet measurement 2026-08-03", "ISS-0031"]
 parent: "[[FEAT-0021]]"
 effort: M
@@ -15,7 +15,7 @@ due: ""
 depends: []
 blocks: []
 related: ["[[ISS-0031]]", "[[ADR-0009]]"]
-tests: []
+tests: ["[[TST-0024]]"]
 ---
 
 # A query that does not depend on the file's YAML style
@@ -58,9 +58,9 @@ The only surface that reliably reaches an agent is the hook output — which TAS
 
 ## Definition of Done
 
-- [ ] One command answers an item's status identically in a block-style and an inline-style repo; verified against `project-os-dev` and `your-trainer` specifically.
-- [ ] Falls back to note frontmatter when an ID is absent from the snapshot.
-- [ ] `--json` output, shape documented in the script.
-- [ ] Location decided and the reasoning recorded (new script vs `sync-snapshot.py` subcommand).
-- [ ] Advertised in the hook output from TASK-0080, or the note records why not.
-- [ ] A `TST-*` with a `command:`, since this is executable and ADR-0010 applies.
+- [x] One command answers an item's status identically in a block-style and an inline-style repo; verified against `project-os-dev` and `your-trainer` specifically — evidence: `snapshot-query.py` 2026-09-25 answered TASK-0081 here (block) and TASK-0965 in your-trainer (inline) with status, file, parent and phase; TST-0024 asserts identical output for the same items in both styles
+- [x] Falls back to note frontmatter when an ID is absent from the snapshot — evidence: TASK-0100, pruned from this snapshot, is answered from its note and marked so; TST-0024
+- [x] `--json` output, shape documented in the script — version 1, in the module docstring
+- [x] Location decided and the reasoning recorded — a new read-only `tools/scripts/snapshot-query.py`, because `sync-snapshot.py` writes the snapshot and a lookup should not share a file with mutation. It imports `snapshot-slice.py`'s parser, widened to read every field, so the orientation and the lookup read the snapshot one way
+- [x] Advertised in the hook output from TASK-0080 — the orientation's closing line names `snapshot-query.py <ID>`; HC-002 says so; TST-0024 asserts it
+- [x] A `TST-*` with a `command:` — [[TST-0024]], 12 assertions, five mutations each failing it

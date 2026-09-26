@@ -3,18 +3,23 @@ type: "[[feature]]"
 id: FEAT-0021
 aliases: ["FEAT-0021"]
 title: "Serve orientation, answer lookup: the startup hook emits the in-flight slice instead of a reminder, and a format-independent query replaces grep against YAML"
-status: doing
+status: done
 phase: "[[PHASE-0003]]"
 owner: user:edwin
 created: 2026-08-03
-updated: 2026-09-24
+updated: 2026-09-25
 source: ["fleet measurement 2026-08-03: 590 sessions", "user decision 2026-08-03", "ISS-0031"]
 goal: "Stop instructing agents to read the snapshot and start giving them what reading it was for. Orientation is served by the SessionStart hook at 513–3,418 tokens in five of six repos; lookup gets a query interface, because grep against YAML returns different information depending on which of the fleet's two styles a repo uses."
 requirements: []
 tasks: ["[[TASK-0080]]", "[[TASK-0081]]"]
 release: ""
 related: ["[[ISS-0031]]", "[[ISS-0030]]", "[[ADR-0017]]", "[[ADR-0002]]"]
-tests: []
+tests: ["[[TST-0007]]", "[[TST-0024]]"]
+acceptance_exception: "Hooks and scripts with no screen of their own. They are checked by TST-0007 and TST-0024, by a headless session that quoted the orientation from its context (2026-09-24), and by a comparison with PyYAML over every fleet snapshot (2026-09-25)."
+reviewed_by: ["model:claude-opus-5-5", "model:claude-opus-5-5", "model:claude-opus-5-5"]
+review_date: 2026-09-25
+review_round: 2
+review_verdict: approved
 ---
 
 # Serve orientation, answer lookup
@@ -80,7 +85,32 @@ The two halves differ on this. **TASK-0081 does not need the measurement**: form
 
 ## Acceptance
 
-- [ ] A session in any fleet repo begins with focus, counts and in-flight work already in context, without the agent reading `SNAPSHOT.yaml`.
-- [ ] The emitted slice stays within a stated token budget in every repo, including the worst case, or the emitter truncates to hold it.
-- [ ] An item's status can be retrieved by one command that returns the same shape regardless of the repo's YAML style.
-- [ ] HC-002, its implementations and the startup instruction surface agree, with the rule stated once (REQ-0018) rather than restated per adapter.
+- [x] A session in any fleet repo begins with focus, counts and in-flight work already in context, without the agent reading `SNAPSHOT.yaml` — evidence: TASK-0080; a headless session in this repo quoted the orientation from its context on 2026-09-24. Every repo that takes the template gets it; the others do at their next sync.
+- [x] The emitted slice stays within a stated token budget in every repo, including the worst case, or the emitter truncates to hold it — 6,000 characters; your-trainer, the largest, 5,945 on 2026-09-25 after the review fixes; TST-0007 asserts 400 items stay under it.
+- [x] An item's status can be retrieved by one command that returns the same shape regardless of the repo's YAML style — `snapshot-query.py`, TASK-0081; TST-0024 asserts identical output in both styles.
+- [x] HC-002, its implementations and the startup instruction surface agree, with the rule stated once rather than restated per adapter — HC-002 states it; the Claude Code hook, the Codex hook and `bootstrap.sh` call one script; AGENTS.md, CLAUDE.md and HANDOFF.md point at the orientation instead of restating it.
+
+## Verification
+
+2026-09-25, template working tree: every `tools/scripts/test-*.sh` and `test-*.py` passes, among them `test-snapshot-query.sh` 12 of 12 (TST-0024) and `test-hooks.sh` 102 of 102 (TST-0007); `validate-docs.sh` OK; `generate-adapters.py --check` 65 current. In this repo, `run-tests.py`: 24 test notes passing, 0 failing.
+
+## Review
+
+**Round 1, 2026-09-25. Verdict: `changes-requested`.** Two `independent-reviewer` subagents on one packet, each in a clean context and each breaking guards in its own copy (ISS-0085). Both found the same main defect.
+
+| Claim | Combined verdict | Evidence, and what was done |
+|---|---|---|
+| Criterion 3 and author claims 1 and 3: one command answers the same way in both styles, and an absent id comes from its note | **refuted for change notes** | Both: a `CHG-` id carries a slug, and the parser and the query cut it to `CHG-YYYYMMDD`. Asked for `CHG-20260721-Requirement-Lifecycle-Closure`, the query said "not in SNAPSHOT.yaml" and printed a different note from the same date, exit 0. **Fixed:** an item key keeps a change's slug (and a letter after its date, `CHG-20260531e-...`); a date alone is answered when one change has it and reported as ambiguous, with the candidates, when several do. Compared against PyYAML over all 13 fleet snapshots afterwards: 3,290 items, 269 of them changes, 0 mismatches. |
+| Criterion 4: the startup surface agrees, rule stated once | **refuted for lookup** | Both: `AGENTS.md` step 3 still said "Open the whole file only to look something up". **Fixed:** it names `snapshot-query.py`. |
+| Author claim 2: the orientation keeps its content and cap | cap holds; content changed (A) | The longer closing line pushed one item in your-trainer into the "more" count. **Fixed:** the line is shorter, and names the query only where the script exists (B's observation 4); your-trainer is back to "and 25 more" at 5,945 characters. |
+| Criteria 1 and 2, TST-0007, TST-0024 | holds | Both reviewers broke the truncation, block-list and note-fallback guards in their copies and saw tests fail. |
+
+**Other observations, and what was done:** a block list written at its key's own indent was dropped in block style (B): read now. A quoted comma split an inline list (B): lists split at top-level commas only. Inline maps gave lists as strings (B): lists now. An empty block value became `[]` (A): it stays `""` until a list item appears. Ids with a filter silently dropped the filter (A): a usage error now. `--in-flight` claimed to match the orientation (both): the usage text now says focus items are included. `test-hooks.sh` runs 79 of 102 assertions in a copy without `.git` (both): recorded on ISS-0085, since it affects every mutation run in a copy.
+
+Each fix has a test that fails when it is undone: `test-snapshot-query.sh` grew from 12 to 22 assertions, and six mutations each failed it (recorded on TST-0024). Round two goes to one reviewer.
+
+**Round 2, 2026-09-25. Verdict: `approved`.** One reviewer, clean context, mutations in its own copy. Every refuted claim is *fixed*: it queried every change id in three repos (project-os-dev 9 of 9, your-applications.com 56 of 56, project-os-cockpit 103 of 103), with identical answers after re-dumping each snapshot to block style; a date alone was ambiguous or answered as it should be; `AGENTS.md` names the query; your-trainer's orientation is back to "and 25 more"; each listed fix held; two of the six mutations, re-run, failed their tests.
+
+It also bounded the author's evidence: "0 mismatches" covered the fields a lookup returns, not every field, and in about 30 long quoted prose fields `scalar()` kept `\"` as written. `scalar()` is code this feature brought in (TASK-0080), so it was fixed before close: double-quoted escapes, including `\u2019` and its kin, and single-quoted `''` are now read as YAML reads them. Compared against PyYAML afterwards, every scalar and list field of every item in the 13 fleet snapshots: 20,225 fields, 0 mismatches. A new assertion in `test-snapshot-query.sh` fails when escapes are kept as written (23 of 23 pristine).
+
+The one key the parser and PyYAML disagree on, project-os-cockpit's `REL-0001`, is the cockpit's own defect: its `SNAPSHOT.yaml` declares `items.releases` twice (lines 1834 and 4559), and PyYAML keeps only the second, empty one. The parser keeps both. Reported to Edwin rather than fixed, since another session is working in that repo.

@@ -189,7 +189,7 @@ class WalkPreparationTest(unittest.TestCase):
         rendered = "\n".join(out)
         self.assertIn("Capture here for a later comparison", rendered)
         self.assertIn("**Optional timer:** 12 seconds", rendered)
-        self.assertIn("Compare with evidence from source step 1", rendered)
+        self.assertIn("Compare with evidence from step 1.", rendered)
         self.assertIn("**Needs preparation:** Bring the power meter to the bench. (ISS-1001)", rendered)
         meter = self.placed("android", ["TST-1001"])
         self.assertFalse(meter.steps[0].capture_needed)
@@ -296,6 +296,20 @@ class WalkPreparationTest(unittest.TestCase):
         remark = next(r for r in entry.procedure.remarks if "numbers its steps" in r)
         self.assertIn("numbers its steps 1, 2, 9", remark)
         self.assertIn("prints them 1 to 3", remark)
+
+    def test_steps_keep_their_procedure_numbers(self):
+        # ISS-0086, option 1 (Edwin, 2026-09-25): a procedure's own text says
+        # "for step 21", so a kept step prints under that number, not 1, 2, 3.
+        android = self.placed("android", ["TST-1002"])
+        out = []
+        walk.render_procedure(android, out)
+        headings = [line for line in out if line.startswith("#### Step")]
+        self.assertEqual(["#### Step 1 — Equipment panel (preparation)",
+                          "#### Step 2 — Equipment panel (preparation)",
+                          "#### Step 4 — Ride cockpit"], headings)
+        rendered = "\n".join(out)
+        self.assertNotIn("source step", rendered)
+        self.assertIn("the numbers skip where steps are left out", rendered)
 
     def test_cross_platform_prerequisite_is_refused(self):
         procedure = self.procedure()

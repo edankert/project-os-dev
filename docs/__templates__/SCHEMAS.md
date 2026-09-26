@@ -38,6 +38,9 @@ Conventions (naming, linking, property rules): `../../tools/instructions/OBSIDIA
 - (optional) `origin` (link): The former parent an item was descoped from when it was `deferred`.
   - Set by the deferral procedure (`tools/instructions/STATUSES.md`, "Deferral and re-adoption"); kept as history after re-adoption.
   - Distinct from `source` (import provenance): `origin` records where work was originally scoped inside this project.
+- (optional) `verification_waiver` (string): Why a terminal status is set without passing tests; the rule is `tools/instructions/QUALITY.md`, "Verification gating".
+- (required with a waiver) `waiver_expires` (date string): When the waiver lapses. A waiver without one, or with a past or unparseable date, is an error (ADR-0010).
+- (optional) `phases` (list of links) and `workflows` (list of links): `[[PHASE-...]]` and `[[WF-...]]` this note relates to; checked like the other link fields.
 
 ## `adr.md` (`type: [[adr]]`)
 
@@ -91,6 +94,7 @@ Fields:
 - (required) `goal` (string): Short outcome statement.
 - (optional) `requirements` (list of links): `[[REQ-...]]` links implemented by this feature.
 - (optional) `tasks` (list of links): `[[TASK-...]]` links that deliver the feature — the feature's **current scope**; its completeness gate is `tools/instructions/STATUSES.md` `[[feature]]`.
+- (optional) `fixes` (list of links): `[[ISS-...]]` issues this feature fixes. An issue whose `parent:` names the feature must appear here or in `issues:` (validator `PARENT-BACKLINK`).
 - (optional) `deferred` (list of links): `[[TASK-...]]` links descoped out of the feature via the deferral procedure (each keeps `origin` pointing back here). Not part of completeness.
 - ~~`tests`~~ — **removed (ADR-0032).** A feature does not list its tests. The verification link has one direction and one encoding: the test's `covers:`. A feature's tests are rendered from a reverse index over that field, so the list is derived and cannot drift — where the field could only ever be as correct as the last person to edit both sides, and a third of the fleet's feature→test edges disagreed when it was measured.
 
@@ -181,6 +185,7 @@ Fields:
 - (required) `likelihood` (string): e.g. `low|medium|high` (project-defined).
 - (required) `impact` (string): e.g. `low|medium|high` (project-defined).
 - (recommended) `mitigation` (list): Mitigation actions (strings or links to tasks).
+- (optional) `mitigation_tasks` (list of links): `[[TASK-...]]` tasks that carry out the mitigations; checked like the other link fields.
 
 Where used:
 - Tracked in `SNAPSHOT.yaml` (`items.risks`) for agent context and linked from risk notes.
@@ -247,6 +252,10 @@ Where NOT used:
 
 Where used:
 - Tracked in `SNAPSHOT.yaml` (`items.tests`) for agent context and linked from test notes.
+
+## `design.md` (`type: [[design]]`)
+
+- (optional) `asset` (path): An HTML page showing the design, relative to the note. A design past `draft` must show something, in pictures or in `asset:` (validator `DESIGN-ASSET`); the rules are `tools/instructions/TRACEABILITY.md`, "`[[design]]` links".
 
 ## `surface.md` (`type: [[surface]]`)
 
@@ -325,6 +334,8 @@ Fields:
 - (recommended) `changes` (list of links): `[[CHG-...]]` notes included in this release.
 - (recommended) `tests_verified` (list of links): `[[TST-...]]` verified for this release (see `../../tools/skills/release-verification/SKILL.md`).
 - (recommended) `previous_release` (string/link): The prior `REL-*` for rollback targeting.
+- (optional) `preparing` (boolean): `true` while this draft release is the one being prepared to ship. Two drafts may exist; only a `preparing` one is treated as in preparation.
+- (optional) `ledgers` (list of `{file, sha}`): The verdict ledgers sealed into this release, each with the hash of its bytes; the validator checks each hash against the file.
 
 Where used:
 - Tracked in `SNAPSHOT.yaml` (`items.releases`) and summarized in the optional `releases.latest`/`releases.history` block.

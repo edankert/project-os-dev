@@ -36,7 +36,7 @@ Whatever number a walker sees for a step matches what the procedure's text calls
 
 Edwin chose option 1: the sheet and the cockpit both show the procedure's step number, and the cockpit keeps its progress count separate.
 
-- **Generator half: done.** [[TASK-0162]], template `cd50653`. It is deliberately not synced to any consumer yet.
+- **Generator half: done.** [[TASK-0162]], template `cd50653`. It is deliberately not synced to a repo with a walk (project-os-cockpit, your-trainer) yet; project-os-dev, which has none, took it on 2026-09-25.
 - **Cockpit half: open.** It belongs to the session that owns project-os-cockpit FEAT-0151. This issue is fixed when both halves land in one sync.
 
 ### Handoff for the cockpit session
