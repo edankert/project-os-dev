@@ -4,7 +4,7 @@ id: ISS-0102
 aliases: ["ISS-0102"]
 title: "A shell search with grep -r reads files the repo ignores, and will read the archive too"
 status: open
-phase: "[[PHASE-999]]"
+phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
 updated: 2026-09-26

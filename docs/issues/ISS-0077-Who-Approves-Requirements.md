@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0077
 aliases: ["ISS-0077"]
 title: "Two files disagree about who approves a requirement, so an agent can approve its own acceptance criteria"
-status: triage
+status: "open"
 phase: ""
 owner: user:edwin
 created: 2026-09-21
-updated: 2026-09-21
+updated: "2026-09-26"
 source: ["planning pass for [[FEAT-0038-Note-Relevance-Harness|FEAT-0038]], 2026-09-21"]
 reported_by: agent
 question: "Which file keeps the rule — OWNERSHIP.md (approval is the owner's) or feature-scaffold step 7 (the scaffolding agent approves)? REQ-0027 says delete the copy and link, never correct the copy, so the answer decides which one loses its sentence. Recommendation: OWNERSHIP.md keeps it, because it is the file about who owns what and the skill is a playbook that should link."

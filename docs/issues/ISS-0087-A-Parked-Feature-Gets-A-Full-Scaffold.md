@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0087
 aliases: ["ISS-0087"]
 title: "A feature nobody will build yet still gets requirements, tasks and an acceptance check, and every later decision has to be applied across all of them"
-status: triage
-phase: "[[PHASE-999]]"
+status: "open"
+phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
-updated: 2026-09-26
+updated: "2026-09-26"
 source: ["your-trainer session your-trainer-b8, on Edwin's instruction (2026-09-26: 'review where most of the time went', then 'Make it so')"]
 reported_by: review
 question: ""

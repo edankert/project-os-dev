@@ -4,7 +4,7 @@ id: ISS-0098
 aliases: ["ISS-0098"]
 title: "Notes grow dated history sections that every later reader has to get through"
 status: open
-phase: "[[PHASE-999]]"
+phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
 updated: 2026-09-26

@@ -4,7 +4,7 @@ id: ISS-0097
 aliases: ["ISS-0097"]
 title: "Nothing stops a released ticket from being rewritten to match later work"
 status: open
-phase: "[[PHASE-999]]"
+phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
 updated: 2026-09-26

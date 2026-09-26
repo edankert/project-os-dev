@@ -4,7 +4,7 @@ id: ISS-0094
 aliases: ["ISS-0094"]
 title: "A validator rule added today warns about notes that were finished before the rule existed"
 status: open
-phase: "[[PHASE-999]]"
+phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
 updated: 2026-09-26

@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0090
 aliases: ["ISS-0090"]
 title: "The Stop hook validates without syncing the snapshot first, so a note another agent just wrote blocks the turn"
-status: triage
-phase: "[[PHASE-999]]"
+status: "open"
+phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
-updated: 2026-09-26
+updated: "2026-09-26"
 source: ["your-trainer session your-trainer-b8, on Edwin's instruction (2026-09-26: 'review where most of the time went', then 'Make it so')"]
 reported_by: review
 question: ""

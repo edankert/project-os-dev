@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0089
 aliases: ["ISS-0089"]
 title: "validate-docs.sh prints OK before its last check runs, and a walk failure after it does not look like an error"
-status: triage
-phase: "[[PHASE-999]]"
+status: "open"
+phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
-updated: 2026-09-26
+updated: "2026-09-26"
 source: ["your-trainer session your-trainer-b8, on Edwin's instruction (2026-09-26: 'review where most of the time went', then 'Make it so')"]
 reported_by: review
 question: ""

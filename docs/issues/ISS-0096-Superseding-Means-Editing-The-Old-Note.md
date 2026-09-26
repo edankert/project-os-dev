@@ -4,7 +4,7 @@ id: ISS-0096
 aliases: ["ISS-0096"]
 title: "Superseding a decision means editing the old note, and an agent that reaches the old note by a link is not told"
 status: open
-phase: "[[PHASE-999]]"
+phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
 updated: 2026-09-26

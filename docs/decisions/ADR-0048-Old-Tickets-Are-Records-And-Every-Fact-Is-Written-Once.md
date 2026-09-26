@@ -16,7 +16,7 @@ supersedes: ""
 superseded: ""
 decided_option: "4"
 decided: 2026-09-26
-related: ["[[ISS-0087-A-Parked-Feature-Gets-A-Full-Scaffold]]", "[[ISS-0091-Finished-Notes-Have-No-Archive]]", "[[ISS-0092-A-Note-Restates-A-Rule-It-Should-Link]]", "[[ADR-0009]]", "[[ADR-0011]]"]
+related: ["[[PHASE-0009-A-Change-Costs-Only-Its-Own-Work]]", "[[ISS-0087-A-Parked-Feature-Gets-A-Full-Scaffold]]", "[[ISS-0091-Finished-Notes-Have-No-Archive]]", "[[ISS-0092-A-Note-Restates-A-Rule-It-Should-Link]]", "[[ADR-0009]]", "[[ADR-0011]]"]
 ---
 
 # Finished tickets are frozen records, standing records are superseded in one place, and every relationship is written once

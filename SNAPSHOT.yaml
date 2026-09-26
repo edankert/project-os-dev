@@ -34,7 +34,7 @@ counters:
     last_date: 20260916
   FEAT: 39
   ISS: 102
-  PHASE: 8
+  PHASE: 9
   REL: 0
   REQ: 32
   RISK: 4
@@ -45,12 +45,21 @@ counters:
 focus:
   task: ""
   feature: ""
-  phase: ""
+  phase: "PHASE-0009"
   issue: ""
-  note: "2026-09-25: PHASE-0003 is done. FEAT-0021 closed after two review rounds; ISS-0052 and ISS-0053 fixed with four validator checks. Nothing in flight. Open elsewhere: ISS-0086's cockpit half; the cockpit's SNAPSHOT.yaml declares items.releases twice; uncommitted work in project-os and project-os-dev; unpushed commits in four repos."
+  note: "2026-09-26: PHASE-0009 opened (Edwin): a change costs only its own work. First step is ISS-0100's baseline, then ISS-0093's note index. ISS-0091's archive design is still Edwin's to decide before step 4. Open elsewhere: ISS-0086's cockpit half; the cockpit's SNAPSHOT.yaml declares items.releases twice."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
+    PHASE-0009:
+      file: docs/phases/PHASE-0009-A-Change-Costs-Only-Its-Own-Work.md
+      title: "A change costs only its own work"
+      status: active
+      order: 9
+      owner: user:edwin
+      goal: "A change costs only its own work: each fact is written once, the checks answer in seconds, and finished notes stay out of the way unless someone asks for them."
+      issues: [ISS-0087, ISS-0088, ISS-0089, ISS-0090, ISS-0091, ISS-0092, ISS-0093, ISS-0094, ISS-0095, ISS-0096, ISS-0097, ISS-0098, ISS-0099, ISS-0100, ISS-0101, ISS-0102]
+      related: [ADR-0048, ADR-0026, PHASE-0008]
     PHASE-0008:
       file: docs/phases/PHASE-0008-Measured-Note-Ranking.md
       status: done
@@ -135,7 +144,7 @@ items:
       status: planned
       order: 999
       owner: user:edwin
-      issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083, ISS-0085, ISS-0086, ISS-0087, ISS-0088, ISS-0089, ISS-0090, ISS-0091, ISS-0092, ISS-0093, ISS-0094, ISS-0095, ISS-0096, ISS-0097, ISS-0098, ISS-0099, ISS-0100, ISS-0101, ISS-0102]
+      issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083, ISS-0085, ISS-0086]
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
@@ -1005,67 +1014,67 @@ items:
     ISS-0101:
       file: docs/issues/ISS-0101-A-Search-Returns-Finished-Notes-Mixed-In.md
       status: open
-      phase: "[[PHASE-999]]"
+      phase: "[[PHASE-0009]]"
     ISS-0102:
       file: docs/issues/ISS-0102-Shell-Searches-Read-Files-The-Repo-Ignores.md
       status: open
-      phase: "[[PHASE-999]]"
+      phase: "[[PHASE-0009]]"
     ISS-0093:
       file: docs/issues/ISS-0093-The-Checks-Parse-Every-Note-Several-Times.md
       status: open
-      phase: "[[PHASE-999]]"
+      phase: "[[PHASE-0009]]"
     ISS-0094:
       file: docs/issues/ISS-0094-A-Rule-Judges-Notes-That-Closed-Before-It-Existed.md
       status: open
-      phase: "[[PHASE-999]]"
+      phase: "[[PHASE-0009]]"
     ISS-0095:
       file: docs/issues/ISS-0095-One-Relationship-Is-Written-In-Six-Places.md
       status: open
-      phase: "[[PHASE-999]]"
+      phase: "[[PHASE-0009]]"
     ISS-0096:
       file: docs/issues/ISS-0096-Superseding-Means-Editing-The-Old-Note.md
       status: open
-      phase: "[[PHASE-999]]"
+      phase: "[[PHASE-0009]]"
     ISS-0097:
       file: docs/issues/ISS-0097-Nothing-Stops-A-Released-Ticket-Being-Edited.md
       status: open
-      phase: "[[PHASE-999]]"
+      phase: "[[PHASE-0009]]"
     ISS-0098:
       file: docs/issues/ISS-0098-Notes-Grow-Into-Diaries.md
       status: open
-      phase: "[[PHASE-999]]"
+      phase: "[[PHASE-0009]]"
     ISS-0099:
       file: docs/issues/ISS-0099-Ledger-Field-Warnings-Wait-Ninety-Days.md
       status: open
-      phase: "[[PHASE-999]]"
+      phase: "[[PHASE-0009]]"
     ISS-0100:
       file: docs/issues/ISS-0100-Nobody-Has-Measured-Time-Spent-On-Finished-Notes.md
       status: open
-      phase: "[[PHASE-999]]"
+      phase: "[[PHASE-0009]]"
     ISS-0087:
       file: docs/issues/ISS-0087-A-Parked-Feature-Gets-A-Full-Scaffold.md
-      status: triage
-      phase: "[[PHASE-999]]"
+      status: open
+      phase: "[[PHASE-0009]]"
     ISS-0088:
       file: docs/issues/ISS-0088-Editing-A-Check-Breaks-Every-Walk-That-Quotes-It.md
-      status: triage
-      phase: "[[PHASE-999]]"
+      status: open
+      phase: "[[PHASE-0009]]"
     ISS-0089:
       file: docs/issues/ISS-0089-The-Validator-Said-OK-And-The-Commit-Was-Refused.md
-      status: triage
-      phase: "[[PHASE-999]]"
+      status: open
+      phase: "[[PHASE-0009]]"
     ISS-0090:
       file: docs/issues/ISS-0090-The-Stop-Hook-Validates-Without-Syncing-The-Snapshot.md
-      status: triage
-      phase: "[[PHASE-999]]"
+      status: open
+      phase: "[[PHASE-0009]]"
     ISS-0091:
       file: docs/issues/ISS-0091-Finished-Notes-Have-No-Archive.md
-      status: triage
-      phase: "[[PHASE-999]]"
+      status: open
+      phase: "[[PHASE-0009]]"
     ISS-0092:
       file: docs/issues/ISS-0092-A-Note-Restates-A-Rule-It-Should-Link.md
-      status: triage
-      phase: "[[PHASE-999]]"
+      status: open
+      phase: "[[PHASE-0009]]"
     ISS-0086:
       file: docs/issues/ISS-0086-Sheet-Step-Numbers-Do-Not-Match-Procedure-Prose.md
       status: open
@@ -1112,7 +1121,7 @@ items:
       note: "Two conventions nobody wrote down, both found on 2026-09-21 when PHASE-0008 rendered as a dashed label in Obsidian. Edwin ruled a link carries the full filename: 399 bare-ID wikilinks and 1057 non-link bare IDs across 347 of 459 notes, plus 108 snapshot entries. That only reads well if filenames are short, and 187 of 373 descriptors exceed 30 characters (ISS 71/78, TASK 56/155). PHASE-0008's thirteen notes were renamed to 15-25 characters as the reference shape. The checks matter more than the sweeps — without them the next scaffold reintroduces both."
     ISS-0077:
       file: docs/issues/ISS-0077-Who-Approves-Requirements.md
-      status: triage
+      status: open
       note: "Found while scaffolding FEAT-0038: feature-scaffold step 7 tells the agent to approve the requirement, OWNERSHIP.md makes approval the owner's. An agent reading only the skill approves its own acceptance criteria. REQ-0027 family; the question is which file keeps the rule."
     ISS-0066:
       file: "docs/issues/ISS-0066-An-Expectation-Line-May-Quote-Any-Expect-Line-Of-Its-Check.md"
@@ -2186,15 +2195,15 @@ metrics:
   counts:
     features_total: 39
     features_done: 36
-    phases_total: 9
+    phases_total: 10
     phases_done: 7
     tasks_total: 167
     tasks_done: 159
     tests_total: 17
     tests_passing: 0
     tests_failing: 0
-    issues_open: 21
-    issues_triage: 7
+    issues_open: 28
+    issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 5
     requirements_total: 32

@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0088
 aliases: ["ISS-0088"]
 title: "Editing an acceptance check breaks every walk procedure that quotes its expectation"
-status: triage
-phase: "[[PHASE-999]]"
+status: "open"
+phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
-updated: 2026-09-26
+updated: "2026-09-26"
 source: ["your-trainer session your-trainer-b8, on Edwin's instruction (2026-09-26: 'review where most of the time went', then 'Make it so')"]
 reported_by: review
 question: ""

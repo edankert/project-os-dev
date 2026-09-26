@@ -4,7 +4,7 @@ id: ISS-0095
 aliases: ["ISS-0095"]
 title: "Adding a task writes the same membership in six places by hand, and the copies drift"
 status: open
-phase: "[[PHASE-999]]"
+phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
 updated: 2026-09-26

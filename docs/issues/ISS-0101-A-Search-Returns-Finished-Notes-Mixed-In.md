@@ -4,7 +4,7 @@ id: ISS-0101
 aliases: ["ISS-0101"]
 title: "A search for a rule returns finished notes mixed in with live ones, and each has to be opened to tell which is which"
 status: open
-phase: "[[PHASE-999]]"
+phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
 updated: 2026-09-26

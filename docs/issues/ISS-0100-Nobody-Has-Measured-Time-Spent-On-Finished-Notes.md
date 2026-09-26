@@ -4,7 +4,7 @@ id: ISS-0100
 aliases: ["ISS-0100"]
 title: "Nobody has measured how much of a session goes to finished notes, so no fix can show it helped"
 status: open
-phase: "[[PHASE-999]]"
+phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
 updated: 2026-09-26

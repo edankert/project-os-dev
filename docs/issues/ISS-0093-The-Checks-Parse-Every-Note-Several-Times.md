@@ -4,7 +4,7 @@ id: ISS-0093
 aliases: ["ISS-0093"]
 title: "Every commit and every stop waits about a minute while the checks parse the same notes again and again"
 status: open
-phase: "[[PHASE-999]]"
+phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
 updated: 2026-09-26

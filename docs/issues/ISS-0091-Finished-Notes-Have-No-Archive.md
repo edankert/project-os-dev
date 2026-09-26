@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0091
 aliases: ["ISS-0091"]
 title: "Finished tasks, issues and change notes stay among the live notes, so every search and validator run wades through them"
-status: triage
-phase: "[[PHASE-999]]"
+status: "open"
+phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
-updated: 2026-09-26
+updated: "2026-09-26"
 source: ["your-trainer session your-trainer-b8, on Edwin's instruction (2026-09-26: 'review where most of the time went', then 'Make it so')"]
 reported_by: review
 question: "How should finished notes be archived? Edwin's proposal: archive finished tasks and one-off issues, and keep the lasting record in phases, features, ADRs and requirements. The your-trainer session's recommendation, not yet answered: archive finished tasks, finished issues, merged change notes and retired checks once the release that shipped them is out; move lasting facts into the feature or an ADR at close-out; move notes to docs/archive/ under the same sub-path, never delete; add a .ignore so search skips it; validate only that links into it resolve. Also: a validator option that prints only warnings for files changed since HEAD."
