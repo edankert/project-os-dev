@@ -56,12 +56,13 @@ items:
 YAML
 note() { local path="$1"; shift; { printf -- '---\n'; printf '%s\n' "$@"; printf -- '---\n# Note\n'; } > "$R/$path"; }
 note docs/phases/PHASE-0001-One.md 'type: "[[phase]]"' 'id: PHASE-0001' 'status: active' 'tasks: []' 'features: [FEAT-0001]'
-note docs/features/a/FEAT-0001-A.md 'type: "[[feature]]"' 'id: FEAT-0001' 'status: doing' 'phase: "[[PHASE-0001]]"' 'tasks:' '  - "[[TASK-0001-First]]"' '  - "[[TASK-0004-Listed-Only]]"' '  - "[[TASK-0005-Moved-Away]]"' 'owner: user:x'
+note docs/features/a/FEAT-0001-A.md 'type: "[[feature]]"' 'id: FEAT-0001' 'status: doing' 'phase: "[[PHASE-0001]]"' 'tasks:' '  - "[[TASK-0001-First]]"' '  - "[[TASK-0004-Listed-Only]]"' '  - "[[TASK-0005-Moved-Away]]"' '  - "[[TASK-0009-Deferred]]"' 'owner: user:x'
 note docs/features/b/FEAT-0002-B.md 'type: "[[feature]]"' 'id: FEAT-0002' 'status: doing' 'tasks: []'
 note docs/issues/ISS-0001-One.md 'type: "[[issue]]"' 'id: ISS-0001' 'status: open' 'parent: ""' 'related: []'
 note docs/features/a/plan/tasks/TASK-0001-First.md 'type: "[[task]]"' 'id: TASK-0001' 'status: done' 'parent: "[[FEAT-0001]]"' 'phase: "[[PHASE-0001]]"'
 note docs/features/a/plan/tasks/TASK-0004-Listed-Only.md 'type: "[[task]]"' 'id: TASK-0004' 'status: done' 'parent: ""'
 note docs/features/b/plan/tasks/TASK-0005-Moved-Away.md 'type: "[[task]]"' 'id: TASK-0005' 'status: done' 'parent: "[[FEAT-0002]]"'
+note docs/features/a/plan/tasks/TASK-0009-Deferred.md 'type: "[[task]]"' 'id: TASK-0009' 'status: deferred' 'origin: "FEAT-0001"'
 note docs/features/a/plan/tasks/TASK-0006-Fixes-The-Issue.md 'type: "[[task]]"' 'id: TASK-0006' 'status: done' 'parent: "[[FEAT-0001]]"'
 sed -i.bak 's/^related: \[\]$/related: []\ntasks: ["[[TASK-0006]]"]/' "$R/docs/issues/ISS-0001-One.md"; rm -f "$R/docs/issues/ISS-0001-One.md.bak"
 (cd "$R" && git init -q && git add -A && git -c user.email=t@t -c user.name=t commit -q -m base)
@@ -74,7 +75,7 @@ sed -i.bak 's/^  TASK: 6$/  TASK: 6/' "$R/SNAPSHOT.yaml"; rm -f "$R/SNAPSHOT.yam
 
 dry="$(cd "$R" && python3 tools/scripts/derive-lists.py 2>&1)"
 check "the dry run reports the conflict, naming both sides, and writes nothing" \
-  "$( { printf '%s' "$dry" | grep -q 'CONFLICT TASK-0005 parent names FEAT-0002, but FEAT-0001 lists it' && [[ -z "$(cd "$R" && git status --porcelain --untracked-files=no | grep -v '^A ')" ]]; }; echo $?)" "$dry"
+  "$( { printf '%s' "$dry" | grep -q 'CONFLICT TASK-0005 parent names FEAT-0002, but FEAT-0001 lists it' && printf '%s' "$dry" | grep -q 'descoped TASK-0009 is deferred, so FEAT-0001' && [[ -z "$(cd "$R" && git status --porcelain --untracked-files=no | grep -v '^A ')" ]]; }; echo $?)" "$dry"
 
 # Commit through the pre-commit hook: the sync writes, the hook stages.
 hook="$(cd "$R" && bash tools/scripts/hooks/pre-commit 2>&1)"; code=$?
@@ -85,6 +86,9 @@ snap() { cat "$R/SNAPSHOT.yaml"; }
 f="$(fm docs/features/a/FEAT-0001-A.md)"
 check "the feature's block list gains TASK-0002, in the list's slug form" "$(printf '%s' "$f" | grep -qx '  - "\[\[TASK-0002-Second\]\]"'; echo $?)" "$f"
 check "a task written only in the feature's list is kept there" "$(printf '%s' "$f" | grep -q 'TASK-0004-Listed-Only'; echo $?)" "$f"
+t9="$(fm docs/features/a/plan/tasks/TASK-0009-Deferred.md)"
+check "a deferred task keeps no parent, and its feature's list drops it" \
+  "$( { ! printf '%s' "$t9" | grep -q '^parent:' && ! printf '%s' "$f" | grep -q 'TASK-0009'; }; echo $?)" "$t9 // $f"
 check "a task whose parent is another feature leaves this feature's list" "$(! printf '%s' "$f" | grep -q 'TASK-0005'; echo $?)" "$f"
 check "the block list stays a block list, and the next field survives" "$(printf '%s' "$f" | grep -qx 'tasks:' && printf '%s' "$f" | grep -qx 'owner: user:x'; echo $?)" "$f"
 t4="$(fm docs/features/a/plan/tasks/TASK-0004-Listed-Only.md)"

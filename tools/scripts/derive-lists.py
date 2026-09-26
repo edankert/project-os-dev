@@ -287,13 +287,20 @@ def plan(root):
             for cid in extract_ids(fm.get(field)):
                 if prefix(cid) == cp and cid in notes:
                     holders.setdefault((cid, cf), set()).add(pid)
-    moves, conflicts, moved = [], [], {}
+    moves, conflicts, moved, descoped = [], [], {}, []
     for (cid, cf), pids in sorted(holders.items()):
         named = names.get((cid, cf), [])
         if named:
             for pid in sorted(pids):
                 if stale(pid, cid, cf, names):
                     conflicts.append({"child": cid, "field": cf, "names": named, "listed_by": pid})
+        elif cf == "parent" and str(notes[cid][1].get("status", "")).strip() == "deferred":
+            #: A deferred item has no parent on purpose: descoping cleared it and
+            #: `origin:` records where it came from (STATUSES.md, "Deferral and
+            #: re-adoption"). The list still naming it is what is stale, so the
+            #: entry goes (project-os-cockpit TASK-0045 and TASK-0065, 2026-09-26).
+            for pid in sorted(pids):
+                descoped.append({"child": cid, "listed_by": pid})
         elif len(pids) == 1:
             pid = next(iter(pids))
             moves.append({"child": cid, "field": cf, "parent": pid})
@@ -315,7 +322,8 @@ def plan(root):
                 continue
             edits.append({"id": pid, "path": path, "field": field, "prefix": cp, "cf": cf, "want": want})
     return {"notes": notes, "moves": moves, "conflicts": conflicts, "edits": edits,
-            "wanted": wanted, "stems": stems, "moved": moved, "names": names}
+            "wanted": wanted, "stems": stems, "moved": moved, "names": names,
+            "descoped": descoped}
 
 
 def stale(owner, cid, cf, names):
@@ -332,11 +340,15 @@ def stale(owner, cid, cf, names):
 
 
 def drops(owner, raws, cp, cf, names, notes):
-    """The listed children whose entry is a stale copy (see `stale`)."""
+    """The listed children whose entry is a stale copy (see `stale`), and a
+    deferred child listed as a parent's task, which descoping removed."""
     out = set()
     for raw in raws:
         cid = item_id(raw, cp)
-        if cid and cid in notes and stale(owner, cid, cf, names):
+        if not cid or cid not in notes:
+            continue
+        deferred = cf == "parent" and str(notes[cid][1].get("status", "")).strip() == "deferred"
+        if stale(owner, cid, cf, names) or (deferred and not names.get((cid, cf))):
             out.add(cid)
     return out
 
@@ -563,7 +575,7 @@ def derive(root, snap_lines=None, snap=None, write=False):
                                            "listed_by": c["id"] + " (SNAPSHOT.yaml)"})
         added = sync_membership(snap_lines, p, snap)
     return {"notes": note_changes, "snapshot": snap_changes, "membership": added,
-            "conflicts": p["conflicts"]}
+            "conflicts": p["conflicts"], "descoped": p["descoped"]}
 
 
 def main(argv=None):
@@ -603,6 +615,8 @@ def main(argv=None):
               " +" + ",".join(c["added"]) if c["added"] else "", " -" + ",".join(c["removed"]) if c["removed"] else ""))
     for tid in result["membership"]:
         print("   entry   %s" % tid)
+    for c in result["descoped"]:
+        print("   descoped %s is deferred, so %s's list drops it" % (c["child"], c["listed_by"]))
     for c in result["conflicts"]:
         print("   CONFLICT %s %s names %s, but %s lists it; the child's field wins"
               % (c["child"], c["field"], ", ".join(c["names"]) or "nothing", c["listed_by"]))
