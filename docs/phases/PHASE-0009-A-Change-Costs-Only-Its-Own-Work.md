@@ -11,8 +11,8 @@ updated: 2026-09-26
 goal: "A change costs only its own work: each fact is written once, the checks answer in seconds, and finished notes stay out of the way unless someone asks for them."
 features: []
 requirements: []
-tasks: [TASK-0168, TASK-0169, TASK-0170, TASK-0171, TASK-0172, TASK-0173, TASK-0174, TASK-0175, TASK-0176, TASK-0177, TASK-0178, TASK-0179, TASK-0180, TASK-0181, TASK-0182, TASK-0183, TASK-0184]
-issues: [ISS-0087, ISS-0088, ISS-0089, ISS-0090, ISS-0091, ISS-0092, ISS-0093, ISS-0094, ISS-0095, ISS-0096, ISS-0097, ISS-0098, ISS-0099, ISS-0100, ISS-0101, ISS-0102]
+tasks: [TASK-0168, TASK-0169, TASK-0170, TASK-0171, TASK-0172, TASK-0173, TASK-0174, TASK-0175, TASK-0176, TASK-0177, TASK-0178, TASK-0179, TASK-0180, TASK-0181, TASK-0182, TASK-0183, TASK-0184, TASK-0185]
+issues: [ISS-0087, ISS-0088, ISS-0089, ISS-0090, ISS-0091, ISS-0092, ISS-0093, ISS-0094, ISS-0095, ISS-0096, ISS-0097, ISS-0098, ISS-0099, ISS-0100, ISS-0101, ISS-0102, ISS-0103]
 related: ["[[ADR-0048-Old-Tickets-Are-Records-And-Every-Fact-Is-Written-Once]]", "[[ADR-0026-When-A-Drift-Sweep-Stops]]", "[[PHASE-0008-Measured-Note-Ranking]]"]
 tags: [phase, agent-time, derived-state]
 ---

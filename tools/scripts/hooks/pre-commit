@@ -28,11 +28,12 @@ if [[ -f "$SYNC" ]] && command -v python3 >/dev/null 2>&1; then
 fi
 
 VALIDATOR="$ROOT/tools/scripts/validate-docs.sh"
-if [[ ! -x "$VALIDATOR" ]]; then
-  echo "pre-commit: $VALIDATOR missing or not executable; refusing to silently skip docs validation." >&2
+if [[ ! -f "$VALIDATOR" ]]; then
+  echo "pre-commit: $VALIDATOR missing; refusing to silently skip docs validation." >&2
   exit 1
 fi
-"$VALIDATOR" --repo-root "$ROOT"
+# bash, not the executable bit: a fresh clone may not have it (project-os-dev ISS-0103).
+bash "$VALIDATOR" --repo-root "$ROOT"
 STATUS=$?
 if [[ $STATUS -ne 0 ]]; then
   echo "" >&2

@@ -34,12 +34,12 @@ counters:
   CHG:
     last_date: 20260916
   FEAT: 39
-  ISS: 102
+  ISS: 103
   PHASE: 9
   REL: 0
   REQ: 32
   RISK: 4
-  TASK: 184
+  TASK: 185
   TST: 39
   WF: 3
 
@@ -59,7 +59,7 @@ items:
       order: 9
       owner: user:edwin
       goal: "A change costs only its own work: each fact is written once, the checks answer in seconds, and finished notes stay out of the way unless someone asks for them."
-      issues: [ISS-0087, ISS-0088, ISS-0089, ISS-0090, ISS-0091, ISS-0092, ISS-0093, ISS-0094, ISS-0095, ISS-0096, ISS-0097, ISS-0098, ISS-0099, ISS-0100, ISS-0101, ISS-0102]
+      issues: [ISS-0087, ISS-0088, ISS-0089, ISS-0090, ISS-0091, ISS-0092, ISS-0093, ISS-0094, ISS-0095, ISS-0096, ISS-0097, ISS-0098, ISS-0099, ISS-0100, ISS-0101, ISS-0102, ISS-0103]
       related: [ADR-0048, ADR-0026, PHASE-0008]
     PHASE-0008:
       file: docs/phases/PHASE-0008-Measured-Note-Ranking.md
@@ -420,6 +420,12 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0185:
+      file: docs/features/agent-time/plan/tasks/TASK-0185-Hooks-Run-The-Validator-Whatever-Its-File-Mode.md
+      status: done
+      parent: ISS-0103
+      phase: "[[PHASE-0009]]"
+      effort: S
     TASK-0184:
       file: docs/features/agent-time/plan/tasks/TASK-0184-Released-Notes-Draw-Only-Structural-Findings.md
       status: done
@@ -1102,6 +1108,10 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0103:
+      file: docs/issues/ISS-0103-The-Stop-Hook-Skips-Validation-When-The-Script-Is-Not-Executable.md
+      status: fixed
+      phase: "[[PHASE-0009]]"
     ISS-0101:
       tasks: [TASK-0181]
       file: docs/issues/ISS-0101-A-Search-Returns-Finished-Notes-Mixed-In.md
@@ -2313,8 +2323,8 @@ metrics:
     features_done: 36
     phases_total: 10
     phases_done: 7
-    tasks_total: 184
-    tasks_done: 176
+    tasks_total: 185
+    tasks_done: 177
     tests_total: 31
     tests_passing: 0
     tests_failing: 0

@@ -17,6 +17,8 @@ check() { assertions=$((assertions + 1)); if [[ -z "$2" || "$2" -ne 0 ]]; then f
 # counter does not yet cover.
 setup() {
   rsync -a --exclude .git "$ROOT/" "$1/"
+  # As a fresh clone of a repo with core.fileMode off has it (ISS-0103).
+  chmod -x "$1/tools/scripts/validate-docs.sh"
   sed -i.bak 's/^  replace_me: true$/  replace_me: false/' "$1/SNAPSHOT.yaml"; rm -f "$1/SNAPSHOT.yaml.bak"
   printf -- '---\ntype: "[[issue]]"\nid: ISS-0001\naliases: ["ISS-0001"]\ntitle: "A new issue"\nstatus: triage\nowner: unassigned\ncreated: 2026-09-26\nupdated: 2026-09-26\n---\n# A new issue\n' > "$1/docs/issues/ISS-0001-A-New-Issue.md"
 }

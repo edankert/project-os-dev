@@ -13,7 +13,7 @@ level: integration
 entrypoint: "../project-os/tools/scripts/test-stop-sync.sh"
 command: "bash ../project-os/tools/scripts/test-stop-sync.sh"
 covers: ["[[ISS-0090-The-Stop-Hook-Validates-Without-Syncing-The-Snapshot]]"]
-tasks: ["[[TASK-0171]]"]
+tasks: ["[[TASK-0171]]", "[[TASK-0185]]"]
 issues: ["[[ISS-0090-The-Stop-Hook-Validates-Without-Syncing-The-Snapshot]]"]
 artifacts: []
 evidence: []
@@ -38,5 +38,7 @@ In your-trainer a background planner created REQ-0221 while `counters.REQ` was 2
 - `write_if_unchanged` leaves a snapshot alone when it changed since the sync read it, replaces an unchanged one, and leaves no temporary file.
 
 ## Expected results
+
+- Every fixture removes the executable bit from `validate-docs.sh`, as a fresh clone of a repo with `core.fileMode` off has it, so a hook that only runs an executable validator fails the invalid-status case (ISS-0103).
 
 - Exit 0: 7 of 7, 2026-09-26.

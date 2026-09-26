@@ -48,9 +48,13 @@ if [ -f "$SYNC" ] && command -v python3 >/dev/null 2>&1; then
 fi
 
 # Mechanical validation first: block stop while the docs invariants are broken (HC-007).
+# Run with bash whenever the file exists, not only when it is executable. The
+# template repo keeps core.fileMode off, so git stored the script as 100644 and
+# a fresh clone skipped validation on every stop without a word
+# (project-os-dev ISS-0103).
 VALIDATOR="$PROJECT_DIR/tools/scripts/validate-docs.sh"
-if [ -x "$VALIDATOR" ]; then
-  VALIDATION_OUTPUT=$("$VALIDATOR" --repo-root "$PROJECT_DIR" --quiet 2>&1)
+if [ -f "$VALIDATOR" ]; then
+  VALIDATION_OUTPUT=$(bash "$VALIDATOR" --repo-root "$PROJECT_DIR" --quiet 2>&1)
   if [ $? -eq 1 ]; then
     SUMMARY=$(echo "$VALIDATION_OUTPUT" | head -10 | tr '\n' ' ' | sed 's/"/\\"/g')
     cat <<EOF
