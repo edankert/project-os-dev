@@ -15,7 +15,7 @@ severity: medium
 component: "tools/scripts/validate-docs.py"
 parent: ""
 related: ["[[ADR-0048-Old-Tickets-Are-Records-And-Every-Fact-Is-Written-Once]]"]
-tasks: ["[[TASK-0179]]"]
+tasks: ["[[TASK-0179]]", "[[TASK-0184]]"]
 tests: ["[[TST-0036-A-Rule-Judges-Notes-Open-When-It-Arrived]]"]
 ---
 
@@ -36,3 +36,7 @@ ADR-0048 was accepted with option 4 on 2026-09-26: tickets freeze at release, a 
 ## Fixed, 2026-09-26
 
 TASK-0179. The five content rules carry the date they arrived, and a note finished on or before that date is not judged by them; the validator counts what it hid in one line. Structural checks still judge every note. `--changed` shows only findings about files changed since HEAD. On your-trainer, findings about finished notes fell from 327 to 150; most of the rest are verification findings for the release being walked. TST-0036 tests it.
+
+## Widened, 2026-09-26: released notes
+
+TASK-0184, Edwin's decision: a note finished when the last release went out draws only structural findings; a newer note that changes it carries the finding.

@@ -39,7 +39,7 @@ counters:
   REL: 0
   REQ: 32
   RISK: 4
-  TASK: 183
+  TASK: 184
   TST: 39
   WF: 3
 
@@ -48,7 +48,7 @@ focus:
   feature: ""
   phase: "PHASE-0009"
   issue: ""
-  note: "2026-09-26: PHASE-0009's sixteen tasks are done and its issues fixed. Two exit criteria wait: Edwin's call on whether VERIFY-ACCEPTANCE on unreleased work counts, and measuring opened notes once sessions use the new tools. Open elsewhere: ISS-0086's cockpit half; the cockpit's SNAPSHOT.yaml declares items.releases twice."
+  note: "2026-09-26: PHASE-0009's sixteen tasks are done and its issues fixed. One exit criterion waits: measuring opened notes once sessions use the new tools (Edwin decided the other, TASK-0184). Open elsewhere: ISS-0086's cockpit half; the cockpit's SNAPSHOT.yaml declares items.releases twice."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
@@ -420,6 +420,12 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0184:
+      file: docs/features/agent-time/plan/tasks/TASK-0184-Released-Notes-Draw-Only-Structural-Findings.md
+      status: done
+      parent: ISS-0094
+      phase: "[[PHASE-0009]]"
+      effort: S
     TASK-0168:
       file: docs/features/agent-time/plan/tasks/TASK-0168-Baseline-What-Sessions-Spend-On-Finished-Notes.md
       status: done
@@ -1112,7 +1118,7 @@ items:
       status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0094:
-      tasks: [TASK-0179]
+      tasks: [TASK-0179, TASK-0184]
       file: docs/issues/ISS-0094-A-Rule-Judges-Notes-That-Closed-Before-It-Existed.md
       status: fixed
       phase: "[[PHASE-0009]]"
@@ -2307,8 +2313,8 @@ metrics:
     features_done: 36
     phases_total: 10
     phases_done: 7
-    tasks_total: 183
-    tasks_done: 175
+    tasks_total: 184
+    tasks_done: 176
     tests_total: 31
     tests_passing: 0
     tests_failing: 0

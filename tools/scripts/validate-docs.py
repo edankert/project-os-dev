@@ -1880,12 +1880,22 @@ class Report:
         #: Ids of notes under docs/archive/, set by validate() (ISS-0091).
         self.archived = set()
         self.archived_hidden = 0
+        #: Ids of notes finished when the last release went out, and its tag
+        #: (TASK-0184).
+        self.released = set()
+        self.release_tag = ""
+        self.released_hidden = 0
 
     def _skip(self, code, msg):
-        if code not in STRUCTURAL_CODES and (self.archived or ARCHIVE_DIR in msg):
+        if code not in STRUCTURAL_CODES and code != "FROZEN-EDIT" and (self.archived or ARCHIVE_DIR in msg):
             m = _FINDING_ID.match(msg)
             if ARCHIVE_DIR in msg or (m and m.group(1) in self.archived):
                 self.archived_hidden += 1
+                return True
+        if self.released and code not in STRUCTURAL_CODES and code != "FROZEN-EDIT":
+            m = _FINDING_ID.match(msg)
+            if m and m.group(1) in self.released:
+                self.released_hidden += 1
                 return True
         if self.predates is not None and self.predates(code, msg):
             self.predating[code] = self.predating.get(code, 0) + 1
@@ -3484,6 +3494,60 @@ def _mentions(line, about):
     return bool(m and m.group(1) in ids)
 
 
+def released_finished(root, note_index):
+    """(tag, ids of notes finished when that release went out and finished now).
+
+    project-os-dev TASK-0184, Edwin 2026-09-26: a note released earlier should
+    only be the subject of a finding about a newer note that changes what it
+    shipped, and that finding belongs on the newer note. So content rules stop
+    judging these notes; structural checks and FROZEN-EDIT still do. Each
+    note's status at the tag is read once, in one `git cat-file --batch` call,
+    and cached with the note.
+    """
+    tag = release_boundary(root)
+    if not tag or _git_out(root, "rev-parse", "--verify", "--quiet", tag + "^{commit}") is None:
+        return "", set()
+    kind = "status-at-" + tag
+    finished_now, statuses, misses = {}, {}, []
+    for nid, (path, fm) in note_index.items():
+        ntype = note_type(fm or {})
+        if str((fm or {}).get("status", "")).strip() not in PHASE_RESOLVED.get(ntype, ()):
+            continue
+        finished_now[nid] = (path, ntype)
+        try:
+            st = path.stat()
+        except OSError:
+            continue
+        key = os.path.abspath(path)
+        cache = _cache_for(_cache_file_for(key))
+        hit = cache["entries"].get(key + "#" + kind)
+        if hit and hit[0] == st.st_size and hit[1] == st.st_mtime_ns:
+            statuses[nid] = hit[2]
+        else:
+            misses.append((nid, path, st))
+    if misses:
+        rels = [p.relative_to(root).as_posix() for _n, p, _s in misses]
+        raw = subprocess.run(["git", "cat-file", "--batch"], cwd=root, capture_output=True,
+                             input="".join("%s:%s\n" % (tag, r) for r in rels).encode()).stdout
+        pos = 0
+        for nid, path, st in misses:
+            end = raw.index(b"\n", pos)
+            header = raw[pos:end].decode(errors="replace").split()
+            pos = end + 1
+            status = ""
+            if len(header) >= 3 and header[1] != "missing":
+                size = int(header[2])
+                status = str(_split_note(raw[pos:pos + size].decode(errors="replace"))[0].get("status", "") or "").strip()
+                pos += size + 1
+            statuses[nid] = status
+            key = os.path.abspath(path)
+            cache = _cache_for(_cache_file_for(key))
+            cache["entries"][key + "#" + kind] = [st.st_size, st.st_mtime_ns, status]
+            cache["dirty"] = True
+    return tag, {nid for nid, (_p, ntype) in finished_now.items()
+                 if statuses.get(nid, "") in PHASE_RESOLVED.get(ntype, ())}
+
+
 def validate_frozen_edits(root, report):
     """FROZEN-EDIT: a released ticket was edited (ISS-0097, ADR-0048).
 
@@ -3631,6 +3695,7 @@ def validate(root, report):
     report.predates = predates_rule(note_index, root)
     report.archived = {i for i, (p, _fm) in note_index.items()
                        if p.relative_to(root).as_posix().startswith(ARCHIVE_DIR)}
+    report.release_tag, report.released = released_finished(root, note_index)
     validate_unregistered_notes(root, items, note_index, note_claimants, allowed_status, report)
     NOTE_INDEX_FOR_PLANS.clear()
     NOTE_INDEX_FOR_PLANS.update(note_index)
@@ -4846,6 +4911,10 @@ def main(argv=None):
         if hidden_errors or hidden_warnings:
             print("validate-docs: %d error(s) and %d warning(s) about files not changed since HEAD "
                   "are not shown (--changed); run without it to see them" % (hidden_errors, hidden_warnings))
+        if report.released_hidden:
+            print("validate-docs: %d finding(s) about notes finished when %s was released not shown; "
+                  "a newer note that changes one carries the finding (ADR-0048)"
+                  % (report.released_hidden, report.release_tag))
         if report.archived_hidden:
             print("validate-docs: %d finding(s) about archived notes not shown; only structural "
                   "checks judge docs/archive/ (ISS-0091)" % report.archived_hidden)

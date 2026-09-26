@@ -13,11 +13,11 @@ level: integration
 entrypoint: "../project-os/tools/scripts/test-frozen-edit.sh"
 command: "bash ../project-os/tools/scripts/test-frozen-edit.sh"
 covers: ["[[ISS-0097-Nothing-Stops-A-Released-Ticket-Being-Edited]]"]
-tasks: ["[[TASK-0178]]"]
+tasks: ["[[TASK-0178]]", "[[TASK-0184]]"]
 issues: ["[[ISS-0097-Nothing-Stops-A-Released-Ticket-Being-Edited]]"]
 artifacts: []
 evidence: []
-adequacy: "2026-09-26, 11 assertions. Four mutations in a scratch copy: M1 tool-written fields count as edits, 1 failure; M2 the status at the tag is ignored, 1; M3 staged edits are not seen, 1; M4 the superseded status counts as an edit, 1. Pristine 11 of 11."
+adequacy: "2026-09-26, 11 assertions. Four mutations in a scratch copy: M1 tool-written fields count as edits, 1 failure; M2 the status at the tag is ignored, 1; M3 staged edits are not seen, 1; M4 the superseded status counts as an edit, 1. Pristine 11 of 11. TASK-0184 added 3 assertions and 3 mutations (no released filter, 1 failure; the status at the tag ignored, 1; FROZEN-EDIT hidden too, 4); pristine 14 of 14."
 related: []
 ---
 
@@ -41,4 +41,4 @@ ISS-0097, ADR-0048: a ticket whose release is out is a record, and editing it is
 
 ## Expected results
 
-- Exit 0: 11 of 11, 2026-09-26.
+- Exit 0: 14 of 14, 2026-09-26. The last three assertions are TASK-0184's: a released task's content finding is hidden and counted while FROZEN-EDIT on it still shows, and the same finding on a task finished since the release is shown.

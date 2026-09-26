@@ -11,7 +11,7 @@ updated: 2026-09-26
 goal: "A change costs only its own work: each fact is written once, the checks answer in seconds, and finished notes stay out of the way unless someone asks for them."
 features: []
 requirements: []
-tasks: [TASK-0168, TASK-0169, TASK-0170, TASK-0171, TASK-0172, TASK-0173, TASK-0174, TASK-0175, TASK-0176, TASK-0177, TASK-0178, TASK-0179, TASK-0180, TASK-0181, TASK-0182, TASK-0183]
+tasks: [TASK-0168, TASK-0169, TASK-0170, TASK-0171, TASK-0172, TASK-0173, TASK-0174, TASK-0175, TASK-0176, TASK-0177, TASK-0178, TASK-0179, TASK-0180, TASK-0181, TASK-0182, TASK-0183, TASK-0184]
 issues: [ISS-0087, ISS-0088, ISS-0089, ISS-0090, ISS-0091, ISS-0092, ISS-0093, ISS-0094, ISS-0095, ISS-0096, ISS-0097, ISS-0098, ISS-0099, ISS-0100, ISS-0101, ISS-0102]
 related: ["[[ADR-0048-Old-Tickets-Are-Records-And-Every-Fact-Is-Written-Once]]", "[[ADR-0026-When-A-Drift-Sweep-Stops]]", "[[PHASE-0008-Measured-Note-Ranking]]"]
 tags: [phase, agent-time, derived-state]
@@ -47,9 +47,9 @@ Measured on your-trainer (3,150 notes), the largest repo, against the baseline t
 - [x] The pre-commit hook takes under 5 s per commit (54 s on 2026-09-26). 2.2 s on a your-trainer clone with the final template and `derive_lists` on, 2026-09-26.
 - [x] The Stop hook takes under 3 s per stop after a write (40 s on 2026-09-26). 2.1 s on the same clone. The first stop after a template update, which re-reads every note, takes 3.1 to 3.4 s.
 - [x] Adding a task writes its membership in one place, the task itself (six places on 2026-09-26). With `retention.derive_lists`, which this repo turned on with this phase (TASK-0172, TST-0030).
-- [ ] The validator reports nothing about a finished note except a structural fault: a link that does not resolve, or frontmatter that does not parse (581 of 1,139 findings were about finished notes on 2026-09-26). **Not met as written.** On a your-trainer clone with the archive applied, 139 of 950 findings still name a finished note. 130 are VERIFY-ACCEPTANCE on tasks finished for the unreleased 2.2.0, whose acceptance checks that release's walk still owes. ADR-0048 treats a ticket as frozen only once its release is out, so these are live release work, not upkeep. The other 9 are notes finished after their rule arrived. Whether VERIFY-ACCEPTANCE should count here is Edwin's call.
+- [x] The validator reports nothing about a finished note except a structural fault: a link that does not resolve, or frontmatter that does not parse (581 of 1,139 findings were about finished notes on 2026-09-26). Edwin, 2026-09-26: work finished since the last release is not a finished note, and a note released earlier should only draw a finding through a newer note that changes it. TASK-0184 built that. On a your-trainer clone, no finding names a note finished at v2.1.8 except PHASE-014's PHASE-CHILDREN, which is about two items open now; 189 are hidden and counted.
 - [x] A feature filed for later produces its feature note only (FEAT-0128 produced a full set of notes over two planner runs). A planner run on a scratch template filed one note in 10 tool calls (TASK-0174).
-- [ ] The share of a session's opened and edited notes that are finished falls from ISS-0100's baseline, by an amount stated when the baseline is taken. **Not yet measurable.** The share of opened notes depends on sessions run with the new tools, and none has run in your-trainer yet: its owner syncs the template. What can be measured now: `snapshot-query.py --search` shows no finished note by default (a count stands in for them), against 42% of search results in the baseline. A plain `rg` on an archived your-trainer clone surfaces 36 to 51% finished notes for eight everyday terms, down from 51 to 64%.
+- [ ] The share of a session's opened and edited notes that are finished falls from ISS-0100's baseline, by an amount stated when the baseline is taken. **Not yet measurable, and left open (Edwin, 2026-09-26: "okay").** The share of opened notes depends on sessions run with the new tools, and none has run in your-trainer yet: its owner syncs the template. What can be measured now: `snapshot-query.py --search` shows no finished note by default (a count stands in for them), against 42% of search results in the baseline. A plain `rg` on an archived your-trainer clone surfaces 36 to 51% finished notes for eight everyday terms, down from 51 to 64%.
 - [x] ISS-0087 to ISS-0102 are each fixed or deliberately declined, and the template changes are synced to this repo. All sixteen are fixed; the template is synced as of `8f524e6`.
 
 ## Baseline, 2026-09-26
@@ -78,7 +78,7 @@ Every task is done (TASK-0168 to TASK-0183) and every issue fixed. Measured on a
 | Notes a default search puts in front of the agent that are finished | 42% (a plain grep) | 0% (`--search` folds them into a count) |
 | Notes that may be archived | none | 1,063 (687 tasks, 308 issues, 54 change notes, 14 retired checks) |
 
-The first column counts findings whose first word is a note id, so it reads 327 where the baseline's own count said 581. Two exit criteria stay open, as stated above. The phase stays `active` until Edwin decides the first and sessions with the new tools make the second measurable.
+The first column counts findings whose first word is a note id, so it reads 327 where the baseline's own count said 581. One exit criterion stays open: the share of opened notes, measurable once sessions use the new tools. The phase stays `active` until then.
 
 ## Notes
 
