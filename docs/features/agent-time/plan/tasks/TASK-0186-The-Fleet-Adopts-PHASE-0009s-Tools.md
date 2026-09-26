@@ -43,5 +43,6 @@ The cockpit also needed its bundled walk and validator modules refreshed, a labe
 
 ## List conflicts, and which side was right
 
-- The child's own field was right in 19 cases: the cockpit's 8, your-trainer's 2, and your-health's FEAT-0052, ISS-0051, FEAT-0117, REQ-0118, TASK-0022, FEAT-0008 and FEAT-0009, all as their phase notes say. The eighth your-health list entry, TASK-0022's, is counted there too. project-os-bench's REQ-0002 had nothing either way, so its own `phase:` won.
+- The child's own field was right in 17 cases: the cockpit's 8, your-trainer's 2, and your-health's FEAT-0052, ISS-0051, FEAT-0117, REQ-0118, TASK-0022, FEAT-0008 and FEAT-0009, all as their phase notes say.
+- project-os-bench's REQ-0002 had no evidence either way, so its own `phase:` won.
 - The list was right in 3 cases, all in your-health: ISS-0014 (closed in PHASE-0005) and TASK-0032 and TASK-0050 (done in PHASE-0001). Their `phase:` fields were corrected.
