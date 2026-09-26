@@ -2013,8 +2013,8 @@ def expect_text(check: Check) -> list[str]:
 def expect_display(check: Check) -> dict[str, str]:
     """Each Expect line as the note writes it, keyed by its normalised form.
 
-    The sheet prints this: the list marker goes and whitespace collapses, but
-    emphasis stays whole. `normalise` also strips emphasis at either end, which
+    The sheet prints this: the list marker goes and nothing else changes, so
+    emphasis stays whole and a code span keeps its spacing (`GRADE  N.N%`). `normalise` also strips emphasis at either end, which
     is right for comparing and wrong for printing: `Step 5: **the scorecard
     can still be submitted.**` lost its closing `**` (TASK-0186).
     """
@@ -2022,7 +2022,7 @@ def expect_display(check: Check) -> dict[str, str]:
     for line in (check.expect or "").splitlines():
         key = normalise(line)
         if key and key not in out:
-            out[key] = _WS_RE.sub(" ", _MARKER_RE.sub("", line)).strip()
+            out[key] = _MARKER_RE.sub("", line).strip()
     return out
 
 

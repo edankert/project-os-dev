@@ -1403,10 +1403,10 @@ BOLD="$(variant bold '   - The panel lists the trainer. `TST-0401.1`' '   - `TST
 python3 - "$BOLD/docs/tests/acceptance/TST-0401-Fixture.md" <<'PY2'
 import sys, pathlib
 p = pathlib.Path(sys.argv[1]); t = p.read_text()
-p.write_text(t.replace("- The panel lists the trainer.", "- Step 1: **the panel lists the trainer.**"))
+p.write_text(t.replace("- The panel lists the trainer.", "- Step 1: **the panel lists the trainer.** (`GRADE  N.N%`)"))
 PY2
 OUT="$(python3 "$SHEET" --release REL-0011 --platform testbed --repo-root "$BOLD" 2>&1)"
-has "a tag-only line keeps the check's emphasis whole" '^   - Step 1: \*\*the panel lists the trainer\.\*\* `TST-0401\.1`$'
+has "a tag-only line keeps the check's emphasis whole and its code spacing" '^   - Step 1: \*\*the panel lists the trainer\.\*\* \(`GRADE  N\.N%`\) `TST-0401\.1`$'
 
 # unpair <repo>: TST-0404 gets a third Expect line for its two steps, so its
 # steps and Expect lines no longer pair and a tag names all three.
