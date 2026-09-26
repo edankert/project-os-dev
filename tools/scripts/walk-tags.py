@@ -178,6 +178,8 @@ def apply(item) -> None:
 
 
 def main(argv=None):
+    import signal
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--repo-root", default=".")
     ap.add_argument("--apply", action="store_true")
@@ -186,6 +188,12 @@ def main(argv=None):
     args = ap.parse_args(argv)
     root = Path(args.repo_root).resolve()
     items = refresh_plan(root) if args.refresh else plan(root)
+    if args.apply:
+        #: Write first, report after: a reader that closes the pipe early
+        #: (`| head`) must not stop the rewrite half way (TASK-0186).
+        for item in items:
+            if item["edits"]:
+                apply(item)
     n_edit = sum(len(i["edits"]) for i in items)
     n_kept = sum(len(i["kept"]) for i in items)
     if args.refresh:
@@ -200,8 +208,6 @@ def main(argv=None):
                                    " (replaces %d lines)" % (1 + len(drop)) if drop else ""))
         for number, raw, why in item["kept"]:
             print("   keep  %s step %d: %s" % (item["shown"], number, why))
-        if args.apply and item["edits"]:
-            apply(item)
     return 0
 
 

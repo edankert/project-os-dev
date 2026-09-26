@@ -2010,6 +2010,22 @@ def expect_text(check: Check) -> list[str]:
     return out
 
 
+def expect_display(check: Check) -> dict[str, str]:
+    """Each Expect line as the note writes it, keyed by its normalised form.
+
+    The sheet prints this: the list marker goes and whitespace collapses, but
+    emphasis stays whole. `normalise` also strips emphasis at either end, which
+    is right for comparing and wrong for printing: `Step 5: **the scorecard
+    can still be submitted.**` lost its closing `**` (TASK-0186).
+    """
+    out: dict[str, str] = {}
+    for line in (check.expect or "").splitlines():
+        key = normalise(line)
+        if key and key not in out:
+            out[key] = _WS_RE.sub(" ", _MARKER_RE.sub("", line)).strip()
+    return out
+
+
 def expect_for(check: Check, number: str) -> list[str]:
     """The Expect lines a tag names: line N for step N when the check pairs them.
 
@@ -2077,8 +2093,9 @@ def expand_tag_only(procedure: Procedure, checks: dict[str, Check]) -> None:
             for cid in owners:
                 tags = [tag for tag in found.tags if tag[0] == cid]
                 tag_text = " ".join("`%s%s`" % (c, "." + n if n else "") for c, n in tags)
+                shown = expect_display(checks[cid])
                 for text in texts[cid]:
-                    raw = "%s%s %s" % (prefix, text, tag_text)
+                    raw = "%s%s %s" % (prefix, shown.get(text, text), tag_text)
                     body.append(raw)
                     expectations.append(Expectation(quote=text, raw=raw, tags=list(tags)))
             replaced = True

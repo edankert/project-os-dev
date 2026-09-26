@@ -1397,6 +1397,17 @@ check "and does not break a tag-only one" "$code" "$OUT"
 OUT="$(python3 "$SHEET" --release REL-0011 --platform testbed --repo-root "$TAGONLY" 2>&1)"
 has "whose sheet prints the new words" '^   - The panel lists every paired trainer\. `TST-0401\.1`$'
 
+# The sheet prints a check's Expect line as written: emphasis that runs to
+# the end of the line keeps its closing marks (TASK-0186).
+BOLD="$(variant bold '   - The panel lists the trainer. `TST-0401.1`' '   - `TST-0401.1`')"
+python3 - "$BOLD/docs/tests/acceptance/TST-0401-Fixture.md" <<'PY2'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]); t = p.read_text()
+p.write_text(t.replace("- The panel lists the trainer.", "- Step 1: **the panel lists the trainer.**"))
+PY2
+OUT="$(python3 "$SHEET" --release REL-0011 --platform testbed --repo-root "$BOLD" 2>&1)"
+has "a tag-only line keeps the check's emphasis whole" '^   - Step 1: \*\*the panel lists the trainer\.\*\* `TST-0401\.1`$'
+
 # unpair <repo>: TST-0404 gets a third Expect line for its two steps, so its
 # steps and Expect lines no longer pair and a tag names all three.
 unpair() { python3 - "$1/docs/tests/acceptance/TST-0404-Fixture.md" <<'PY2'
@@ -1423,7 +1434,10 @@ p.write_text(t.replace("   - The reading arrives. `TST-0403` `TST-0404.2`",
                        "   - The reading arrives. `TST-0403`\n   - The reading arrives. `TST-0404.2`"))
 PY2
 unpair "$WT"
-conv="$(python3 "$HERE/walk-tags.py" --repo-root "$WT" --apply 2>&1)"
+# A reader that has already gone, with every print written at once: the first
+# print fails, and the rewrite must be done by then (TASK-0186).
+PYTHONUNBUFFERED=1 python3 "$HERE/walk-tags.py" --repo-root "$WT" --apply 2>/dev/null | (exit 0)
+conv="$(python3 "$HERE/walk-tags.py" --repo-root "$WT" 2>&1)"
 proc="$(cat "$WT/docs/tests/acceptance/walk/the-bench.md")"
 check "the converter rewrites a line whose tag prints exactly its quote" \
   "$( { printf '%s' "$proc" | grep -qx '   - `TST-0401.1`' && printf '%s' "$proc" | grep -qx '   - `TST-0403`'; }; echo $?)" "$conv"
