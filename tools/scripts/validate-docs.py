@@ -3520,7 +3520,51 @@ def _mentions(line, about):
     return bool(m and m.group(1) in ids)
 
 
+def release_date(root):
+    """(tag, date) of the newest `released` REL note that states a date, or ("", "")."""
+    found = []
+    rel = root / "docs" / "releases"
+    if rel.is_dir():
+        for path in sorted(rel.glob("*.md")):
+            fm = parse_frontmatter(path)
+            if not isinstance(fm, dict) or note_type(fm) != "release":
+                continue
+            if str(fm.get("status", "")).strip() != "released":
+                continue
+            date = str(fm.get("date", "") or "").strip()[:10]
+            if re.match(r"^\d{4}-\d{2}-\d{2}$", date):
+                found.append((date, str(fm.get("tag", "") or fm.get("id", "") or path.stem).strip()))
+    if not found:
+        return "", ""
+    date, tag = sorted(found)[-1]
+    return tag, date
+
+
 def released_finished(root, note_index):
+    """(release, ids of notes finished when it went out and finished now).
+
+    From the notes alone when the newest released REL note states its date: a
+    note finished now whose `updated:` is on or before that date. That answer
+    is the same in every checkout; reading statuses at the git tag, below, is
+    not, because a shallow clone (CI's) or an archive carries no tags, and
+    there nothing would be hidden (project-os-dev TASK-0186). The git reading
+    is the fallback for a repo that tags releases without a release note.
+    """
+    tag, date = release_date(root)
+    if date:
+        out = set()
+        for nid, (_path, fm) in note_index.items():
+            fm = fm or {}
+            if str(fm.get("status", "")).strip() not in PHASE_RESOLVED.get(note_type(fm), ()):
+                continue
+            updated = str(fm.get("updated") or fm.get("created") or "")[:10]
+            if re.match(r"^\d{4}-\d{2}-\d{2}$", updated) and updated <= date:
+                out.add(nid)
+        return tag, out
+    return _released_finished_at_tag(root, note_index)
+
+
+def _released_finished_at_tag(root, note_index):
     """(tag, ids of notes finished when that release went out and finished now).
 
     project-os-dev TASK-0184, Edwin 2026-09-26: a note released earlier should

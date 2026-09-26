@@ -15,7 +15,7 @@ R="$TMP/repo"; rsync -a --exclude .git "$ROOT/" "$R/"
 sed -i.bak 's/^  replace_me: true$/  replace_me: false/' "$R/SNAPSHOT.yaml"; rm -f "$R/SNAPSHOT.yaml.bak"
 mkdir -p "$R/docs/features/x/plan/tasks" "$R/docs/issues" "$R/docs/changes" "$R/docs/releases"
 note() { local path="$1"; shift; { printf -- '---\n'; printf '%s\n' "$@"; printf -- '---\n# Note\n\nBody.\n'; } > "$R/$path"; }
-note docs/features/x/plan/tasks/TASK-0001-Shipped.md 'type: "[[task]]"' 'id: TASK-0001' 'status: done' 'parent: ""' 'review_verdict: changes-requested'
+note docs/features/x/plan/tasks/TASK-0001-Shipped.md 'type: "[[task]]"' 'id: TASK-0001' 'status: done' 'parent: ""' 'review_verdict: changes-requested' 'updated: 2026-09-01'
 note docs/features/x/plan/tasks/TASK-0002-Still-Open.md 'type: "[[task]]"' 'id: TASK-0002' 'status: doing' 'parent: ""'
 note docs/features/x/plan/tasks/TASK-0003-To-Be-Moved.md 'type: "[[task]]"' 'id: TASK-0003' 'status: done' 'parent: ""'
 note docs/features/x/plan/tasks/TASK-0004-Replaced-Later.md 'type: "[[task]]"' 'id: TASK-0004' 'status: done' 'parent: ""'
@@ -61,6 +61,14 @@ out="$(v)"
 check "once committed, the working tree has nothing to report" "$(! printf '%s' "$out" | grep -q FROZEN-EDIT; echo $?)" "$out"
 
 # No release note: the newest git tag is the boundary.
+# TASK-0186: with a dated release note, what was released is read from the
+# notes, so a checkout with no git history (CI's shallow clone, an archive)
+# gives the same answer.
+A="$TMP/archive"; mkdir -p "$A"; (cd "$R" && git archive HEAD) | tar -x -C "$A"
+out="$(cd "$A" && python3 tools/scripts/validate-docs.py 2>&1)"
+check "with no git history, a released task's content finding is still hidden" \
+  "$( { ! printf '%s' "$out" | grep -E '^(ERROR|WARN)' | grep -q 'REVIEW-STALE.*TASK-0001' && printf '%s' "$out" | grep -q 'finished when v1.0 was released not shown'; }; echo $?)" "$out"
+
 rm "$R/docs/releases/REL-0001-v1.0.md"; (cd "$R" && python3 tools/scripts/sync-snapshot.py >/dev/null 2>&1); g add -A; g commit -q -m norel --no-verify
 printf '\nAnother thought.\n' >> "$R/docs/features/x/plan/tasks/TASK-0001-Shipped.md"
 out="$(v)"
