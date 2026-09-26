@@ -15,7 +15,7 @@ severity: medium
 component: "tools/instructions/LIFECYCLE.md; tools/instructions/SNAPSHOT.md; tools/scripts/validate-docs.py"
 parent: ""
 related: ["[[ISS-0030-Retention-Is-Policy-Nothing-Performs]]"]
-tasks: ["[[TASK-0180]]"]
+tasks: ["[[TASK-0180]]", "[[TASK-0186]]"]
 tests: ["[[TST-0037-Released-Finished-Tickets-Move-To-The-Archive]]"]
 ---
 

@@ -39,7 +39,7 @@ counters:
   REL: 0
   REQ: 32
   RISK: 4
-  TASK: 185
+  TASK: 186
   TST: 39
   WF: 3
 
@@ -420,6 +420,12 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0186:
+      file: docs/features/agent-time/plan/tasks/TASK-0186-The-Fleet-Adopts-PHASE-0009s-Tools.md
+      status: done
+      parent: ISS-0091
+      phase: "[[PHASE-0009]]"
+      effort: M
     TASK-0185:
       file: docs/features/agent-time/plan/tasks/TASK-0185-Hooks-Run-The-Validator-Whatever-Its-File-Mode.md
       status: done
@@ -1183,7 +1189,7 @@ items:
       status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0091:
-      tasks: [TASK-0180]
+      tasks: [TASK-0180, TASK-0186]
       file: docs/issues/ISS-0091-Finished-Notes-Have-No-Archive.md
       status: fixed
       phase: "[[PHASE-0009]]"
@@ -2323,8 +2329,8 @@ metrics:
     features_done: 36
     phases_total: 10
     phases_done: 7
-    tasks_total: 185
-    tasks_done: 177
+    tasks_total: 186
+    tasks_done: 178
     tests_total: 31
     tests_passing: 0
     tests_failing: 0
