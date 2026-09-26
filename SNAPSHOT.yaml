@@ -33,7 +33,7 @@ counters:
   CHG:
     last_date: 20260916
   FEAT: 39
-  ISS: 86
+  ISS: 92
   PHASE: 8
   REL: 0
   REQ: 32
@@ -135,7 +135,7 @@ items:
       status: planned
       order: 999
       owner: user:edwin
-      issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083, ISS-0085, ISS-0086]
+      issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083, ISS-0085, ISS-0086, ISS-0087, ISS-0088, ISS-0089, ISS-0090, ISS-0091, ISS-0092]
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
@@ -1002,6 +1002,30 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0087:
+      file: docs/issues/ISS-0087-A-Parked-Feature-Gets-A-Full-Scaffold.md
+      status: triage
+      phase: "[[PHASE-999]]"
+    ISS-0088:
+      file: docs/issues/ISS-0088-Editing-A-Check-Breaks-Every-Walk-That-Quotes-It.md
+      status: triage
+      phase: "[[PHASE-999]]"
+    ISS-0089:
+      file: docs/issues/ISS-0089-The-Validator-Said-OK-And-The-Commit-Was-Refused.md
+      status: triage
+      phase: "[[PHASE-999]]"
+    ISS-0090:
+      file: docs/issues/ISS-0090-The-Stop-Hook-Validates-Without-Syncing-The-Snapshot.md
+      status: triage
+      phase: "[[PHASE-999]]"
+    ISS-0091:
+      file: docs/issues/ISS-0091-Finished-Notes-Have-No-Archive.md
+      status: triage
+      phase: "[[PHASE-999]]"
+    ISS-0092:
+      file: docs/issues/ISS-0092-A-Note-Restates-A-Rule-It-Should-Link.md
+      status: triage
+      phase: "[[PHASE-999]]"
     ISS-0086:
       file: docs/issues/ISS-0086-Sheet-Step-Numbers-Do-Not-Match-Procedure-Prose.md
       status: open
@@ -2128,7 +2152,7 @@ metrics:
     tests_passing: 0
     tests_failing: 0
     issues_open: 11
-    issues_triage: 1
+    issues_triage: 7
     tasks_deferred: 0
     issues_deferred: 5
     requirements_total: 32

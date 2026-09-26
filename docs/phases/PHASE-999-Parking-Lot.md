@@ -12,7 +12,7 @@ goal: "Forward home for work that is wanted but unscheduled: deferred items desc
 features: []
 requirements: []
 tasks: []
-issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083, ISS-0085, ISS-0086]
+issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083, ISS-0085, ISS-0086, ISS-0087, ISS-0088, ISS-0089, ISS-0090, ISS-0091, ISS-0092]
 related: [ADR-0005, REQ-0013]
 tags: [phase, parking-lot]
 ---
