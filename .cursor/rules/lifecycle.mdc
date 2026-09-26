@@ -10,7 +10,8 @@ globs: ["**/*"]
 Each lifecycle rule is stated once here, with a reason and a link (project-os-dev REQ-0026).
 
 ## Source of truth
-- `../../SNAPSHOT.yaml` is the canonical, machine-readable active context for agents. Notes under `../../docs/` are the durable human record, and the snapshot's derived fields follow them ("Mandatory Automated Documentation" below). Bases views are for people and are not canonical for agents.
+- `../../SNAPSHOT.yaml` is the canonical, machine-readable active context for agents. Notes under `../../docs/` are the durable human record, and the snapshot's derived fields follow them. Bases views are for people.
+- Search with the Grep tool or `rg`, not `grep -r`; they honour `.ignore`, which excludes `docs/archive/` (ISS-0102).
 
 ## Test storage (hybrid)
 - Feature-scoped: `docs/features/<feature-slug>/plan/tests/TST-####-*.md`; system-wide: `docs/tests/TST-####-*.md`. A walked acceptance check lives under `docs/tests/acceptance/`; one with a `command:` may sit beside its feature.
@@ -40,13 +41,13 @@ When the project uses phases (`../../docs/PHASES.md`):
 4. Keep `focus.phase` on the current milestone.
 
 ## Mandatory Automated Documentation
-- **No orphaned code**: every functional code change (feature, bug fix, behaviour-altering refactor, API change, dependency update) has a task under `docs/features/<slug>/plan/tasks/`. Typo, comment, formatting and documentation-only changes are exempt.
+- **No orphaned code**: every functional code change (feature, fix, behaviour change, API or dependency change) has a task under `docs/features/<slug>/plan/tasks/`. Typo, comment, formatting and documentation-only changes are exempt.
 - **Notes are the authored source of state** (ADR-0009): write a status once, in the note. `tools/scripts/sync-snapshot.py` propagates statuses, `counters` and `metrics.counts` into the snapshot at pre-commit; CI checks it with `--check`. Never hand-copy a status into the snapshot.
 - **Counters rise on their own**: allocating an ID means creating a note, and a deleted note never frees its number.
-- **Membership is still yours**: which items the snapshot carries, and their `note:` prose, are curation the script leaves alone. `goal:` is derived from the note (ADR-0018); edit it there.
+- **Write a relationship once, on the child** (`parent:`, `phase:`); with `retention.derive_lists` the sync writes reverse lists and live tasks' snapshot entries (ADR-0048). Other membership and `note:` prose stay yours; `goal:` comes from the note (ADR-0018).
 
 ## Execution (implementation phase)
-- Start code changes only once the planning artifacts exist, and keep `focus` on what is actually being worked.
+- Start code changes only once the planning artifacts exist, and keep `focus` on what is being worked.
 
 ### When to pause for the user
 Pause for the user only when the work genuinely requires them: a destructive or irreversible action, a real scope change, or input that only they can provide. First do everything that does not depend on the answer; then put the question at the end of a turn that also delivers that progress. These are not pauses; do the next thing instead: a summary naming the next step without taking it; an offer to carry on unless told otherwise; a list of decisions none of which blocks the work; a report because a milestone is done or the turn is long. Reason: an early stop hands the task back unfinished.
@@ -56,10 +57,10 @@ A defect in code this feature changed is fixed in it (`QUALITY.md`, ADR-0047). A
 
 ## Close-out (must happen after work)
 1. Set the note status: task `done`, issue `fixed`, requirement `implemented`, feature `done` (`STATUSES.md`).
-2. Update the snapshot's curated fields: focus, membership, relationships; statuses and metrics follow ("Mandatory Automated Documentation" above).
+2. Update the snapshot's curated fields: focus, membership, relationships; statuses and metrics follow.
 3. Add a change note, `docs/changes/CHG-YYYYMMDD-Short-Description.md`, when behaviour, paths or contracts change. A document written for a person is a `reference` note under `docs/reference/`; a page published elsewhere is a copy, its URL in `source:`.
 4. Add or update a `RISK-*` for a new hazard: a dependency, an env var, a contract.
-5. Never delete a completed note; status and links preserve history.
+5. Never delete a completed note. Once released, finished tickets move to `docs/archive/` (`../scripts/archive-notes.py`).
 6. Apply the verification gate in `QUALITY.md`: a terminal status needs its required `[[test]]` notes `passing`.
 7. Run `bash tools/scripts/validate-docs.sh` and fix what it reports.
 8. Before pushing, run `bash tools/scripts/validate-docs.sh --as-committed`. Reason: CI reads the commit, so an ignored or unstaged file passes locally and is absent there.
@@ -67,7 +68,7 @@ A defect in code this feature changed is fixed in it (`QUALITY.md`, ADR-0047). A
 10. At the review gates `QUALITY.md` states ("Independent review"), run `../skills/independent-review/SKILL.md`.
 
 ## Snapshot retention (active + recent)
-- Keep the snapshot to active and recent items (`SNAPSHOT.md`); the notes are the archive.
+- Keep the snapshot to active and recent items (`SNAPSHOT.md`).
 
 ## Risk scan triggers (create/update a `RISK-*`)
 - A new external dependency or version constraint; a new required env var or configuration surface; a directory layout or artifact path change; a runtime increase or new long-running step; a security, credential or licence exposure. If none applies, say so; the negative result is part of the scan.

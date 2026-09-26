@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0098
 aliases: ["ISS-0098"]
 title: "Notes grow dated history sections that every later reader has to get through"
-status: open
+status: fixed
 phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
@@ -15,7 +15,8 @@ severity: low
 component: "tools/instructions/WRITING.md; note templates"
 parent: ""
 related: ["[[ADR-0048-Old-Tickets-Are-Records-And-Every-Fact-Is-Written-Once]]"]
-tests: []
+tasks: ["[[TASK-0176]]"]
+tests: ["[[TST-0034-Notes-Hold-Current-State-And-Link-Rules]]"]
 ---
 
 # Notes grow dated history sections that every later reader has to get through
@@ -31,3 +32,7 @@ A note holds its current state, as REQ-0026 requires of instruction files. The h
 ## Decided
 
 ADR-0048 was accepted with option 4 on 2026-09-26: tickets freeze at release, a tool writes the supersession back-pointer into the old note, and editing a frozen ticket is a warning.
+
+## Fixed, 2026-09-26
+
+TASK-0176. `tools/instructions/WRITING.md` rule 11: a note says what is true now; the history goes in the change note and the commit message, and a standing record keeps at most a short dated decision log. The task and feature templates point at it. TST-0034 tests the text.

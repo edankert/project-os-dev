@@ -16,6 +16,7 @@ component: "tools/scripts"
 parent: ""
 related: ["[[TASK-0146-The-Four-Findings-Round-One-Left]]", "[[ADR-0025-An-Executable-Test-Carries-No-Verdict]]", "[[FEAT-0028-Executable-Tests-Carry-No-Verdict]]"]
 tests: ["[[TST-0008]]"]
+tasks: ["[[TASK-0148]]"]
 ---
 
 # The fleet runs two different test runners, built to two decisions that were never reconciled

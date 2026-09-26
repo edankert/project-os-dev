@@ -10,7 +10,7 @@ created: 2026-07-30
 updated: 2026-09-18
 component: docs
 source: ["project-os-cockpit FEAT-0051, 2026-07-30 — a validator badge that reported a count with nothing behind it"]
-phase: "[[PHASE-999-Parking-Lot]]"
+phase: "[[PHASE-0007]]"
 related: []
 depends: []
 tests: [TST-0006]

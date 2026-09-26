@@ -29,6 +29,7 @@ tags: [skills, closeout]
    - task `status: done` (and `updated`)
    - issue `status: fixed` if resolved
    - feature `status: done` only when its gate in `../../instructions/STATUSES.md` `[[feature]]` holds; a `deferred` ID in `tasks:` must first be descoped via `../status-transition/SKILL.md`, "Deferral procedure"
+   - feature `status: done`: first move the lasting facts up. Write what shipped, and why each non-obvious choice was made, into the feature note or an ADR. Its tasks and issues move to `docs/archive/` once the release is out (`tools/scripts/archive-notes.py`), and a reader should not have to open them to learn why the feature works the way it does. In your-trainer, the reason Android checks Strava when the app returns lived only in a task and an issue (project-os-dev ISS-0091).
    - phase `status: done` only when its gate in `STATUSES.md` `[[phase]]` holds
    - **plan** `status` follows its feature (`STATUSES.md` `[[plan]]`); a plan left `active` under a shipped feature claims work is in flight that finished weeks ago (ISS-0010)
 3. **Requirement advancement (mandatory when closing a feature):**
@@ -63,3 +64,4 @@ tags: [skills, closeout]
    - At the review gates stated once in `../../instructions/QUALITY.md` ("Independent review (clean-context)"), run `../independent-review/SKILL.md` before applying the terminal status.
    - Fix what the review finds in this work before closing (ADR-0047). File only what the filing bar admits, and ask the owner any question in the close-out summary, with a recommendation, instead of leaving it in an issue.
 10. **Retention enforcement**: apply the policy in `../../instructions/SNAPSHOT.md` "Retention policy"; membership is curation the sync script leaves alone.
+11. **After a release is out**: run `python3 tools/scripts/archive-notes.py` to see which finished tasks, issues, change notes and retired checks it would move to `docs/archive/`, then `--apply`, sync, validate and commit the move on its own. Archived notes keep resolving by id, draw only structural findings, and are out of search through the repo `.ignore` (project-os-dev ISS-0091).

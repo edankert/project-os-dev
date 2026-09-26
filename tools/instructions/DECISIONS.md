@@ -23,7 +23,8 @@ Use ADRs (`../../docs/decisions/ADR-####-*.md`) for durable decisions that affec
 3. Link the ADR to the items it affects via `related`.
 
 ## Superseding
-- If ADR B replaces ADR A: B sets `supersedes: [[ADR-A]]`; A sets `superseded: [[ADR-B]]` and its status becomes `superseded`.
+- If ADR B replaces ADR A, write `supersedes: [[ADR-A]]` on B only. Once B is accepted, `sync-snapshot.py` writes `superseded: [[ADR-B]]` into A and sets A's status to `superseded` (ADR-0048). Do not edit A by hand. Reason: the pointer then cannot be forgotten, and nobody has to open the old note to keep it current.
+- If B changes part of A and leaves the rest standing, write `amends: [[ADR-A]]` on B. The sync lists B under A's `amended_by:`, and A keeps its status.
 
 ## A decision that is not a yes/no
 

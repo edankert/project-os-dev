@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0097
 aliases: ["ISS-0097"]
 title: "Nothing stops a released ticket from being rewritten to match later work"
-status: open
+status: fixed
 phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
@@ -15,7 +15,8 @@ severity: medium
 component: "tools/scripts/validate-docs.py; tools/instructions/LIFECYCLE.md"
 parent: ""
 related: ["[[ADR-0048-Old-Tickets-Are-Records-And-Every-Fact-Is-Written-Once]]"]
-tests: []
+tasks: ["[[TASK-0178]]"]
+tests: ["[[TST-0035-An-Edit-To-A-Released-Ticket-Warns]]"]
 ---
 
 # Nothing stops a released ticket from being rewritten to match later work
@@ -31,3 +32,7 @@ A ticket (task, issue, change note) whose release is out is frozen. An edit to i
 ## Decided
 
 ADR-0048 was accepted with option 4 on 2026-09-26: tickets freeze at release, a tool writes the supersession back-pointer into the old note, and editing a frozen ticket is a warning.
+
+## Fixed, 2026-09-26
+
+TASK-0178. The validator warns FROZEN-EDIT when a task or issue that was finished at the last release, or any change note, is edited in the working tree or the index. It names the ticket and the release. The tools' own writes (a supersession pointer, a derived list) and renames are not reported. It is a warning, as Edwin decided. TST-0035 tests it.

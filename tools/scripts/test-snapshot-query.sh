@@ -8,7 +8,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 Q="$HERE/snapshot-query.py"
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 assertions=0; failures=0
-check() { assertions=$((assertions + 1)); if [[ "$2" -ne 0 ]]; then failures=$((failures + 1)); echo "  FAIL $1${3:+: $3}"; fi; }
+check() { assertions=$((assertions + 1)); if [[ -z "$2" || "$2" -ne 0 ]]; then failures=$((failures + 1)); echo "  FAIL $1${3:+: $3}"; fi; }
 q() { python3 "$Q" --repo-root "$@"; }
 
 head='version: 1
@@ -137,6 +137,48 @@ check "quoted values have their escapes read, as YAML does" "$(python3 "$TMP/esc
 
 o="$(python3 "$Q" --repo-root "$TMP/block" TASK-0002 --status doing 2>&1)"; code=$?
 check "ids and a filter together are a usage error, not a silent drop" "$( { [[ $code -eq 2 ]] && printf '%s' "$o" | grep -q 'not both'; }; echo $?)" "exit $code: $o"
+
+# --search and --links-to (project-os-dev ISS-0101, TASK-0181; ISS-0102):
+# live notes first, labelled; finished and archived notes folded into a count.
+S="$TMP/search"; mkdir -p "$S/docs/features/x/plan/tasks" "$S/docs/issues" "$S/docs/archive/issues"
+printf 'version: 1\nitems: {}\n' > "$S/SNAPSHOT.yaml"
+printf -- '---\nid: TASK-0001\nstatus: doing\nrelated: ["[[ISS-0001]]"]\n---\n# Live\nThe Strava check.\n' > "$S/docs/features/x/plan/tasks/TASK-0001-Live.md"
+printf -- '---\nid: TASK-0002\nstatus: done\nrelated: ["[[ISS-0001]]"]\n---\n# Done\nThe strava check, as it was.\n' > "$S/docs/features/x/plan/tasks/TASK-0002-Done.md"
+printf -- '---\nid: ISS-0001\nstatus: open\n---\n# Open\nNothing about it.\n' > "$S/docs/issues/ISS-0001-Open.md"
+printf -- '---\nid: ISS-0002\nstatus: fixed\nrelated: ["[[ISS-0001]]"]\n---\n# Archived\nSTRAVA, long ago.\n' > "$S/docs/archive/issues/ISS-0002-Archived.md"
+printf 'docs/archive/\n' > "$S/.ignore"
+o="$(python3 "$Q" --repo-root "$S" --search strava)"
+check "--search lists the live note, labelled, and folds the finished one" \
+  "$( { printf '%s' "$o" | grep -qx 'TASK-0001 doing docs/features/x/plan/tasks/TASK-0001-Live.md' && printf '%s' "$o" | grep -qx '... and 1 finished note(s) that also match, not listed: TASK-0002; --all lists them'; }; echo $?)" "$o"
+check "--search leaves the archive out" "$(! printf '%s' "$o" | grep -q 'ISS-0002'; echo $?)" "$o"
+o="$(python3 "$Q" --repo-root "$S" --search strava --all)"
+check "--search --all lists finished and archived notes too, marked" \
+  "$( { printf '%s' "$o" | grep -q '^TASK-0002 done .* (finished)$' && printf '%s' "$o" | grep -q '^ISS-0002 fixed docs/archive/issues/ISS-0002-Archived.md (finished)$'; }; echo $?)" "$o"
+o="$(PATH=/usr/bin:/bin python3 "$Q" --repo-root "$S" --search strava)"
+check "--search gives the same answer without rg installed" \
+  "$(printf '%s' "$o" | grep -qx 'TASK-0001 doing docs/features/x/plan/tasks/TASK-0001-Live.md' && ! printf '%s' "$o" | grep -q ISS-0002; echo $?)" "$o"
+# With rg installed it is used, and asked to read ignored files only for --all.
+# A stand-in rg records its arguments and answers as rg -l would.
+mkdir -p "$TMP/fakebin"
+cat > "$TMP/fakebin/rg" <<'SH'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >> "$(dirname "$0")/calls"
+dir="${@: -1}"
+printf '%s\n' "$dir/features/x/plan/tasks/TASK-0001-Live.md"
+SH
+chmod +x "$TMP/fakebin/rg"
+o="$(PATH="$TMP/fakebin:$PATH" python3 "$Q" --repo-root "$S" --search strava)"
+PATH="$TMP/fakebin:$PATH" python3 "$Q" --repo-root "$S" --search strava --all >/dev/null
+calls="$(cat "$TMP/fakebin/calls")"; SR="$(cd "$S" && pwd -P)"
+check "with rg installed, --search uses it, and passes --no-ignore only with --all" \
+  "$( { printf '%s' "$o" | grep -qx 'TASK-0001 doing docs/features/x/plan/tasks/TASK-0001-Live.md' && [[ "$(printf '%s\n' "$calls" | head -1)" == "-l -i -F --glob *.md -- strava $SR/docs" ]] && [[ "$(printf '%s\n' "$calls" | tail -1)" == "-l -i -F --glob *.md --no-ignore -- strava $SR/docs" ]]; }; echo $?)" "$o // $calls"
+o="$(python3 "$Q" --repo-root "$S" --links-to ISS-0001)"
+check "--links-to lists the live note linking to it and folds the finished one" \
+  "$( { printf '%s' "$o" | grep -qx 'TASK-0001 doing docs/features/x/plan/tasks/TASK-0001-Live.md' && printf '%s' "$o" | grep -q 'and 1 finished note(s)'; }; echo $?)" "$o"
+o="$(python3 "$Q" --repo-root "$S" --json --search strava)"
+check "--search --json carries the live list and the finished count" \
+  "$(python3 -c 'import json,sys; d=json.loads(sys.argv[1]); sys.exit(0 if [x["id"] for x in d["live"]]==["TASK-0001"] and d["finished_count"]==1 else 1)' "$o"; echo $?)" "$o"
+check "the orientation names --search and --links-to" "$(python3 "$HERE/snapshot-slice.py" "$TMP/block" | grep -q -- '--search TEXT` and `--links-to <ID>`'; echo $?)"
 
 echo "test-snapshot-query: $assertions assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]

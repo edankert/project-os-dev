@@ -92,6 +92,8 @@ Contract IDs are `HC-001`..`HC-010`. (Earlier revisions of this file used `CHC-0
 - Trigger: before final response after implementation work, at git pre-commit, and in CI.
 - Rule: `QUALITY.md` — "Documentation Fidelity" (mechanical enforcement).
 - Entrypoint: `bash tools/scripts/validate-docs.sh` (install the git hook once with `bash tools/scripts/install-git-hooks.sh`).
+- Order: the pre-commit hook and both Stop hooks run `sync-snapshot.py` first, so a counter or status a note just changed is not reported as drift the next commit would fix (ADR-0009; project-os-dev ISS-0090). The sync writes SNAPSHOT.yaml only when a derived field is out of date, and leaves it alone if another writer changed it meanwhile.
+- Output: the last line of `validate-docs.sh` is the verdict for every step it ran, such as `validate-docs: FAIL (notes: OK; walk procedures: FAIL)`; walk problems start with `ERROR [WALK]` (project-os-dev ISS-0089). Read the exit status or that line, not the first `validate-docs` line.
 - Check logic (deterministic, exit non-zero on violation):
   - Every `items.*` entry's `file` exists and its frontmatter id/status/type agree with the snapshot.
   - Status values are within the allowed taxonomy (`STATUSES.md`).

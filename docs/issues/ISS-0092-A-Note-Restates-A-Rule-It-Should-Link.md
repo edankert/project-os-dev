@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0092
 aliases: ["ISS-0092"]
 title: "A note that depends on a project rule restates it instead of linking to it by name"
-status: "open"
+status: fixed
 phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
@@ -15,7 +15,8 @@ severity: low
 component: "tools/instructions/WRITING.md"
 parent: ""
 related: []
-tests: []
+tasks: ["[[TASK-0177]]"]
+tests: ["[[TST-0034-Notes-Hold-Current-State-And-Link-Rules]]"]
 ---
 
 # A note that depends on a project rule restates it instead of linking to it by name
@@ -31,3 +32,7 @@ Notes that depend on a project rule copy the rule's wording instead of linking t
 ## Proposal (from the report, offered as "consider")
 
 One line in `tools/instructions/WRITING.md`: a note that depends on a project rule links to it by name instead of restating it.
+
+## Fixed, 2026-09-26
+
+TASK-0177. `tools/instructions/WRITING.md` rule 12: a note that depends on a project rule names the file and heading instead of restating it. TST-0034 tests the text.

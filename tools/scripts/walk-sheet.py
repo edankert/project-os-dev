@@ -1262,14 +1262,29 @@ def claims(sitting: Sitting, check: Check, surfaces: dict[str, str]) -> bool:
             or surfaces.get(check.area, "") in sitting.surfaces)
 
 
+_PLACEMENTS: dict = {}
+
+
 def placement(checks: list[Check], sittings: list[Sitting],
               surfaces: dict[str, str]) -> dict[str, str]:
-    """`check id -> sitting name`; the first sitting to claim a check keeps it."""
+    """`check id -> sitting name`; the first sitting to claim a check keeps it.
+
+    Memoised for the run (project-os-dev ISS-0093): `--check` asked the same
+    question 475 times for one repo, 1.1 million `claims` calls. The key is the
+    check ids with the identity of the sitting and surface objects, which a
+    run never mutates; a copy returned per call keeps callers apart.
+    """
+    key = (tuple(c.id for c in checks), id(sittings), id(surfaces))
+    if key in _PLACEMENTS:
+        return dict(_PLACEMENTS[key][0])
     out: dict[str, str] = {}
     for sitting in sittings:
         for check in checks:
             if check.id not in out and claims(sitting, check, surfaces):
                 out[check.id] = sitting.name
+    #: The inputs are kept alive with the answer, so their ids cannot be
+    #: reused by other objects while the entry exists.
+    _PLACEMENTS[key] = (dict(out), sittings, surfaces)
     return out
 
 
@@ -1985,6 +2000,93 @@ def validate_preparation(procedure: Procedure, platform: str = "") -> list[str]:
     return problems
 
 
+def expect_text(check: Check) -> list[str]:
+    """The check's `## Expect` lines, normalised, in the order the note writes them."""
+    out: list[str] = []
+    for line in (check.expect or "").splitlines():
+        text = normalise(line)
+        if text and text not in out:
+            out.append(text)
+    return out
+
+
+def expect_for(check: Check, number: str) -> list[str]:
+    """The Expect lines a tag names: line N for step N when the check pairs them.
+
+    A check whose `## Expect` has exactly one line per numbered step pairs
+    them by position, and a tag `.N` names line N. Walks already read them so:
+    on your-trainer, 204 of 211 quotes citing such a check quote line N for
+    `.N` (2026-09-26). Any other check has no pairing, so a tag names all of
+    its Expect lines.
+    """
+    lines = expect_text(check)
+    steps = numbered_steps(check)
+    if number and lines and len(lines) == len(steps) and 1 <= int(number) <= len(lines):
+        return [lines[int(number) - 1]]
+    return lines
+
+
+def expand_tag_only(procedure: Procedure, checks: dict[str, Check]) -> None:
+    """Give each tag-only expectation line the check's current words.
+
+    project-os-dev ISS-0088, ADR-0049. A line may be only its tags,
+    `` - `TST-0480` ``, instead of quoting the check. It is replaced here, for
+    the sheet and for the cockpit's payload alike, by one line per line of the
+    check's own `## Expect`, each carrying that check's tags. So the walker
+    still reads the check's own words, which is what lets a tick stand as a
+    verdict on the check (ADR-0045), and editing the check no longer breaks
+    the procedure: it only changes what the next sheet prints.
+
+    A tag names the Expect lines `expect_for` gives: line N of a check that
+    pairs its steps with its Expect lines, else all of them. A check with no
+    Expect text, or a tag naming no check, leaves the line as written; the
+    audit reports the second.
+    """
+    for step in procedure.steps:
+        replaced = False
+        body: list[str] = []
+        expectations: list[Expectation] = []
+        pending = {id(e): e for e in step.expectations}
+        by_raw: dict[str, list[Expectation]] = {}
+        for e in step.expectations:
+            by_raw.setdefault(e.raw, []).append(e)
+        for i, line in enumerate(step.body):
+            queue = by_raw.get(line) or []
+            found = queue.pop(0) if queue else None
+            if found is None:
+                body.append(line)
+                continue
+            pending.pop(id(found), None)
+            owners = []
+            for check_id, _number in found.tags:
+                if check_id not in owners:
+                    owners.append(check_id)
+            texts = {}
+            for cid in owners:
+                if cid in checks:
+                    lines: list[str] = []
+                    for c, n in found.tags:
+                        if c == cid:
+                            lines += [x for x in expect_for(checks[cid], n) if x not in lines]
+                    texts[cid] = lines
+            if i == 0 or found.quote or not texts or not all(texts.get(cid) for cid in owners):
+                body.append(line)
+                expectations.append(found)
+                continue
+            prefix = line[:line.index("`")] if "`" in line else line
+            for cid in owners:
+                tags = [tag for tag in found.tags if tag[0] == cid]
+                tag_text = " ".join("`%s%s`" % (c, "." + n if n else "") for c, n in tags)
+                for text in texts[cid]:
+                    raw = "%s%s %s" % (prefix, text, tag_text)
+                    body.append(raw)
+                    expectations.append(Expectation(quote=text, raw=raw, tags=list(tags)))
+            replaced = True
+        if replaced:
+            step.body = body
+            step.expectations = expectations + list(pending.values())
+
+
 def audit_procedure(procedure: Procedure, sitting: Sitting, owed: list[Check],
                     checks: dict[str, Check], owed_ids: set[str],
                     sittings: list[Sitting], surfaces: dict[str, str],
@@ -2010,6 +2112,7 @@ def audit_procedure(procedure: Procedure, sitting: Sitting, owed: list[Check],
     #: corpus disagreed about one procedure. That is exactly what rule 7 says
     #: bundling this module prevents. Found by independent review, 2026-09-14.
     known = known or checks
+    expand_tag_only(procedure, known)
     where = placement(sorted(known.values(), key=lambda c: c.id), sittings, surfaces)
     want: dict[tuple[str, str], Check] = {}
     for check in owed:
@@ -2111,7 +2214,9 @@ def _audit_tag(procedure: Procedure, step: Step, expectation: Expectation,
         #: needs this look like that today (project-os-dev ISS-0064).
         return []
     if expectation.quote not in wanted:
-        return ["%s quotes %s as %r, and that check's Expect says none of: %s"
+        return ["%s quotes %s as %r, and that check's Expect says none of: %s; "
+                "`python3 tools/scripts/walk-tags.py --refresh` re-quotes a line whose "
+                "check was reworded, or cite the step by its tag alone (ADR-0049)"
                 % (at, check_id, expectation.quote,
                    "; ".join(repr(w) for w in sorted(wanted)))]
     return []
@@ -2576,8 +2681,8 @@ def check_repo(repo_root: Path, platform: str) -> tuple[list[str], list[str]]:
         problems.extend(found)
         remarks.extend(said)
     if read.procedures:
-        uncovered = sorted({placement(owed, read.sittings, read.surfaces).get(c.id, "")
-                            for c in owed} - seen - {""})
+        placed_all = placement(owed, read.sittings, read.surfaces)
+        uncovered = sorted({placed_all.get(c.id, "") for c in owed} - seen - {""})
         if uncovered:
             remarks.append("no procedure yet for: %s" % ", ".join(uncovered))
     #: **Every change note, not only the ones this release surveys.** The
@@ -2627,7 +2732,7 @@ def run_check(repo_root: Path, platform: str, quiet: bool = False) -> int:
         except WalkError as exc:
             #: Everything else `read_repo` refuses is a broken ledger, and
             #: `--check` is the only thing that reads one on every commit.
-            print("walk-sheet --check (%s): %s" % (name, exc), file=sys.stderr)
+            print("ERROR [WALK] walk-sheet --check (%s): %s" % (name, exc), file=sys.stderr)
             status = 2
             continue
         for problem in problems:
@@ -2636,7 +2741,9 @@ def run_check(repo_root: Path, platform: str, quiet: bool = False) -> int:
             if problem in printed:
                 continue
             printed.add(problem)
-            print("walk-sheet --check (%s): %s" % (name, problem), file=sys.stderr)
+            #: `ERROR [WALK]`: the validator's line shape, so a reader
+            #: filtering for ERROR finds it (project-os-dev ISS-0089).
+            print("ERROR [WALK] walk-sheet --check (%s): %s" % (name, problem), file=sys.stderr)
         #: Remarks are printed when something is wrong, or when a person
         #: asked. `validate-docs.sh` runs this on every commit, and a repo
         #: with procedures would otherwise print its coverage shortfall to

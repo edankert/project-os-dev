@@ -230,7 +230,8 @@ def render(root):
     lines.append("in flight (%d, besides focus):" % len(flight))
     closing = "Before changing anything, open the note of the item you are working on and the notes it links, including ones the request does not name."
     if (root / "tools" / "scripts" / "snapshot-query.py").is_file():
-        closing += " Look up any other item with `python3 tools/scripts/snapshot-query.py <ID>`."
+        closing += (" Look up any other item with `python3 tools/scripts/snapshot-query.py <ID>`;"
+                    " `--search TEXT` and `--links-to <ID>` find notes, live ones first, finished ones folded.")
     else:
         closing += " For any other item, find its `file:` under its ID in SNAPSHOT.yaml and open the note."
     budget = MAX_CHARS - len(closing) - 60

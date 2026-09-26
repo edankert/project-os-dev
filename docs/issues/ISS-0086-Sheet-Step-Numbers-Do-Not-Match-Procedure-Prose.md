@@ -16,6 +16,7 @@ component: "tools/scripts/walk-sheet.py; project-os-cockpit walk page"
 parent: ""
 related: ["[[FEAT-0033-A-Walk-Keeps-Required-Preparation]]", "[[ADR-0046-Declared-Preparation-Survives-Walk-Filtering]]"]
 tests: []
+tasks: ["[[TASK-0162]]"]
 ---
 
 # A walk's printed step numbers do not match the step numbers the procedure's own text refers to

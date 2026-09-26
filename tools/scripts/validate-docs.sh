@@ -71,16 +71,23 @@ done
 # walk check below is a second process and has to be told.
 repo_root="$ROOT"
 expect_root=""
+quiet=""
 for arg in "$@"; do
   if [[ -n "$expect_root" ]]; then repo_root="$arg"; expect_root=""; continue; fi
   case "$arg" in
     --repo-root) expect_root=1 ;;
     --repo-root=*) repo_root="${arg#--repo-root=}" ;;
+    --quiet) quiet=1 ;;
   esac
 done
 
+# Each step's outcome, for the verdict line printed after the last one.
+# PROJECT_OS_VALIDATE_STEP makes the Python validator's own summary say it
+# covers only the notes (project-os-dev ISS-0089).
 status=0
-python3 "$SCRIPT_DIR/validate-docs.py" "$@" || status=$?
+notes=0
+PROJECT_OS_VALIDATE_STEP=1 python3 "$SCRIPT_DIR/validate-docs.py" "$@" || notes=$?
+status=$notes
 
 # A sitting's procedure is authored text that cites acceptance checks, and a
 # ledger event can make it stale without anyone editing it (see
@@ -94,8 +101,22 @@ python3 "$SCRIPT_DIR/validate-docs.py" "$@" || status=$?
 # rule existed. Printing those on every commit is how validator output stops
 # being read. They are the worklist `walk-sheet.py --check`, release-prep and
 # release-verification print; here, only a real disagreement speaks.
+walk=""
 if [[ -f "$SCRIPT_DIR/walk-sheet.py" && -f "$repo_root/SNAPSHOT.yaml" ]]; then
-  python3 "$SCRIPT_DIR/walk-sheet.py" --check --repo-root "$repo_root" --quiet || status=$?
+  walk=0
+  python3 "$SCRIPT_DIR/walk-sheet.py" --check --repo-root "$repo_root" --quiet || walk=$?
+  [[ $walk -ne 0 ]] && status=$walk
+fi
+
+# The last line is the answer for every step above. The validator used to print
+# "validate-docs: OK" before the walk check ran, and a session that read the
+# output rather than the exit status took that OK for the whole result while
+# the walk check had failed (project-os-dev ISS-0089).
+outcome() { case "$1" in 0) echo OK ;; 1) echo FAIL ;; *) echo "could not run, exit $1" ;; esac; }
+if [[ $status -ne 0 ]]; then
+  echo "validate-docs: FAIL (notes: $(outcome "$notes"); walk procedures: $([[ -n "$walk" ]] && outcome "$walk" || echo "not checked"))"
+elif [[ -z "$quiet" ]]; then
+  echo "validate-docs: OK ($(cd "$repo_root" 2>/dev/null && pwd -P || echo "$repo_root"): notes$([[ -n "$walk" ]] && echo " and walk procedures"))"
 fi
 
 exit $status

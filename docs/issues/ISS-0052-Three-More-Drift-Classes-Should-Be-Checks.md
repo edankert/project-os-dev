@@ -13,7 +13,7 @@ component: tooling
 source: ["[[ADR-0026-When-A-Drift-Sweep-Stops]] acceptance criterion 1, decided 2026-09-04", "The ISS-0048 drift sweep, passes 11 and 12"]
 reported_by: agent
 related: ["[[ADR-0026-When-A-Drift-Sweep-Stops]]", "[[ADR-0024-A-Normative-Rule-Is-Stated-Once]]", "[[ISS-0048-Thirty-Six-Rules-Are-Still-Stated-In-More-Than-One-File]]"]
-tasks: []
+tasks: ["[[TASK-0164]]", "[[TASK-0165]]", "[[TASK-0166]]", "[[TASK-0167]]"]
 tests: ["[[TST-0025]]"]
 ---
 

@@ -14,10 +14,17 @@ ROOT="$(git rev-parse --show-toplevel)"
 # comments and membership are left alone.
 SYNC="$ROOT/tools/scripts/sync-snapshot.py"
 if [[ -f "$SYNC" ]] && command -v python3 >/dev/null 2>&1; then
-  if python3 "$SYNC" --repo-root "$ROOT" --quiet 2>/dev/null | grep -q "updated"; then
+  SYNC_OUT="$(python3 "$SYNC" --repo-root "$ROOT" --quiet 2>/dev/null)"
+  if printf '%s\n' "$SYNC_OUT" | grep -q "updated"; then
     git add "$ROOT/SNAPSHOT.yaml" 2>/dev/null || true
     echo "pre-commit: SNAPSHOT.yaml derived fields synced from notes and re-staged." >&2
   fi
+  # A repo with retention.derive_lists also has its reverse lists written into
+  # the notes (ADR-0048); each note the sync wrote is staged with the commit.
+  printf '%s\n' "$SYNC_OUT" | sed -n 's/^sync-snapshot: wrote //p' | while IFS= read -r note; do
+    [ -n "$note" ] && git add "$ROOT/$note" 2>/dev/null || true
+    [ -n "$note" ] && echo "pre-commit: $note reverse lists derived from its children and staged." >&2
+  done
 fi
 
 VALIDATOR="$ROOT/tools/scripts/validate-docs.sh"

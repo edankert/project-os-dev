@@ -15,6 +15,7 @@ retention:
   # Read by tools/scripts/sync-snapshot.py (ADR-0018). Absent = feature off.
   derive_fields: true      # title/goal derived from the note
   prune_window: 25         # keep N most recent terminal items per collection
+  derive_lists: true       # reverse lists follow each child's parent:/phase: (ADR-0048, ISS-0095)
   note: "Snapshot keeps active work + recent changes for handoff; notes are the archive."
 
 docs_system:
@@ -29,7 +30,7 @@ counters:
   # ADR-0030..ADR-0043 by bare number (TESTING.md's 'ADR-0031', SCHEMAS.md's 'ADR-0032' and
   # 'ADR-0034', and more), so a local ADR-0030..0043 would make those citations ambiguous.
   # Same fix as project-os-cockpit ISS-0123. 0030-0043 are never allocated here.
-  ADR: 48
+  ADR: 49
   CHG:
     last_date: 20260916
   FEAT: 39
@@ -38,8 +39,8 @@ counters:
   REL: 0
   REQ: 32
   RISK: 4
-  TASK: 167
-  TST: 25
+  TASK: 183
+  TST: 39
   WF: 3
 
 focus:
@@ -47,7 +48,7 @@ focus:
   feature: ""
   phase: "PHASE-0009"
   issue: ""
-  note: "2026-09-26: PHASE-0009 opened (Edwin): a change costs only its own work. First step is ISS-0100's baseline, then ISS-0093's note index. ISS-0091's archive design is still Edwin's to decide before step 4. Open elsewhere: ISS-0086's cockpit half; the cockpit's SNAPSHOT.yaml declares items.releases twice."
+  note: "2026-09-26: PHASE-0009's sixteen tasks are done and its issues fixed. Two exit criteria wait: Edwin's call on whether VERIFY-ACCEPTANCE on unreleased work counts, and measuring opened notes once sessions use the new tools. Open elsewhere: ISS-0086's cockpit half; the cockpit's SNAPSHOT.yaml declares items.releases twice."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
@@ -112,8 +113,8 @@ items:
       order: 3
       owner: user:edwin
       goal: "Bring the template's instructions, skills, hooks and subagents in line with the Claude 5 prompting guides: remove the contradictions, state each rule once, trim what every session loads, and stop the hooks and hints from teaching bypasses"
-      features: [FEAT-0039, FEAT-0021]
-      tasks: [TASK-0156, TASK-0157, TASK-0158, TASK-0159, TASK-0160, TASK-0080, TASK-0081, TASK-0163, TASK-0164, TASK-0165, TASK-0166, TASK-0167]
+      features: [FEAT-0039, FEAT-0021, FEAT-0024, FEAT-0025, FEAT-0026, FEAT-0027, FEAT-0028]
+      tasks: [TASK-0156, TASK-0157, TASK-0158, TASK-0159, TASK-0160, TASK-0080, TASK-0081, TASK-0163, TASK-0164, TASK-0165, TASK-0166, TASK-0167, TASK-0090, TASK-0091, TASK-0092, TASK-0093, TASK-0094, TASK-0095, TASK-0096, TASK-0097, TASK-0098, TASK-0099, TASK-0100, TASK-0101, TASK-0102, TASK-0103, TASK-0104, TASK-0105, TASK-0106, TASK-0107, TASK-0108, TASK-0109, TASK-0161]
       note: "Reopened for new scope 2026-09-24: the Opus 5.5 guide review. The 2026-09-03 scope (FEAT-0024 to FEAT-0028) is recorded in the phase note."
     PHASE-0004:
       file: docs/phases/PHASE-0004-The-Walk.md
@@ -144,7 +145,7 @@ items:
       status: planned
       order: 999
       owner: user:edwin
-      issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083, ISS-0085, ISS-0086]
+      issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083, ISS-0085, ISS-0086, ISS-0010, ISS-0011, ISS-0012, ISS-0013, ISS-0014, ISS-0015, ISS-0016, ISS-0017, ISS-0018, ISS-0019, ISS-0020, ISS-0021, ISS-0022, ISS-0023, ISS-0024, ISS-0025, ISS-0026, ISS-0027, ISS-0029, ISS-0030, ISS-0031, ISS-0032, ISS-0040, ISS-0066, ISS-0067, ISS-0074, ISS-0075, ISS-0076]
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
@@ -419,6 +420,102 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0168:
+      file: docs/features/agent-time/plan/tasks/TASK-0168-Baseline-What-Sessions-Spend-On-Finished-Notes.md
+      status: done
+      parent: ISS-0100
+      phase: "[[PHASE-0009]]"
+      effort: M
+    TASK-0169:
+      file: docs/features/agent-time/plan/tasks/TASK-0169-One-Note-Index-Parsed-Once-And-Cached.md
+      status: done
+      parent: ISS-0093
+      phase: "[[PHASE-0009]]"
+      effort: M
+    TASK-0170:
+      file: docs/features/agent-time/plan/tasks/TASK-0170-One-Final-Verdict-And-Walk-Errors-Marked.md
+      status: done
+      parent: ISS-0089
+      phase: "[[PHASE-0009]]"
+      effort: M
+    TASK-0171:
+      file: docs/features/agent-time/plan/tasks/TASK-0171-The-Stop-Hook-Syncs-Before-It-Validates.md
+      status: done
+      parent: ISS-0090
+      phase: "[[PHASE-0009]]"
+      effort: M
+    TASK-0172:
+      file: docs/features/agent-time/plan/tasks/TASK-0172-Reverse-Lists-Are-Derived.md
+      status: done
+      parent: ISS-0095
+      phase: "[[PHASE-0009]]"
+      effort: M
+    TASK-0173:
+      file: docs/features/agent-time/plan/tasks/TASK-0173-Supersession-Written-Once.md
+      status: done
+      parent: ISS-0096
+      phase: "[[PHASE-0009]]"
+      effort: M
+    TASK-0174:
+      file: docs/features/agent-time/plan/tasks/TASK-0174-A-Parked-Feature-Gets-Its-Feature-Note-Only.md
+      status: done
+      parent: ISS-0087
+      phase: "[[PHASE-0009]]"
+      effort: M
+    TASK-0175:
+      file: docs/features/agent-time/plan/tasks/TASK-0175-Walks-Cite-A-Step-And-Show-Its-Current-Text.md
+      status: done
+      parent: ISS-0088
+      phase: "[[PHASE-0009]]"
+      effort: M
+    TASK-0176:
+      file: docs/features/agent-time/plan/tasks/TASK-0176-Notes-Hold-Current-State.md
+      status: done
+      parent: ISS-0098
+      phase: "[[PHASE-0009]]"
+      effort: M
+    TASK-0177:
+      file: docs/features/agent-time/plan/tasks/TASK-0177-Link-A-Rule-Do-Not-Restate-It.md
+      status: done
+      parent: ISS-0092
+      phase: "[[PHASE-0009]]"
+      effort: M
+    TASK-0178:
+      file: docs/features/agent-time/plan/tasks/TASK-0178-Editing-A-Frozen-Ticket-Warns.md
+      status: done
+      parent: ISS-0097
+      phase: "[[PHASE-0009]]"
+      effort: M
+    TASK-0179:
+      file: docs/features/agent-time/plan/tasks/TASK-0179-A-Rule-Judges-Only-Notes-Open-When-It-Arrived.md
+      status: done
+      parent: ISS-0094
+      phase: "[[PHASE-0009]]"
+      effort: M
+    TASK-0180:
+      file: docs/features/agent-time/plan/tasks/TASK-0180-Finished-Notes-Move-To-An-Archive.md
+      status: done
+      parent: ISS-0091
+      phase: "[[PHASE-0009]]"
+      effort: M
+    TASK-0181:
+      file: docs/features/agent-time/plan/tasks/TASK-0181-Search-Puts-Live-Notes-First.md
+      status: done
+      parent: ISS-0101
+      phase: "[[PHASE-0009]]"
+      effort: M
+    TASK-0182:
+      file: docs/features/agent-time/plan/tasks/TASK-0182-Search-With-rg.md
+      status: done
+      parent: ISS-0102
+      phase: "[[PHASE-0009]]"
+      effort: M
+    TASK-0183:
+      file: docs/features/agent-time/plan/tasks/TASK-0183-Ledger-Field-Migration.md
+      status: done
+      parent: ISS-0099
+      phase: "[[PHASE-0009]]"
+      effort: M
     TASK-0163:
       file: docs/features/enforcement-hardening/plan/tasks/TASK-0163-Frontmatter-Typos-And-The-Cockpit-Validator.md
       status: done
@@ -534,22 +631,10 @@ items:
       effort: M
       depends: [TASK-0151, TASK-0153]
       blocks: [TASK-0155]
-    TASK-0155:
-      file: docs/features/note-relevance/plan/tasks/TASK-0155-First-Run-Recorded.md
-      status: done
-      parent: FEAT-0038
-      phase: "[[PHASE-0008-Measured-Note-Ranking]]"
-      effort: S
-      depends: [TASK-0152, TASK-0154]
-      blocks: []
     TASK-0142:
       file: docs/features/template-sync-hygiene/plan/tasks/TASK-0142-A-Merge-File-Nobody-Edited-Takes-The-Template.md
       status: done
       parent: FEAT-0037
-    TASK-0143:
-      file: docs/features/backlog-clearance/plan/tasks/TASK-0143-Template-Fixes-Found-By-The-Cleanup.md
-      status: done
-      parent: FEAT-0036
     TASK-0144:
       file: docs/features/fix-before-filing/plan/tasks/TASK-0144-A-Failing-Test-Is-Fixed-Whoever-Broke-It.md
       status: done
@@ -1012,68 +1097,84 @@ items:
       depends: [TASK-0060]
   issues:
     ISS-0101:
+      tasks: [TASK-0181]
       file: docs/issues/ISS-0101-A-Search-Returns-Finished-Notes-Mixed-In.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0102:
+      tasks: [TASK-0182]
       file: docs/issues/ISS-0102-Shell-Searches-Read-Files-The-Repo-Ignores.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0093:
+      tasks: [TASK-0169]
       file: docs/issues/ISS-0093-The-Checks-Parse-Every-Note-Several-Times.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0094:
+      tasks: [TASK-0179]
       file: docs/issues/ISS-0094-A-Rule-Judges-Notes-That-Closed-Before-It-Existed.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0095:
+      tasks: [TASK-0172]
       file: docs/issues/ISS-0095-One-Relationship-Is-Written-In-Six-Places.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0096:
+      tasks: [TASK-0173]
       file: docs/issues/ISS-0096-Superseding-Means-Editing-The-Old-Note.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0097:
+      tasks: [TASK-0178]
       file: docs/issues/ISS-0097-Nothing-Stops-A-Released-Ticket-Being-Edited.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0098:
+      tasks: [TASK-0176]
       file: docs/issues/ISS-0098-Notes-Grow-Into-Diaries.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0099:
+      tasks: [TASK-0183]
       file: docs/issues/ISS-0099-Ledger-Field-Warnings-Wait-Ninety-Days.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0100:
+      tasks: [TASK-0168]
       file: docs/issues/ISS-0100-Nobody-Has-Measured-Time-Spent-On-Finished-Notes.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0087:
+      tasks: [TASK-0174]
       file: docs/issues/ISS-0087-A-Parked-Feature-Gets-A-Full-Scaffold.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0088:
+      tasks: [TASK-0175]
       file: docs/issues/ISS-0088-Editing-A-Check-Breaks-Every-Walk-That-Quotes-It.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0089:
+      tasks: [TASK-0170]
       file: docs/issues/ISS-0089-The-Validator-Said-OK-And-The-Commit-Was-Refused.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0090:
+      tasks: [TASK-0171]
       file: docs/issues/ISS-0090-The-Stop-Hook-Validates-Without-Syncing-The-Snapshot.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0091:
+      tasks: [TASK-0180]
       file: docs/issues/ISS-0091-Finished-Notes-Have-No-Archive.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0092:
+      tasks: [TASK-0177]
       file: docs/issues/ISS-0092-A-Note-Restates-A-Rule-It-Should-Link.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0009]]"
     ISS-0086:
       file: docs/issues/ISS-0086-Sheet-Step-Numbers-Do-Not-Match-Procedure-Prose.md
@@ -1952,6 +2053,10 @@ items:
   workflows: {}
 
   changes:
+    CHG-20260926-A-Change-Costs-Only-Its-Own-Work:
+      file: "docs/changes/CHG-20260926-A-Change-Costs-Only-Its-Own-Work.md"
+      status: merged
+      issues: [ISS-0087, ISS-0088, ISS-0089, ISS-0090, ISS-0091, ISS-0092, ISS-0093, ISS-0094, ISS-0095, ISS-0096, ISS-0097, ISS-0098, ISS-0099, ISS-0100, ISS-0101, ISS-0102]
     CHG-20260914-The-Walk-Reads-As-A-Script:
       file: "docs/changes/CHG-20260914-The-Walk-Reads-As-A-Script.md"
       status: merged
@@ -2003,6 +2108,11 @@ items:
       status: merged
 
   decisions:
+    ADR-0049:
+      file: docs/decisions/ADR-0049-A-Walk-Step-May-Cite-A-Check-Without-Quoting-It.md
+      status: accepted
+      owner: user:edwin
+      related: [ISS-0088, ADR-0045, ADR-0048]
     ADR-0048:
       file: docs/decisions/ADR-0048-Old-Tickets-Are-Records-And-Every-Fact-Is-Written-Once.md
       status: accepted
@@ -2197,12 +2307,12 @@ metrics:
     features_done: 36
     phases_total: 10
     phases_done: 7
-    tasks_total: 167
-    tasks_done: 159
-    tests_total: 17
+    tasks_total: 183
+    tasks_done: 175
+    tests_total: 31
     tests_passing: 0
     tests_failing: 0
-    issues_open: 28
+    issues_open: 12
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 5
@@ -2210,4 +2320,4 @@ metrics:
     requirements_implemented: 29
     risks_open: 1
     releases_total: 0
-    decisions_total: 34
+    decisions_total: 35

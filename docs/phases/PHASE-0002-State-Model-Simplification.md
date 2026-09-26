@@ -11,7 +11,7 @@ updated: 2026-07-25
 goal: "Contract the state model to what the fleet actually uses, and derive the rest: collapse the status taxonomy, state the rules once, generate the snapshot, stamp test status by execution, and end the permanent warning tier"
 features: [FEAT-0013, FEAT-0014, FEAT-0015, FEAT-0016, FEAT-0017]
 requirements: [REQ-0016, REQ-0017, REQ-0018, REQ-0019, REQ-0020, REQ-0021, REQ-0022, REQ-0023, REQ-0024]
-tasks: []
+tasks: ["[[TASK-0053]]", "[[TASK-0054]]", "[[TASK-0055]]", "[[TASK-0056]]", "[[TASK-0057]]", "[[TASK-0058]]", "[[TASK-0059]]", "[[TASK-0060]]", "[[TASK-0061]]", "[[TASK-0062]]", "[[TASK-0063]]", "[[TASK-0064]]", "[[TASK-0065]]", "[[TASK-0066]]", "[[TASK-0067]]", "[[TASK-0068]]", "[[TASK-0069]]", "[[TASK-0070]]", "[[TASK-0071]]", "[[TASK-0072]]", "[[TASK-0073]]", "[[TASK-0074]]"]
 issues: [ISS-0006, ISS-0007, ISS-0008, ISS-0009]
 related: [ADR-0008, ADR-0009, ADR-0010, ADR-0011, RISK-0001, RISK-0002]
 tags: [phase, simplification]

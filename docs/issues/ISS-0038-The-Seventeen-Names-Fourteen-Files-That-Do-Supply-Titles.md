@@ -10,7 +10,7 @@ created: 2026-08-04
 updated: 2026-09-18
 component: tooling
 source: ["review:2026-08-04-independent-review-round-six-FEAT-0022", "22 mutations + 4 extra formulations + full fleet re-measurement 2026-08-04 over 12 repos"]
-phase: "[[PHASE-999]]"
+phase: "[[PHASE-0007]]"
 parent: ""
 related: [FEAT-0022, ADR-0018, ISS-0026, ISS-0032, ISS-0033, ISS-0034, ISS-0035, ISS-0036, ISS-0037, TASK-0082, TASK-0083, TASK-0084, TASK-0085, TST-0003, CHG-20260804-Retention-And-Field-Derivation]
 tests: [TST-0003]

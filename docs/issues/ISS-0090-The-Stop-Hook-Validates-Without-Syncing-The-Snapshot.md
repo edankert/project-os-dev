@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0090
 aliases: ["ISS-0090"]
 title: "The Stop hook validates without syncing the snapshot first, so a note another agent just wrote blocks the turn"
-status: "open"
+status: fixed
 phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
@@ -15,7 +15,8 @@ severity: medium
 component: "tools/adapters/claude-code/hooks/close-out-check.sh; tools/adapters/codex/hooks/dispatch.py"
 parent: ""
 related: ["[[ISS-0085-Parallel-Reviewers-Mutate-The-Same-Working-Tree]]"]
-tests: []
+tasks: ["[[TASK-0171]]"]
+tests: ["[[TST-0029-The-Stop-Hooks-Sync-Before-They-Validate]]"]
 ---
 
 # The Stop hook validates without syncing the snapshot first, so a note another agent just wrote blocks the turn
@@ -35,3 +36,7 @@ The Stop hook runs `sync-snapshot.py` before validating, as the pre-commit hook 
 ## Relation to ISS-0085
 
 Both come from two agents working in one tree, but this is a different mechanism: a validation order in one hook, not two reviewers mutating the same file. Filed separately so each can be fixed on its own.
+
+## Fixed, 2026-09-26
+
+TASK-0171. Both Stop hooks run `sync-snapshot.py` before the validator. The report's concern, that the hook becomes a second writer of SNAPSHOT.yaml, is handled in the sync: it re-reads the file just before writing and leaves it alone if anything changed, then replaces it in one step. TST-0029 tests both hooks and that guard.

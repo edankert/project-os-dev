@@ -9,10 +9,10 @@ owner: user:edwin
 created: 2026-07-25
 updated: 2026-09-22
 goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
-features: []
-requirements: []
-tasks: []
-issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083, ISS-0085, ISS-0086]
+features: ["[[FEAT-0018]]", "[[FEAT-0019]]", "[[FEAT-0020]]", "[[FEAT-0022]]", "[[FEAT-0023]]"]
+requirements: ["[[REQ-0025]]"]
+tasks: ["[[TASK-0075]]", "[[TASK-0076]]", "[[TASK-0077]]", "[[TASK-0078]]", "[[TASK-0079]]", "[[TASK-0082]]", "[[TASK-0083]]", "[[TASK-0084]]", "[[TASK-0085]]", "[[TASK-0086]]", "[[TASK-0087]]", "[[TASK-0088]]", "[[TASK-0089]]", "[[TASK-0162]]"]
+issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083, ISS-0085, ISS-0086, ISS-0010, ISS-0011, ISS-0012, ISS-0013, ISS-0014, ISS-0015, ISS-0016, ISS-0017, ISS-0018, ISS-0019, ISS-0020, ISS-0021, ISS-0022, ISS-0023, ISS-0024, ISS-0025, ISS-0026, ISS-0027, ISS-0029, ISS-0030, ISS-0031, ISS-0032, ISS-0040, ISS-0066, ISS-0067, ISS-0074, ISS-0075, ISS-0076]
 related: [ADR-0005, REQ-0013]
 tags: [phase, parking-lot]
 ---

@@ -322,6 +322,14 @@ def stop(payload, cwd):
     snap = snapshot(root)
     if placeholder(snap):
         return
+    # Sync the derived fields first, as pre-commit and the Claude Code Stop hook
+    # do, so a counter a note just raised does not block the stop (ISS-0090).
+    sync = root / "tools/scripts/sync-snapshot.py"
+    if sync.is_file():
+        try:
+            subprocess.run([sys.executable, str(sync), "--repo-root", str(root), "--quiet"], cwd=root, capture_output=True, text=True, timeout=60)
+        except (OSError, subprocess.SubprocessError):
+            pass
     validator = root / "tools/scripts/validate-docs.sh"
     if validator.is_file():
         result = subprocess.run(["bash", str(validator), "--repo-root", str(root), "--quiet"], cwd=root, capture_output=True, text=True, timeout=60)

@@ -36,6 +36,17 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [ -r "$SCRIPT_DIR/shared/session-marker.sh" ] && . "$SCRIPT_DIR/shared/session-marker.sh"
 
+# Sync the snapshot's derived fields from the notes first, as the pre-commit
+# hook does (ADR-0009). Without it, a note that raised a counter blocked the stop
+# with an error the next commit would have fixed by itself: in your-trainer a
+# background planner created REQ-0221 and the main session's stop failed on
+# COUNTER (project-os-dev ISS-0090). The sync writes only when a field is out of
+# date, and leaves the file alone if someone else changed it meanwhile.
+SYNC="$PROJECT_DIR/tools/scripts/sync-snapshot.py"
+if [ -f "$SYNC" ] && command -v python3 >/dev/null 2>&1; then
+  python3 "$SYNC" --repo-root "$PROJECT_DIR" --quiet >/dev/null 2>&1 || true
+fi
+
 # Mechanical validation first: block stop while the docs invariants are broken (HC-007).
 VALIDATOR="$PROJECT_DIR/tools/scripts/validate-docs.sh"
 if [ -x "$VALIDATOR" ]; then

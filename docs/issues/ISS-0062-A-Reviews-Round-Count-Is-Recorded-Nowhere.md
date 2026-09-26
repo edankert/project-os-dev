@@ -4,7 +4,7 @@ id: ISS-0062
 aliases: ["ISS-0062"]
 title: "A review's round count is recorded nowhere, so an eight-round review and a one-round review both read `approved` and the cost of the gate is invisible to every measurement"
 status: fixed
-phase: ""
+phase: "[[PHASE-0007]]"
 severity: medium
 owner: user:edwin
 created: 2026-09-10

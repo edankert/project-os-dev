@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0101
 aliases: ["ISS-0101"]
 title: "A search for a rule returns finished notes mixed in with live ones, and each has to be opened to tell which is which"
-status: open
+status: fixed
 phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
@@ -15,7 +15,8 @@ severity: medium
 component: "tools/scripts/snapshot-query.py"
 parent: ""
 related: ["[[ADR-0048-Old-Tickets-Are-Records-And-Every-Fact-Is-Written-Once]]", "[[ISS-0093-The-Checks-Parse-Every-Note-Several-Times]]", "[[ISS-0091-Finished-Notes-Have-No-Archive]]"]
-tests: []
+tasks: ["[[TASK-0181]]"]
+tests: ["[[TST-0038-Search-Puts-Live-Notes-First]]"]
 ---
 
 # A search for a rule returns finished notes mixed in with live ones, and each has to be opened to tell which is which
@@ -32,3 +33,7 @@ In the your-trainer session, a search for one rule returned 57 notes, and 27 of 
 - `--links-to <ID>` lists the notes that link to an item, with the same labels.
 
 The session-start orientation names both, as it names the lookup today, because agents reach for grep by habit (PHASE-0008: 255 of 260 lookups). ISS-0100's measurement should show the share of finished notes opened fall.
+
+## Fixed, 2026-09-26
+
+TASK-0181. `snapshot-query.py --search` and `--links-to` list live notes first, labelled with id and status, and fold finished ones into a count unless `--all`. The session-start orientation names both. TST-0038 tests it.

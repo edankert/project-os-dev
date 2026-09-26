@@ -1,0 +1,5 @@
+# ripgrep, and agent tools built on it, skip the notes archive-notes.py moved
+# out of the way: finished tickets whose release is out (project-os-dev
+# ISS-0091). Search them on purpose with `rg --no-ignore docs/archive`, or open
+# the note by its link.
+docs/archive/

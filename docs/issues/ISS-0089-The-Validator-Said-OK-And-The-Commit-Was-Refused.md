@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0089
 aliases: ["ISS-0089"]
 title: "validate-docs.sh prints OK before its last check runs, and a walk failure after it does not look like an error"
-status: "open"
+status: fixed
 phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
@@ -15,7 +15,8 @@ severity: medium
 component: "tools/scripts/validate-docs.sh; tools/scripts/walk-sheet.py"
 parent: ""
 related: []
-tests: []
+tasks: ["[[TASK-0170]]"]
+tests: ["[[TST-0028-The-Last-Line-Of-Validate-Docs-Is-The-Whole-Verdict]]"]
 ---
 
 # validate-docs.sh prints OK before its last check runs, and a walk failure after it does not look like an error
@@ -38,3 +39,7 @@ tests: []
 ## Correction
 
 This issue first reported that the walk checks run only in the pre-commit hook. They do not: `validate-docs.sh` runs them, and the pre-commit hook runs `validate-docs.sh`. The report's mechanism was corrected on 2026-09-26 by the session that raised it.
+
+## Fixed, 2026-09-26
+
+TASK-0170, both proposals as the your-trainer session made them. `validate-docs.sh` now ends with one line for every step, such as `validate-docs: FAIL (notes: OK; walk procedures: FAIL)`. Run from the script, the validator's own line reads `validate-docs [notes]: OK`, so it no longer looks like the whole answer. Every walk problem starts with `ERROR [WALK]`. TST-0028 reproduces the your-trainer case.

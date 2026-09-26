@@ -16,6 +16,7 @@ component: "tools/scripts/validate-docs.py"
 parent: ""
 related: ["[[FEAT-0039-Opus-5-5-Prompting-Guide-Conformance]]", "[[TASK-0160]]"]
 tests: ["[[TST-0022]]"]
+tasks: ["[[TASK-0161]]"]
 ---
 
 # An in-flight task can be missing from SNAPSHOT.yaml, even as the focus task, and the validator passes

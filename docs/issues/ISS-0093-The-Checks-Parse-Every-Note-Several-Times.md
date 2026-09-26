@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0093
 aliases: ["ISS-0093"]
 title: "Every commit and every stop waits about a minute while the checks parse the same notes again and again"
-status: open
+status: fixed
 phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
@@ -15,7 +15,8 @@ severity: high
 component: "tools/scripts/validate-docs.py; walk-sheet.py; sync-snapshot.py; the pre-commit and Stop hooks"
 parent: ""
 related: ["[[ADR-0048-Old-Tickets-Are-Records-And-Every-Fact-Is-Written-Once]]"]
-tests: []
+tasks: ["[[TASK-0169]]"]
+tests: ["[[TST-0027-The-Note-Cache-Never-Changes-What-The-Checks-Say]]"]
 ---
 
 # Every commit and every stop waits about a minute while the checks parse the same notes again and again
@@ -46,3 +47,7 @@ Edwin asked whether a database of the links, built before a session starts, woul
 - **Always current, never committed.** Keyed by path, size and mtime, so a run re-reads only changed notes (`stat` on every note: 8 ms; a full rebuild with libyaml: about 0.3 s). It is built on first use; the SessionStart hook may warm it. A missing or unreadable cache is rebuilt, never trusted.
 - **JSON first.** At about 3,000 notes a JSON file is enough; SQLite (standard library) only if the queries grow.
 - **Its readers:** the validator, `walk-sheet.py`, `sync-snapshot.py`, the derived lists and back-pointers (ISS-0095, ISS-0096), and the search in ISS-0101.
+
+## Fixed, 2026-09-26
+
+TASK-0169. On your-trainer the pre-commit hook fell from 54.9 s to 2.0 s and the Stop hook from 39.9 s to 1.5 s with a warm cache (3.1 s and 2.1 s cold). The validator's output did not change on any of the 13 fleet repos. TST-0027 tests the cache.

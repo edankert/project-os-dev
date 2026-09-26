@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0091
 aliases: ["ISS-0091"]
 title: "Finished tasks, issues and change notes stay among the live notes, so every search and validator run wades through them"
-status: "open"
+status: fixed
 phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
@@ -15,7 +15,8 @@ severity: medium
 component: "tools/instructions/LIFECYCLE.md; tools/instructions/SNAPSHOT.md; tools/scripts/validate-docs.py"
 parent: ""
 related: ["[[ISS-0030-Retention-Is-Policy-Nothing-Performs]]"]
-tests: []
+tasks: ["[[TASK-0180]]"]
+tests: ["[[TST-0037-Released-Finished-Tickets-Move-To-The-Archive]]"]
 ---
 
 # Finished tasks, issues and change notes stay among the live notes, so every search and validator run wades through them
@@ -41,3 +42,7 @@ LIFECYCLE says "the notes are the archive" and "Never delete a completed note", 
 ## Relation to ISS-0030
 
 ISS-0030 is about pruning the snapshot. This is about the notes themselves, which the snapshot's retention rule assumes stay put.
+
+## Fixed, 2026-09-26
+
+TASK-0180, as the your-trainer session proposed. `archive-notes.py` moves finished tasks, issues, change notes and retired checks whose release is out to `docs/archive/`, never deleting, and drops them from the snapshot. Links still resolve, the validator reports only structural findings about archived notes, and a repo `.ignore` keeps them out of search. The close-out skill moves a feature's lasting facts into the feature note or an ADR first. The `--changed` view shipped with ISS-0094. TST-0037 tests it; a clone of your-trainer archived 1,063 notes and still validated.

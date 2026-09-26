@@ -11,7 +11,7 @@ updated: 2026-07-25
 goal: "Build the project-os documentation system: tool adapters, hook contracts, mandatory skill steps, the relationship and phase models, the Obsidian cockpit, and mechanical enforcement of deferral and requirement lifecycle"
 features: [FEAT-0001, FEAT-0002, FEAT-0003, FEAT-0004, FEAT-0005, FEAT-0006, FEAT-0007, FEAT-0008, FEAT-0009, FEAT-0010, FEAT-0011, FEAT-0012]
 requirements: [REQ-0001, REQ-0002, REQ-0003, REQ-0004, REQ-0005, REQ-0006, REQ-0007, REQ-0008, REQ-0009, REQ-0010, REQ-0011, REQ-0012, REQ-0013, REQ-0014, REQ-0015]
-tasks: []
+tasks: ["[[TASK-0001]]", "[[TASK-0002]]", "[[TASK-0003]]", "[[TASK-0004]]", "[[TASK-0005]]", "[[TASK-0006]]", "[[TASK-0007]]", "[[TASK-0008]]", "[[TASK-0009]]", "[[TASK-0010]]", "[[TASK-0011]]", "[[TASK-0012]]", "[[TASK-0013]]", "[[TASK-0014]]", "[[TASK-0015]]", "[[TASK-0016]]", "[[TASK-0017]]", "[[TASK-0018]]", "[[TASK-0019]]", "[[TASK-0020]]", "[[TASK-0021]]", "[[TASK-0022]]", "[[TASK-0023]]", "[[TASK-0024]]", "[[TASK-0025]]", "[[TASK-0026]]", "[[TASK-0027]]", "[[TASK-0028]]", "[[TASK-0029]]", "[[TASK-0030]]", "[[TASK-0031]]", "[[TASK-0032]]", "[[TASK-0033]]", "[[TASK-0034]]", "[[TASK-0035]]", "[[TASK-0036]]", "[[TASK-0037]]", "[[TASK-0038]]", "[[TASK-0039]]", "[[TASK-0040]]", "[[TASK-0041]]", "[[TASK-0042]]", "[[TASK-0043]]", "[[TASK-0044]]", "[[TASK-0045]]", "[[TASK-0046]]", "[[TASK-0047]]", "[[TASK-0048]]", "[[TASK-0049]]", "[[TASK-0050]]", "[[TASK-0051]]", "[[TASK-0052]]"]
 issues: [ISS-0001, ISS-0002, ISS-0004]
 related: [ADR-0001, ADR-0002, ADR-0003, ADR-0004, ADR-0005, ADR-0006, ADR-0007]
 tags: [phase, foundations]

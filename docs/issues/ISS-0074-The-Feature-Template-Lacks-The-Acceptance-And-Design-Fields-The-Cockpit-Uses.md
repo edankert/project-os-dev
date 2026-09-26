@@ -16,6 +16,7 @@ component: "docs/__templates__"
 parent: ""
 related: ["[[TASK-0146-The-Four-Findings-Round-One-Left]]", "[[FEAT-0037-Every-Repo-Can-Take-The-Template-Again]]"]
 tests: ["[[TST-0018]]"]
+tasks: ["[[TASK-0147]]"]
 ---
 
 # A feature scaffolded from the template had no acceptance or design gate

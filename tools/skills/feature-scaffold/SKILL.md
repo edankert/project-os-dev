@@ -4,7 +4,7 @@ id: SKILL-FEATURE-SCAFFOLD
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-09-04
+updated: 2026-09-26
 tags: [skills, features]
 ---
 
@@ -12,6 +12,7 @@ tags: [skills, features]
 
 ## When to use
 - A prompt requests a new capability or significant enhancement (not just a bugfix).
+- A feature filed for later, for a future phase or the backlog, takes the short path in the next section, not the checklist.
 
 ## Inputs
 - Feature request text, constraints, acceptance expectations, affected workflows/areas.
@@ -24,6 +25,17 @@ tags: [skills, features]
   - `plan/PLAN.md`
   - `plan/tasks/TASK-####-*.md` (initial breakdown)
   - `plan/tests/TST-####-*.md` — **one acceptance check, by rule** (see step 9)
+
+## A feature filed for later gets its feature note only
+
+A feature is filed for later when it is created at `backlog`, or into a phase that is `planned` rather than active. For such a feature, write the feature note and nothing else:
+
+- the frontmatter: `status: backlog`, `phase:` if a phase was named, `goal:`;
+- a `## Findings` section with what is already known, and a `## Open questions` section with what must be decided before it is built.
+
+Write no requirements, plan, tasks, risk notes or acceptance check yet. Run this whole checklist when its phase starts, or when someone starts the work. Reason: every later decision about a parked feature would otherwise be applied across all of those notes. In your-trainer, FEAT-0128 got eleven notes in two planner runs, 55 minutes and 184 tool calls, and the next decisions about it had to be applied across all eleven (project-os-dev ISS-0087). An acceptance check at `active` also joins the release's owed set at once, before anything exists to walk.
+
+With `retention.derive_lists`, the phase note's `features:` list and the snapshot follow from the feature's `phase:` (`../../instructions/LIFECYCLE.md`). Without it, add the feature to the phase's `features:` by hand.
 
 ## Checklist
 1. Decide whether new `REQ-*` notes are needed (acceptance criteria that should outlive tasks).

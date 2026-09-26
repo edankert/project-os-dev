@@ -33,7 +33,10 @@ every byte it does not own:
 
 Unregistered notes are REPORTED, never auto-added: membership may be narrowed
 by a reproducible rule but never widened, because adding is the curation
-decision ADR-0009 reserved and ADR-0018 did not reclaim.
+decision ADR-0009 reserved and ADR-0018 did not reclaim. ADR-0048 reclaims one
+case: with `retention.derive_lists`, `derive-lists.py` writes every reverse
+list from the child's own `parent:` and `phase:`, and adds the entry for a
+live task under a live entry, so a relationship is written once.
 
 BOTH ADDITIONS ARE INERT UNTIL A REPO OPTS IN
 ---------------------------------------------
@@ -57,6 +60,7 @@ Stdlib only. Usage:
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
@@ -327,6 +331,12 @@ def sync_derived_fields(lines, fields, enabled):
                 continue
             body = lines[i].rstrip("\n")
             have_raw = body[span[0]:span[1]]
+            if have_raw == _yaml_quote(value):
+                #: What this script writes, character for character, so it
+                #: already holds the value. Parsing each of your-trainer's 722
+                #: titles and goals to find that out was a quarter of a
+                #: warm sync (project-os-dev ISS-0093).
+                continue
             try:
                 have = load_yaml("v: " + have_raw).get("v") if have_raw else None
             except Exception:
@@ -562,6 +572,48 @@ def prune_entries(lines, targets):
     return removed
 
 
+def derive_lists_config(snap):
+    """`retention.derive_lists`: generate the reverse lists (ADR-0048). Absent means off."""
+    r = snap.get("retention") or {}
+    return bool(r.get("derive_lists")) if isinstance(r, dict) else False
+
+
+_DL = None
+
+
+def derive_lists_module():
+    """derive-lists.py, sharing this script's validator; None when absent."""
+    global _DL
+    if _DL is None:
+        path = Path(__file__).resolve().parent / "derive-lists.py"
+        if not path.is_file():
+            return None
+        spec = _ilu.spec_from_file_location("_derive_lists", path)
+        mod = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        mod._vd = _vd
+        _DL = mod
+    return _DL
+
+
+_DP = None
+
+
+def derive_pointers_module():
+    """derive-pointers.py, sharing this script's validator; None when absent."""
+    global _DP
+    if _DP is None:
+        path = Path(__file__).resolve().parent / "derive-pointers.py"
+        if not path.is_file():
+            return None
+        spec = _ilu.spec_from_file_location("_derive_pointers", path)
+        mod = _ilu.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        mod._vd = _vd
+        _DP = mod
+    return _DP
+
+
 def retention_config(snap):
     """The two per-repo gates (ADR-0018, TASK-0085). Absent means OFF.
 
@@ -630,6 +682,30 @@ def record_title_drift(snap, fields, repo):
     return "\n".join(out) + "\n", len(rows)
 
 
+def write_if_unchanged(path, expected, new_text):
+    """Write `new_text` only if the file still holds `expected`; False if not.
+
+    The Stop hook syncs too (project-os-dev ISS-0090), which makes it a second
+    writer of SNAPSHOT.yaml while another agent may be editing the file. A sync
+    that wrote over that edit would lose it, so it re-reads first and gives up
+    when the file moved. The new text goes to a temporary file and replaces the
+    snapshot in one step, so a reader never sees half of it.
+    """
+    try:
+        if path.read_text(encoding="utf-8") != expected:
+            return False
+    except OSError:
+        return False
+    tmp = path.with_name(".%s.%d.tmp" % (path.name, os.getpid()))
+    tmp.write_text(new_text, encoding="utf-8")
+    try:
+        os.chmod(tmp, path.stat().st_mode & 0o777)
+    except OSError:
+        pass
+    os.replace(tmp, path)
+    return True
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Sync SNAPSHOT.yaml derived fields from docs/.")
     ap.add_argument("--repo-root", default=".")
@@ -672,6 +748,38 @@ def main(argv=None):
     st_changes = sync_statuses(lines, statuses)
     fd_changes = sync_derived_fields(lines, fields, derive_on and not args.check)
     ct_changes = sync_counters(lines, index)
+
+    # ADR-0048: the reverse lists follow each child's own `parent:` and
+    # `phase:`. Opted in, they are written (notes directly; the snapshot with
+    # the rest below). Not opted in, a run that is not --quiet reports how many
+    # would change, as derive_fields did during its rollout (TASK-0085).
+    dl_changes, dl_written, dl_conflicts = [], [], []
+    dl = derive_lists_module()
+    if dl is not None and derive_lists_config(load_yaml(text) or {}):
+        result = dl.derive(root, lines, load_yaml("".join(lines)) or {}, write=not args.check)
+        dl_changes = result["notes"] + result["snapshot"] + [{"entry": e} for e in result["membership"]]
+        dl_written = sorted({c["path"] for c in result["notes"]}) if not args.check else []
+        dl_conflicts = result["conflicts"]
+    elif dl is not None and not args.quiet:
+        result = dl.derive(root, list(lines), load_yaml(text) or {}, write=False)
+        n = len(result["notes"]) + len(result["snapshot"]) + len(result["membership"])
+        if n:
+            print("   %d reverse list(s) would follow their children; set retention.derive_lists "
+                  "to adopt (ADR-0048), and see derive-lists.py for the changes" % n)
+    # ADR-0048 (ISS-0096): a note named in another's `supersedes:` or
+    # `amends:` gets its back-pointer, and a superseded one its status. This
+    # runs in every repo: it writes only a pointer that is missing or wrong,
+    # and the fleet had one such note when it arrived.
+    dp = derive_pointers_module()
+    if dp is not None:
+        for c in dp.derive(root, write=not args.check):
+            dl_changes.append({"id": c["id"], "field": c["field"], "added": c["want"], "removed": []})
+            if not args.check:
+                dl_written.append(c["path"])
+        dl_written = sorted(set(dl_written))
+        if not args.check:
+            statuses, index, claimants = note_statuses(root)   # a stamp can change a status
+            st_changes += sync_statuses(lines, statuses)
     snap_after = load_yaml("".join(lines)) or {}
     mt_changes = sync_metrics(lines, snap_after, index, claimants)
 
@@ -688,7 +796,7 @@ def main(argv=None):
     new_text = "".join(lines)
 
     total = (len(st_changes) + len(ct_changes) + len(mt_changes)
-             + (len(fd_changes) if derive_on else 0) + len(pruned))
+             + (len(fd_changes) if derive_on else 0) + len(pruned) + len(dl_changes))
     if total == 0:
         if not args.quiet:
             print("sync-snapshot: %s up to date" % root.name)
@@ -707,9 +815,26 @@ def main(argv=None):
                 print("   metric  %-14s %s -> %s" % (key, old, new))
             for the_id in pruned:
                 print("   pruned  %s" % the_id)
-        if not args.check:
-            snap_path.write_text(new_text, encoding="utf-8")
+            for c in dl_changes:
+                if "entry" in c:
+                    print("   entry   %s (a live task under a live entry)" % c["entry"])
+                else:
+                    print("   list    %-14s %s%s%s" % (c["id"], c["field"],
+                          " +" + ",".join(c["added"]) if c["added"] else "",
+                          " -" + ",".join(c["removed"]) if c["removed"] else ""))
+        # Printed even when --quiet: the pre-commit hook stages each note
+        # named here, as it stages SNAPSHOT.yaml.
+        for rel in dl_written:
+            print("sync-snapshot: wrote %s" % rel)
+        if not args.check and not write_if_unchanged(snap_path, text, new_text):
+            print("sync-snapshot: SNAPSHOT.yaml changed while this ran; left it alone, "
+                  "run again", file=sys.stderr)
+            return 1
 
+    for c in dl_conflicts:
+        if not args.quiet:
+            print("   conflict %s: its %s names %s, but %s lists it; the child's field wins"
+                  % (c["child"], c["field"], ", ".join(c["names"]) or "nothing", c["listed_by"]))
     if fd_changes and not derive_on and not args.quiet:
         # Report mode: the fleet rollout ships this way, so divergence is
         # visible in every repo before any of them opts in.

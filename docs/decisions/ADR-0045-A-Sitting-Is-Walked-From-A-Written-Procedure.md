@@ -17,6 +17,7 @@ consequences: ["ADR-0029 rule 8's 'no new obligation at close-out' no longer hol
 supersedes: ""
 superseded: ""
 related: ["[[ADR-0029-The-Walk-Sheet-Is-Derived-And-Its-Order-Is-Authored-Once]]", "[[ADR-0044-A-Surface-Is-A-Screen-By-Default]]", "[[ADR-0027-An-Acceptance-Check-Is-Walkable-By-A-Stranger]]", "[[REQ-0028-A-Release-Presents-Its-Owed-Checks-As-A-Walk]]", "[[REQ-0029-A-Release-Walk-Reads-As-A-Script]]", "[[FEAT-0031-A-Sitting-Is-Walked-From-A-Written-Procedure]]", "[[ISS-0063-The-Sheet-And-The-Cockpit-Scope-The-Acceptance-Suite-Differently]]", "[[ISS-0064-A-Walk-Row-Falls-Back-For-Steps-And-Not-For-Expect]]"]
+amended_by: ["[[ADR-0049]]"]
 ---
 
 # A sitting is walked from a written procedure

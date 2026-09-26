@@ -1162,6 +1162,10 @@ check "a refused procedure carries no printable steps in the payload" \
 allout="$(python3 "$SHEET" --check --repo-root "$UNCITED" 2>&1)"; code=$?
 check "--check with no platform walks every ledger it finds" \
   "$( { [[ $code -eq 1 ]] && printf '%s' "$allout" | grep -q 'testbed'; }; echo $?)" "exit $code: $allout"
+# project-os-dev ISS-0089: a disagreement reads as an error to a reader who
+# filters the output for ERROR, as the validator's own lines do.
+check "every --check disagreement is marked ERROR [WALK]" \
+  "$( { printf '%s\n' "$allout" | grep -q '^ERROR \[WALK\] walk-sheet --check (testbed): '; ! printf '%s\n' "$allout" | grep -q '^walk-sheet --check ([a-z]*): [^n]'; }; echo $?)" "$allout"
 noproc="$(python3 "$SHEET" --check --repo-root "$LAYERS" 2>&1)"; code=$?
 check "--check on a repo with no procedures at all passes quietly" \
   "$( { [[ $code -eq 0 ]] && [[ -z "$noproc" ]]; }; echo $?)" "exit $code: $noproc"
@@ -1283,8 +1287,8 @@ check "and it says nothing under --quiet" "$([[ -z "$out_allret" ]]; echo $?)" "
 BADLEDGER="$TMP/proc-badledger"; rm -rf "$BADLEDGER"; cp -R "$PROC" "$BADLEDGER"
 cp "$BADLEDGER/docs/releases/ledgers/WORKING-testbed.json" "$BADLEDGER/docs/releases/ledgers/testbed.json"
 out_bad="$(python3 "$SHEET" --check --quiet --repo-root "$BADLEDGER" 2>&1)"; code=$?
-check "a ledger whose filename names no platform still fails --check" \
-  "$( { [[ $code -eq 2 ]] && printf '%s' "$out_bad" | grep -q 'does not name a platform'; }; echo $?)" \
+check "a ledger whose filename names no platform still fails --check, marked ERROR [WALK]" \
+  "$( { [[ $code -eq 2 ]] && printf '%s' "$out_bad" | grep -q '^ERROR \[WALK\] .*does not name a platform'; }; echo $?)" \
   "exit $code: $out_bad"
 rm "$BADLEDGER/docs/releases/ledgers/testbed.json"
 python3 - "$BADLEDGER/docs/releases/ledgers/WORKING-testbed.json" <<'PY'
@@ -1345,6 +1349,104 @@ cp "$READY/docs/releases/ledgers/WORKING-testbed.json" "$READY/docs/releases/led
 out_both="$(python3 "$SHEET" --check --quiet --repo-root "$READY" 2>&1)"
 check "a problem that holds on every platform prints once" \
   "$([[ $(printf '%s\n' "$out_both" | grep -c "entry 'testbed' needs") -eq 1 ]]; echo $?)" "$out_both"
+
+# ---------------------------------------------------------------------------
+# Tag-only expectation lines (project-os-dev ISS-0088, ADR-0049). A step may
+# cite a check's step without quoting it; the sheet and the payload print the
+# check's current Expect words, so editing the check breaks nothing.
+# ---------------------------------------------------------------------------
+TAGONLY="$(variant tagonly '   - The panel lists the trainer. `TST-0401.1`' '   - `TST-0401.1`')"
+OUT="$(python3 "$SHEET" --check --platform testbed --repo-root "$TAGONLY" 2>&1)"; code=$?
+check "--check accepts a tag-only line" "$code" "$OUT"
+OUT="$(python3 "$SHEET" --release REL-0011 --platform testbed --repo-root "$TAGONLY" 2>&1)"
+has "the sheet prints the check's own words for it" '^   - The panel lists the trainer\. `TST-0401\.1`$'
+check "only the Expect line paired with step 1, not all three" \
+  "$([[ $(printf '%s\n' "$OUT" | grep -c 'TST-0401\.1') -eq 1 ]]; echo $?)" "$OUT"
+hasnt "the bare tag line itself is not printed" '^   - `TST-0401\.1`$'
+tag_payload() { SHEET_PATH="$SHEET" REPO_ROOT="$1" python3 - <<'PY2'
+import importlib.util as ilu, os, pathlib, sys
+spec = ilu.spec_from_file_location("walk", os.environ["SHEET_PATH"])
+walk = ilu.module_from_spec(spec); sys.modules["walk"] = walk
+spec.loader.exec_module(walk)
+sheet = walk.generate(pathlib.Path(os.environ["REPO_ROOT"]), "REL-0011", "testbed")
+bench = [p for p in sheet.sittings if p.sitting.name == "The bench"][0]
+step = [s for s in bench.steps if s.number == 1][0]
+for e in step.expectations:
+    print("%s|%s|%s" % (e.quote, ",".join("%s.%s" % t for t in e.tags), ",".join("%s.%s" % t for t in sorted(e.owed))))
+PY2
+}
+pl="$(tag_payload "$TAGONLY")"
+check "the payload carries the words, the tag and the owed part" \
+  "$(printf '%s\n' "$pl" | grep -qx 'The panel lists the trainer.|TST-0401.1|TST-0401.1'; echo $?)" "$pl"
+
+# Reword the check: the quoting procedure breaks, the tag-only one does not.
+reword() { python3 - "$1/docs/tests/acceptance/TST-0401-Fixture.md" <<'PY2'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]); t = p.read_text()
+assert "- The panel lists the trainer." in t
+p.write_text(t.replace("- The panel lists the trainer.", "- The panel lists every paired trainer."))
+PY2
+}
+QUOTED="$TMP/proc-quoted-reworded"; rm -rf "$QUOTED"; cp -R "$PROC" "$QUOTED"; reword "$QUOTED"
+OUT="$(python3 "$SHEET" --check --platform testbed --repo-root "$QUOTED" 2>&1)"; code=$?
+check "a reworded check still breaks a procedure that quotes it (the ISS-0088 case)" \
+  "$( { [[ $code -ne 0 ]] && printf '%s' "$OUT" | grep -q 'quotes TST-0401'; }; echo $?)" "exit $code: $OUT"
+reword "$TAGONLY"
+OUT="$(python3 "$SHEET" --check --platform testbed --repo-root "$TAGONLY" 2>&1)"; code=$?
+check "and does not break a tag-only one" "$code" "$OUT"
+OUT="$(python3 "$SHEET" --release REL-0011 --platform testbed --repo-root "$TAGONLY" 2>&1)"
+has "whose sheet prints the new words" '^   - The panel lists every paired trainer\. `TST-0401\.1`$'
+
+# unpair <repo>: TST-0404 gets a third Expect line for its two steps, so its
+# steps and Expect lines no longer pair and a tag names all three.
+unpair() { python3 - "$1/docs/tests/acceptance/TST-0404-Fixture.md" <<'PY2'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]); t = p.read_text()
+assert "- The reading arrives." in t
+p.write_text(t.replace("- The reading arrives.", "- The reading arrives.\n- The panel shows no error."))
+PY2
+}
+# A check that does not pair steps with Expect lines: a tag shows them all.
+ALLLINES="$(variant alllines '   - The reading arrives. `TST-0403` `TST-0404.2`' '   - The reading arrives. `TST-0403`
+   - `TST-0404.2`')"
+unpair "$ALLLINES"
+OUT="$(python3 "$SHEET" --release REL-0011 --platform testbed --repo-root "$ALLLINES" 2>&1)"
+check "a check with unpaired Expect lines prints them all for its tag" \
+  "$( { printf '%s' "$OUT" | grep -q 'The panel is empty again\. `TST-0404\.2`' && printf '%s' "$OUT" | grep -q 'The reading arrives\. `TST-0404\.2`' && printf '%s' "$OUT" | grep -q 'The panel shows no error\. `TST-0404\.2`'; } && echo 0 || echo 1)" "$OUT"
+
+# The converter: only what loses nothing, and --refresh for the rest.
+WT="$PROC-tags"; rm -rf "$WT"; cp -R "$PROC" "$WT"
+python3 - "$WT/docs/tests/acceptance/walk/the-bench.md" <<'PY2'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]); t = p.read_text()
+p.write_text(t.replace("   - The reading arrives. `TST-0403` `TST-0404.2`",
+                       "   - The reading arrives. `TST-0403`\n   - The reading arrives. `TST-0404.2`"))
+PY2
+unpair "$WT"
+conv="$(python3 "$HERE/walk-tags.py" --repo-root "$WT" --apply 2>&1)"
+proc="$(cat "$WT/docs/tests/acceptance/walk/the-bench.md")"
+check "the converter rewrites a line whose tag prints exactly its quote" \
+  "$( { printf '%s' "$proc" | grep -qx '   - `TST-0401.1`' && printf '%s' "$proc" | grep -qx '   - `TST-0403`'; }; echo $?)" "$conv"
+check "and keeps a line that quotes one of several unpaired Expect lines" \
+  "$(printf '%s' "$proc" | grep -qx '   - The reading arrives. `TST-0404.2`'; echo $?)" "$conv"
+OUT="$(python3 "$SHEET" --check --platform testbed --repo-root "$WT" 2>&1)"; code=$?
+check "the converted procedure still passes --check" "$code" "$OUT"
+
+RF="$PROC-refresh"; rm -rf "$RF"; cp -R "$WT" "$RF"
+(cd "$RF" && git init -q && git add -A && git -c user.email=t@t -c user.name=t commit -q -m base)
+python3 - "$RF/docs/tests/acceptance/TST-0404-Fixture.md" <<'PY2'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]); t = p.read_text()
+assert "- The reading arrives.\n" in t
+p.write_text(t.replace("- The reading arrives.\n", "- The reading arrives within a second.\n"))
+PY2
+OUT="$(python3 "$SHEET" --check --platform testbed --repo-root "$RF" 2>&1)"; code=$?
+check "rewording an unpaired Expect line breaks the quoting line" "$([[ $code -ne 0 ]]; echo $?)" "$OUT"
+ref="$(python3 "$HERE/walk-tags.py" --repo-root "$RF" --refresh --apply 2>&1)"
+check "--refresh re-quotes it from the check's current Expect" \
+  "$(grep -qx '   - The reading arrives within a second. `TST-0404.2`' "$RF/docs/tests/acceptance/walk/the-bench.md"; echo $?)" "$ref"
+OUT="$(python3 "$SHEET" --check --platform testbed --repo-root "$RF" 2>&1)"; code=$?
+check "after which --check passes again" "$code" "$OUT"
 
 echo "test-walk-sheet: $assertions assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]

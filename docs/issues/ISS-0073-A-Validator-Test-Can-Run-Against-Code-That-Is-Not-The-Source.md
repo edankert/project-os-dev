@@ -16,6 +16,7 @@ component: "tools/scripts"
 parent: ""
 related: ["[[ISS-0065-The-Templates-Own-CI-Runs-None-Of-Its-Seven-Harnesses]]", "[[FEAT-0036-The-Backlogs-Are-Cleared-Once]]"]
 tests: ["[[TST-0020]]"]
+tasks: ["[[TASK-0149]]"]
 ---
 
 # A validator test can pass or fail against a stale compiled copy instead of the code on disk

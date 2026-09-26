@@ -45,6 +45,10 @@ paths:
   # never overwritten, meaning validator/CI changes stopped at the template (TASK-0072).
   ".github/workflows/validate-docs.yml": template
   ".github/workflows/link-check.yml": seed
+  # Seed: a repo may add its own lines. It keeps the archive out of ripgrep and
+  # agent search (project-os-dev ISS-0091).
+  ".ignore": seed
+  "docs/archive/": project
   ".prettierrc": seed
   ".markdownlint.jsonc": seed
   ".yamllint.yml": seed

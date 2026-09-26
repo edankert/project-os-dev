@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0102
 aliases: ["ISS-0102"]
 title: "A shell search with grep -r reads files the repo ignores, and will read the archive too"
-status: open
+status: fixed
 phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
@@ -15,7 +15,8 @@ severity: low
 component: "tools/instructions (a search rule); tools/scripts that search"
 parent: ""
 related: ["[[ADR-0048-Old-Tickets-Are-Records-And-Every-Fact-Is-Written-Once]]", "[[ISS-0093-The-Checks-Parse-Every-Note-Several-Times]]", "[[ISS-0091-Finished-Notes-Have-No-Archive]]"]
-tests: []
+tasks: ["[[TASK-0182]]"]
+tests: ["[[TST-0038-Search-Puts-Live-Notes-First]]"]
 ---
 
 # A shell search with grep -r reads files the repo ignores, and will read the archive too
@@ -27,3 +28,7 @@ tests: []
 ## Expected
 
 One instruction line: search with the Grep tool or `rg`, not `grep -r`. Scripts that search the repo use rg when it is installed and fall back to grep where it is not, so CI and machines without rg keep working. Speed is not the reason (0.07 s against 0.2 s); relevance is.
+
+## Fixed, 2026-09-26
+
+TASK-0182. LIFECYCLE says to search with the Grep tool or `rg`, not `grep -r`, and the searching script uses rg when installed and a scan that skips the archive when not. TST-0038 tests it.

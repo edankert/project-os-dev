@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0088
 aliases: ["ISS-0088"]
 title: "Editing an acceptance check breaks every walk procedure that quotes its expectation"
-status: "open"
+status: fixed
 phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
@@ -15,7 +15,8 @@ severity: medium
 component: "tools/scripts/walk-sheet.py; tools/instructions/TESTING.md rule 9"
 parent: ""
 related: ["[[ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure]]", "[[ADR-0046-Declared-Preparation-Survives-Walk-Filtering]]"]
-tests: []
+tasks: ["[[TASK-0175]]"]
+tests: ["[[TST-0033-A-Reworded-Check-Breaks-No-Tag-Only-Walk]]"]
 ---
 
 # Editing an acceptance check breaks every walk procedure that quotes its expectation
@@ -35,3 +36,7 @@ The quote is deliberate. ADR-0045 (and project-os-cockpit ADR-0041) made a tick 
 ## Proposal (from the report)
 
 Walks cite the step (`TST-0480.1`) and the walk page renders the check's current text. Alternatively, the step's expectation text is generated from the check.
+
+## Fixed, 2026-09-26
+
+TASK-0175 and ADR-0049, as the report proposed. A walk step may cite a check's step by its tag alone, and the sheet and the cockpit print the check's current Expect words for it, so rewording a check breaks no such walk. Quoted lines keep working. `walk-tags.py` rewrites them as tags where that prints the same words, and `--refresh` re-quotes one whose check was reworded. The tick still stands as a verdict on the check's own words. TST-0033 tests it.

@@ -31,4 +31,4 @@ tests: []
 -->
 
 ## Notes
-<observations, gotchas, links>
+<Observations, gotchas, links. Keep this to what is true now: rewrite it when the task changes, and put the history in the change note and the commit message (tools/instructions/WRITING.md, rule 11).>

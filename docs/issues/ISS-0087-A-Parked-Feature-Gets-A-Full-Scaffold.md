@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0087
 aliases: ["ISS-0087"]
 title: "A feature nobody will build yet still gets requirements, tasks and an acceptance check, and every later decision has to be applied across all of them"
-status: "open"
+status: fixed
 phase: "[[PHASE-0009]]"
 owner: unassigned
 created: 2026-09-26
@@ -15,7 +15,8 @@ severity: medium
 component: "tools/skills/feature-scaffold/SKILL.md"
 parent: ""
 related: ["[[ISS-0027-Terminal-Items-Are-Stranded-In-The-Parking-Lot-Phase]]"]
-tests: []
+tasks: ["[[TASK-0174]]"]
+tests: ["[[TST-0032-A-Parked-Feature-Needs-Its-Note-Only]]"]
 ---
 
 # A feature nobody will build yet still gets requirements, tasks and an acceptance check, and every later decision has to be applied across all of them
@@ -33,3 +34,7 @@ tests: []
 ## Proposal (from the report)
 
 A feature filed at `backlog`, or into a planned or future phase, gets the feature note only, with its findings and open questions. Requirements, tasks and the acceptance check are written when its phase starts.
+
+## Fixed, 2026-09-26
+
+TASK-0174, as the report proposed. `feature-scaffold/SKILL.md` gives a feature filed at `backlog` or into a planned phase its feature note only, with Findings and Open questions. Requirements, plan, tasks and the acceptance check are written when its phase starts. A planner run on a scratch copy followed it: one note, 10 tool calls, 78 seconds. TST-0032 tests the validator's side.

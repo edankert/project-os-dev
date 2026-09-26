@@ -40,6 +40,7 @@ Conventions (naming, linking, property rules): `../../tools/instructions/OBSIDIA
   - Distinct from `source` (import provenance): `origin` records where work was originally scoped inside this project.
 - (optional) `verification_waiver` (string): Why a terminal status is set without passing tests; the rule is `tools/instructions/QUALITY.md`, "Verification gating".
 - (required with a waiver) `waiver_expires` (date string): When the waiver lapses. A waiver without one, or with a past or unparseable date, is an error (ADR-0010).
+- (tool-written) `superseded_by` (link or list) and `amended_by` (list): the notes that replaced or amended this one. `sync-snapshot.py` writes them from the newer note's `supersedes:` or `amends:`; do not write them by hand (ADR-0048). An ADR spells the first one `superseded`.
 - (optional) `phases` (list of links) and `workflows` (list of links): `[[PHASE-...]]` and `[[WF-...]]` this note relates to; checked like the other link fields.
 
 ## `adr.md` (`type: [[adr]]`)
@@ -52,7 +53,9 @@ Fields:
 - (optional) `alternatives` (list): Options considered (strings or links).
 - (optional) `consequences` (list): Key impacts/tradeoffs (strings or links).
 - (optional) `supersedes` (string/link): Link to the ADR replaced by this one (prefer `[[ADR-....]]`).
-- (optional) `superseded` (string/link): Link to the ADR that replaces this one (prefer `[[ADR-....]]`).
+- (optional) `superseded` (string/link): Link to the ADR that replaces this one. Written by `sync-snapshot.py` from the new ADR's `supersedes:`; do not write it by hand (ADR-0048).
+- (optional) `amends` (string/link or list): The ADR(s) this one changes in part, leaving the rest standing.
+- (optional) `amended_by` (list): The ADRs that amend this one. Written by `sync-snapshot.py` from their `amends:`; do not write it by hand.
 
 Body sections:
 - A decision stating a quantified rule carries `## Rule`, `## Domain` and `## Conformance` in its body — the rule-ADR convention, normative in `tools/instructions/DECISIONS.md` ("A decision that states a rule") and enforced by `DECISION-RULE`.

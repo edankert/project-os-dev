@@ -46,7 +46,7 @@ Regenerate it with `tools/skills/walk-procedure/SKILL.md` when the validator rep
 
 ## Steps
 
-<One numbered item per action. The first line names the screen, by SUR-#### id or by the surface's exact title. Under it, one line per thing to observe: the check's own Expect wording, word for word, then the tags.>
+<One numbered item per action. The first line names the screen, by SUR-#### id or by the surface's exact title. Under it, one line per thing to observe: the tags alone (`` - `TST-0001.1` ``), which prints the check's current Expect wording, or that wording quoted word for word, then the tags.>
 
 1. **Equipment panel (SUR-0003).** Open Settings > Equipment with the data-only trainer awake.
    - The panel lists the trainer with no power icon. `TST-0648.1`

@@ -76,4 +76,4 @@ tags: [skills, init]
    - run `../snapshot-sync/SKILL.md`
    - run `../../../tools/agents/bootstrap.sh`
    - optionally run `../../../tools/cockpit/run.sh ../../../docs --bind 127.0.0.1 --port 8765` to browse the initialized docs locally
-   - ensure `grep -R "REPLACE ME" .` returns nothing (or only intentional examples)
+   - ensure `rg "REPLACE ME"` (or the Grep tool) finds nothing, or only intentional examples

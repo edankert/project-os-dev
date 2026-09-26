@@ -29,6 +29,8 @@ Steven Pinker calls this the *curse of knowledge*: once you have chunked an idea
 8. **The final message re-grounds a reader who did not watch the work.** After a long run it is the reader's first look. Drop the working shorthand: no arrow chains, no hyphen-stacked compounds, no labels you invented while working. Name things by what they are, and say who wrote a message and what it said instead of pointing at it by number.
 9. **Short by selection, not compression.** Keep a message short by leaving out the details that do not change what the reader does next, not by packing the ones that do into fewer words.
 10. **Cadence.** Before starting, say in one line what you are about to do. Close with a recap that stands on its own: what was found, what was done, what is next. A reader who sees only the last message should have the whole picture.
+11. **A note says what is true now.** When a task, feature or requirement changes, rewrite it to its current state rather than adding a dated section below the old text. The story of how it got there goes in the change note and the commit message. A standing record, such as an ADR, keeps at most a short dated decision log. Reason: every later reader reads the whole note to find the current state. In this repo TASK-0125 carried four dated sections of history, and your-trainer's FEAT-0122 about forty paragraphs of dated evidence (project-os-dev ISS-0098).
+12. **Link a rule by name; do not restate it.** A note that depends on a project rule names the file and heading, such as `TESTING.md`, "The walk", rule 9. Reason: when the rule changes, a copy is wrong, and a search returns the copies alongside the rule (project-os-dev ISS-0092).
 
 ## Two kinds of message
 

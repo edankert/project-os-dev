@@ -34,6 +34,8 @@ related: []
 
 # <Feature>
 
+<!-- This note says what is true now. When the feature changes, rewrite the section that changed; the history goes in the change note and the commit message, not in dated sections here (tools/instructions/WRITING.md, rule 11). -->
+
 ## Goal
 <Two or three sentences, point first: what capability is delivered and for whom. The detail goes under Scope.>
 
