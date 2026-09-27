@@ -75,6 +75,7 @@ Fields:
 - (optional) `commit` (string): Commit hash.
 - (optional) `pr` (string): PR/MR identifier or link.
 - (recommended) `impacts` (list of strings): Affected areas/paths/flows (keep short).
+- (required when the Impact list names a screen and the project keeps ledgers for more than one platform) `platforms` (list of strings): the platforms this change altered, such as `[android]`, `[ios]` or `[android, ios]`, each a platform with a ledger. A release test lists the change only on these platforms. A note without it is listed on every platform; `release-test.py --check` warns about one created before 2026-09-28 and refuses one created on or after it (project-os-dev REQ-0035).
 - (optional) `issues` (list of links): Issues associated with the change.
 - (optional) `features` (list of links): Features associated with the change.
 - (optional) `reviewed_by` (string): Independent reviewer identity (`model:...` or `user:...`) when a change note was reviewed; it owes none (`tools/instructions/QUALITY.md`, "Independent review (clean-context)").
@@ -82,9 +83,9 @@ Fields:
 - (optional) `review_verdict` (string): `approved | changes-requested`.
 
 Body sections:
-- **`## Impact` is a list of the screens this change altered**, and `tools/scripts/walk-sheet.py` parses it to build a release walk's survey (project-os-dev ADR-0045 decision 2). The shape a parser reads: one list item per screen, beginning with a `[[SUR-####]]` link or a bare `SUR-####` id, then a separator (`:`, `—` or `-`), then one sentence in the words a person using the product would use. Everything after the separator is printed verbatim on the sheet. An item may name more than one screen, joined by `and`, `,`, `&` or `+` before the separator, and every screen it names gets that one sentence. Lines inside a fenced block are examples and are not read.
-- A change that altered no screen writes one item reading **`No screen changed`** followed by the reason. The parser recognises that phrase and asks for nothing else. A change note with no Impact list at all contributes nothing to the survey and is reported by `walk-sheet.py --check`.
-- ~~`## Acceptance checks reopened`~~ — **removed (ADR-0045 decision 1).** The survey no longer reads it. Why a check was reopened is the `reason:` on the ledger's invalidation event, which the ledger refuses to accept without. Old change notes keep the section; nothing parses it.
+- **`## Impact` is a list of the screens this change altered**, and `tools/scripts/release-test.py` parses it to build a release test's what-changed list (project-os-dev ADR-0045 decision 2). The shape a parser reads: one list item per screen, beginning with a `[[SUR-####]]` link or a bare `SUR-####` id, then a separator (`:`, `—` or `-`), then one sentence in the words a person using the product would use. Everything after the separator is printed verbatim on the sheet. An item may name more than one screen, joined by `and`, `,`, `&` or `+` before the separator, and every screen it names gets that one sentence. An item may start with a platform in square brackets, such as `[ios]`, where one note changed the platforms differently; it is then listed on that platform only. Lines inside a fenced block are examples and are not read.
+- A change that altered no screen writes one item reading **`No screen changed`** followed by the reason. The parser recognises that phrase and asks for nothing else. A change note with no Impact list at all contributes nothing to the what-changed list and is reported by `release-test.py --check`.
+- ~~`## Acceptance checks reopened`~~ — **removed (ADR-0045 decision 1).** The what-changed list no longer reads it. Why a check was reopened is the `reason:` on the ledger's invalidation event, which the ledger refuses to accept without. Old change notes keep the section; nothing parses it.
 
 Where used:
 - Tracked in `SNAPSHOT.yaml` (`items.changes`) for agent context and linked from change notes.
@@ -236,16 +237,18 @@ Fields:
 
 ### Acceptance fields (`level: acceptance` only)
 
-An acceptance test is the thing a person walks. It carries the fields below and rests at `status: active` (`tools/instructions/STATUSES.md` `[[test]]`); every one of them is meaningless on an executable test and the validator does not require them there.
+An acceptance test is the thing a person tests by hand. It carries the fields below and rests at `status: active` (`tools/instructions/STATUSES.md` `[[test]]`); every one of them is meaningless on an executable test and the validator does not require them there.
 
 **The note holds intent. The verdict is not on it** (ADR-0037; why is `tools/instructions/TAXONOMY.md`, "Acceptance outcomes (the ledger's vocabulary)"). It lives as a dated, attributed event in `docs/releases/ledgers/`, whose README gives the file format with an example.
 
 **Twelve fields were removed**: `mark`, `verdict_date`, `verdict_reason`, `invalidated_by`, `automation`, `covered_by`, `evidence`, `section`, `ordinal`, `migrated_from`, `merged_from` and `burden`. Do not write them on a new note. In a repo that keeps ledgers the validator reports each one as `LEDGER-FIELD`, a warning until 2026-12-17 and an error after it. A repo with no ledger is untouched and keeps reading its scalar marks, because a schema change that broke every repo that had not migrated yet would be a worse failure than the one it fixes.
 
-- ~~`tier`~~ — **removed (ADR-0034).** There is no tier system: a check's section is derived from `covers:` and `command:` (`tools/instructions/TESTING.md`, "The three sections"). Readers still accept the field on legacy notes and ignore it.
+- ~~`tier`~~ — **removed (ADR-0034).** There is no tier system: a check's test kind is derived from `covers:` and `command:` (`tools/instructions/TESTING.md`, "The three test kinds"). Readers still accept the field on legacy notes and ignore it.
 - ~~`burden`~~, ~~`migrated_from`~~, ~~`merged_from`~~ — **removed (ISS-0233).** Provenance of migrations that are finished, plus a field empty on every check in the fleet. Git holds the first two, with the shas ADR-0030 and ADR-0031 name; a field is the wrong place for a fact already immutable somewhere better.
-- (required) `area` (string): the human grouping — "The navigator", "Agents and sessions". One walk's worth of related checks.
-- (optional) `after` (list of check ids): the checks that should have passed before this one is walked — `after: ["TST-0044"]`. Read by `tools/scripts/walk-sheet.py` to order rows inside a sitting (`tools/instructions/TESTING.md`, "The walk", rule 4). It gates nothing: a check whose prerequisite has not passed still appears on the sheet and still blocks the release, it is simply printed later.
+- (required) `area` (string): the human grouping — "The navigator", "Agents and sessions". One section's worth of related checks.
+- (optional) `after` (list of check ids): the checks that should have passed before this one is tested — `after: ["TST-0044"]`. Read by `tools/scripts/release-test.py` to order rows inside a section (`tools/instructions/TESTING.md`, "The release test", rule 4). It gates nothing: a check whose prerequisite has not passed still appears on the sheet and still blocks the release, it is simply printed later.
+- (optional) `readiness_for` (map): on a check no section procedure covers, a known problem per platform — `readiness_for: {ios: {kind: decision, reason: "...", issue: "ISS-0000", result: question}}`, with `kind` either `preparation` or `decision`, and an optional `result` naming the result the tester is offered, one of the seven stored values (`tools/instructions/TAXONOMY.md`, "Acceptance outcomes (the ledger's vocabulary)"). Read by `tools/scripts/release-test.py`, which prints the reason on the check's row (`tools/instructions/TESTING.md`, "The release test", rule 5). A procedure uses the same key per step. Until 2026-09-27 a check wrote it `walk_readiness_for`, which the validator now refuses (project-os-dev ADR-0050).
+- `## Expect` lines may name a platform (body, not frontmatter): a list item that starts `[android] ` or `[ios] ` after its marker holds on that platform only, and one with no name holds on every platform — `- [android] The Hub opens from the equipment icons.` The name is a ledger's platform name, lower case; a name the repo keeps no ledger for is refused by `release-test.py --check`, naming the check and the line. What the release test prints from them is `tools/instructions/TESTING.md`, "A check is testable by a stranger" (project-os-dev REQ-0034).
 - ~~`section`~~, ~~`ordinal`~~ — **removed (ISS-0224).** They were a check's position in `ACCEPTANCE_TESTS.md`, a document that exists in no migrated repo. Order is `id` and grouping is `area` alone. Measured before the removal, ordering by tier-then-id reproduced the old section order byte-for-byte in every repo, and no area spanned two sections anywhere; ADR-0034 then removed `tier` as well, leaving `id`.
 
 Where NOT used:
@@ -272,50 +275,64 @@ Fields:
 - (required) `kind` (string): values in `tools/instructions/TAXONOMY.md`, "`kind` (surfaces)". **A surface is a screen unless this says otherwise**, and the four rules for the cases that get it wrong are stated there (project-os-dev ADR-0044).
 - (optional) `platforms` (list of strings): the platforms this surface exists on. Empty means all of them.
 - (optional) `parent` (link or string): the screen this one opens from. A dialog, sheet, panel or section carries it; a top-level screen does not.
-- (optional) `gallery` (list of strings): the screenshot keys that capture this surface — `key`, or `key:state` where that key captures it in one state, for example `gallery: [equipment-hub, "equipment-hub-dataonly:data-only"]`. Read by `tools/scripts/walk-sheet.py` to put a before and an after picture in the walk sheet's survey; where it looks for the image files is `tools/instructions/TESTING.md`, "The walk", rule 2.
+- (optional) `gallery` (list of strings): the screenshot keys that capture this surface — `key`, or `key:state` where that key captures it in one state, for example `gallery: [equipment-hub, "equipment-hub-dataonly:data-only"]`. Read by `tools/scripts/release-test.py` to put a before and an after picture in the release test sheet's what-changed list; where it looks for the image files is `tools/instructions/TESTING.md`, "The release test", rule 2.
 
 Where NOT used:
 - A `## Coverage` list of checks. The checks covering a surface are derived from their `area:` (ADR-0032).
 
-## `walk.md` — the walk order (`WALK.md`)
+## `release-test.md` — the section order (`RELEASE-TEST.md`)
 
-Purpose: the one file per project that says in what order a release is walked. Instantiated from `walk.md` to `docs/tests/acceptance/WALK.md`, typed `[[reference]]`, resting at `active` (or `deprecated`). What a walk sheet does with it is stated once in `tools/instructions/TESTING.md`, "The walk"; this entry is the syntax alone.
+Purpose: the one file per project that says in what order a release is tested by hand. Instantiated from `release-test.md` to `docs/tests/acceptance/RELEASE-TEST.md`, typed `[[reference]]`, resting at `active` (or `deprecated`). What a release test sheet does with it is stated once in `tools/instructions/TESTING.md`, "The release test"; this entry is the syntax alone.
 
-Frontmatter: the standing-document fields (`type`, `title`, `status`, `owner`, `created`, `updated`), plus one optional key:
+Frontmatter: the standing-document fields (`type`, `title`, `status`, `owner`, `created`, `updated`), plus two optional keys:
 
-- (optional) `gallery` (string): a command that regenerates the project's screen gallery. The walk sheet prints it at the top of the survey, as the thing to run and compare before walking anything.
+- (optional) `gallery` (string): a command that regenerates the project's screen gallery. The release test sheet prints it at the top of what changed, as the thing to run and compare before testing anything.
+- (optional) `length_limits` (map): overrides the length check's limits, with the keys `action` (words in an action line, default 20), `expected` (words in an expected line, default 25), `section_base` and `section_per_check` (a section's budget is `section_base` plus `section_per_check` for each printed check; defaults 300 and 40), and `error` (false makes the reports warnings; default true). Any other key, or a limit that is not a whole number above 0, fails `release-test.py --check`. What the check counts is `tools/instructions/TESTING.md`, "The release test", rule 10.
 
-Body: prose the walker reads once, then **one `### ` heading per sitting with one fenced `yaml` block under it**. The heading is the sitting's name as the sheet prints it. The block's keys:
+Body: prose the tester reads once, then **one `### ` heading per section with one fenced `yaml` block under it**. The heading is the section's name as the sheet prints it. The block's keys:
 
 | key | required | what it holds |
 |---|---|---|
-| `surfaces` (list) | one of the two | The `area:` strings this sitting claims, or `SUR-*` ids whose note title is that area string. A check joins the **first** sitting in file order that claims its area. |
-| `checks` (list) | one of the two | Check ids pulled into this sitting regardless of area. |
-| `state` (string) | recommended | The product state the sitting needs and the cheapest way to reach it, in the same register as a check's Setup line. |
-| `bench` (list) | recommended | What must be physically present, signed in or installed before the sitting starts, one line each. |
+| `surfaces` (list) | one of the two | The `area:` strings this section claims, or `SUR-*` ids whose note title is that area string. A check joins the **first** section in file order that claims its area. |
+| `checks` (list) | one of the two | Check ids pulled into this section regardless of area. |
+| `state` (string) | recommended | The product state the section needs and the cheapest way to reach it, in the same register as a check's Setup line. |
+| `bench` (list) | recommended | What must be physically present, signed in or installed before the section starts, one line each. |
 
-A sitting block with neither `surfaces` nor `checks` claims nothing, and the generator reports it. No key carries a duration.
+A section block with neither `surfaces` nor `checks` claims nothing, and the generator reports it. No key carries a duration.
 
-## `procedure.md` — a sitting's procedure (`docs/tests/acceptance/walk/`)
+## `what-changed.md` — the short what-changed lines (`docs/tests/acceptance/release-test/what-changed-<platform>.md`)
 
-Purpose: the written script for one sitting of a release walk — the setup stated once, then numbered steps, each expectation tagged with the check step it satisfies. Instantiated from `procedure.md` to `docs/tests/acceptance/walk/<name>.md`, typed `[[reference]]`, resting at `active`. What a procedure is for, what the validator refuses and what the sheet prints are stated once in `tools/instructions/TESTING.md`, "The walk", rule 9; this entry is the shape a parser reads.
+Purpose: one short line per change and screen, for one platform, written at release preparation by the `release-test-prep` skill. A release test prints these lines in place of the change notes' longer Impact sentences. Instantiated from `what-changed.md`, typed `[[reference]]`. It is not a procedure, and the generator does not read it as one.
+
+Frontmatter: the standing-document fields, plus:
+
+- (required) `tag` (string): the release tag the lines were written against. The release test uses the lines only while this is the platform's last release tag. Otherwise it prints the Impact sentences and one line saying the short lines are out of date.
+
+Body: list items in the Impact shape: a `[[SUR-####]]` link or a bare id, a separator, one sentence, and the change note it summarises as a `[[CHG-...]]` link or a `` `CHG-...` `` id. The reference is taken off the printed line. `release-test.py --check` warns about a change since the tag with no line for one of its screens, and about a line that names no change note.
+
+## `procedure.md` — a section's procedure (`docs/tests/acceptance/release-test/`)
+
+Purpose: the written script for one section of a release test — the setup stated once, then numbered steps, each expectation tagged with the check step it satisfies. Instantiated from `procedure.md` to `docs/tests/acceptance/release-test/<name>.md`, typed `[[reference]]`, resting at `active`. What a procedure is for, what the validator refuses and what the sheet prints are stated once in `tools/instructions/TESTING.md`, "The release test", rule 9; this entry is the shape a parser reads.
 
 Frontmatter: the standing-document fields (`type`, `title`, `status`, `owner`, `created`, `updated`), plus one required key:
 
-- (required) `sitting` (string): the `### ` heading in `docs/tests/acceptance/WALK.md` this procedure walks, word for word. It is the only link between the two files, and a value naming no sitting is reported by `walk-sheet.py --check`.
+- (required) `section` (string): the `### ` heading in `docs/tests/acceptance/RELEASE-TEST.md` this procedure tests, word for word. It is the only link between the two files, and a value naming no section is reported by `release-test.py --check`. Until 2026-09-27 this key was `sitting`, which the validator now refuses (project-os-dev ADR-0050).
+- (optional) the per-step maps `requires`, `setup_for`, `setup_platforms`, `step_platforms`, `action_for`, `capture_for`, `use_capture`, `timer_for` and `readiness_for`, each keyed by step position; `../__templates__/procedure.md` shows each one and TESTING.md rule 9 says what it does. A `readiness_for` entry may carry `result:`, one of the seven stored result values. `state_for` is the older form of a group's `Start:` line: still read, and warned about.
 
 Body:
 
 | part | what a parser reads |
 |---|---|
-| `## Setup` | Everything under the heading, printed verbatim once at the top of the sitting. |
+| `## Setup` | Everything under the heading, printed verbatim once at the top of the section. |
 | `## Steps` | The numbered items under it. A line matching `N.` at the start of a line begins a step; everything until the next such line belongs to it. **The step's number is its position, not the digit written** — `1.` on every item gives steps 1, 2, 3, which is what markdown renders. Lines inside a fenced block belong to the step and are not read for tags. |
-| a step's first line | The screen: the first `SUR-####` id on it, or failing that the first surface title that matches a `SUR-*` note exactly. A step naming no screen is reported, not refused. |
-| an expectation line | Any line inside a step carrying at least one expectation tag. Strip the list marker and the tags; what remains is the quote. |
+| a `### ` heading under `## Steps` | Starts a group; every step until the next `### ` heading belongs to it. Steps keep counting across groups. |
+| a `Start:` line | The first non-blank line under a group's heading, when it starts `Start:`. What follows is the group's start state. Anywhere else it is prose. |
+| a step's first line | The action. A `SUR-####` id on it, or a surface title that matches a `SUR-*` note exactly, is read as the screen the step happens on; a step naming no screen is fine. |
+| an expectation line | Any line inside a step carrying at least one expectation tag. Strip the list marker and the tags; what remains is the quote. The form to write is the tags alone, which leaves no quote; a quote is reported as a warning (`tools/instructions/TESTING.md`, "The release test", rule 9). |
 | an expectation tag | `` `TST-####.N` `` or `` `TST-####` ``, in backticks, ASCII. `N` is the position of the cited check's step, counted the same way; the bare form cites a check whose steps are not numbered. Several tags on one line mean several checks expect the same thing in the same words. |
-| the quote | Compared against the lines of the tagged check's `## Expect` section after stripping list markers and collapsing whitespace. Nothing else may differ. |
+| the quote | Compared against the lines of the tagged check's `## Expect` section that hold on the platform being tested, after stripping list markers, platform names and collapsing whitespace. Nothing else may differ. |
 
-Any heading other than `## Setup` and `## Steps` is prose for the reader and is not parsed — `## Not covered here` is the conventional place to say which checks in the sitting the procedure does not yet reach.
+Any heading other than `## Setup` and `## Steps` is prose for the reader and is not parsed — `## Not covered here` is the conventional place to say which checks in the section the procedure does not yet reach.
 
 ## `check.md` — removed (ADR-0031)
 

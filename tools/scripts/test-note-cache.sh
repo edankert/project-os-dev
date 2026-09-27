@@ -93,7 +93,7 @@ check "an unknown id exits 1" "$([[ $code -eq 1 ]]; echo $?)"
 # one, inside its quoted title, and has always reported it; it still does.
 if python3 -c 'import yaml' 2>/dev/null; then
   B="$TMP/broken"; mkdir -p "$B/docs/issues"; printf 'version: 1\nitems: {}\n' > "$B/SNAPSHOT.yaml"
-  printf -- '---\nid: ISS-0003\ntitle: "Retire "walk" from it"\nstatus: open\n---\n# Three\n' > "$B/docs/issues/ISS-0003-Three.md"
+  printf -- '---\nid: ISS-0003\ntitle: "Retire "old" from it"\nstatus: open\n---\n# Three\n' > "$B/docs/issues/ISS-0003-Three.md"
   printf -- '---\nid: ISS-0004\ntitle: \"a---b\"\nstatus: open\n---\n# Four\n' > "$B/docs/issues/ISS-0004-Four.md"
   nf() { python3 - "$HERE/validate-docs.py" "$B" <<'PY2'
 import importlib.util, sys

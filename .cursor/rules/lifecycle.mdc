@@ -14,7 +14,7 @@ Each lifecycle rule is stated once here, with a reason and a link (project-os-de
 - Search with the Grep tool or `rg`, not `grep -r`; they honour `.ignore`, which excludes `docs/archive/` (ISS-0102).
 
 ## Test storage (hybrid)
-- Feature-scoped: `docs/features/<feature-slug>/plan/tests/TST-####-*.md`; system-wide: `docs/tests/TST-####-*.md`. A walked acceptance check lives under `docs/tests/acceptance/`; one with a `command:` may sit beside its feature.
+- Feature-scoped: `docs/features/<feature-slug>/plan/tests/TST-####-*.md`; system-wide: `docs/tests/TST-####-*.md`. A manual acceptance check lives under `docs/tests/acceptance/`; one with a `command:` may sit beside its feature.
 
 ## Statuses
 - Statuses and transitions are stated once, in `STATUSES.md`.

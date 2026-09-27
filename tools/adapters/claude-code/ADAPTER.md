@@ -65,7 +65,7 @@ These files contain detailed rules. Read them when performing the related operat
 - Hook contracts: tools/instructions/HOOKS.md
 - Markdown formatting: tools/instructions/MARKDOWN.md
 - Writing clearly (prose, commit messages, replies): tools/instructions/WRITING.md
-- Acceptance tests and the release walk: tools/instructions/TESTING.md
+- Acceptance tests and the release test: tools/instructions/TESTING.md
 
 ## Skill playbooks (read before performing these operations)
 
@@ -94,7 +94,8 @@ These files contain detailed rules. Read them when performing the related operat
 - Project init: tools/skills/project-init/SKILL.md
 - Project derive: tools/skills/project-derive/SKILL.md
 - Design authoring: tools/skills/design-authoring/SKILL.md
-- Walk procedure: tools/skills/walk-procedure/SKILL.md
+- Release test procedure: tools/skills/release-test-procedure/SKILL.md
+- Release test preparation: tools/skills/release-test-prep/SKILL.md
 ```
 
 ### Notes

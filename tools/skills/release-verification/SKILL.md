@@ -46,27 +46,27 @@ The verdict model is stated once, in `../../instructions/STATUSES.md` `[[test]]`
 - **An acceptance check** (`level: acceptance`, no `command:`) is settled per release and platform in the ledger. Unsettled for this release and platform is **BLOCKED**.
 - **A manual test** (no `command:`, any other level) carries a hand-written verdict and `last_verified:`. **CURRENT**: `status: passing` and `last_verified` inside the staleness window and after the latest `updated` among the tasks under its features. **STALE**: `last_verified` older than that. **UNTESTED**: `status: ready` or `draft`. **FAILING**: `status: failing`.
 
-### 3a. Check the procedures the walk will print
-- Run `python3 tools/scripts/walk-sheet.py --check --platform <platform>`. A sitting with a written procedure is walked from that script, and the script is authored text that can disagree with the owed set after a single ledger event (`../../instructions/TESTING.md`, "The walk", rule 9).
-- Report each refusal in the matrix's notes and rewrite it with `../walk-procedure/SKILL.md` before the walk starts. This is not a release blocker on its own: a refused procedure falls back to per-check rows and nothing owed is hidden.
+### 3a. Check the procedures the release test will print
+- Run `python3 tools/scripts/release-test.py --check --platform <platform>`. A section with a written procedure is tested from that script, and the script is authored text that can disagree with the owed set after a single ledger event (`../../instructions/TESTING.md`, "The release test", rule 9).
+- Report each refusal in the matrix's notes and rewrite it with `../release-test-procedure/SKILL.md` before the release test starts. This is not a release blocker on its own: a refused procedure falls back to per-check rows and nothing owed is hidden.
 
 ### 4. Produce the release test matrix
 Present the results as a table:
 
 ```
-| Test | Level | Kind | Status | Last verified | Sitting | Linked Feature | Latest Change | Verdict |
+| Test | Level | Kind | Status | Last verified | Section | Linked Feature | Latest Change | Verdict |
 |------|-------|------|--------|---------------|---------|----------------|---------------|---------|
-| TST-0005 | acceptance | walked | active | (ledger) | 2 — On the bench | FEAT-0008 | 2026-03-07 | BLOCKED |
+| TST-0005 | acceptance | by hand | active | (ledger) | 2 — On the bench | FEAT-0008 | 2026-03-07 | BLOCKED |
 | TST-0012 | e2e | command: | active | (CI) | — | FEAT-0008 | 2026-03-07 | CI |
 | TST-0014 | system | manual | passing | 2026-03-01 | — | FEAT-0008 | 2026-03-07 | STALE |
-| TST-0018 | acceptance | walked | active | (ledger: no entry) | 1 — Fresh install | FEAT-0015 | 2026-03-06 | UNTESTED |
-| TST-0020 | acceptance | walked | active | (ledger: fail) | Unplaced | FEAT-0003 | 2026-03-04 | FAILING |
+| TST-0018 | acceptance | by hand | active | (ledger: no entry) | 1 — Fresh install | FEAT-0015 | 2026-03-06 | UNTESTED |
+| TST-0020 | acceptance | by hand | active | (ledger: fail) | Unplaced | FEAT-0003 | 2026-03-04 | FAILING |
 ```
 
-Fill **Sitting** from the walk sheet, so the matrix and the sheet agree on the order rather than offering two. A row with no sitting is not an acceptance check.
+Fill **Section** from the release test sheet, so the matrix and the sheet agree on the order rather than offering two. A row with no section is not an acceptance check.
 
 ### 5. Check the acceptance suite
-Sections and gating are stated once, in `../../instructions/TESTING.md` ("The three sections", "Release gating"); this step applies them.
+Test kinds and gating are stated once, in `../../instructions/TESTING.md` ("The three test kinds", "Release gating"); this step applies them.
 - Read the acceptance suite (`TST-*` notes at `level: acceptance`, stored per `../../instructions/LIFECYCLE.md` "Test storage", or `docs/tests/ACCEPTANCE_TESTS.md` in a repo that has not migrated) and list every check that "Release gating" calls a blocker for this release and platform; record any release exception as it says.
 
 ### 6. Gate the release
@@ -75,15 +75,15 @@ Sections and gating are stated once, in `../../instructions/TESTING.md` ("The th
 - List each blocking test with its verdict and what action is needed:
   - STALE or UNTESTED → run the manual procedure (step 7)
   - FAILING → fix the regression, then run it again
-  - BLOCKED → walk the acceptance check and record it in the ledger
+  - BLOCKED → test the acceptance check by hand and record its result in the ledger
 - Do not reset a status by hand: a manual test's status is written when it is run (step 7), and a `command:` test has none.
 
-### 7. Walk the sheet, and re-run the other tests
-**Acceptance checks are walked from the sheet, in its order, one sitting at a time.** Generate it with `python3 tools/scripts/walk-sheet.py --release <REL-####> --platform <platform>` (`../release-prep/SKILL.md` step 2). Start with the survey: open the screens the release changed before walking a single scripted check. Then take the sittings in order — each names the state it needs and what must be on the bench, so a sitting is set up once and walked through.
+### 7. Test from the sheet, and re-run the other tests
+**Acceptance checks are tested from the sheet, in its order, one section at a time.** Generate it with `python3 tools/scripts/release-test.py --release <REL-####> --platform <platform>` (`../release-prep/SKILL.md` step 2). Start with what changed: open the screens the release changed before testing a single scripted check. Then take the sections in order — each names the state it needs and what must be on the bench, so a section is set up once and tested through.
 
-1. Every row carries its own Setup, Steps and Expect. Do not open the note to walk a row; open it only to fix its text.
-2. Record each verdict as a **ledger event** with `method: manual`, through the cockpit's mark dialog or the ledger write path. **Write nothing on the check's note**: an acceptance check rests at `active` and carries no verdict (`../../instructions/STATUSES.md` `[[test]]`; `TESTING.md`, "The walk", rule 6).
-3. A row whose text is wrong — an expired premise, a behaviour the platform never had, a setup sentence that makes a cheap check look expensive — gets its text fixed in the same action that records the verdict (`TESTING.md`, "A check is walkable by a stranger"). "Setup: not stated" on a row is that invitation.
+1. Every row carries its own Setup, Steps and Expect. Do not open the note to test a row; open it only to fix its text.
+2. Record each result as a **ledger event** with `method: manual`, through the cockpit's result dialog or the ledger write path. **Write nothing on the check's note**: an acceptance check rests at `active` and carries no verdict (`../../instructions/STATUSES.md` `[[test]]`; `TESTING.md`, "The release test", rule 6).
+3. A row whose text is wrong — an expired premise, a behaviour the platform never had, a setup sentence that makes a cheap check look expensive — gets its text fixed in the same action that records the result (`TESTING.md`, "A check is testable by a stranger"). "Setup: not stated" on a row is that invitation.
 4. Regenerate the sheet to see what is left. It is derived, so it is never edited and never corrected by hand.
 
 For a **manual test that is not an acceptance check** (no `command:`, any other level): present the procedure to the user, then update the note with `status: passing` or `failing`, `last_verified:`, `updated:` and the evidence. A test carrying a `command:` records nothing (`../../instructions/STATUSES.md` `[[test]]`). The snapshot follows the note (`../../instructions/LIFECYCLE.md`, "Mandatory Automated Documentation"); do not re-type the status.

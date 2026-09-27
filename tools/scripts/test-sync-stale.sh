@@ -64,5 +64,43 @@ check "a seed file with project facts is left alone" grep -qx "Name: down" "$D/L
 REAL="$(cd "$HERE/../.." && pwd)"
 check "the template ships docs/releases/ledgers/README.md" test -s "$REAL/docs/releases/ledgers/README.md"
 check "the manifest seeds it rather than owning it" grep -q '^  "docs/releases/ledgers/README.md": seed' "$REAL/tools/sync/MANIFEST.yaml"
+
+# project-os-dev ADR-0050: a path the template renamed is deleted downstream,
+# edited or not, and a migration script with work to do has its command printed.
+cd "$U"
+git mv tools/instructions/C.md tools/instructions/C2.md
+mkdir -p tools/skills/old tools/scripts
+w tools/scripts/migrate-x.py 'import sys, pathlib
+root = pathlib.Path(sys.argv[sys.argv.index("--repo-root") + 1])
+if (root / "OLD.md").exists():
+    print("migrate-x: would move 1 file(s)")
+    print("   move  OLD.md -> NEW.md")
+    sys.exit(1 if "--check" in sys.argv else 0)
+print("migrate-x: nothing to do"); sys.exit(0)'
+cat >> tools/sync/MANIFEST.yaml <<'EOF2'
+renamed:
+  "tools/instructions/C.md": "tools/instructions/C2.md"
+  "tools/instructions/gone/": "tools/instructions/here/"
+migrations:
+  - "tools/scripts/migrate-x.py"
+EOF2
+git add -A && git commit -qm v4
+w "$D/tools/instructions/C.md" "C v3 edited here"
+mkdir -p "$D/tools/instructions/gone"; w "$D/tools/instructions/gone/SKILL.md" "old skill"
+w "$D/OLD.md" "a file the project wrote under the old name"
+out="$(cd "$D" && python3 "$SYNC" "$U" --repo-root "$D" --dry-run 2>&1)"
+check "a dry run reports the renamed file once, not also as GONE" bash -c "grep -q 'RENAMED  tools/instructions/C.md' <<<\"\$1\" && ! grep -q 'GONE  tools/instructions/C.md' <<<\"\$1\"" _ "$out"
+check "and deletes nothing" test -e "$D/tools/instructions/C.md"
+out="$(cd "$D" && python3 "$SYNC" "$U" --repo-root "$D" 2>&1)"
+check "a renamed file is deleted downstream even though it was edited" test ! -e "$D/tools/instructions/C.md"
+check "and the report names what replaced it, and says it was edited" grep -q "RENAMED  tools/instructions/C.md -> tools/instructions/C2.md (it had local edits" <<<"$out"
+check "it is not also reported GONE" bash -c "! grep -q 'GONE  tools/instructions/C.md' <<<\"\$1\"" _ "$out"
+check "the new name arrives" grep -qx "C v3" "$D/tools/instructions/C2.md"
+check "a renamed folder is deleted with its files" test ! -e "$D/tools/instructions/gone"
+check "a migration with work to do prints its command" grep -q "python3 tools/scripts/migrate-x.py --apply" <<<"$out"
+check "and what it would change" grep -q "move  OLD.md -> NEW.md" <<<"$out"
+rm "$D/OLD.md"
+out="$(cd "$D" && python3 "$SYNC" "$U" --repo-root "$D" --dry-run 2>&1)"
+check "a migration with nothing to do prints nothing" bash -c "! grep -q 'MIGRATE' <<<\"\$1\"" _ "$out"
 echo "test-sync-stale: $n assertions, $failures failure(s)"
 [[ "$failures" -eq 0 ]]

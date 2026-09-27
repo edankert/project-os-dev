@@ -17,12 +17,19 @@ def ledger(name, data):
     root = Path(tempfile.mkdtemp()); d = root / "docs" / "releases" / "ledgers"; d.mkdir(parents=True)
     (d / name).write_text(json.dumps(data) if not isinstance(data, str) else data, encoding="utf-8")
     r = vd.Report(); vd.validate_ledgers(root, r, {}); return r.errors + r.warnings
-good = {"check": "TST-0001", "mark": "pass", "date": "2026-09-18", "method": "manual", "by": "user:edwin"}
+good = {"check": "TST-0001", "result": "pass", "date": "2026-09-18", "method": "manual", "by": "user:edwin"}
 codes = lambda out: {m.split("[")[1].split("]")[0] for m in out}
 check("a well-formed ledger draws nothing", ledger("WORKING-app.json", {"platform": "app", "entries": [good]}) == [])
-check("a fail with no reason draws LEDGER-REASON", "LEDGER-REASON" in codes(ledger("WORKING-app.json", {"platform": "app", "entries": [dict(good, mark="fail")]})))
-check("a fail with a reason draws nothing", ledger("WORKING-app.json", {"platform": "app", "entries": [dict(good, mark="fail", reason="broken")]}) == [])
-check("an unknown mark draws LEDGER-MARK", "LEDGER-MARK" in codes(ledger("WORKING-app.json", {"platform": "app", "entries": [dict(good, mark="done")]})))
+check("a fail with no reason draws LEDGER-REASON", "LEDGER-REASON" in codes(ledger("WORKING-app.json", {"platform": "app", "entries": [dict(good, result="fail")]})))
+check("a fail with a reason draws nothing", ledger("WORKING-app.json", {"platform": "app", "entries": [dict(good, result="fail", reason="broken")]}) == [])
+check("an unknown result draws LEDGER-MARK", "LEDGER-MARK" in codes(ledger("WORKING-app.json", {"platform": "app", "entries": [dict(good, result="done")]})))
+# project-os-dev ADR-0050: new entries write `result`; `mark` is its old name,
+# and every reader accepts it for good, because sealed ledgers are never rewritten.
+old = {k: v for k, v in good.items() if k != "result"}
+check("an entry under the old key mark is still read", ledger("WORKING-app.json", {"platform": "app", "entries": [dict(old, mark="pass")]}) == [])
+check("an old-key fail with no reason still draws LEDGER-REASON", "LEDGER-REASON" in codes(ledger("WORKING-app.json", {"platform": "app", "entries": [dict(old, mark="fail")]})))
+check("result and mark that disagree draw LEDGER-ENTRY", "LEDGER-ENTRY" in codes(ledger("WORKING-app.json", {"platform": "app", "entries": [dict(good, mark="fail", reason="x")]})))
+check("result and mark that agree draw nothing", ledger("WORKING-app.json", {"platform": "app", "entries": [dict(good, mark="pass")]}) == [])
 check("a date-shaped non-date draws LEDGER-ENTRY", "LEDGER-ENTRY" in codes(ledger("WORKING-app.json", {"platform": "app", "entries": [dict(good, date="2026-13-45")]})))
 check("an entry with no author draws LEDGER-ENTRY", "LEDGER-ENTRY" in codes(ledger("WORKING-app.json", {"platform": "app", "entries": [dict(good, by="")]})))
 check("an unknown method draws LEDGER-ENTRY", "LEDGER-ENTRY" in codes(ledger("WORKING-app.json", {"platform": "app", "entries": [dict(good, method="guess")]})))
@@ -60,16 +67,17 @@ def cleared(*files):
     return vd._ledger_cleared(root)
 check("a repo with no ledgers settles from mark:", vd._ledger_cleared(Path(tempfile.mkdtemp())) is None)
 check("a pass clears the check", "TST-0001" in cleared(("WORKING-app.json", {"entries": [good]})))
-check("a fail does not clear it", "TST-0001" not in cleared(("WORKING-app.json", {"entries": [dict(good, mark="fail", reason="x")]})))
-check("a later fail supersedes an earlier pass", "TST-0001" not in cleared(("WORKING-app.json", {"entries": [dict(good, date="2026-09-01"), dict(good, mark="fail", reason="x", date="2026-09-02")]})))
-check("the latest entry by date wins, not by position", "TST-0001" in cleared(("WORKING-app.json", {"entries": [dict(good, date="2026-09-03"), dict(good, mark="fail", reason="x", date="2026-09-02")]})))
+check("a pass under the old key mark clears the check", "TST-0001" in cleared(("REL-0001-app.json", {"sealed": "2026-09-01", "entries": [dict(old, mark="pass")]})))
+check("a fail does not clear it", "TST-0001" not in cleared(("WORKING-app.json", {"entries": [dict(good, result="fail", reason="x")]})))
+check("a later fail supersedes an earlier pass", "TST-0001" not in cleared(("WORKING-app.json", {"entries": [dict(good, date="2026-09-01"), dict(good, result="fail", reason="x", date="2026-09-02")]})))
+check("the latest entry by date wins, not by position", "TST-0001" in cleared(("WORKING-app.json", {"entries": [dict(good, date="2026-09-03"), dict(good, result="fail", reason="x", date="2026-09-02")]})))
 check("an invalidation clears a standing pass", "TST-0001" not in cleared(("WORKING-app.json", {"entries": [dict(good, date="2026-09-01"), {"check": "TST-0001", "invalidated_by": "CHG-1", "date": "2026-09-02"}]})))
-check("an excused in a sealed ledger does not survive", "TST-0001" not in cleared(("REL-0001-app.json", {"sealed": "2026-09-01", "entries": [dict(good, mark="excused", reason="x")]})))
-check("an excused in the working ledger clears", "TST-0001" in cleared(("WORKING-app.json", {"entries": [dict(good, mark="excused", reason="x")]})))
+check("an excused in a sealed ledger does not survive", "TST-0001" not in cleared(("REL-0001-app.json", {"sealed": "2026-09-01", "entries": [dict(good, result="excused", reason="x")]})))
+check("an excused in the working ledger clears", "TST-0001" in cleared(("WORKING-app.json", {"entries": [dict(good, result="excused", reason="x")]})))
 check("a pass in a sealed ledger survives into the working one", "TST-0001" in cleared(("REL-0001-app.json", {"sealed": "2026-09-01", "entries": [good]}), ("WORKING-app.json", {"entries": []})))
-check("the working ledger's fail overrides a sealed pass", "TST-0001" not in cleared(("REL-0001-app.json", {"sealed": "2026-09-01", "entries": [dict(good, date="2026-09-20")]}), ("WORKING-app.json", {"entries": [dict(good, mark="fail", reason="x", date="2026-09-10")]})))
+check("the working ledger's fail overrides a sealed pass", "TST-0001" not in cleared(("REL-0001-app.json", {"sealed": "2026-09-01", "entries": [dict(good, date="2026-09-20")]}), ("WORKING-app.json", {"entries": [dict(good, result="fail", reason="x", date="2026-09-10")]})))
 # android loads before ios, so a merged history would let the ios fail win
-check("a pass on one platform settles it though another fails", "TST-0001" in cleared(("WORKING-android.json", {"entries": [good]}), ("WORKING-ios.json", {"entries": [dict(good, mark="fail", reason="x")]})))
+check("a pass on one platform settles it though another fails", "TST-0001" in cleared(("WORKING-android.json", {"entries": [good]}), ("WORKING-ios.json", {"entries": [dict(good, result="fail", reason="x")]})))
 idx = {"TST-0005": (Path("x"), {"id": "TST-0005", "mark": "done"})}
 check("with ledgers, a done mark: no longer settles it", not vd._acceptance_is_settled("TST-0005", idx, set()))
 check("without ledgers, a done mark: still settles it", vd._acceptance_is_settled("TST-0005", idx, None))
@@ -87,14 +95,14 @@ def gate(entries):
     return "[VERIFY-ACCEPTANCE] FEAT-0001" in out
 check("the gate is quiet when the ledger passes the check", not gate([good]))
 check("the gate warns when the ledger has no verdict for it", gate([]))
-# project-os-dev ISS-0063: a walked check lives under docs/tests/acceptance/
+# project-os-dev ISS-0063: a manual check lives under docs/tests/acceptance/
 loc = Path(tempfile.mkdtemp())
 def placed(rel, **fm):
     p = loc / rel; p.parent.mkdir(parents=True, exist_ok=True); p.write_text("---\n---\n")
     r = vd.Report(); vd.validate_acceptance_location(loc, r, {"TST-0009": (p, dict({"id": "TST-0009", "level": "acceptance"}, **fm))})
     return any("ACCEPT-LOCATION" in m for m in r.errors)
-check("a walked check beside its feature is refused", placed("docs/features/x/plan/tests/TST-0009-A.md"))
-check("a walked check under docs/tests/acceptance/ is fine", not placed("docs/tests/acceptance/TST-0009-A.md"))
+check("a manual check beside its feature is refused", placed("docs/features/x/plan/tests/TST-0009-A.md"))
+check("a manual check under docs/tests/acceptance/ is fine", not placed("docs/tests/acceptance/TST-0009-A.md"))
 check("an automated check beside its feature is fine", not placed("docs/features/x/plan/tests/TST-0009-A.md", command="make test"))
 # a release note vouching for a sealed ledger's bytes (validate_vouched_ledgers)
 import hashlib
@@ -119,8 +127,8 @@ unit=$?
 REPO="$(cd "$HERE/../.." && pwd)"; T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
 cp -R "$REPO/SNAPSHOT.yaml" "$REPO/docs" "$T/"; mkdir -p "$T/tools"; cp -R "$REPO/tools/scripts" "$REPO/tools/instructions" "$T/tools/"
 mkdir -p "$T/docs/releases/ledgers" "$T/docs/issues"
-printf '{"platform": "app", "entries": [{"check": "TST-0001", "mark": "fail", "date": "2026-09-20", "by": "user:x", "method": "walked"}]}\n' > "$T/docs/releases/ledgers/WORKING-app.json"
-printf -- '---\ntype: "[[issue]]"\nid: ISS-0902\ntitle: "Retire "walk" from it"\n---\n' > "$T/docs/issues/ISS-0902-x.md"
+printf '{"platform": "app", "entries": [{"check": "TST-0001", "result": "fail", "date": "2026-09-20", "by": "user:x", "method": "by hand"}]}\n' > "$T/docs/releases/ledgers/WORKING-app.json"
+printf -- '---\ntype: "[[issue]]"\nid: ISS-0902\ntitle: "Retire "old" from it"\n---\n' > "$T/docs/issues/ISS-0902-x.md"
 out="$(PYTHONDONTWRITEBYTECODE=1 python3 "$T/tools/scripts/validate-docs.py" --repo-root "$T" 2>&1)"
 e2e=0
 python3 -c 'import yaml' 2>/dev/null && want="LEDGER-REASON NOTE-FRONTMATTER" || want="LEDGER-REASON"

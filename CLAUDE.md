@@ -55,8 +55,7 @@ These files contain detailed rules. Read them when performing the related operat
 - Project init: tools/skills/project-init/SKILL.md
 - Project derive: tools/skills/project-derive/SKILL.md
 - Design authoring: tools/skills/design-authoring/SKILL.md
-- Walk procedure: tools/skills/walk-procedure/SKILL.md
-
+- Release test procedure: tools/skills/release-test-procedure/SKILL.md
 ## Key Files
 - `SNAPSHOT.yaml` — canonical project state
 - `CONTEXT.md` — LLM operating contract

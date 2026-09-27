@@ -311,7 +311,7 @@ REVIEW_TERMINAL_STATUSES = frozenset({
 ACCEPTANCE_FORBIDDEN_STATUSES = ("ready", "passing", "failing")
 
 
-#: A walked test's marks that count as settled -- the same three
+#: A manual test's marks that count as settled -- the same three
 #: `acceptance.Item.settled` reads, named here because the validator does not
 #: import the cockpit package.
 _SETTLED_MARKS = ("done", "incomplete", "canceled", "x", "X", "/", "~", "-")
@@ -321,7 +321,7 @@ _SETTLED_WORDS = ("done", "incomplete", "canceled")
 
 
 #: The ledger outcomes that clear a check, and those that survive a sealed
-#: ledger. Restated from walk-sheet.py (CLEARING, PERSISTS), whose `resolve()`
+#: ledger. Restated from release-test.py (CLEARING, PERSISTS), whose `resolve()`
 #: these rules follow; TAXONOMY.md "Acceptance outcomes" is the source.
 _LEDGER_CLEARING = frozenset({"pass", "partial", "na", "excused"})
 _LEDGER_PERSISTS = frozenset({"pass", "partial", "na"})
@@ -333,7 +333,7 @@ def _ledger_cleared(root):
     project-os-dev ISS-0060: VERIFY-ACCEPTANCE read only a note's `mark:`, while
     LEDGER-FIELD refuses `mark:` on a note in a repo that keeps ledgers, so in
     such a repo the warning could never be cleared. Where ledgers exist, a check
-    is settled by them instead. Resolution follows walk-sheet.py's `resolve()`:
+    is settled by them instead. Resolution follows release-test.py's `resolve()`:
     per platform, oldest sealed ledger first and the open one last; a later
     verdict supersedes an earlier one; an invalidation clears the standing
     verdict; only `pass`, `partial` and `na` survive a sealed ledger. A check is
@@ -367,7 +367,7 @@ def _ledger_cleared(root):
             rows = [e for e in entries if isinstance(e, dict)]
             for e in sorted(rows, key=lambda e: str(e.get("date") or "")):
                 check = str(e.get("check") or "").strip()
-                mark = str(e.get("mark") or "").strip()
+                mark = _entry_result(e)
                 if str(e.get("invalidated_by") or "").strip():
                     standing.pop(check, None)
                     transient.pop(check, None)
@@ -383,10 +383,10 @@ def _ledger_cleared(root):
 
 
 def _acceptance_is_settled(note_id, note_index, ledger_cleared=None):
-    """Whether a walked test's verdict settles it (ADR-0034).
+    """Whether a manual test's verdict settles it (ADR-0034).
 
-    The walked half of one rule: an executable test is settled when the runner
-    says `passing`; a walked one is settled when its `mark:` says so. Both
+    The manual half of one rule: an executable test is settled when the runner
+    says `passing`; a manual one is settled when its `mark:` says so. Both
     characters and words are read, because a repo that has not migrated its
     vocabulary must keep gating correctly.
     """
@@ -756,7 +756,9 @@ _NON_STATUS_COLLECTIONS = frozenset({
     "LEDGER_NEEDS_REASON",
     "LEDGER_METHODS",
     "LEDGER_MOVED_FIELDS",
-    "_LEDGER_CLEARING",      # ledger outcomes, restated from walk-sheet.py
+    "RELEASE_TEST_OLD_OWN",       # renamed paths (project-os-dev ADR-0050)
+    "RELEASE_TEST_OLD_TEMPLATE",
+    "_LEDGER_CLEARING",      # ledger outcomes, restated from release-test.py
     "_LEDGER_PERSISTS",
     "ID_PREFIXES",           # note ID prefixes
     "RELATIONSHIP_FIELDS",   # frontmatter field names
@@ -769,7 +771,7 @@ _NON_STATUS_COLLECTIONS = frozenset({
     # Both were caught by this very guard on the day they were added, which is
     # the behaviour ISS-0012 and ISS-0013 paid for.
     "STATUS_FREE_TYPES",
-    # ADR-0034: acceptance VERDICTS, not statuses. A walked test's verdict lives
+    # ADR-0034: acceptance VERDICTS, not statuses. A manual test's verdict lives
     # in `mark:` precisely so it is not a status -- which is the construction
     # that keeps a suite of several hundred out of the review gate and off a
     # badge -- so registering these as statuses would assert the opposite of the
@@ -1080,7 +1082,7 @@ PROMOTIONS = {
     # ADR-0034's uniform gate: an acceptance test gates what it COVERS, like
     # any other test. Measured on the day it shipped: 0 findings in three of
     # the four suite repos and **6 in `your-sudoku`**, where FEAT-0025 is `done`
-    # and six checks covering it have never been walked. Those are true, and
+    # and six checks covering it have never been tested. Those are true, and
     # erroring on day one would take a green repo red for a rule it had no
     # chance to satisfy -- ADR-0011 clause 3, and the reason TEST-ENTRYPOINT
     # shipped the same way.
@@ -1582,7 +1584,7 @@ def _parse_frontmatter_strict(path):
 
 
 # ---------------------------------------------------------- the note cache
-#: project-os-dev ISS-0093. The validator, walk-sheet.py and sync-snapshot.py
+#: project-os-dev ISS-0093. The validator, release-test.py and sync-snapshot.py
 #: all parse through `parse_frontmatter`, and one validator run used to parse
 #: each of your-trainer's 3,150 notes about five times. Each note is now parsed
 #: once per process, and the result is kept on disk between runs, keyed by
@@ -2817,7 +2819,7 @@ def validate_plan_notes(root, docs_dir, allowed_status, grandfathered, report):
 #: Ported from project-os-cockpit on 2026-09-18 (project-os-dev FEAT-0037,
 #: TASK-0136): the acceptance-ledger checks (its ADR-0037) and the frontmatter
 #: parse check (its ISS-0214; this repo's ISS-0053). Every repo that keeps
-#: ledgers already reads them through walk-sheet.py, so the rules belong here.
+#: ledgers already reads them through release-test.py, so the rules belong here.
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
@@ -2847,6 +2849,19 @@ LEDGER_MARKS = ("pass", "partial", "na", "excused", "blocked", "fail",
                 "question")
 LEDGER_NEEDS_REASON = tuple(m for m in LEDGER_MARKS if m != "pass")
 LEDGER_METHODS = ("manual", "automated", "migration")
+
+
+def _entry_result(entry):
+    """A ledger entry's result: `result`, or `mark` in an entry written before it.
+
+    New entries write `result` (project-os-dev ADR-0050). Sealed ledgers are
+    records and are never rewritten, so every reader accepts `mark` for good.
+    `release-test.py`'s `entry_result` is the same rule.
+    """
+    value = entry.get("result")
+    if value in (None, ""):
+        value = entry.get("mark")
+    return str(value or "").strip()
 LEDGER_NAME_RE = re.compile(r"^(?:WORKING|[A-Z]{2,6}-\d{3,4})-(.+)$")
 
 
@@ -2873,12 +2888,12 @@ def validate_vouched_ledgers(root, report, note_index):
     """Every ledger a release vouches for still hashes to what it recorded.
 
     **Driven from the release note, not from the ledger.** The first version
-    walked `docs/releases/ledgers/*.json` and checked the ones whose `sealed`
+    read `docs/releases/ledgers/*.json` and checked the ones whose `sealed`
     key was set -- gating the check on a field *inside the file it protects*.
     Independent review reproduced four clean bypasses: delete the `sealed`
     key and rewrite every entry; delete the file; move it out of the
     directory; rewrite LF to CRLF. The record that vouches lives outside the
-    file, so the walk starts there.
+    file, so the check starts there.
 
     **Bytes, not text.** `Path.read_text()` normalises newlines, so a CRLF
     rewrite hashed identically -- a hash that is not a hash of the bytes is
@@ -2899,7 +2914,7 @@ def validate_vouched_ledgers(root, report, note_index):
                     "LEDGER-SEALED",
                     "%s vouches for %s and it is not there. A release that "
                     "records what it was measured against, against a file "
-                    "nobody can open, is the answer `was release R walked?` "
+                    "nobody can open, is the answer `was release R tested?` "
                     "silently becoming unavailable" % (note_id, rel))
                 continue
             raw = target.read_bytes()
@@ -2908,19 +2923,19 @@ def validate_vouched_ledgers(root, report, note_index):
                 promotion_emit(report, "LEDGER-SEALED", {}, None)(
                     "LEDGER-SEALED",
                     "%s no longer hashes to what %s records (%s != %s). "
-                    "`was release R walked?` is answerable only while that "
+                    "`was release R tested?` is answerable only while that "
                     "answer cannot change"
                     % (rel, note_id, found[:12], vouched[:12] or "nothing"))
 
 
 def validate_acceptance_location(root, report, note_index):
-    """A walked acceptance check lives under docs/tests/acceptance/ (project-os-dev ISS-0063).
+    """A manual acceptance check lives under docs/tests/acceptance/ (project-os-dev ISS-0063).
 
-    The cockpit reads acceptance checks from that folder only, while walk-sheet.py
-    reads every `level: acceptance` note, so a walked check stored beside its
+    The cockpit reads acceptance checks from that folder only, while release-test.py
+    reads every `level: acceptance` note, so a manual check stored beside its
     feature was on the sheet and missing from the cockpit. An automated check
-    (one with a `command:`) is run, not walked, and may stay beside its feature.
-    Measured before adding this: 666 walked checks in four repos, none outside.
+    (one with a `command:`) is run by a machine, and may stay beside its feature.
+    Measured before adding this: 666 manual checks in four repos, none outside.
     """
     home = root / "docs" / "tests" / "acceptance"
     for nid, (path, fm) in sorted(note_index.items()):
@@ -2934,9 +2949,71 @@ def validate_acceptance_location(root, report, note_index):
         try:
             path.relative_to(home)
         except ValueError:
-            report.error("ACCEPT-LOCATION", "%s is an acceptance check a person walks, but it is not under "
-                         "docs/tests/acceptance/, where the walk and the cockpit look for it; move it there, "
+            report.error("ACCEPT-LOCATION", "%s is an acceptance check a person tests by hand, but it is not under "
+                         "docs/tests/acceptance/, where the release test and the cockpit look for it; move it there, "
                          "or give it a command: if it is automated (%s)" % (nid, path.relative_to(root)))
+
+
+#: The walk was renamed the release test (project-os-dev ADR-0050). Each old
+#: path, and the name that replaced it. A consumer's own files move with the
+#: migration command; the template's copies are deleted by the sync.
+RELEASE_TEST_MIGRATE = "python3 tools/scripts/migrate-release-test-names.py --apply"
+RELEASE_TEST_OLD_OWN = (
+    ("docs/tests/acceptance/WALK.md", "docs/tests/acceptance/RELEASE-TEST.md"),
+    ("docs/tests/acceptance/walk", "docs/tests/acceptance/release-test"),
+)
+RELEASE_TEST_OLD_TEMPLATE = (
+    ("tools/scripts/walk-sheet.py", "tools/scripts/release-test.py"),
+    ("tools/scripts/walk-tags.py", "tools/scripts/release-test-tags.py"),
+    ("tools/scripts/test-walk-sheet.sh", "tools/scripts/test-release-test.sh"),
+    ("tools/scripts/test-walk-preparation.py", "tools/scripts/test-release-test-preparation.py"),
+    ("docs/__templates__/walk.md", "docs/__templates__/release-test.md"),
+    ("tools/skills/walk-procedure", "tools/skills/release-test-procedure"),
+    (".claude/skills/walk-procedure", ".claude/skills/release-test-procedure"),
+    (".agents/skills/walk-procedure", ".agents/skills/release-test-procedure"),
+)
+
+
+def validate_release_test_names(root, report, note_index):
+    """An old name of the release test is an error that names the new one.
+
+    project-os-dev ADR-0050 renamed the walk to the release test in one go,
+    with no second period in which both names work. A consumer's files are
+    moved by the migration command, and anything the migration missed is
+    refused here rather than silently ignored: `release-test.py` reads only the
+    new names, so an old one would drop a section or a readiness notice
+    without a word.
+    """
+    for old, new in RELEASE_TEST_OLD_OWN:
+        if (root / old).exists():
+            report.error("OLD-NAME", "%s is the old name; it is now %s. Run `%s` "
+                         "(project-os-dev ADR-0050)" % (old, new, RELEASE_TEST_MIGRATE))
+    for old, new in RELEASE_TEST_OLD_TEMPLATE:
+        if (root / old).exists():
+            report.error("OLD-NAME", "%s is the old name; the template now ships %s. "
+                         "Delete it: a template sync deletes it, and nothing reads it "
+                         "any more (project-os-dev ADR-0050)" % (old, new))
+    procedures = root / "docs" / "tests" / "acceptance" / "release-test"
+    for path in sorted(procedures.glob("*.md")) if procedures.is_dir() else []:
+        fm = parse_frontmatter(path)
+        if isinstance(fm, dict) and "sitting" in fm:
+            report.error("OLD-NAME", "%s: `sitting:` is the old name; it is now "
+                         "`section:`. Run `%s` (project-os-dev ADR-0050)"
+                         % (path.relative_to(root).as_posix(), RELEASE_TEST_MIGRATE))
+    for note_id, (path, fm) in sorted((note_index or {}).items()):
+        if isinstance(fm, dict) and "walk_readiness_for" in fm:
+            report.error("OLD-NAME", "%s: `walk_readiness_for:` is the old name; it is "
+                         "now `readiness_for:`. Run `%s` (project-os-dev ADR-0050) (%s)"
+                         % (note_id, RELEASE_TEST_MIGRATE, path.relative_to(root).as_posix()))
+    claude = root / "CLAUDE.md"
+    try:
+        text = claude.read_text(encoding="utf-8") if claude.is_file() else ""
+    except OSError:
+        text = ""
+    if "tools/skills/walk-procedure/" in text:
+        report.error("OLD-NAME", "CLAUDE.md lists tools/skills/walk-procedure/, the old "
+                     "name of tools/skills/release-test-procedure/. Run `%s` "
+                     "(project-os-dev ADR-0050)" % RELEASE_TEST_MIGRATE)
 
 
 def validate_moved_verdict_fields(root, report, note_index):
@@ -3252,7 +3329,7 @@ def validate_frontmatter_parses(root, report):
             #: **A real YAML parse, not `load_yaml`.** This script's own
             #: parser is a deliberate dependency-free SUBSET, and it is
             #: lenient exactly where a broken note is broken -- it read
-            #: `title: "Retire "walk" from it"` without complaint. So the
+            #: `title: "Retire "old" from it"` without complaint. So the
             #: check needs PyYAML, and is silent where PyYAML is absent
             #: rather than pretending a subset parse is a YAML parse.
             yaml.load(text.split("---", 2)[1], Loader=_yaml_loader())
@@ -3297,7 +3374,7 @@ def _sealed_shas(note_index):
 def validate_ledgers(root, report, note_index):
     """The acceptance ledgers — required fields, reasons, and immutability.
 
-    Three rules, and the third is the one that makes *"was release R walked?"*
+    Three rules, and the third is the one that makes *"was release R tested?"*
     answerable at all:
 
     * every entry names a check, a date, an author and a method;
@@ -3322,7 +3399,7 @@ def validate_ledgers(root, report, note_index):
     for path in sorted(ledger_dir.glob("*.json")):
         rel = "docs/%s/%s" % (LEDGERS_REL, path.name)
         # A filename the reader cannot place is a ledger that disappears from
-        # its own platform while still sitting there looking read -- the same
+        # its own platform while it still looks read -- the same
         # failure the `_platform_of` fix closed, reached through a different
         # door (independent review, finding 5).
         if not LEDGER_NAME_RE.match(path.stem):
@@ -3377,15 +3454,22 @@ def validate_ledgers(root, report, note_index):
                 report.error("LEDGER-ENTRY",
                              "%s %s is not a note in this repo" % (rel, check))
             if entry.get("invalidated_by"):
-                if entry.get("mark"):
+                if _entry_result(entry):
                     report.error(
                         "LEDGER-ENTRY",
-                        "%s %s carries both a mark and an invalidation — they "
+                        "%s %s carries both a result and an invalidation — they "
                         "are two events and belong on two lines" % (rel, check))
                 continue
-            mark = str(entry.get("mark") or "").strip()
+            both = [str(entry.get(k) or "").strip() for k in ("result", "mark")]
+            if all(both) and both[0] != both[1]:
+                report.error(
+                    "LEDGER-ENTRY",
+                    "%s %s says result %r and mark %r. `mark` is the old name of "
+                    "`result` (project-os-dev ADR-0050), so one entry holds two "
+                    "answers; keep `result`" % (rel, check, both[0], both[1]))
+            mark = _entry_result(entry)
             if mark not in LEDGER_MARKS:
-                report.error("LEDGER-MARK", "%s %s has mark %r; expected one "
+                report.error("LEDGER-MARK", "%s %s has result %r; expected one "
                              "of %s" % (rel, check, mark,
                                         ", ".join(LEDGER_MARKS)))
                 continue
@@ -3393,7 +3477,7 @@ def validate_ledgers(root, report, note_index):
                     entry.get("reason") or "").strip():
                 report.error(
                     "LEDGER-REASON",
-                    "%s a %s verdict on %s needs a reason — the mark and its "
+                    "%s a %s verdict on %s needs a reason — the result and its "
                     "justification are one event, so a check cannot leave the "
                     "gate without saying why" % (rel, mark, check))
             if str(entry.get("method") or "").strip() not in LEDGER_METHODS:
@@ -3413,7 +3497,7 @@ def validate_ledgers(root, report, note_index):
                 report.error(
                     "LEDGER-EVIDENCE",
                     "%s evidence %d is for %s @ %s, which matches no entry — "
-                    "evidence for a walk nobody recorded is a claim with "
+                    "evidence for a test nobody recorded is a claim with "
                     "nothing behind it" % (rel, n, key[0] or "?", key[1] or "?"))
 
         if str(data.get("sealed") or "").strip() and path.name not in sealed_shas:
@@ -3445,7 +3529,7 @@ def release_boundary(root):
     """The git tag of the newest release that is out, or "".
 
     From the release notes first: a `released` REL-* note says which tag it
-    shipped as, which a tag pattern can only guess (walk-sheet.py's
+    shipped as, which a tag pattern can only guess (release-test.py's
     `last_release` reads them the same way). A repo with no such note falls
     back to the newest tag git can reach from HEAD.
     """
@@ -3702,6 +3786,7 @@ def validate(root, report):
     allowed_status = load_allowed_status(root)
     validate_ledgers(root, report, note_index)
     validate_acceptance_location(root, report, note_index)
+    validate_release_test_names(root, report, note_index)
     ledger_cleared = _ledger_cleared(root)
     validate_moved_verdict_fields(root, report, note_index)
     validate_vouched_ledgers(root, report, note_index)
@@ -3929,7 +4014,7 @@ def validate(root, report):
             # and features, where linked tests are the agreed instrument.
             if coll_name == "requirements":
                 terminal = None
-            # A check is verified BY BEING WALKED, and its verdict lives in
+            # A check is verified BY BEING TESTED BY HAND, and its verdict lives in
             # `mark:`. Demanding linked passing tests before it may be
             # retired would gate a human judgement on an automated one --
             # the collision ADR-0030 gives the type its own name to avoid.
@@ -3980,13 +4065,13 @@ def validate(root, report):
                         # feature's 62), so the guard stays until those are
                         # normalised too. It is deliberately keyed on the
                         # LEVEL and not on the id prefix -- after the merge a
-                        # walk and a pytest module share the `TST-` space.
+                        # manual check and a pytest module share the `TST-` space.
                         # ADR-0034: an acceptance test gates what it COVERS,
                         # like any other test. What differs is only what
                         # `settled` means -- a runner's exit code for an
-                        # executable test, a settled `mark:` for a walked one --
+                        # executable test, a settled `mark:` for a manual one --
                         # so the gate asks that question instead of demanding a
-                        # status the walked population never holds.
+                        # status the manual population never holds.
                         #
                         # This `continue` was ADR-0031's stopgap: acceptance
                         # tests rest at `active`, and a gate demanding `passing`
@@ -4175,18 +4260,18 @@ def validate(root, report):
                 "Run obligation counts (%s)" % (the_id, status, status, rel))
 
         #: **A check names what it verifies** (REQ-0060). Without a `FEAT-*` or
-        #: an `ISS-*` its section cannot be derived and it defaults to a
+        #: an `ISS-*` its test kind cannot be derived and it defaults to a
         #: behaviour claim -- which keeps it on the list, the safe direction,
         #: but by guessing rather than by reading.
         #:
-        #: Automated checks are exempt: `command:` decides their section
+        #: Automated checks are exempt: `command:` decides their test kind
         #: outright, so nothing about them is being guessed.
         if level == "acceptance" and not command:
             refs = extract_ids((fm or {}).get("covers"))
             if not any(r.startswith(("FEAT-", "ISS-")) for r in refs):
                 promotion_emit(report, "CHECK-SUBJECT", grandfathered, the_id)(
                     "CHECK-SUBJECT",
-                    "%s names no FEAT-* or ISS-* in covers:, so its section cannot be derived and it "
+                    "%s names no FEAT-* or ISS-* in covers:, so its test kind cannot be derived and it "
                     "defaults to a feature check -- name the feature it verifies, or the issue whose "
                     "fix it verifies (ADR-0039) (%s)" % (the_id, rel))
 
@@ -4231,8 +4316,8 @@ def validate(root, report):
                     % (the_id, status, rel))
             if not has_value((fm or {}).get("last_verified")):
                 if level == "acceptance":
-                    # An acceptance test records WHEN IT WAS WALKED in
-                    # `verdict_date:`, beside the `mark:` that says what the walk
+                    # An acceptance test records WHEN IT WAS TESTED in
+                    # `verdict_date:`, beside the `mark:` that says what the test
                     # found. Demanding `last_verified:` as well would be the same
                     # fact in two fields, which is the duplication ADR-0032 exists
                     # to remove -- and the migration would have had to synthesise
@@ -4265,7 +4350,7 @@ def validate(root, report):
                     # reported them as local divergence and they were one --force
                     # away from being lost." They were then lost, and the cost was
                     # paid downstream, where authoring a genuinely never-run manual
-                    # test required typing a verification date for a walk nobody had
+                    # test required typing a verification date for a test nobody had
                     # performed, plus a paragraph of prose explaining that the field
                     # did not mean what the field means.
                     continue
@@ -4296,7 +4381,7 @@ def validate(root, report):
     # validator error and no test failure.
     #
     # This closes it from the side where the population lives -- `area:` values
-    # naming no surface -- because nothing walked them at all. The other
+    # naming no surface -- because nothing checked them at all. The other
     # direction (a surface no check names) is NOT reported: that is the row
     # FEAT-0130 built the type to produce.
     #
@@ -4583,7 +4668,7 @@ def validate(root, report):
         age = (_today() - when).days
         if age <= staleness_days:
             continue
-        report.warn("ACCEPT-STALE", "%s is done and has asked for acceptance for %d days (threshold %d); walk its criteria in the cockpit or drop the request (%s)" % (
+        report.warn("ACCEPT-STALE", "%s is done and has asked for acceptance for %d days (threshold %d); go through its criteria in the cockpit or drop the request (%s)" % (
             feat_id, age, staleness_days, f_path.relative_to(root)))
 
     # -- ISS-0357 PHASE-CHILDREN / PHASE-BOXES: a closed phase must have closed

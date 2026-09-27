@@ -33,7 +33,7 @@ A feature is filed for later when it is created at `backlog`, or into a phase th
 - the frontmatter: `status: backlog`, `phase:` if a phase was named, `goal:`;
 - a `## Findings` section with what is already known, and a `## Open questions` section with what must be decided before it is built.
 
-Write no requirements, plan, tasks, risk notes or acceptance check yet. Run this whole checklist when its phase starts, or when someone starts the work. Reason: every later decision about a parked feature would otherwise be applied across all of those notes. In your-trainer, FEAT-0128 got eleven notes in two planner runs, 55 minutes and 184 tool calls, and the next decisions about it had to be applied across all eleven (project-os-dev ISS-0087). An acceptance check at `active` also joins the release's owed set at once, before anything exists to walk.
+Write no requirements, plan, tasks, risk notes or acceptance check yet. Run this whole checklist when its phase starts, or when someone starts the work. Reason: every later decision about a parked feature would otherwise be applied across all of those notes. In your-trainer, FEAT-0128 got eleven notes in two planner runs, 55 minutes and 184 tool calls, and the next decisions about it had to be applied across all eleven (project-os-dev ISS-0087). An acceptance check at `active` also joins the release's owed set at once, before anything exists to test.
 
 With `retention.derive_lists`, the phase note's `features:` list and the snapshot follow from the feature's `phase:` (`../../instructions/LIFECYCLE.md`). Without it, add the feature to the phase's `features:` by hand.
 
@@ -69,7 +69,7 @@ With `retention.derive_lists`, the phase note's `features:` list and the snapsho
    - If any trigger applies, run `../risk-scan/SKILL.md` and create/update `RISK-*` notes.
    - If no trigger applies, record the negative result (`../../instructions/LIFECYCLE.md`, "Risk scan triggers").
 9. **Emit one acceptance check beside the plan — by rule, not by judgement.**
-   - Create `plan/tests/TST-####-*.md` from `../../../docs/__templates__/test.md` with `level: acceptance` and `covers: ["[[FEAT-####]]"]`. No `command:` — a check somebody walks.
+   - Create `plan/tests/TST-####-*.md` from `../../../docs/__templates__/test.md` with `level: acceptance` and `covers: ["[[FEAT-####]]"]`. No `command:` — a check somebody tests by hand.
    - **This is not conditional.** It used to read *"if the feature requires verification"*, and the answer was decided per feature, at the end, under time pressure. Measured across the twelve project-os repos on 2026-08-20: **236 features reached a terminal status with no acceptance check covering them** — 147 of those in the three repos that hold a suite at all. A rule applied when somebody remembers is not a rule.
    - **The escape is `acceptance_exception:` on the feature**, and it is what makes the rule honest rather than a thing people disable. The cases that qualify are listed once in `../../../docs/__templates__/SCHEMAS.md`, `feature.md`. Say so once, in the note, at scaffold time when the reason is actually known.
    - `FEATURE-UNCOVERED` warns at close-out for anything that is neither covered nor excepted, so the scaffold and the validator ask the same question at the two ends of the work.

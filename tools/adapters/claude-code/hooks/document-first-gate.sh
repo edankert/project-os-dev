@@ -42,7 +42,7 @@ while [ -n "$DIR" ] && [ "$DIR" != "/" ] && [ "$DIR" != "." ]; do
   DIR=$(dirname "$DIR")
 done
 if [ -z "$PROJECT_DIR" ]; then
-  # The walk found no SNAPSHOT.yaml. Fall back to the session repo only for a
+  # The search up the tree found no SNAPSHOT.yaml. Fall back to the session repo only for a
   # relative path (src/main.py resolves there) or a path under it; an absolute
   # path outside every project-os repo, such as a scratchpad or another repo,
   # is not gated (project-os-dev ISS-0003, point 3).

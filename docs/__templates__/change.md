@@ -10,6 +10,10 @@ source: []
 commit: ""
 pr: ""
 impacts: []
+# The platforms this change altered, such as [android] or [android, ios]. A release test lists
+# its Impact lines only on these. Required once the Impact list names a screen and the project
+# keeps ledgers for more than one platform (SCHEMAS.md, change.md).
+platforms: []
 issues: []
 features: []
 reviewed_by: ""
@@ -25,9 +29,11 @@ related: []
 
 ## Impact
 
-<One line per screen this change altered: a `[[SUR-####]]` link, then a colon, then one sentence someone using the product would understand. A release walk's survey is built from these lines and reads nothing else (`tools/instructions/TESTING.md`, "The walk", rule 2). Draft them with an LLM from the diff and the repo's surface notes, then check that every id resolves.>
+<One line per screen this change altered: a `[[SUR-####]]` link, then a colon, then one sentence someone using the product would understand. A release test's what-changed list is built from these lines and reads nothing else (`tools/instructions/TESTING.md`, "The release test", rule 2). Draft them with an LLM from the diff and the repo's surface notes, then check that every id resolves.>
 
 - [[SUR-0000]]: <what the screen now shows or does, in the words a person using it would use>
+
+<Where one change altered the platforms differently, start a line with the platform: `- [ios] [[SUR-0000]]: ...`.>
 
 <A change that altered no screen writes the line below instead, with the reason. Keep one shape or the other, never both.>
 

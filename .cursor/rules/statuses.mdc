@@ -133,9 +133,9 @@ If a project needs different states, update this file and the templates in `../.
 
 ### `level: acceptance` — the acceptance half of the type
 
-An acceptance test is a `[[test]]` at `level: acceptance`: the thing a person walks. Three rules apply to it and nothing else:
+An acceptance test is a `[[test]]` at `level: acceptance`: the thing a person tests by hand. Three rules apply to it and nothing else:
 
-- **It rests at `active`, and its verdict is not on the note**: a walk records a dated event in the release ledger, per check, platform and release (`TAXONOMY.md`, "Acceptance outcomes (the ledger's vocabulary)"; ADR-0037). Reason: the verdict rules, the review gate and the `Run` obligation are keyed on `passing` and `ready`, so they never engage for a suite of hundreds of self-re-arming rows.
+- **It rests at `active`, and its verdict is not on the note**: a release test records a dated event in the release ledger, per check, platform and release (`TAXONOMY.md`, "Acceptance outcomes (the ledger's vocabulary)"; ADR-0037). Reason: the verdict rules, the review gate and the `Run` obligation are keyed on `passing` and `ready`, so they never engage for a suite of hundreds of self-re-arming rows.
 - **Adding a `command:` makes it automated** (`TESTING.md`, "When to create", rule 3).
 - **It carries no completeness gate of its own**: nothing is blocked by an acceptance test being `draft`.
 

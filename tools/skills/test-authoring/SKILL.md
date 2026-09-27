@@ -34,9 +34,9 @@ A `TST-*` note is the record of verification: the procedure, the verdict, and th
 3. Create/update the test note from `../../../docs/__templates__/test.md`:
    - Store the note per `../../instructions/LIFECYCLE.md` "Test storage".
    - For an **acceptance check** (`level: acceptance`, no `command:`):
-     - write it under the four headings in `../../instructions/TESTING.md`, "A check is walkable by a stranger" — Setup, Steps, Expect, Not this check. If someone walking it cannot tell what to do or what should happen, the check is wrong, not the walker.
+     - write it under the four headings in `../../instructions/TESTING.md`, "A check is testable by a stranger" — Setup, Steps, Expect, Not this check. If someone testing it cannot tell what to do or what should happen, the check is wrong, not the tester.
      - leave `status: active`: an acceptance check rests there, and its verdict is an event in the release ledger rather than a field on the note (`../../instructions/STATUSES.md` `[[test]]`)
-     - if it can only be walked after another check has passed, name that check in `after:` (`../../instructions/TESTING.md`, "The walk", rule 4). It orders the walk sheet and gates nothing.
+     - if it can only be tested after another check has passed, name that check in `after:` (`../../instructions/TESTING.md`, "The release test", rule 4). It orders the release test sheet and gates nothing.
    - For any other **manual** test:
      - write an unambiguous procedure and expected results
      - leave `status: ready` (defined, not yet run; `../../instructions/STATUSES.md` `[[test]]`) and `evidence: []`

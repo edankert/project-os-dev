@@ -83,7 +83,7 @@ def tst_exemption(tst_id, index):
     which is the ordinary case, while the validator let it through.
 
     Checked in this order because an acceptance check that has gained a
-    `command:` is automated and has no walk to settle (TESTING.md, "When to
+    `command:` is automated and has no manual result to settle (TESTING.md, "When to
     create", rule 3) -- the same order validate-docs.py uses.
     """
     path = index.get(tst_id)

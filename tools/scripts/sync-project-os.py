@@ -18,6 +18,9 @@ baseline (the template commit recorded in .project-os-sync at the last sync).
   gone upstream, never a template file    -> the project's own: not reported
   gone upstream, an unedited old version  -> removed (REMOVED)
   gone upstream, edited here              -> reported GONE, left in place
+  renamed upstream (manifest `renamed:`)  -> the old path is deleted, edited or not,
+                                             and the report names the new one
+  a `migrations:` script with work to do  -> its --apply command is printed
 
 Ownership per path comes from tools/sync/MANIFEST.yaml in the UPSTREAM template
 (more specific path wins). After a non-dry run the upstream HEAD sha is recorded
@@ -42,14 +45,18 @@ STATE_FILE = ".project-os-sync"
 
 
 def parse_manifest(path):
-    owners, excludes = {}, {}
+    """(owners, excludes, renamed, migrations) from the upstream manifest.
+
+    `renamed:` maps an old template path to the one that replaced it, and
+    `migrations:` lists scripts that move a repo's own files after a rename
+    (project-os-dev ADR-0050). An older sync ignores both sections.
+    """
+    owners, excludes, renamed, migrations = {}, {}, {}, []
     section = None
     for line in path.read_text(encoding="utf-8").splitlines():
-        if re.match(r"^paths:\s*$", line):
-            section = "paths"
-            continue
-        if re.match(r"^excludes:\s*$", line):
-            section = "excludes"
+        top = re.match(r"^(paths|excludes|renamed|migrations):\s*$", line)
+        if top:
+            section = top.group(1)
             continue
         if re.match(r"^\S", line):
             section = None
@@ -63,7 +70,15 @@ def parse_manifest(path):
             excludes[m.group(1)] = re.findall(r'"([^"]+)"', m.group(2)) or [
                 p.strip().strip("'") for p in m.group(2).split(",") if p.strip()
             ]
-    return owners, excludes
+            continue
+        m = re.match(r'^\s+"([^"]+)":\s*"([^"]+)"\s*(#.*)?$', line)
+        if section == "renamed" and m:
+            renamed[m.group(1)] = m.group(2)
+            continue
+        m = re.match(r'^\s+-\s*"([^"]+)"\s*(#.*)?$', line)
+        if section == "migrations" and m:
+            migrations.append(m.group(1))
+    return owners, excludes, renamed, migrations
 
 
 def ownership_for(rel, owners):
@@ -235,14 +250,42 @@ def main(argv=None):
     if src == root:
         print("sync-project-os: upstream and downstream are the same directory", file=sys.stderr)
         return 2
-    owners, excludes = parse_manifest(src / "tools" / "sync" / "MANIFEST.yaml")
+    owners, excludes, renamed, migrations = parse_manifest(src / "tools" / "sync" / "MANIFEST.yaml")
     state = read_state(root)
     baseline = args.baseline or state.get("baseline_sha") or None
     keep_local = set(state.get("keep_local") or [])
 
     copied, updated, seeded, uptodate, kept = [], [], [], [], []
     diverged, merge_pending, gone, removed = [], [], [], []
+    retired = []
     processed = set()
+
+    # A path the template renamed goes whether or not it was edited here: the
+    # template reads only the new name, and keeping a second name alive is the
+    # period of two names project-os-dev ADR-0050 rules out. An edited copy is
+    # still in this repo's git history. Handled first, so the deletion pass
+    # below does not also report it as GONE.
+    for old in sorted(renamed):
+        target = root / old.rstrip("/")
+        files = ([target] if target.is_file() else
+                 sorted(q for q in target.rglob("*") if q.is_file()) if target.is_dir() else [])
+        for f in files:
+            rel = f.relative_to(root).as_posix()
+            if rel in keep_local:
+                kept.append(rel)
+                continue
+            processed.add(rel)
+            edited = blob_id(f.read_bytes()) not in template_history(src, rel)
+            new = renamed[old] + rel[len(old):] if old.endswith("/") else renamed[old]
+            retired.append((rel, new, edited))
+            if not args.dry_run:
+                f.unlink()
+        if target.is_dir() and not args.dry_run:
+            for folder in sorted((q for q in target.rglob("*") if q.is_dir()), reverse=True):
+                if not any(folder.iterdir()):
+                    folder.rmdir()
+            if not any(target.iterdir()):
+                target.rmdir()
 
     def sync_file(rel, owner):
         if rel in processed:
@@ -326,6 +369,8 @@ def main(argv=None):
                     rel = f.relative_to(root).as_posix()
                     if ".git" in f.parts or excluded(rel, rel_base, excludes):
                         continue
+                    if rel in processed:
+                        continue
                     if ownership_for(rel, owners) == "template" and not (src / rel).is_file():
                         # FEAT-0037 review: GONE listed ~150 files a person had
                         # to read, most of them the repo's own scripts. A file
@@ -377,6 +422,29 @@ def main(argv=None):
         print("%sUpstream no longer ships, and the copy here was edited (left in place; remove by hand if obsolete):" % prefix)
         for rel in gone:
             print("%s  GONE  %s" % (prefix, rel))
+    if retired:
+        print("%sRenamed upstream: the old names are removed, and nothing reads them any more:" % prefix)
+        for rel, new, edited in retired:
+            print("%s  RENAMED  %s -> %s%s" % (prefix, rel, new,
+                                                " (it had local edits; git history keeps them)" if edited else ""))
+
+    # A script that moves this repo's own files after a rename. The upstream
+    # copy is run, because on a dry run the downstream one may not exist yet;
+    # it is told this repo's root and changes nothing (`--check`).
+    for rel in migrations:
+        script = src / rel
+        if not script.is_file():
+            continue
+        r = subprocess.run([sys.executable, str(script), "--repo-root", str(root), "--check"],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            print("%sMIGRATE: this repo's own files still use names the template changed. Run:" % prefix)
+            print("%s  python3 %s --apply" % (prefix, rel))
+            lines = (r.stdout or "").splitlines()[1:]
+            for line in lines[:10]:
+                print("%s  %s" % (prefix, line.strip()))
+            if len(lines) > 10:
+                print("%s  ... and %d more; the command lists them all" % (prefix, len(lines) - 10))
 
     if not args.dry_run:
         try:

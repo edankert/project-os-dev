@@ -19,7 +19,7 @@ Projects may override; if you do, update templates and any automation that assum
 **A surface is a screen unless its `kind` says otherwise.** A `SUR-*` note names the place a person opens, and a check's `area:` names one of them. The name is written once, in the surface note, instead of retyped on every check that touches it — 94 distinct `area:` strings across one repo's 581 checks is what the type exists to end.
 
 - `screen` — a place a person navigates to. **The default**, and the value a new surface note is born with.
-- `flow` — a sequence across screens, named because it is walked as one thing
+- `flow` — a sequence across screens, named because it is tested as one thing
 - `subsystem` — a behaviour with no single screen (sync, licensing, physics)
 - `surface-less` — the honest answer where a check is about the record, the build or the repo rather than the product
 
@@ -27,24 +27,24 @@ Projects may override; if you do, update templates and any automation that assum
 
 ### The four rules (project-os-dev ADR-0044)
 
-The first large corpus built its surfaces by merging test categories, so its walk sheets name "Hardware", which spans five screens, and never name the screen a person opens. These four rules are what that cost. They are stated here and nowhere else.
+The first large corpus built its surfaces by merging test categories, so its release test sheets name "Hardware", which spans five screens, and never name the screen a person opens. These four rules are what that cost. They are stated here and nowhere else.
 
 1. **A state is not a surface.** Data-only mode, the pacer switched on and the FREE tier are states of a screen; the screen is the surface. your-trainer's equipment panel in data-only mode is the equipment panel, not a second surface. Where a screenshot tool captures a state separately, its key maps to the surface plus the state — `gallery` below.
 2. **A dialog, sheet or panel is a child surface.** It gets its own `SUR-*` note with `parent:` naming the screen it opens from, and a check about the dialog names the dialog. your-trainer's HR-zone interval sheet is a child of the ride cockpit.
-3. **A check that walks several screens names their parent screen.** Where the screens share no parent, the check names the screen it starts on. A check that opens Workouts and then rides in the cockpit names whichever of the two it starts on.
+3. **A check that crosses several screens names their parent screen.** Where the screens share no parent, the check names the screen it starts on. A check that opens Workouts and then rides in the cockpit names whichever of the two it starts on.
 4. **A screen placed differently per platform is still one surface.** The equipment panel sits on the Workouts screen on Android and inside an Equipment Hub on iOS. One `SUR-*` note covers both, and its "What it is" paragraph says where each platform puts it.
 
 **The 12 to 15 surface target applies to top-level screens only** (project-os-cockpit FEAT-0130). Children — dialogs, sheets, panels, sections — sit under their parent and do not count toward it.
 
 ## `gallery` (surfaces)
 
-A surface note lists the screenshot keys that capture it, so a walk sheet can show the screen as it was at the last release beside the screen as it is now:
+A surface note lists the screenshot keys that capture it, so a release test sheet can show the screen as it was at the last release beside the screen as it is now:
 
 ```yaml
 gallery: [equipment-hub, "equipment-hub-dataonly:data-only"]
 ```
 
-Each entry is a capture key, or `key:state` where that key captures the screen in one state. The keys are whatever the repo's own gallery command produces; where the walk sheet looks for the image files is `TESTING.md`, "The walk", rule 2.
+Each entry is a capture key, or `key:state` where that key captures the screen in one state. The keys are whatever the repo's own gallery command produces; where the release test sheet looks for the image files is `TESTING.md`, "The release test", rule 2.
 
 ## `status` (surfaces)
 The allowed values are stated in `STATUSES.md`, `[[surface]]`, which the validator reads.
@@ -79,8 +79,8 @@ Project-defined free text label, but keep it stable. Examples:
 
 ## `level` (tests)
 - `unit`, `integration`, `system`, `e2e`, `acceptance`
-- **`acceptance` is the discriminator of the merged type (ADR-0031)**: a test at this level is the thing a person walks — it rests at `status: active`, its verdict is in the release ledger ("Acceptance outcomes (the ledger's vocabulary)" below), and it carries the acceptance fields below. Everything else on the scale is executable. The field has always been here; since ADR-0031 it carries the distinction the retired `check` type used to.
-- A test moves along the scale rather than between types; how a walk becomes automated is stated once in `TESTING.md`, "When to create", rule 3. (`covered_by:` was removed with the ledger model; `SCHEMAS.md`, "Acceptance fields".)
+- **`acceptance` is the discriminator of the merged type (ADR-0031)**: a test at this level is the thing a person tests by hand — it rests at `status: active`, its verdict is in the release ledger ("Acceptance outcomes (the ledger's vocabulary)" below), and it carries the acceptance fields below. Everything else on the scale is executable. The field has always been here; since ADR-0031 it carries the distinction the retired `check` type used to.
+- A test moves along the scale rather than between types; how a manual check becomes automated is stated once in `TESTING.md`, "When to create", rule 3. (`covered_by:` was removed with the ledger model; `SCHEMAS.md`, "Acceptance fields".)
 
 ## `scope` (tests)
 - `feature`, `system`
@@ -89,26 +89,28 @@ Project-defined free text label, but keep it stable. Examples:
 
 The verdict on an acceptance test is **an event in a per-release, single-platform ledger**, not a field on the note (ADR-0037). It is a fact about *(check × platform × release)* and a scalar cannot hold a three-tuple — measured before deciding: 579 of `your-trainer`'s 581 acceptance notes carried no platform at all, while every one of its 513 passes was earned on Android.
 
-| mark | means | gate | survives the seal |
+| result | means | gate | survives the seal |
 |---|---|---|---|
-| `pass` | walked, and it held | clears | yes, until invalidated |
+| `pass` | tested, and it held | clears | yes, until invalidated |
 | `partial` | some clauses hold, some do not | clears | yes, until invalidated |
 | `na` | **cannot apply here** — no such surface on this platform | clears | yes, until invalidated |
 | `excused` | **not done this cycle, by decision** — out of scope, low risk, no time | clears | **no — expires with its release** |
 | `blocked` | **could not be run right now** — rig down, device unavailable | **blocks** | no |
-| `question` | walked, and the *check* is not understood | **blocks** | no |
-| `fail` | walked, and it failed | **blocks** | no |
+| `question` | tested, and the *check* is not understood | **blocks** | no |
+| `fail` | tested, and it failed | **blocks** | no |
 | *(no entry)* | nobody has run it on this platform | **blocks** | — |
 
-**Every mark but `pass` is refused without a reason.** A check that clears the gate without being run, or blocks it after being run, is a claim about the release; the claim carries its evidence or it is refused.
+A ledger entry stores its result under the key `result`. An entry written before 2026-09-27 stores it under `mark`, and every reader accepts both for good, because a sealed ledger is never rewritten (project-os-dev ADR-0050).
+
+**Every result but `pass` is refused without a reason.** A check that clears the gate without being run, or blocks it after being run, is a claim about the release; the claim carries its evidence or it is refused.
 
 **"Not run" is three answers, not one, and only two of them clear.** `na` and `excused` are *decisions* somebody made about this release; `blocked` is an *accident* that will be gone next week, and a gate that clears because the rig was down clears on whatever happens to be broken that day.
 
 **`na` and `excused` differ in exactly one property and it is the one that matters: whether the exception comes back.** `na` is about the check and the platform, so re-asking it every release is the maintained-matrix failure this design removes. `excused` is about the check, the platform **and this release** — and a field on a note cannot hold *"expires with its release"* at any price, which is how ADR-0029's per-release exception silently became permanent when its mark moved from `[!]` to `[-]`.
 
-**There is no "not yet walked" value.** You do not record that you did not do something: no entry for a platform means owed on that platform, so adding a platform makes every check immediately owed there with no schema change and no backfill.
+**There is no "not yet tested" value.** You do not record that you did not do something: no entry for a platform means owed on that platform, so adding a platform makes every check immediately owed there with no schema change and no backfill.
 
-**An invalidation is an event, not a mark.** `{check, invalidated_by, date}` sitting after the verdict it overtakes — which is why `rerun` is not in this table.
+**An invalidation is an event, not a result.** `{check, invalidated_by, date}` placed after the verdict it overtakes — which is why `rerun` is not in this table.
 
 ### Legacy values, read forever and never written
 

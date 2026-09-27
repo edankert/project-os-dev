@@ -34,7 +34,7 @@ from pathlib import Path
 template, repo = Path(sys.argv[1]), Path(sys.argv[2])
 spec = importlib.util.spec_from_file_location("_s", template / "tools/scripts/sync-project-os.py")
 m = importlib.util.module_from_spec(spec); spec.loader.exec_module(m)
-owners, excludes = m.parse_manifest(template / "tools/sync/MANIFEST.yaml")
+owners, excludes, *_ = m.parse_manifest(template / "tools/sync/MANIFEST.yaml")
 for p in template.rglob("*"):
     if not p.is_file():
         continue

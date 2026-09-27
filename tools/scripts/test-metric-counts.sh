@@ -29,7 +29,7 @@ def add(nid, name, **fm):
     p = note(name, id=nid, **fm); idx[nid] = (p, dict(fm, id=nid)); cl[nid] = [p]
 add("TST-0001", "TST-0001-A", status="passing", command="make test")
 add("TST-0002", "TST-0002-B", status="passing")
-add("TST-0003", "TST-0003-C", status="active", level="acceptance", command="make walk")
+add("TST-0003", "TST-0003-C", status="active", level="acceptance", command="make accept")
 add("TASK-0001", "TASK-0001-D", status="done", verification_waiver="a reason")
 add("TASK-0002", "TASK-0002-E", status="done")
 items = {"tasks": {"TASK-0002": {"status": "done", "verification_waiver": "in the snapshot"},

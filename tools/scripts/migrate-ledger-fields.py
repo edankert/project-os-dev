@@ -89,7 +89,8 @@ def verdict(field, value, held):
         if text not in MARKS:
             return False, "mark `%s` has no ledger equivalent" % text
         want = MARKS[text]
-        if want is None or any(e.get("mark") == want for e in entries):
+        # `result`, or `mark` in an entry written before it (project-os-dev ADR-0050).
+        if want is None or any((e.get("result") or e.get("mark")) == want for e in entries):
             return True, ""
         return False, "the ledger has no `%s` for it" % want
     if empty(value):

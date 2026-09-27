@@ -68,7 +68,7 @@ for arg in "$@"; do
 done
 
 # Which repo the caller means. validate-docs.py works it out for itself; the
-# walk check below is a second process and has to be told.
+# release test check below is a second process and has to be told.
 repo_root="$ROOT"
 expect_root=""
 quiet=""
@@ -89,34 +89,35 @@ notes=0
 PROJECT_OS_VALIDATE_STEP=1 python3 "$SCRIPT_DIR/validate-docs.py" "$@" || notes=$?
 status=$notes
 
-# A sitting's procedure is authored text that cites acceptance checks, and a
-# ledger event can make it stale without anyone editing it (see
-# tools/instructions/TESTING.md, "The walk", rule 9). So it is checked here,
-# where pre-commit and CI both look, rather than only when somebody remembers
-# to run the generator. Silent and exit 0 in a repo with no ledger, no
-# procedures, or no walk-sheet.py.
+# A release test section's procedure is authored text that cites acceptance
+# checks, and a ledger event can make it stale without anyone editing it (see
+# tools/instructions/TESTING.md, "The release test", rule 9). So it is checked
+# here, where pre-commit and CI both look, rather than only when somebody
+# remembers to run the generator. Silent and exit 0 in a repo with no ledger,
+# no procedures, or no release-test.py.
 #
-# --quiet always: the walk check also REPORTS things that are nobody's mistake
-# — a sitting nobody has scripted yet, a change note written before the Impact
-# rule existed. Printing those on every commit is how validator output stops
-# being read. They are the worklist `walk-sheet.py --check`, release-prep and
-# release-verification print; here, only a real disagreement speaks.
-walk=""
-if [[ -f "$SCRIPT_DIR/walk-sheet.py" && -f "$repo_root/SNAPSHOT.yaml" ]]; then
-  walk=0
-  python3 "$SCRIPT_DIR/walk-sheet.py" --check --repo-root "$repo_root" --quiet || walk=$?
-  [[ $walk -ne 0 ]] && status=$walk
+# --quiet always: the release test check also REPORTS things that are nobody's
+# mistake — a section nobody has scripted yet, a change note written before the
+# Impact rule existed. Printing those on every commit is how validator output
+# stops being read. They are the worklist `release-test.py --check`,
+# release-prep and release-verification print; here, only a real disagreement
+# speaks.
+procedures=""
+if [[ -f "$SCRIPT_DIR/release-test.py" && -f "$repo_root/SNAPSHOT.yaml" ]]; then
+  procedures=0
+  python3 "$SCRIPT_DIR/release-test.py" --check --repo-root "$repo_root" --quiet || procedures=$?
+  [[ $procedures -ne 0 ]] && status=$procedures
 fi
 
 # The last line is the answer for every step above. The validator used to print
-# "validate-docs: OK" before the walk check ran, and a session that read the
-# output rather than the exit status took that OK for the whole result while
-# the walk check had failed (project-os-dev ISS-0089).
+# "validate-docs: OK" before the procedure check ran, and a session that read
+# the output rather than the exit status took that OK for the whole result
+# while the procedure check had failed (project-os-dev ISS-0089).
 outcome() { case "$1" in 0) echo OK ;; 1) echo FAIL ;; *) echo "could not run, exit $1" ;; esac; }
 if [[ $status -ne 0 ]]; then
-  echo "validate-docs: FAIL (notes: $(outcome "$notes"); walk procedures: $([[ -n "$walk" ]] && outcome "$walk" || echo "not checked"))"
+  echo "validate-docs: FAIL (notes: $(outcome "$notes"); release test procedures: $([[ -n "$procedures" ]] && outcome "$procedures" || echo "not checked"))"
 elif [[ -z "$quiet" ]]; then
-  echo "validate-docs: OK ($(cd "$repo_root" 2>/dev/null && pwd -P || echo "$repo_root"): notes$([[ -n "$walk" ]] && echo " and walk procedures"))"
+  echo "validate-docs: OK ($(cd "$repo_root" 2>/dev/null && pwd -P || echo "$repo_root"): notes$([[ -n "$procedures" ]] && echo " and release test procedures"))"
 fi
 
 exit $status

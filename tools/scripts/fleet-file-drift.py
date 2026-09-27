@@ -107,7 +107,7 @@ def main():
     if not manifest.is_file():
         print("fleet-file-drift: no tools/sync/MANIFEST.yaml in %s" % TEMPLATE, file=sys.stderr)
         return 2
-    owners, excludes = sync.parse_manifest(manifest)
+    owners, excludes, *_ = sync.parse_manifest(manifest)
     rels = template_files(sync, owners, excludes)
 
     if args.repo:

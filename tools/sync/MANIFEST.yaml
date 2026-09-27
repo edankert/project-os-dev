@@ -73,3 +73,19 @@ paths:
   ".cursor/rules/": generated
 excludes:
   "tools/cockpit/": [".venv", "*.egg-info", "__pycache__", ".pytest_cache"]
+# Paths the template renamed: old -> new. A sync deletes the old path from a
+# consumer, edited or not, and says what replaced it. project-os-dev ADR-0050
+# renamed the walk to the release test, with no period in which both names work.
+renamed:
+  "tools/scripts/walk-sheet.py": "tools/scripts/release-test.py"
+  "tools/scripts/walk-tags.py": "tools/scripts/release-test-tags.py"
+  "tools/scripts/test-walk-sheet.sh": "tools/scripts/test-release-test.sh"
+  "tools/scripts/test-walk-preparation.py": "tools/scripts/test-release-test-preparation.py"
+  "docs/__templates__/walk.md": "docs/__templates__/release-test.md"
+  "tools/skills/walk-procedure/": "tools/skills/release-test-procedure/"
+  ".claude/skills/walk-procedure/": ".claude/skills/release-test-procedure/"
+  ".agents/skills/walk-procedure/": ".agents/skills/release-test-procedure/"
+# Scripts that move a consumer's own files after a rename. The sync runs each
+# with --check and, when it has work to do, prints the command that does it.
+migrations:
+  - "tools/scripts/migrate-release-test-names.py"

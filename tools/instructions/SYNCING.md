@@ -4,7 +4,7 @@ id: INSTR-SYNCING
 status: active
 owner: group:maintainers
 created: 2026-01-29
-updated: 2026-07-17
+updated: 2026-09-27
 tags: [instructions, sync]
 ---
 
@@ -29,6 +29,8 @@ Ownership is declared per path in `../sync/MANIFEST.yaml` (`template` / `merge` 
 - target equals the new template version → up to date.
 - target equals the baseline version → clean fast-forward, overwritten.
 - target differs from both → **locally modified**: skipped and reported for hand-merge (`--force` overrides; `merge`-owned paths like `docs/PHASES.md`, `docs/phases/`, `docs/__templates__/SCHEMAS.md` are expected to diverge in repos that keep real content there and are only ever reported).
+
+When the template renames a file, the manifest's `renamed:` table maps the old path to the new one. The sync deletes the old path from the repo, edited or not, and reports it as RENAMED with its new name; an edited copy is still in the repo's git history. Keeping the old name as well would leave two names for one thing (project-os-dev ADR-0050). The manifest's `migrations:` list names scripts that move a repo's own files after such a rename. The sync runs each with `--check` and, when one has work to do, prints its `--apply` command. A sync runs the repo's own copy of `sync-project-os.py`, so the sync that first brings these sections in runs without them: its validator run then reports each old name as OLD-NAME, with the same command.
 
 On the first manifest-based sync no baseline exists, so every locally different file reports as diverged; pass `--baseline <sha>` (the template commit the repo last synced from) to resolve fast-forwards mechanically. After a non-dry run the upstream HEAD is recorded as the new baseline and derived adapter artifacts are regenerated automatically.
 

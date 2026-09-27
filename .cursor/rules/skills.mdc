@@ -24,6 +24,8 @@ Before performing a project-os lifecycle operation (intake, scaffold, close-out,
 - `tools/skills/project-derive/SKILL.md`
 - `tools/skills/project-init/SKILL.md`
 - `tools/skills/release-prep/SKILL.md`
+- `tools/skills/release-test-prep/SKILL.md`
+- `tools/skills/release-test-procedure/SKILL.md`
 - `tools/skills/release-verification/SKILL.md`
 - `tools/skills/risk-mitigation-planning/SKILL.md`
 - `tools/skills/risk-scan/SKILL.md`
@@ -31,5 +33,4 @@ Before performing a project-os lifecycle operation (intake, scaffold, close-out,
 - `tools/skills/status-transition/SKILL.md`
 - `tools/skills/task-breakdown/SKILL.md`
 - `tools/skills/test-authoring/SKILL.md`
-- `tools/skills/walk-procedure/SKILL.md`
 - `tools/skills/workflow-authoring/SKILL.md`
