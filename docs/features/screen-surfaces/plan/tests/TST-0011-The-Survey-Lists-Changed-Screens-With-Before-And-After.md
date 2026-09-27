@@ -6,12 +6,12 @@ title: "The survey lists the screens change notes named since the last release t
 status: active
 owner: user:edwin
 created: 2026-09-14
-updated: 2026-09-14
+updated: 2026-09-27
 source: ["[[ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure]] decision 1", "[[TASK-0118-The-Survey-Comes-From-Change-Notes-And-Captures]]"]
 scope: feature
 level: acceptance
-entrypoint: "../project-os/tools/scripts/test-walk-sheet.sh"
-command: "bash ../project-os/tools/scripts/test-walk-sheet.sh"
+entrypoint: "../project-os/tools/scripts/test-release-test.sh"
+command: "bash ../project-os/tools/scripts/test-release-test.sh"
 last_verified: ""
 covers: ["[[FEAT-0030-A-Surface-Is-A-Screen-And-A-Change-Names-Its-Screens]]"]
 issues: []
@@ -31,7 +31,7 @@ after: []
 
 ## Setup
 
-The template repo checked out beside this one. The harness is `tools/scripts/test-walk-sheet.sh` there, and it is this note's `command:`, so the note records no verdict (ADR-0025).
+The template repo checked out beside this one. The harness is `tools/scripts/test-release-test.sh` there (`test-walk-sheet.sh` until 2026-09-27), and it is this note's `command:`, so the note records no verdict (ADR-0025).
 
 Its survey fixture is a **real git repository**, because "the last release tag" and "added since it" are git questions and a fixture that faked them would be testing the fake. It holds a released `REL-*` note carrying `tag: v1.0`, a tagged commit, one change note written before the tag and four after it, three surface notes (one a dialog with `parent:`), and a gallery with a before and after picture for one capture key and an after picture only for another.
 

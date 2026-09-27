@@ -6,12 +6,12 @@ title: "A tag-only walk line prints the check's current words, so rewording the 
 status: active
 owner: user:edwin
 created: 2026-09-26
-updated: 2026-09-26
+updated: 2026-09-27
 source: ["[[TASK-0175]]"]
 scope: system
 level: integration
-entrypoint: "../project-os/tools/scripts/test-walk-sheet.sh"
-command: "bash ../project-os/tools/scripts/test-walk-sheet.sh"
+entrypoint: "../project-os/tools/scripts/test-release-test.sh"
+command: "bash ../project-os/tools/scripts/test-release-test.sh"
 covers: ["[[ISS-0088-Editing-A-Check-Breaks-Every-Walk-That-Quotes-It]]"]
 tasks: ["[[TASK-0175]]"]
 issues: ["[[ISS-0088-Editing-A-Check-Breaks-Every-Walk-That-Quotes-It]]"]
@@ -29,14 +29,14 @@ ISS-0088: rewording a check broke every walk that quoted it. ADR-0049 lets a lin
 
 ## Procedure
 
-The last section of `bash tools/scripts/test-walk-sheet.sh` in `~/Dev/repos/project-os`, on the procedure fixture the rest of that script uses.
+The last section of `bash tools/scripts/test-release-test.sh` in `~/Dev/repos/project-os`, on the procedure fixture the rest of that script uses.
 
 - `--check` accepts a tag-only line. The sheet prints the check's words for it with the tag, only the Expect line paired with that step, and not the bare tag line. The payload carries the words, the tag and the owed part.
 - Rewording the check breaks a procedure that quotes it (the ISS-0088 case) and does not break the tag-only one, whose sheet prints the new words.
 - A check whose steps and Expect lines do not pair prints all its Expect lines for a tag.
-- `walk-tags.py --apply` rewrites a line whose tag prints exactly its quote, keeps a line quoting one of several unpaired Expect lines, and the result passes `--check`.
-- In a git repo, rewording that unpaired line breaks the quoting line; `walk-tags.py --refresh --apply` re-quotes it from the check's current Expect, and `--check` passes again.
+- `release-test-tags.py --apply` rewrites a line whose tag prints exactly its quote, keeps a line quoting one of several unpaired Expect lines, and the result passes `--check`.
+- In a git repo, rewording that unpaired line breaks the quoting line; `release-test-tags.py --refresh --apply` re-quotes it from the check's current Expect, and `--check` passes again.
 
 ## Expected results
 
-- Exit 0: 176 of 176, 2026-09-26.
+- Exit 0: 179 of 179, 2026-09-27 (TASK-0187). 176 of 176 on 2026-09-26.

@@ -6,12 +6,12 @@ title: "Declared preparation is kept in the walk, and a declaration that is brok
 status: active
 owner: user:edwin
 created: 2026-09-24
-updated: 2026-09-24
+updated: 2026-09-27
 source: ["[[TASK-0125-Retain-Declared-Preparation-And-Relevant-Setup]]"]
 scope: feature
 level: unit
-entrypoint: "../project-os/tools/scripts/test-walk-preparation.py"
-command: "python3 -B ../project-os/tools/scripts/test-walk-preparation.py"
+entrypoint: "../project-os/tools/scripts/test-release-test-preparation.py"
+command: "python3 -B ../project-os/tools/scripts/test-release-test-preparation.py"
 features: ["[[FEAT-0033-A-Walk-Keeps-Required-Preparation]]"]
 requirements: ["[[REQ-0031-Preparation-Is-Declared-And-Validated]]"]
 tasks: ["[[TASK-0125]]"]
@@ -25,11 +25,11 @@ related: ["[[TST-0011]]"]
 
 ## Purpose
 
-`test-walk-preparation.py` is the fixture suite for rule 9's declared preparation (TESTING.md, "The walk"). It builds one procedure with prerequisites, scoped setup, platform steps, state, captures, a timer and readiness, and checks what the sheet keeps. It ran in the template's CI from 2026-09-18, but no note here carried its command, so `run-tests.py` never ran it in this repo.
+`test-release-test-preparation.py` (`test-walk-preparation.py` until 2026-09-27) is the fixture suite for rule 9's declared preparation (TESTING.md, "The release test"). It builds one procedure with prerequisites, scoped setup, platform steps, state, captures, a timer and readiness, and checks what the sheet keeps. It ran in the template's CI from 2026-09-18, but no note here carried its command, so `run-tests.py` never ran it in this repo.
 
 ## Procedure
 
-`python3 -B -m unittest tools/scripts/test-walk-preparation.py` in `~/Dev/repos/project-os`. Cross-repo, like [[TST-0011]].
+`python3 -B tools/scripts/test-release-test-preparation.py` in `~/Dev/repos/project-os`. Cross-repo, like [[TST-0011]].
 
 1. Transitive prerequisites are kept in authored order and marked as preparation, with no verdict.
 2. Only setup that a kept step needs is printed, including when the left-out step runs on the same platform.
@@ -40,5 +40,5 @@ related: ["[[TST-0011]]"]
 
 ## Expected results
 
-- Exit 0: 20 of 20, 2026-09-24, after both review rounds.
+- Exit 0: 21 of 21, 2026-09-27 (TASK-0187). 20 of 20 on 2026-09-24, after both review rounds.
 - Exit 1: the unittest failure report.

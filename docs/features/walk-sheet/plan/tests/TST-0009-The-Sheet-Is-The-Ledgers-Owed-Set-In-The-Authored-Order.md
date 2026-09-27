@@ -6,12 +6,12 @@ title: "The walk sheet is the ledger's owed set, in WALK.md's order, with every 
 status: active
 owner: user:edwin
 created: 2026-09-13
-updated: 2026-09-13
+updated: 2026-09-27
 source: ["[[ADR-0029-The-Walk-Sheet-Is-Derived-And-Its-Order-Is-Authored-Once]]", "[[TASK-0113-The-Generator-And-Its-Fixture-Test]]"]
 scope: feature
 level: acceptance
-entrypoint: "../project-os/tools/scripts/test-walk-sheet.sh"
-command: "bash ../project-os/tools/scripts/test-walk-sheet.sh"
+entrypoint: "../project-os/tools/scripts/test-release-test.sh"
+command: "bash ../project-os/tools/scripts/test-release-test.sh"
 covers: ["[[FEAT-0029-The-Walk-Sheet]]"]
 requirements: ["[[REQ-0028-A-Release-Presents-Its-Owed-Checks-As-A-Walk]]"]
 features: ["[[FEAT-0029-The-Walk-Sheet]]"]
@@ -32,7 +32,7 @@ related: ["[[ADR-0027-An-Acceptance-Check-Is-Walkable-By-A-Stranger]]", "[[ISS-0
 
 ## Procedure
 
-`bash ../project-os/tools/scripts/test-walk-sheet.sh`, four fixture repos under a tempdir. The first has ten acceptance checks across three areas, one working ledger and a WALK.md with two sittings; the others are described below. 80 assertions:
+`bash ../project-os/tools/scripts/test-release-test.sh`, four fixture repos under a tempdir. The first has ten acceptance checks across three areas, one working ledger and a WALK.md with two sittings; the others are described below. 80 assertions:
 
 1. **Rows.** The `command:` check, the passed check and the excused check are absent; the invalidated and never-walked checks are present; the header counts rows and sittings and names ISS-0060 (1 to 7).
 2. **Survey.** It names the invalidated check's surface, the task that reopened it with that task's title, the quoted `## Acceptance checks reopened` section and WALK.md's gallery command, and it leaves out a surface nobody invalidated (8 to 12).
@@ -48,7 +48,7 @@ related: ["[[ADR-0027-An-Acceptance-Check-Is-Walkable-By-A-Stranger]]", "[[ISS-0
 
 ## Expected results
 
-- Exit 0, `test-walk-sheet: 80 assertions, 0 failure(s)`.
+- Exit 0, `test-release-test: 179 assertions, 0 failure(s)`, 2026-09-27 (TASK-0187). The script was `test-walk-sheet.sh`, 80 assertions, when this note was written.
 
 ## Evidence (fill after running)
 

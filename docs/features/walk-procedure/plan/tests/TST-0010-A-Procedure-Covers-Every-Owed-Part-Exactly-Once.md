@@ -6,12 +6,12 @@ title: "A procedure covers every owed part exactly once, the validator refuses o
 status: active
 owner: user:edwin
 created: 2026-09-14
-updated: 2026-09-14
+updated: 2026-09-27
 source: ["[[ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure]]", "[[TASK-0120-The-Procedure-Validator]]"]
 scope: feature
 level: acceptance
-entrypoint: "../project-os/tools/scripts/test-walk-sheet.sh"
-command: "bash ../project-os/tools/scripts/test-walk-sheet.sh"
+entrypoint: "../project-os/tools/scripts/test-release-test.sh"
+command: "bash ../project-os/tools/scripts/test-release-test.sh"
 last_verified: ""
 covers: ["[[FEAT-0031-A-Sitting-Is-Walked-From-A-Written-Procedure]]"]
 issues: []
@@ -31,7 +31,7 @@ after: []
 
 ## Setup
 
-The template repo checked out beside this one. The harness is `tools/scripts/test-walk-sheet.sh` there, and it is this note's `command:`, so the note records no verdict (ADR-0025): a red run is a red build.
+The template repo checked out beside this one. The harness is `tools/scripts/test-release-test.sh` there (`test-walk-sheet.sh` until 2026-09-27), and it is this note's `command:`, so the note records no verdict (ADR-0025): a red run is a red build.
 
 The procedure fixtures it builds: one repo with two sittings, seven acceptance checks (three with numbered steps, one with unheaded prose, one retired, one already passed, one stating no expected result), a ledger, a `WALK.md`, and one procedure covering every owed part once. Each defect below is that repo copied with **one line of the procedure changed**, so an assertion that passes is pinned to the rule it names rather than to a fixture broken in several ways at once.
 
