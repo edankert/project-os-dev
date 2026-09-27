@@ -40,7 +40,9 @@ The redesigned release test answers this issue, and [[TASK-0190]] closes it. On 
 - **Generator half, first fix: done.** [[TASK-0162]], template `cd50653`, prints each kept step under its number in the procedure, as Edwin chose on 2026-09-25 (option 1). TASK-0190 replaces that numbering with the section's own.
 - **Cockpit half: no longer a separate change.** The handoff below asked the cockpit's walk page to show the procedure's number. The page is being rebuilt as project-os-cockpit FEAT-0155, the release test page in the Tests pane, which reads TASK-0190's numbers directly. The handoff is kept for the record and should not be applied on its own.
 
-This issue is `fixed` when TASK-0190 lands and the cockpit's release test page shows the same numbers.
+- **Generator: done, 2026-09-27.** [[TASK-0190]], template `b2dc17f`, numbers the printed checks from 1 in each section, and every line the page writes about a check uses that number. The JSON the cockpit reads carries the same numbers.
+
+This issue is `fixed` when the cockpit's release test page (project-os-cockpit TASK-0643) draws those numbers.
 
 ## Decision and progress, 2026-09-25 (superseded by the section above)
 

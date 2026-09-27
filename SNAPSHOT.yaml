@@ -40,15 +40,15 @@ counters:
   REQ: 37
   RISK: 5
   TASK: 196
-  TST: 44
+  TST: 45
   WF: 3
 
 focus:
-  task: "TASK-0190"
+  task: "TASK-0192"
   feature: "FEAT-0040"
   phase: "PHASE-0010"
   issue: ""
-  note: "2026-09-27: PHASE-0010 carries out the release test redesign Edwin approved (ADR-0050). TASK-0187, the rename, is done in the project-os template (not pushed, not synced anywhere). Stage 2 is done: TASK-0188 (Expect lines marked per platform), TASK-0189 (procedure groups with a start line) and TASK-0191 (what changed per section and platform), in the template, not pushed. Stage 3 is next: TASK-0190 (the generator's new output) and TASK-0194 (the procedure skill in the new shape). The section word budget waits for the pilot (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
+  note: "2026-09-27: PHASE-0010 carries out the release test redesign Edwin approved (ADR-0050). TASK-0187, the rename, is done in the project-os template (not pushed, not synced anywhere). Stage 2 is done: TASK-0188 (Expect lines marked per platform), TASK-0189 (procedure groups with a start line) and TASK-0191 (what changed per section and platform), in the template, not pushed. Stage 3 is done: TASK-0190 (the section page and its JSON, TESTING.md rule 10) and TASK-0194 (the procedure skill). Stage 4 is next: TASK-0192 (the length check as a warning) and TASK-0193 (the release-test-prep skill). The section word budget waits for the pilot (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
@@ -451,7 +451,7 @@ items:
       phase: "[[PHASE-0010]]"
     TASK-0190:
       file: docs/features/release-test/plan/tasks/TASK-0190-The-Generator-Prints-Sections-Groups-And-Numbered-Checks.md
-      status: doing
+      status: done
       parent: FEAT-0040
       phase: "[[PHASE-0010]]"
     TASK-0191:
@@ -471,7 +471,7 @@ items:
       phase: "[[PHASE-0010]]"
     TASK-0194:
       file: docs/features/release-test/plan/tasks/TASK-0194-Rename-The-Walk-Procedure-Skill-And-Teach-It-The-New-Shape.md
-      status: backlog
+      status: done
       parent: FEAT-0040
       phase: "[[PHASE-0010]]"
     TASK-0195:
@@ -2190,6 +2190,17 @@ items:
   workflows: {}
 
   changes:
+    CHG-20260927-A-Release-Test-Section-Is-Numbered-Checks-In-Groups:
+      file: "docs/changes/CHG-20260927-A-Release-Test-Section-Is-Numbered-Checks-In-Groups.md"
+      status: merged
+      features: [FEAT-0040]
+      tests: [TST-0045]
+      note: "TASK-0190. Each section prints what changed, setup (On the bench, Before you start, Later) and checks numbered from 1 in groups, one action and its expected lines; --json prints the page as data and the Markdown is rendered from it (TESTING.md rule 10). Template b2dc17f, d4b4010; not synced."
+    CHG-20260927-The-Procedure-Skill-Writes-Groups-And-Short-Lines:
+      file: "docs/changes/CHG-20260927-The-Procedure-Skill-Writes-Groups-And-Short-Lines.md"
+      status: merged
+      features: [FEAT-0040]
+      note: "TASK-0194. The release-test-procedure skill writes groups with Start lines, short actions and tag-only lines. Template 8309260; not synced."
     CHG-20260927-Each-Section-Lists-What-Changed-On-Its-Own-Screens:
       file: "docs/changes/CHG-20260927-Each-Section-Lists-What-Changed-On-Its-Own-Screens.md"
       status: merged
@@ -2474,8 +2485,8 @@ metrics:
     phases_total: 11
     phases_done: 7
     tasks_total: 196
-    tasks_done: 182
-    tests_total: 35
+    tasks_done: 184
+    tests_total: 36
     tests_passing: 0
     tests_failing: 0
     issues_open: 12
