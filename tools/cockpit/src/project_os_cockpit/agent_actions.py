@@ -218,7 +218,7 @@ DEFAULT_ACTIONS: dict[str, list[dict[str, Any]]] = {
             "when": ["implemented", "approved"],
             "prompt": (
                 "Reconcile the acceptance criteria of {id}: read docs/{rel} "
-                "and walk them one by one against the shipped system. Tick "
+                "and go through them one by one against the shipped system. Tick "
                 "each satisfied criterion with an evidence pointer (repo "
                 "path, path:line, command, or note ID). Where the delivered "
                 "work deliberately departed from a criterion, amend, narrow "

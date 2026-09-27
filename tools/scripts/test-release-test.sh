@@ -1092,6 +1092,7 @@ JSON
 cat > "$PROC/docs/tests/acceptance/RELEASE-TEST.md" <<'MD'
 ---
 type: "[[reference]]"
+quoted_lines: warning
 title: "Section order"
 status: active
 owner: user:fixture
@@ -1386,7 +1387,7 @@ sheet = rt.build_release_test(
     thin, read.events, read.sections, release="REL-0011", platform="testbed",
     surfaces=read.surfaces, surface_notes=read.surface_notes,
     procedures=read.procedures, known=read.checks, retired=read.retired,
-    authored_order=read.authored)
+    authored_order=read.authored, quoted_refused=read.quoted_refused)
 bench = [p for p in sheet.sections if p.section.name == "The bench"][0]
 print("problems=%d tested=%s" % (len(bench.procedure.problems),
                                  bench.tested_from_procedure))
@@ -1545,15 +1546,24 @@ assert "- The reading arrives." in t
 p.write_text(t.replace("- The reading arrives.", "- The reading arrives.\n- The panel shows no error."))
 PY2
 }
-# A check that does not pair steps with Expect lines: a tag shows them all.
+# A check that does not pair steps with Expect lines: a tag `.N` would print
+# every line, lines meant for other steps among them, so --check refuses the
+# tag and names the check, the platform, the step count and the line count.
 ALLLINES="$(variant alllines '   - The reading arrives. `TST-0403` `TST-0404.2`' '   - The reading arrives. `TST-0403`
    - `TST-0404.2`')"
 unpair "$ALLLINES"
-OUT="$(python3 "$SHEET" --release REL-0011 --platform testbed --repo-root "$ALLLINES" 2>&1)"
-# TST-0404 has passed, so its lines are kept apart as passed rather than printed.
-OUT="$(python3 "$SHEET" --json --release REL-0011 --platform testbed --repo-root "$ALLLINES" 2>&1)"
-check "a check with unpaired Expect lines gives its tag all of them" \
-  "$(printf '%s' "$OUT" | python3 -c 'import json,sys; p=json.load(sys.stdin); got={l["text"] for s in p["sections"] for g in s["groups"] for c in g["checks"] for l in c["passed_lines"] if "TST-0404.2" in l["tags"]}; sys.exit(0 if {"The panel is empty again.","The reading arrives.","The panel shows no error."} <= got else 1)'; echo $?)" "$OUT"
+# TST-0403 numbers no steps and is cited by its bare id; a second Expect line
+# gives it two lines for no numbered step, and that is not a pairing problem.
+python3 - "$ALLLINES/docs/tests/acceptance/TST-0403-Fixture.md" <<'PY2'
+import sys, pathlib
+p = pathlib.Path(sys.argv[1]); t = p.read_text()
+assert "- The reading arrives." in t
+p.write_text(t.replace("- The reading arrives.", "- The reading arrives.\n- The panel stays quiet."))
+PY2
+procfail "a tag .N on a check whose Expect lines do not number one per step is refused, naming the check, platform and counts" "$ALLLINES" \
+  'step 3 of .*the-bench\.md cites step 2 of TST-0404, and on testbed that check has 2 numbered steps and 3 Expect lines'
+OUT="$(python3 "$SHEET" --check --platform testbed --repo-root "$ALLLINES" 2>&1)"
+hasnt "a check cited by its bare id is not held to the pairing" 'of TST-0403, and on testbed'
 
 # The converter: only what loses nothing, and --refresh for the rest.
 WT="$PROC-tags"; rm -rf "$WT"; cp -R "$PROC" "$WT"
@@ -1573,8 +1583,11 @@ check "the converter rewrites a line whose tag prints exactly its quote" \
   "$( { printf '%s' "$proc" | grep -qx '   - `TST-0401.1`' && printf '%s' "$proc" | grep -qx '   - `TST-0403`'; }; echo $?)" "$conv"
 check "and keeps a line that quotes one of several unpaired Expect lines" \
   "$(printf '%s' "$proc" | grep -qx '   - The reading arrives. `TST-0404.2`'; echo $?)" "$conv"
+# The tags left on the unpaired TST-0404 are refused (the pairing check
+# above); nothing else in the converted procedure is.
+only_unpaired() { printf '%s\n' "$1" | grep '^ERROR' | grep -vq 'of TST-0404, and on testbed that check has 2 numbered steps and 3 Expect lines' && echo 1 || echo 0; }
 OUT="$(python3 "$SHEET" --check --platform testbed --repo-root "$WT" 2>&1)"; code=$?
-check "the converted procedure still passes --check" "$code" "$OUT"
+check "the converted procedure draws no --check problem but the unpaired TST-0404" "$(only_unpaired "$OUT")" "$OUT"
 
 RF="$PROC-refresh"; rm -rf "$RF"; cp -R "$WT" "$RF"
 (cd "$RF" && git init -q && git add -A && git -c user.email=t@t -c user.name=t commit -q -m base)
@@ -1585,12 +1598,12 @@ assert "- The reading arrives.\n" in t
 p.write_text(t.replace("- The reading arrives.\n", "- The reading arrives within a second.\n"))
 PY2
 OUT="$(python3 "$SHEET" --check --platform testbed --repo-root "$RF" 2>&1)"; code=$?
-check "rewording an unpaired Expect line breaks the quoting line" "$([[ $code -ne 0 ]]; echo $?)" "$OUT"
+check "rewording an unpaired Expect line breaks the quoting line" "$(printf '%s' "$OUT" | grep -q 'quotes TST-0404'; echo $?)" "$OUT"
 ref="$(python3 "$HERE/release-test-tags.py" --repo-root "$RF" --refresh --apply 2>&1)"
 check "--refresh re-quotes it from the check's current Expect" \
   "$(grep -qx '   - The reading arrives within a second. `TST-0404.2`' "$RF/docs/tests/acceptance/release-test/the-bench.md"; echo $?)" "$ref"
 OUT="$(python3 "$SHEET" --check --platform testbed --repo-root "$RF" 2>&1)"; code=$?
-check "after which --check passes again" "$code" "$OUT"
+check "after which --check reports nothing but the unpaired TST-0404" "$(only_unpaired "$OUT")" "$OUT"
 
 # ---------------------------------------------------------------------------
 # Expect lines marked for one platform (project-os-dev TASK-0188, REQ-0034).
@@ -1648,7 +1661,21 @@ p.write_text(t.replace("- [bench] It opens slowly.", "- [bench] It opens slowly.
 PY
 procfail "an Expect line marked for a platform with no ledger is refused, naming the check and the line" "$TYPO" \
   'TST-0405: an Expect line is marked \[andriod\], and this repo keeps ledgers only for bench, testbed: - \[andriod\] It opens on the phone\.'
-# A quoted procedure line is a warning: it prints, and --check still passes.
+# The last line of TST-0401 marked for bench leaves testbed two lines for three
+# steps. Unrefused, tag .3 on testbed printed both lines, meant for steps 1 and
+# 2, and nothing said so. Bench still has one line per step and passes.
+SHORT="$TMP/proc-platform-short"; rm -rf "$SHORT"; cp -R "$PLAT" "$SHORT"
+python3 - "$SHORT/docs/tests/acceptance/TST-0401-Fixture.md" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1]); t = p.read_text()
+assert "- The trainer holds the target." in t
+p.write_text(t.replace("- The trainer holds the target.", "- [bench] The trainer holds the target."))
+PY
+procfail "a platform whose Expect lines do not number one per step refuses the tag .N, naming the platform and counts" "$SHORT" \
+  'cites step 3 of TST-0401, and on testbed that check has 3 numbered steps and 2 Expect lines'
+OUT="$(python3 "$SHEET" --check --platform bench --repo-root "$SHORT" 2>&1)"; code=$?
+check "and the platform where they do pair still passes" "$code" "$OUT"
+# With `quoted_lines: warning`, a quoted procedure line prints and --check still passes.
 OUT="$(python3 "$SHEET" --check --platform testbed --repo-root "$PLAT" 2>&1)"; code=$?
 check "a quoted expectation line is reported as a warning and does not fail --check" \
   "$( { [[ $code -eq 0 ]] && printf '%s' "$OUT" | grep -q "^WARN  \[RELEASE-TEST\] .*step 1 of .*the-bench\.md quotes an expectation instead of giving its tags alone: 'The panel lists the trainer\.'"; }; echo $?)" "exit $code: $OUT"
@@ -1662,7 +1689,8 @@ ACTIONTAG="$(variant actiontag '4. **Equipment panel (SUR-0001).** Unpair everyt
 OUT="$(python3 "$SHEET" --check --platform testbed --repo-root "$ACTIONTAG" 2>&1)"
 check "tags on an action line are reported too" \
   "$(printf '%s' "$OUT" | grep -q 'step 4 of .*carries tags on its action line' && echo 0 || echo 1)" "$OUT"
-# The switch that turns the warning into an error, once consumers have moved.
+# By default a quoted line is refused (the consumers have moved to tags alone);
+# `quoted_lines: warning` in the section order file makes it a warning.
 refused="$(SHEET_PATH="$SHEET" REPO_ROOT="$PLAT" python3 - <<'PY'
 import importlib.util as ilu, os, pathlib, sys
 spec = ilu.spec_from_file_location("release_test", os.environ["SHEET_PATH"])
@@ -1670,13 +1698,15 @@ rt = ilu.module_from_spec(spec); sys.modules["release_test"] = rt
 spec.loader.exec_module(rt)
 root = pathlib.Path(os.environ["REPO_ROOT"])
 before = rt.check_repo(root, "testbed")[0]
-rt.QUOTED_EXPECTATIONS_REFUSED = True
+order = root / "docs/tests/acceptance/RELEASE-TEST.md"
+order.write_text(order.read_text().replace("quoted_lines: warning\n", "", 1))
 after = rt.check_repo(root, "testbed")[0]
+order.write_text(order.read_text().replace('type: "[[reference]]"\n', 'type: "[[reference]]"\nquoted_lines: warning\n', 1))
 print("before=%d after=%d" % (sum("quotes an expectation" in p for p in before),
                               sum("quotes an expectation" in p for p in after)))
 PY
 )"
-check "with QUOTED_EXPECTATIONS_REFUSED on, a quoted line is a problem" \
+check "without quoted_lines: warning, a quoted line is refused by default" \
   "$(printf '%s' "$refused" | grep -qx 'before=0 after=6' && echo 0 || echo 1)" "$refused"
 # release-test-tags.py --all rewrites every quoted line, so the warnings go.
 ALL="$TMP/proc-platform-all"; rm -rf "$ALL"; cp -R "$PLAT" "$ALL"

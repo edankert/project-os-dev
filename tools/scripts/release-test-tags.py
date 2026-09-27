@@ -200,7 +200,9 @@ def refresh_plan(repo_root: Path):
             lines = []
             for line in rt.under_heading(body, "Expect", "Expected results").splitlines():
                 n = rt.normalise(line)
-                if n and n not in lines:
+                #: Repeats kept, as `expect_text` keeps them, so an old
+                #: version's line N lines up with the current line N.
+                if n:
                     lines.append(n)
             out.append(lines)
         history[check.id] = out

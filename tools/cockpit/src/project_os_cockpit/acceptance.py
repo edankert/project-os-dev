@@ -46,7 +46,7 @@ CHECKS_REL = "tests/acceptance"
 #: **`GATING_TIERS` and `PERMANENT_TIERS` are gone** (ADR-0039). Both were
 #: `(1, 2)` -- one constant written twice and read as two different questions,
 #: *does this gate a release* and *does this test still apply*. Neither is a
-#: tier question. The answer to both is now `MANUAL_SECTIONS`: an unsettled
+#: tier question. The answer to both is now `MANUAL_KINDS`: an unsettled
 #: manual check blocks, and an automated one never enters the list.
 
 #: A `- [ ]` inside a code fence is an *example* of a checkbox, not one. Found
@@ -492,7 +492,7 @@ class Item:
         #:
         #: An explicit `mark: rerun` still re-opens anything -- that is a
         #: person saying so, and `needs_rerun` is read separately from this.
-        if section_of(self) != SECTION_FEATURE:
+        if kind_of(self) != KIND_FEATURE:
             return False
         if self.verdict_date and self.invalidated.date:
             return self.verdict_date < self.invalidated.date
@@ -574,11 +574,11 @@ class Suite:
 
     def section(self, name: str) -> list[Item]:
         """Items in a derived section — `feature`, `regression`, `automated`."""
-        return [i for i in self.items if section_of(i) == name]
+        return [i for i in self.items if kind_of(i) == name]
 
     def manual(self) -> list[Item]:
         """Every check a person is asked to complete, across both sections."""
-        return [i for i in self.items if section_of(i) in MANUAL_SECTIONS]
+        return [i for i in self.items if kind_of(i) in MANUAL_KINDS]
 
     def blocking(self) -> list[Item]:
         """Unsettled MANUAL checks — what stops a release.
@@ -628,7 +628,7 @@ class Suite:
             # manual and owed. This is still not the gate asking what KIND of
             # test it is or who runs it — the two things REQ-0043 forbids —
             # it is asking whether a PERSON is being asked for anything.
-            if section_of(item) not in MANUAL_SECTIONS or item.settled:
+            if kind_of(item) not in MANUAL_KINDS or item.settled:
                 continue
             # **The blind spot is closed, and closing it was decided rather
             # than tidied** ([[ADR-0039]], and this is [[ISS-0208]]).
@@ -709,7 +709,7 @@ class Suite:
 
         **This asked a tautology for one commit and returned nothing** --
         caught by independent review. Moving it off `tier:` (ADR-0039) had it
-        select `section_of(i) == SECTION_REGRESSION and not any(r.startswith
+        select `kind_of(i) == KIND_REGRESSION and not any(r.startswith
         ("ISS-"))`, and the first clause is true *exactly when* some ref starts
         with `ISS-`, so the two contradict: `your-trainer` went 73 -> 0 and
         `return []` passed the entire suite. That is the same defect this whole
@@ -722,7 +722,7 @@ class Suite:
         """
         return [
             i for i in self.items
-            if section_of(i) in MANUAL_SECTIONS
+            if kind_of(i) in MANUAL_KINDS
             and not any(r.startswith(("ISS-", "FEAT-")) for r in i.refs)
         ]
 
@@ -1547,7 +1547,7 @@ def ages(
             continue
         snapshots.append((tag, {
             _delta_key(i) for i in suite.items
-            if section_of(i) in MANUAL_SECTIONS and not i.settled
+            if kind_of(i) in MANUAL_KINDS and not i.settled
         }))
     out: dict[str, str] = {}
     for item in items:
@@ -1576,10 +1576,10 @@ def delta(current: Suite, baseline: Suite | None) -> dict[str, Any]:
         }
     was_settled = {
         _delta_key(i) for i in baseline.items
-        if section_of(i) in MANUAL_SECTIONS and i.settled
+        if kind_of(i) in MANUAL_KINDS and i.settled
     }
     was_present = {
-        _delta_key(i) for i in baseline.items if section_of(i) in MANUAL_SECTIONS
+        _delta_key(i) for i in baseline.items if kind_of(i) in MANUAL_KINDS
     }
     new, chronic, regressed = [], [], []
     for item in blocking:
@@ -1620,26 +1620,26 @@ def suite_rel(suite: Suite) -> str:
 #: because Edwin's question is *does a machine do this* and there is one answer
 #: — an automated regression check is an automated test, and it does not matter
 #: why it was automated.
-SECTION_AUTOMATED = "automated"
-SECTION_REGRESSION = "regression"
-SECTION_FEATURE = "feature"
+KIND_AUTOMATED = "automated"
+KIND_REGRESSION = "regression"
+KIND_FEATURE = "feature"
 
 #: Sections in display order. Feature tests first: they are the standing claims
 #: about behaviour and the largest population (405 of 671 fleet-wide).
-SECTION_ORDER: tuple[str, ...] = (
-    SECTION_FEATURE, SECTION_REGRESSION, SECTION_AUTOMATED,
+KIND_ORDER: tuple[str, ...] = (
+    KIND_FEATURE, KIND_REGRESSION, KIND_AUTOMATED,
 )
 
-SECTION_LABELS: dict[str, str] = {
-    SECTION_FEATURE: "Feature tests",
-    SECTION_REGRESSION: "Regression tests",
-    SECTION_AUTOMATED: "Automated tests",
+KIND_LABELS: dict[str, str] = {
+    KIND_FEATURE: "Feature tests",
+    KIND_REGRESSION: "Regression tests",
+    KIND_AUTOMATED: "Automated tests",
 }
 
 #: Sections a person is asked to complete. **This replaces `GATING_TIERS`**,
 #: and it is one rule where there were two constants and a tier test: an
 #: unsettled manual check blocks, an automated one never enters the list.
-MANUAL_SECTIONS: frozenset[str] = frozenset({SECTION_FEATURE, SECTION_REGRESSION})
+MANUAL_KINDS: frozenset[str] = frozenset({KIND_FEATURE, KIND_REGRESSION})
 
 _ISS_REF = re.compile(r"\bISS-\d+")
 
@@ -1648,13 +1648,13 @@ _ISS_REF = re.compile(r"\bISS-\d+")
 #: what Tier 3 had become -- 67 of `your-trainer`'s 68 arrived there through
 #: the *Unit test replacement* rule -- and because it preserves the one
 #: behaviour that matters for an unmigrated repo: Tier 3 never gated.
-_FILE_SHAPE_SECTIONS: dict[int, str] = {
-    1: SECTION_FEATURE, 2: SECTION_REGRESSION, 3: SECTION_AUTOMATED,
+_FILE_SHAPE_KINDS: dict[int, str] = {
+    1: KIND_FEATURE, 2: KIND_REGRESSION, 3: KIND_AUTOMATED,
 }
 
 
-def section_of(item: "Item") -> str:
-    """Which section a check belongs to. Computed; nothing files a check here.
+def kind_of(item: "Item") -> str:
+    """Which test kind a check is: feature, regression or automated. Computed; nothing files a check here.
 
     A check asserting *the system does X* is a standing claim about behaviour
     and a later change can falsify it. A check asserting *this defect was
@@ -1681,16 +1681,16 @@ def section_of(item: "Item") -> str:
     #: heading IS the authored section. The derivation is for notes, which is
     #: where the two fields exist.
     if not item.note_id:
-        return _FILE_SHAPE_SECTIONS.get(item.tier, SECTION_FEATURE)
+        return _FILE_SHAPE_KINDS.get(item.tier, KIND_FEATURE)
     if item.command:
-        return SECTION_AUTOMATED
+        return KIND_AUTOMATED
     if any(_ISS_REF.match(ref) for ref in item.refs):
-        return SECTION_REGRESSION
-    return SECTION_FEATURE
+        return KIND_REGRESSION
+    return KIND_FEATURE
 
 
-def section_label(section: str) -> str:
-    return SECTION_LABELS.get(section, section)
+def kind_label(section: str) -> str:
+    return KIND_LABELS.get(section, section)
 
 
 #: Kinds that are not a screen ("The four rules", `TAXONOMY.md`). They sort
@@ -1719,7 +1719,7 @@ def _surface_map(index: "Any | None") -> tuple[dict[str, Any], dict[str, str],
     about which screen a dialog belongs to, which is the drift bundling the
     module exists to prevent.
     """
-    walk = _walk_module()
+    rt = _release_test_module()
     raw: dict[str, tuple[Path, dict]] = {}
     kinds: dict[str, str] = {}
     if index is not None:
@@ -1731,8 +1731,8 @@ def _surface_map(index: "Any | None") -> tuple[dict[str, Any], dict[str, str],
             if (record.note_type or "").lower() == "surface":
                 kinds[note_id] = str(
                     record.frontmatter.get("kind") or "screen").strip().lower()
-    surfaces = walk.load_surfaces(raw) if raw else {}
-    by_title = walk.surfaces_by_title(raw) if raw else {}
+    surfaces = rt.load_surfaces(raw) if raw else {}
+    by_title = rt.surfaces_by_title(raw) if raw else {}
     return surfaces, by_title, kinds
 
 
@@ -1744,13 +1744,13 @@ def _area_place(area: str, surfaces: dict[str, Any], by_title: dict[str, str],
     marked unresolved, so it renders visibly rather than disappearing into a
     group it does not belong to ([[ISS-0250]]).
     """
-    walk = _walk_module()
+    rt = _release_test_module()
     sid = by_title.get(area, "")
     if not sid:
         return {"surface": "", "screen": area, "parent": "",
                 "kind": "", "unresolved": True}
     kind = kinds.get(sid, "screen")
-    top = walk.top_screen(sid, surfaces)
+    top = rt.top_screen(sid, surfaces)
     parent_id = surfaces[sid].parent if sid in surfaces else ""
     return {
         "surface": sid,
@@ -1802,7 +1802,7 @@ def view_payload(docs_root: Path, index: "Any | None" = None, *,
     suite = load(docs_root, index, platform=platform)
     tiers: list[dict[str, Any]] = []
     #: **Sections, derived** ([[ADR-0039]]). This loop read `tier:` and
-    #: rendered `Tier 1 — feature tests`; it now asks `section_of` and renders
+    #: rendered `Tier 1 — feature tests`; it now asks `kind_of` and renders
     #: the same three names without a field selecting them. A check that gains
     #: a `command:` moves here with no other edit, and one whose command stops
     #: resolving moves back — which is the property a filed section could not
@@ -1810,12 +1810,12 @@ def view_payload(docs_root: Path, index: "Any | None" = None, *,
     #: reading a heading from a document that had been deleted.
     by_section: dict[str, list[Item]] = {}
     for item in suite.items:
-        by_section.setdefault(section_of(item), []).append(item)
+        by_section.setdefault(kind_of(item), []).append(item)
     #: **Screen, then the dialogs that open from it** ([[TASK-0625]]; upstream
     #: ADR-0044). Read from the bundled module so this page and the walk sheet
     #: cannot disagree about which screen a dialog belongs to.
     surfaces, by_title, kinds = _surface_map(index)
-    for name in SECTION_ORDER:
+    for name in KIND_ORDER:
         items = by_section.get(name) or []
         if not items:
             continue
@@ -1859,14 +1859,14 @@ def view_payload(docs_root: Path, index: "Any | None" = None, *,
         #: **An automated section carries no checkbox and no todo count.**
         #: A tickbox beside something no person executes is what put nine
         #: automated checks into `your-trainer`'s blocking 68 ([[ISS-0237]]).
-        manual = name in MANUAL_SECTIONS
+        manual = name in MANUAL_KINDS
         tiers.append({
             "section_key": name,
-            "label": section_label(name),
+            "label": kind_label(name),
             # Kept so a client pinned to the old payload keeps rendering. The
             # value is the section's position, not a `tier:` read from a note:
             # nothing writes one any more.
-            "tier": SECTION_ORDER.index(name) + 1,
+            "tier": KIND_ORDER.index(name) + 1,
             "manual": manual,
             "gating": manual,
             "total": len(items),
@@ -1956,7 +1956,7 @@ def _facets(suite: Suite) -> dict[str, list[dict[str, Any]]]:
         "marks": tally(marks),
         # The facet is the SECTION now, under the key `tiers` so a pinned
         # client keeps working. Nothing here reads `tier:`.
-        "tiers": tally([(section_of(i), section_label(section_of(i)))
+        "tiers": tally([(kind_of(i), kind_label(kind_of(i)))
                         for i in suite.items]),
         "areas": tally([(i.area, i.area) for i in suite.items if i.area]),
         "covers": tally([(ref, ref) for i in suite.items for ref in i.refs]),
@@ -2009,9 +2009,9 @@ def payload(docs_root: Path, index: "Any | None" = None, *,
         "rel": suite_rel(suite),
         "tiers": [
             {
-                "tier": SECTION_ORDER.index(n) + 1,
+                "tier": KIND_ORDER.index(n) + 1,
                 "section_key": n,
-                "label": section_label(n),
+                "label": kind_label(n),
                 "total": len(suite.section(n)),
                 "checked": sum(1 for i in suite.section(n) if i.checked),
                 # Reported beside `checked` rather than folded into it: the two
@@ -2020,8 +2020,8 @@ def payload(docs_root: Path, index: "Any | None" = None, *,
                 # rounded up instead of down (ISS-0141).
                 "reconciled": sum(1 for i in suite.section(n) if i.reconciled),
                 "excepted": sum(1 for i in suite.section(n) if i.excepted),
-                "gating": n in MANUAL_SECTIONS,
-                "manual": n in MANUAL_SECTIONS,
+                "gating": n in MANUAL_KINDS,
+                "manual": n in MANUAL_KINDS,
                 "items": [
                     {
                         "key": i.key, "number": i.number,
@@ -2041,7 +2041,7 @@ def payload(docs_root: Path, index: "Any | None" = None, *,
                     for i in suite.section(n)
                 ],
             }
-            for n in SECTION_ORDER
+            for n in KIND_ORDER
         ],
     }
 
@@ -2189,7 +2189,7 @@ def gate_payload(
         #: 11 are listed, counted and one click away, never silently gone.
         resting = [
             i for i in live
-            if section_of(i) == SECTION_REGRESSION
+            if kind_of(i) == KIND_REGRESSION
             and obligations.ids_are_settled(i.refs, index)
         ]
         resting_keys = {i.key for i in resting}
@@ -2200,7 +2200,7 @@ def gate_payload(
         ]
 
     # --- stale: ticked, but the row says the evidence no longer holds -----
-    stale = [i for i in suite.items if section_of(i) in MANUAL_SECTIONS and i.stale]
+    stale = [i for i in suite.items if kind_of(i) in MANUAL_KINDS and i.stale]
 
     # --- the delta (TASK-0446) --------------------------------------------
     baseline = (
@@ -2311,14 +2311,14 @@ def gate_payload(
         "counts": {
             f"tier{i + 1}": {
                 "section_key": name,
-                "label": section_label(name),
+                "label": kind_label(name),
                 "total": len(suite.section(name)),
                 "unchecked": sum(1 for x in suite.section(name) if not x.settled),
                 "reconciled": sum(1 for x in suite.section(name) if x.reconciled),
                 "excepted": sum(1 for x in suite.section(name) if x.excepted),
             }
             for i, name in enumerate(
-                n for n in SECTION_ORDER if n in MANUAL_SECTIONS)
+                n for n in KIND_ORDER if n in MANUAL_KINDS)
         },
     }
 
@@ -2472,478 +2472,150 @@ def issue_refs_in(reason: str) -> tuple[str, ...]:
 
 # ---------------------------------------------------------------- the walk
 #
-# The walk page's payload ([[FEAT-0149]] / [[TASK-0618]]). `view_payload`
-# above is the suite as a list; this is the same rows as a **procedure** — the
-# order a person should walk them in, the state each group of them needs, and
-# each check's setup, steps and expected result on the row.
+# The release test page's payload ([[FEAT-0155]], [[TASK-0640]]).
 #
-# **Every rule it applies is upstream's.** Ordering, placement into sittings,
-# the survey join and the reading of the procedure headings are
-# `tools/scripts/walk-sheet.py` (project-os-dev FEAT-0029), bundled here
-# verbatim as `walk_sheet_bundled.py` the way the validator is. This module
-# supplies three things the template's generator has no access to and which are
-# lookups rather than rules: the cockpit's own check scoping, its ledger
-# reader, and the note index that turns an id into a title.
+# **Every rule it applies is upstream's.** Sections, groups, numbering, what
+# changed and the setup split are `tools/scripts/release-test.py`
+# (project-os-dev FEAT-0040), bundled here verbatim as
+# `release_test_bundled.py` the way the validator is, and the page is that
+# module's own `payload()` -- the data its Markdown sheet is rendered from
+# (`TESTING.md`, "The release test", rule 10). This module adds only what a
+# page that records results needs and a printed sheet does not: which of the
+# checks the open release owed already have a result in its ledger.
 
-#: Upstream reads `docs/tests/acceptance/WALK.md`; the constant is its own.
-WALK_REL = "tests/acceptance/WALK.md"
+#: Upstream reads `docs/tests/acceptance/RELEASE-TEST.md`.
+RELEASE_TEST_REL = "tests/acceptance/RELEASE-TEST.md"
 
 
-def _walk_module() -> "Any":
-    """The bundled walk module, with the bundled validator wired into it.
+def _release_test_module() -> "Any":
+    """The bundled release test module, with the bundled validator wired in.
 
     Upstream's `_validator()` loads `validate-docs.py` from **its own
-    directory**, which is `tools/scripts/` in a repo and this package here —
+    directory**, which is `tools/scripts/` in a repo and this package here --
     where the file is named `validate_docs_bundled.py`. Seeding the global is
     the whole of the adaptation, and it is done here rather than by editing the
     copy because the copy is asserted byte-identical to upstream
-    (`tests/test_walk_bundle.py`).
+    (`tests/test_release_test_bundle.py`).
     """
     from . import validate_docs_bundled as _vd
-    from . import walk_sheet_bundled as _walk
-    if _walk._VD is None:
-        _walk._VD = _vd
-    return _walk
+    from . import release_test_bundled as _rt
+    if _rt._VD is None:
+        _rt._VD = _vd
+    return _rt
 
 
-def _walk_events(docs_root: Path, platform: str) -> list["Any"]:
-    """The platform's ledger entries as the walk module's `Event`s.
+def release_test_payload(docs_root: Path, *, platform: str,
+                         release: str = "") -> dict[str, Any]:
+    """One platform's release test, as the page draws it.
 
-    A field-for-field mapping, not a second reader: `ledger.load` is the
-    cockpit's one ledger parser and it validates what it reads, so a malformed
-    entry is refused here exactly as it is on every other surface.
+    **What the open release owed, not what it still owes.** A check whose
+    result lands in the open ledger stops being owed, and a page regenerated
+    after each result would lose the check the tester just recorded. So the
+    open ledger's results are set aside while the sheet is built: the sections
+    hold every check this release has owed, and `results` says which of them
+    already have a result, from that same ledger. An invalidation recorded
+    after a result reopens the check and drops the result. Sealed ledgers are
+    read as upstream reads them.
+
+    One platform, never the union: a release test is a person at one bench
+    with one build.
     """
-    from . import ledger as _ledger
-    walk = _walk_module()
-    out = []
-    #: Sealed ledgers first, the open one last — the order upstream's
-    #: `load_events` establishes and `resolve` depends on. `ledger.load`
-    #: returns them in filename order, which puts `WORKING` where the W
-    #: happens to sort.
-    ledgers = sorted(_ledger.load(docs_root, platform),
-                     key=lambda l: (l.is_working, l.release))
-    for led in ledgers:
-        for entry in sorted(led.entries, key=lambda e: e.date):
-            out.append(walk.Event(
-                check=entry.check, date=entry.date, mark=entry.mark,
-                reason=entry.reason, invalidated_by=entry.invalidated_by,
-                release=led.release, working=led.is_working,
-            ))
-    return out
-
-
-def _walk_check(item: "Item", body: str, after: tuple[str, ...],
-                frontmatter: dict | None = None) -> "Any":
-    """One cockpit `Item` as the walk module's `Check`.
-
-    The procedure text is read by upstream's `section` and `lead_paragraph`,
-    so the four headings and the fallback for a note that has none are stated
-    once. Nothing here parses a note.
-    """
-    walk = _walk_module()
-    readiness, problems = walk.parse_check_readiness(
-        (frontmatter or {}).get("walk_readiness_for"), item.rel)
-    return walk.Check(
-        id=item.note_id, title=item.name, path=item.rel, area=item.area,
-        after=list(after), covers=list(item.refs), command=item.command,
-        setup=walk.section(body, "Setup"),
-        steps=walk.section(body, "Steps", "Procedure"),
-        expect=walk.section(body, "Expect", "Expected results"),
-        lead=walk.lead_paragraph(body),
-        readiness_for=readiness, readiness_problems=problems,
-    )
-
-
-def _walk_row(item: "Item", check: "Any", platform: str) -> dict[str, Any]:
-    """A `~checks` row plus the procedure, so the page has one row renderer.
-
-    `_row` is reused rather than forked for the reason it was written: every
-    surface that draws a check draws the same shape, and a second one drifts.
-    """
-    return _row(
-        item,
-        setup=check.setup or None,
-        steps=check.steps or None,
-        expect=check.expect or None,
-        #: The note's unheaded description, printed by the page **only** when
-        #: the note states no steps. 53 of `your-trainer`'s 61 owed rows are
-        #: in that shape, and a row that printed nothing for them would be a
-        #: walk sheet nobody can walk.
-        lead=check.lead or None,
-        after=list(check.after),
-        readiness=_walk_module().check_readiness(check, platform) or None,
-    )
-
-
-#: Upstream's wording for an ordering cycle, which is the one warning the
-#: payload reports as an **error** rather than as something to tidy in
-#: `WALK.md`. Pinned by `tests/test_walk_payload.py`, and the bundle is
-#: asserted byte-identical, so a reword upstream fails a test here rather than
-#: silently demoting the report.
-_CYCLE_PHRASE = "forms a cycle"
-
-
-def walk_payload(docs_root: Path, index: "Any | None" = None, *,
-                 platform: str, release: str = "",
-                 review_ids: set[str] | None = None) -> dict[str, Any]:
-    """The owed checks for one platform, as a procedure somebody walks.
-
-    The row set is `ledger.owed` over the manual sections and nothing else —
-    the same predicate the gate reads, so the walk and the gate cannot come to
-    disagree about what a release owes. The order, the sittings and the survey
-    are the template's rules, applied by the bundled module.
-
-    **One platform, never the union.** `/api/cockpit/acceptance` accepts `all`
-    because a gate over two ledgers must fail closed; a walk is a person at one
-    bench with one build, and a union walk would ask them to tick a check for a
-    platform they are not holding.
-    """
-    walk = _walk_module()
+    rt = _release_test_module()
     platform = (platform or "").strip().lower()
-    suite = load(docs_root, index, platform=platform)
-    manual = [i for i in suite.items
-              if i.note_id and section_of(i) in MANUAL_SECTIONS]
-    manual_by_id = {i.note_id: i for i in manual}
-
-    from . import ledger as _ledger
-    owed_ids = set(_ledger.owed(docs_root, platform,
-                                [i.note_id for i in manual]))
-    owed = [i for i in manual if i.note_id in owed_ids]
-
-    bodies, afters, titles, surfaces, raw = _walk_notes(index, docs_root, owed)
-    checks = {i.note_id: _walk_check(i, bodies.get(i.note_id, ""),
-                                     afters.get(i.note_id, ()),
-                                     raw.get(i.note_id, (None, {}))[1])
-              for i in owed}
-    by_id = {i.note_id: i for i in owed}
-
-    walk_path = docs_root / WALK_REL
-    authored = walk_path.is_file()
-    gallery, sittings, warnings = "", [], []
-    if authored:
-        gallery, sittings, warnings = walk.parse_walk_order(
-            walk_path.read_text(encoding="utf-8"))
-    else:
-        sittings = walk.unordered_sittings(list(checks.values()))
-
-    #: The survey and the procedures, read by upstream's own readers so the
-    #: page and the generated sheet answer with the same rules
-    #: (project-os-dev ADR-0045; `TESTING.md`, "The walk", rules 2 and 9).
     repo_root = docs_root.parent
-    surface_notes = walk.load_surfaces(raw)
-    procedures = walk.load_procedures(docs_root, repo_root)
-    for procedure in procedures:
-        walk.name_surfaces(procedure.steps, surface_notes)
-    survey_release, survey_tag, survey_problem = walk.last_release(
-        docs_root, platform)
-    added: set[str] = set()
-    if survey_tag:
-        added, survey_problem = walk.changes_since(repo_root, survey_tag)
-    usable = bool(survey_tag) and not survey_problem
-    changes = walk.load_changes(docs_root, repo_root,
-                                only=added if usable else set())
-
-    #: **Every check a procedure may legally cite, not only the owed ones.**
-    #: A procedure covers its whole sitting and the sheet prints the owed part
-    #: of it, so its tags name checks that have already passed. Passing only
-    #: `checks` here made every such tag read as naming no check at all, and
-    #: this page and `walk-sheet.py` then disagreed about one procedure —
-    #: which is the thing `TESTING.md` rule 7 says bundling the module
-    #: prevents. Found by independent review, 2026-09-14. Only the checks a
-    #: procedure actually cites are read, so a repo with 431 of them pays for
-    #: the handful its scripts name.
-    cited = {tag[0] for p in procedures for s in p.steps
-             for e in s.expectations for tag in e.tags}
-    extra = [i for i in manual if i.note_id in cited and i.note_id not in by_id]
-    known = dict(checks)
-    if extra:
-        more, more_after, _, _, more_raw = _walk_notes(index, docs_root, extra)
-        for item in extra:
-            known[item.note_id] = _walk_check(
-                item, more.get(item.note_id, ""), more_after.get(item.note_id, ()),
-                more_raw.get(item.note_id, (None, {}))[1])
-
-    sheet = walk.build_walk(
-        checks, _walk_events(docs_root, platform), sittings,
-        release=release, platform=platform,
-        surfaces=surfaces, surface_notes=surface_notes,
-        changes=changes, procedures=procedures, known=known,
-        captures=walk.capture_finder(docs_root, repo_root,
-                                     survey_tag if usable else ""),
-        gallery=gallery, warnings=warnings, authored_order=authored,
-        survey_release=survey_release,
-        survey_tag=survey_tag if usable else "", survey_problem=survey_problem,
-    )
-
-    #: **A row the cockpit says is owed and the module dropped is reported.**
-    #: Both implement `TESTING.md`'s owed predicate — the module from the
-    #: ledger files, this from `ledger.owed` — and they are supposed to agree
-    #: on every corpus. If they ever do not, the walker is entitled to know
-    #: which check went missing rather than to walk a list that is quietly one
-    #: row short.
-    errors = [w for w in sheet.warnings if _CYCLE_PHRASE in w]
-    errors.extend(problem for check in checks.values()
-                  for problem in check.readiness_problems)
-    kept = {c.id for p in sheet.sittings for c in p.rows}
-    kept.update(c.id for c in sheet.unplaced)
-    dropped = sorted(owed_ids - kept)
-    if dropped:
-        errors.append(
-            "the ledger says %s %s owed and the walk module resolved %s as "
-            "settled; the walk is showing the smaller set"
-            % (", ".join(dropped), "is" if len(dropped) == 1 else "are",
-               "it" if len(dropped) == 1 else "them"))
-
-    out_sittings = []
-    for placed in sheet.sittings:
-        out_sittings.append({
-            "name": placed.sitting.name,
-            "state": placed.sitting.state,
-            "bench": list(placed.sitting.bench),
-            "surfaces": list(placed.sitting.surfaces),
-            "checks": list(placed.sitting.checks),
-            "rows": [_walk_row(by_id[c.id], c, platform) for c in placed.rows],
-            #: The sitting's written script, where it has one that holds up
-            #: ("The walk", rule 9). `steps` is already filtered to the steps
-            #: citing something this release owes, so a page renders it as it
-            #: comes; `problems` non-empty means the rows above are what to
-            #: read instead.
-            "procedure": _walk_procedure(placed),
-        })
-    unplaced = [_walk_row(by_id[c.id], c, platform) for c in sheet.unplaced]
-    placed_n = sum(len(s["rows"]) for s in out_sittings)
-
-    #: A completed check stops being owed, but the person may still need to
-    #: correct the step that settled it. The browser supplies only the ids it
-    #: recorded in this workspace; the server admits only current, settled,
-    #: manual checks that a current procedure cites. Build that correction
-    #: view with the same upstream generator and fresh procedure objects. It
-    #: cannot enlarge the owed rows or use a saved copy of old instructions.
-    review_checks = {check_id: known[check_id]
-                     for check_id in (review_ids or set())
-                     if check_id in manual_by_id and check_id in cited
-                     and check_id not in owed_ids and check_id in known}
-    review_sittings: list[dict[str, Any]] = []
-    if review_checks:
-        review_procedures = walk.load_procedures(docs_root, repo_root)
-        for procedure in review_procedures:
-            walk.name_surfaces(procedure.steps, surface_notes)
-        review_sheet = walk.build_walk(
-            review_checks, [], sittings, release=release, platform=platform,
-            surfaces=surfaces, surface_notes=surface_notes,
-            procedures=review_procedures, known=known,
-            authored_order=authored,
-        )
-        for placed in review_sheet.sittings:
-            if not placed.procedure or placed.procedure.problems or not placed.steps:
-                continue
-            review_sittings.append({
-                "name": placed.sitting.name,
-                "state": placed.sitting.state,
-                "bench": list(placed.sitting.bench),
-                "surfaces": list(placed.sitting.surfaces),
-                "checks": list(placed.sitting.checks),
-                "rows": [_walk_row(manual_by_id[c.id], c, platform) for c in placed.rows],
-                "procedure": _walk_procedure(placed),
-            })
-    reviewed = {row["id"] for sitting in review_sittings
-                for row in sitting["rows"]}
-    review_unavailable: list[dict[str, Any]] = []
-    for check_id in sorted(set(review_checks) - reviewed):
-        placed = next((entry for entry in review_sheet.sittings
-                       if any(check.id == check_id for check in entry.rows)), None)
-        problems = placed.procedure.problems if placed and placed.procedure else []
-        reason = "; ".join(problems) if problems else (
-            "No current procedure places this check in a walk session.")
-        review_unavailable.append({
-            "row": _walk_row(manual_by_id[check_id], review_checks[check_id], platform),
-            "reason": reason,
-        })
-
-    return {
-        "platform": platform,
-        "release": release,
-        #: The command a repo declares for regenerating its screenshots, read
-        #: verbatim from `WALK.md`'s frontmatter and rendered at the head of
-        #: the survey. One field on the payload rather than one per survey
-        #: entry: it is a property of the repo, and repeating it under every
-        #: surface would be one fact printed many times.
-        "gallery": gallery or None,
-        #: The screens the release changed, from the change notes that named
-        #: them ("The walk", rule 2). It carried the checks an invalidation
-        #: reopened until 2026-09-14; an invalidation names a check and never
-        #: a screen, which is what project-os-dev ADR-0045 decision 1 replaced.
-        "survey": [{
-            "surface": entry.title,
-            "surface_note": entry.id or None,
-            "parent": entry.parent or None,
-            "unresolved": entry.unresolved,
-            "changes": [{"id": cid, "title": title or None,
-                         "sentence": sentence or None}
-                        for cid, title, sentence in entry.sentences],
-            "captures": [{"key": c.key, "state": c.state or None,
-                          "before": c.before or None, "after": c.after or None,
-                          "new": c.new} for c in entry.captures],
-        } for entry in sheet.survey],
-        "survey_release": sheet.survey_release or None,
-        "survey_tag": sheet.survey_tag or None,
-        "survey_problem": sheet.survey_problem or None,
-        "sittings": out_sittings,
-        "review_sittings": review_sittings,
-        "review_unavailable": review_unavailable,
-        "unplaced": unplaced,
-        "counts": {
-            "owed": placed_n + len(unplaced),
-            "placed": placed_n,
-            "unplaced": len(unplaced),
-        },
-        "order_source": "walk.md" if authored else "fallback",
-        #: **Every verdict ever recorded against the rows on this page**
-        #: ([[ISS-0281]]). The mark dialog renders it, and it travels with the
-        #: payload rather than behind a lookup for the reason `view_payload`
-        #: gives: the dialog opens on a click, and a round trip there draws the
-        #: history a moment after the reader has read the buttons.
-        #:
-        #: Restricted to the walk's own rows, which `view_payload` cannot do —
-        #: it is the whole suite. 39 owed rows on `your-trainer` against 624
-        #: checks, so the walk carries a fraction of what the list does.
-        "history": {c: h for c, h in _history(docs_root).items()
-                    if c in kept or c in review_checks},
-        #: Where the template's WALK.md lives, so a repo with no walk order
-        #: can be pointed at the file to copy rather than at a sentence about
-        #: it.
-        "walk_rel": WALK_REL,
-        "template_rel": "__templates__/walk.md",
-        "errors": errors,
-        "warnings": [w for w in sheet.warnings if w not in errors],
-        "notices": list(sheet.notices),
-    }
-
-
-def _walk_procedure(placed: "Any") -> "dict[str, Any] | None":
-    """One sitting's procedure as data, or None where it has none.
-
-    Rendered rather than re-parsed: a page that read the markdown itself would
-    be a second implementation of rule 9, which is the thing bundling the
-    module exists to prevent.
-    """
-    procedure = getattr(placed, "procedure", None)
-    if procedure is None:
-        return None
-    return {
-        "path": procedure.path,
-        "sitting": procedure.sitting,
-        "setup": placed.setup,
-        "problems": list(procedure.problems),
-        "remarks": list(procedure.remarks),
-        "omitted": placed.omitted,
-        "requires": {str(number): list(sources)
-                     for number, sources in procedure.requires.items()},
-        "owed_checks": [c.id for c in placed.owed_checks],
-        "steps": [{
-            "number": step.number,
-            "display_number": position,
-            "preparation": not any(e.owed for e in step.expectations),
-            "required_state": step.required_state or None,
-            "capture_prompt": step.capture_prompt if step.capture_needed else None,
-            "use_capture": list(step.uses_capture),
-            "timer_seconds": step.timer_seconds or None,
-            "readiness": dict(step.readiness) if step.readiness else None,
-            "head": step.head,
-            "surface": step.surface_said or None,
-            "surface_note": step.surface_id or None,
-            "lines": [{
-                "text": line,
-                #: **What the line CLAIMS, as the module read it.** The page
-                #: needs the sentence without its tags, and with no `quote`
-                #: here it derived one itself — stripping the tag literals and
-                #: the emphasis markers. That is a second reading of a rule
-                #: the module owns (`quote_of`/`normalise`), and the two
-                #: disagreed: the module reduces `The banner reads **DONE**
-                #: now.` to `The banner reads **DONE** now.` with its own
-                #: whitespace rules, while the page produced `The banner reads
-                #: DONE  now.` — so the walker judged a string the validator
-                #: never compared against the check's Expect text. Found by
-                #: independent review, 2026-09-14.
-                "quote": expectation.quote if expectation is not None else "",
-                "tags": [{"check": check, "step": number or None,
-                          "owed": (check, number) in expectation.owed}
-                         for check, number in expectation.tags]
-                        if expectation is not None else [],
-            } for line, expectation in (
-                (raw, next((e for e in step.expectations if e.raw == raw), None))
-                for raw in step.body)],
-        } for position, step in enumerate(placed.steps, start=1)],
-    }
-
-
-def _walk_notes(
-    index: "Any | None", docs_root: Path, items: list["Item"],
-) -> tuple[dict[str, str], dict[str, tuple[str, ...]], dict[str, tuple[str, Path]],
-           dict[str, str], dict[str, tuple[Path, dict]]]:
-    """The lookups the template's generator gets from the validator.
-
-    Read from the cockpit's own index where there is one, so the walk sees
-    exactly the notes every other surface sees, and off the filesystem when a
-    caller passed none (the tests, and the CLI).
-
-    The last value is the index in the shape upstream's own readers take,
-    `{id: (path, frontmatter)}`, so `load_surfaces` runs here rather than
-    being written a second time (project-os-dev ADR-0045).
-    """
-    bodies: dict[str, str] = {}
-    afters: dict[str, tuple[str, ...]] = {}
-    titles: dict[str, tuple[str, Path]] = {}
-    surfaces: dict[str, str] = {}
-    raw: dict[str, tuple[Path, dict]] = {}
-    wanted = {i.note_id for i in items}
-    if index is not None:
-        for record in index.iter_records():
-            note_id = record.note_id or ""
-            if note_id:
-                titles[note_id] = (str(record.frontmatter.get("title") or ""),
-                                   record.path)
-                raw[note_id] = (record.path, dict(record.frontmatter))
-            if (record.note_type or "").lower() == "surface":
-                title = str(record.frontmatter.get("title") or "").strip()
-                if title and note_id:
-                    surfaces.setdefault(title, note_id)
-            if note_id in wanted:
-                bodies[note_id] = record.body
-                #: Ids, in either the `[[TST-0001]]` or bare form, read by
-                #: upstream's own extractor so the walk order and the sheet
-                #: cannot disagree about what an `after:` names.
-                afters[note_id] = tuple(
-                    _walk_module()._ids(record.frontmatter.get("after")))
-        return bodies, afters, titles, surfaces, raw
-    for item in items:
-        path = docs_root / item.rel
-        try:
-            text = path.read_text(encoding="utf-8")
-        except OSError:
+    base: dict[str, Any] = {"platform": platform, "release": release,
+                            "release_test_rel": RELEASE_TEST_REL,
+                            "template_rel": "__templates__/release-test.md"}
+    try:
+        read = rt.read_repo(repo_root, platform)
+    except rt.ReleaseTestError as exc:
+        return {**base, "error": str(exc), "sections": [], "results": {}}
+    results: dict[str, dict[str, str]] = {}
+    kept = []
+    for event in read.events:
+        if event.working and not event.invalidated_by:
+            results[event.check] = {"result": event.result, "reason": event.reason,
+                                    "date": event.date}
             continue
-        bodies[item.note_id] = _split_frontmatter(text)
-        afters[item.note_id] = tuple(
-            _walk_module()._ids(_frontmatter_field(text, "after")))
-    return bodies, afters, titles, surfaces, raw
+        if event.working and event.invalidated_by:
+            results.pop(event.check, None)
+        kept.append(event)
+    read.events = kept
+    sheet = rt.sheet_from(read, release, platform)
+    page = rt.payload(sheet)
+    shown = {check_id for section in page["sections"] for check_id in section["tests"]}
+    results = {check_id: result for check_id, result in results.items()
+               if check_id in shown}
+    done_all = total_all = 0
+    for section in page["sections"]:
+        #: A stable name for the section in an address and in browser
+        #: storage: its position changes when a release owes nothing there.
+        section["slug"] = _slug(section["name"])
+        #: **Progress from the ledger alone**: a printed check is done when
+        #: every test note it records a result for has one. A preparation
+        #: step records nothing and is not counted. The page adds the results
+        #: a tester has marked on steps whose test note is not finished yet.
+        to_test = [c for g in section["groups"] for c in g["checks"]
+                   if c["checks"]]
+        done = sum(1 for c in to_test if all(n in results for n in c["checks"]))
+        section["progress"] = {"done": done, "total": len(to_test)}
+        done_all += done
+        total_all += len(to_test)
+    #: **Test notes, beside printed checks** (Edwin, 2026-09-27: "I see a
+    #: number 95 todo on the acceptance page but I see 25/355 done"). The
+    #: acceptance page counts test notes and the release test counts printed
+    #: checks, so both are given, and `owed` is the acceptance page's manual
+    #: blocking count: notes on the page with no clearing result.
+    clearing = {"pass", "partial", "na", "excused"}
+    cleared = sum(1 for r in results.values() if r["result"] in clearing)
+    return {
+        **base,
+        **page,
+        "results": results,
+        "progress": {"done": done_all, "total": total_all},
+        "notes": {"total": len(shown), "owed": len(shown) - cleared},
+        "error": "",
+    }
 
 
-_AFTER_RE = re.compile(r"^\s*after\s*:\s*(.*)$", re.MULTILINE)
+_PAGE_CACHE: dict[tuple[str, str, str], tuple[tuple, dict[str, Any]]] = {}
 
 
-def _frontmatter_field(text: str, name: str) -> list[str]:
-    """One inline list field, for the index-less path. `after: [A, B]`.
+def release_test_payload_cached(docs_root: Path, *, platform: str,
+                                release: str = "") -> dict[str, Any]:
+    """`release_test_payload`, rebuilt only when a file it reads has changed.
 
-    Deliberately small: the cockpit always has an index in the server, and the
-    tests that exercise this path write the field inline.
+    The Tests pane shows every platform's progress, and building one page
+    reads the whole acceptance suite (about a second on your-trainer). The
+    signature is the newest modification time and the file count under each
+    folder the page reads, so an edit, an added file and a removed one all
+    rebuild it.
     """
-    if name != "after":
-        return []
-    found = _AFTER_RE.search(text.split("\n---", 2)[0] if text.startswith("---")
-                             else "")
-    if not found:
-        return []
-    raw = found.group(1).strip()
-    if raw.startswith("[") and raw.endswith("]"):
-        raw = raw[1:-1]
-    return [p.strip().strip("\"'") for p in raw.split(",") if p.strip()]
+    key = (str(docs_root), (platform or "").lower(), release)
+    signature = _page_signature(docs_root)
+    hit = _PAGE_CACHE.get(key)
+    if hit is not None and hit[0] == signature:
+        return hit[1]
+    page = release_test_payload(docs_root, platform=platform, release=release)
+    _PAGE_CACHE[key] = (signature, page)
+    return page
+
+
+def _page_signature(docs_root: Path) -> tuple:
+    out = []
+    for rel in ("tests/acceptance", "releases", "changes", "surfaces"):
+        newest, count = 0.0, 0
+        for path in (docs_root / rel).rglob("*") if (docs_root / rel).is_dir() else []:
+            try:
+                stat = path.stat()
+            except OSError:
+                continue
+            count += 1
+            newest = max(newest, stat.st_mtime)
+        out.append((rel, newest, count))
+    return tuple(out)
+
+
+def _slug(name: str) -> str:
+    """`The equipment panel: trainer, …` -> `the-equipment-panel-trainer-…`."""
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "section"

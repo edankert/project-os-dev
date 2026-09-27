@@ -55,8 +55,11 @@ parser that supports the constrained YAML subset SNAPSHOT.yaml uses
 import argparse
 import datetime
 import hashlib
+import json
+import os
 import re
 import shlex
+import subprocess
 import sys
 from pathlib import Path
 
@@ -308,7 +311,7 @@ REVIEW_TERMINAL_STATUSES = frozenset({
 ACCEPTANCE_FORBIDDEN_STATUSES = ("ready", "passing", "failing")
 
 
-#: A walked test's marks that count as settled -- the same three
+#: A manual test's marks that count as settled -- the same three
 #: `acceptance.Item.settled` reads, named here because the validator does not
 #: import the cockpit package.
 _SETTLED_MARKS = ("done", "incomplete", "canceled", "x", "X", "/", "~", "-")
@@ -318,7 +321,7 @@ _SETTLED_WORDS = ("done", "incomplete", "canceled")
 
 
 #: The ledger outcomes that clear a check, and those that survive a sealed
-#: ledger. Restated from walk-sheet.py (CLEARING, PERSISTS), whose `resolve()`
+#: ledger. Restated from release-test.py (CLEARING, PERSISTS), whose `resolve()`
 #: these rules follow; TAXONOMY.md "Acceptance outcomes" is the source.
 _LEDGER_CLEARING = frozenset({"pass", "partial", "na", "excused"})
 _LEDGER_PERSISTS = frozenset({"pass", "partial", "na"})
@@ -330,7 +333,7 @@ def _ledger_cleared(root):
     project-os-dev ISS-0060: VERIFY-ACCEPTANCE read only a note's `mark:`, while
     LEDGER-FIELD refuses `mark:` on a note in a repo that keeps ledgers, so in
     such a repo the warning could never be cleared. Where ledgers exist, a check
-    is settled by them instead. Resolution follows walk-sheet.py's `resolve()`:
+    is settled by them instead. Resolution follows release-test.py's `resolve()`:
     per platform, oldest sealed ledger first and the open one last; a later
     verdict supersedes an earlier one; an invalidation clears the standing
     verdict; only `pass`, `partial` and `na` survive a sealed ledger. A check is
@@ -364,7 +367,7 @@ def _ledger_cleared(root):
             rows = [e for e in entries if isinstance(e, dict)]
             for e in sorted(rows, key=lambda e: str(e.get("date") or "")):
                 check = str(e.get("check") or "").strip()
-                mark = str(e.get("mark") or "").strip()
+                mark = _entry_result(e)
                 if str(e.get("invalidated_by") or "").strip():
                     standing.pop(check, None)
                     transient.pop(check, None)
@@ -380,10 +383,10 @@ def _ledger_cleared(root):
 
 
 def _acceptance_is_settled(note_id, note_index, ledger_cleared=None):
-    """Whether a walked test's verdict settles it (ADR-0034).
+    """Whether a manual test's verdict settles it (ADR-0034).
 
-    The walked half of one rule: an executable test is settled when the runner
-    says `passing`; a walked one is settled when its `mark:` says so. Both
+    The manual half of one rule: an executable test is settled when the runner
+    says `passing`; a manual one is settled when its `mark:` says so. Both
     characters and words are read, because a repo that has not migrated its
     vocabulary must keep gating correctly.
     """
@@ -730,6 +733,11 @@ _CHECKED_TABLE_NAMES = frozenset({
 #: own coverage claim false in the same way ISS-0012 did. Type and case are not
 #: what makes something a status table.
 _NON_STATUS_COLLECTIONS = frozenset({
+    "STRUCTURAL_CODES",     # the checks that still judge an archived note (ISS-0091)
+    "RULE_ARRIVED",         # the day each content rule arrived (ISS-0094)
+    "TOOL_WRITTEN_FIELDS",  # frontmatter fields the tools write into old notes (ISS-0097)
+    "_OPTIONAL_CITATIONS",  # files a citation may name before a repo has them (ISS-0052)
+    "INDEX_COVERAGE",       # index files and the directories they list (ISS-0052)
     # ADR-0037: the acceptance LEDGER's outcome vocabulary, its reason-bearing
     # subset, and how a result arrived. None is a status, and registering them
     # as one would assert the opposite of what they exist to preserve: a
@@ -748,7 +756,9 @@ _NON_STATUS_COLLECTIONS = frozenset({
     "LEDGER_NEEDS_REASON",
     "LEDGER_METHODS",
     "LEDGER_MOVED_FIELDS",
-    "_LEDGER_CLEARING",      # ledger outcomes, restated from walk-sheet.py
+    "RELEASE_TEST_OLD_OWN",       # renamed paths (project-os-dev ADR-0050)
+    "RELEASE_TEST_OLD_TEMPLATE",
+    "_LEDGER_CLEARING",      # ledger outcomes, restated from release-test.py
     "_LEDGER_PERSISTS",
     "ID_PREFIXES",           # note ID prefixes
     "RELATIONSHIP_FIELDS",   # frontmatter field names
@@ -761,7 +771,7 @@ _NON_STATUS_COLLECTIONS = frozenset({
     # Both were caught by this very guard on the day they were added, which is
     # the behaviour ISS-0012 and ISS-0013 paid for.
     "STATUS_FREE_TYPES",
-    # ADR-0034: acceptance VERDICTS, not statuses. A walked test's verdict lives
+    # ADR-0034: acceptance VERDICTS, not statuses. A manual test's verdict lives
     # in `mark:` precisely so it is not a status -- which is the construction
     # that keeps a suite of several hundred out of the review gate and off a
     # badge -- so registering these as statuses would assert the opposite of the
@@ -1072,7 +1082,7 @@ PROMOTIONS = {
     # ADR-0034's uniform gate: an acceptance test gates what it COVERS, like
     # any other test. Measured on the day it shipped: 0 findings in three of
     # the four suite repos and **6 in `your-sudoku`**, where FEAT-0025 is `done`
-    # and six checks covering it have never been walked. Those are true, and
+    # and six checks covering it have never been tested. Those are true, and
     # erroring on day one would take a green repo red for a rule it had no
     # chance to satisfy -- ADR-0011 clause 3, and the reason TEST-ENTRYPOINT
     # shipped the same way.
@@ -1127,6 +1137,27 @@ PROMOTIONS = {
     "LEDGER-FIELD": "2026-12-17",
     "LEDGER-SEALED": "2026-12-17",
     "NOTE-FRONTMATTER": "2026-12-17",
+    # project-os-dev ISS-0084. Measured over the fleet on 2026-09-24 before
+    # shipping, each with debt somewhere, so each warns for the 90 days ADR-0011
+    # clause 3 allows:
+    #   TASK-MEMBERSHIP   20: your-health 8, project-os-cockpit 7, your-trainer 5
+    #   FOCUS-MEMBERSHIP   2: your-applications.com 1, yourtrainer-mcp 1
+    "TASK-MEMBERSHIP": "2026-12-23",
+    # project-os-dev ISS-0052 (TASK-0164), measured 2026-09-25 over 13 repos:
+    # 38 findings, every repo with at least one. The template seeded most of
+    # them: its docs/INDEX.md lacked OBSIDIAN.md and TESTING.md, and the
+    # CLAUDE.md template in ADAPTER.md lacked walk-procedure, MARKDOWN.md,
+    # TESTING.md and WRITING.md; both are fixed in the same change.
+    "INDEX-COVERAGE": "2026-12-24",
+    # ISS-0052 (TASK-0165), same day: 9 undocumented fields in each repo that
+    # has not merged the template's SCHEMAS.md since 2026-09-25 (13 in
+    # project-os-cockpit, 14 in your-sudoku); 0 in the template.
+    "FIELD-UNDOCUMENTED": "2026-12-24",
+    # ISS-0052 (TASK-0166), same day: one finding in each of the 12 other repos,
+    # all the same stale section name in TESTING.md, which the template fixes
+    # and the next sync carries; 0 in the template.
+    "CITATION": "2026-12-24",
+    "FOCUS-MEMBERSHIP": "2026-12-23",
     # Ported from project-os-cockpit's validator (project-os-dev ISS-0068), where
     # they were written and dated for that repo alone. Measured over the fleet on
     # 2026-09-18 before porting, each with debt somewhere, so each warns for the
@@ -1484,25 +1515,247 @@ def parse_yaml_subset(text):
     return root
 
 
+def _yaml_loader():
+    """PyYAML's C loader when libyaml is present, else its Python one.
+
+    Both build values with SafeConstructor, so a date is a date either way;
+    the C loader parses a large repo's notes about 13 times faster
+    (project-os-dev ISS-0093: 3,120 notes in 0.32 s against 4.2 s).
+    """
+    import yaml  # type: ignore
+    return getattr(yaml, "CSafeLoader", None) or yaml.SafeLoader
+
+
 def load_yaml(text):
     try:
         import yaml  # type: ignore
-        return yaml.safe_load(text)
+        return yaml.load(text, Loader=_yaml_loader())
     except Exception:
         return parse_yaml_subset(text)
 
 
-def parse_frontmatter(path):
+def load_snapshot_yaml(text):
+    """Parse SNAPSHOT.yaml, and raise when it does not parse (project-os-dev ISS-0070).
+
+    `load_yaml` falls back to the lenient subset parser on *any* error, which
+    is right for a machine without PyYAML and wrong for a snapshot with a
+    syntax error: the subset parser read a broken snapshot without complaint,
+    so the validator and `sync-snapshot.py --check` both passed it. Here the
+    fallback is taken only when PyYAML is not installed.
+    """
+    try:
+        import yaml  # type: ignore
+    except ImportError:
+        return parse_yaml_subset(text)
+    return yaml.load(text, Loader=_yaml_loader())
+
+
+def _parse_frontmatter_file(path):
+    return _parse_frontmatter_strict(path)[0]
+
+
+def _parse_frontmatter_strict(path):
+    """(frontmatter, strict) for one note.
+
+    `strict` is True when PyYAML itself parsed exactly the text that
+    NOTE-FRONTMATTER checks, so that check need not parse the note a second
+    time. On your-trainer the second parse was 0.6 s of a cold 2.1 s run
+    (project-os-dev ISS-0093). It is False whenever that is not certain: no
+    PyYAML, a parse error (the subset parser then answers), or a note whose
+    first `---` is not alone on its line or whose next `---` is not the
+    closing one, where the two checks read different text.
+    """
     try:
         text = path.read_text(encoding="utf-8")
     except OSError:
-        return None
+        return None, False
     if not text.startswith("---"):
-        return None
+        return None, False
     end = text.find("\n---", 3)
     if end == -1:
+        return None, False
+    body = text[4:end]
+    same_text = text[3:4] == "\n" and text.find("---", 3) == end + 1
+    try:
+        import yaml  # type: ignore
+        return (yaml.load(body, Loader=_yaml_loader()) or {}), same_text
+    except Exception:
+        return (parse_yaml_subset(body) or {}), False
+
+
+# ---------------------------------------------------------- the note cache
+#: project-os-dev ISS-0093. The validator, release-test.py and sync-snapshot.py
+#: all parse through `parse_frontmatter`, and one validator run used to parse
+#: each of your-trainer's 3,150 notes about five times. Each note is now parsed
+#: once per process, and the result is kept on disk between runs, keyed by
+#: path, size and mtime, so a run re-reads only notes that changed. The cache
+#: is discarded whenever this file changes (its hash is in the key), lives
+#: outside the repository, and is never trusted when unreadable.
+#: PROJECT_OS_NO_CACHE=1 turns the disk cache off.
+import atexit as _atexit
+import pickle as _pickle
+import hashlib as _hashlib
+import datetime as _dt
+import tempfile as _tempfile
+
+_NOTE_CACHE = {}          # cache file -> {"dirty": bool, "entries": {path: [size, mtime, value]}}
+_CACHE_TAG = None
+
+
+def _cache_tag():
+    global _CACHE_TAG
+    if _CACHE_TAG is None:
+        try:
+            import yaml  # type: ignore
+            libyaml = bool(getattr(yaml, "__with_libyaml__", False))
+        except ImportError:
+            libyaml = None
+        _CACHE_TAG = _hashlib.sha1(Path(__file__).read_bytes() + repr(libyaml).encode()).hexdigest()[:16]
+    return _CACHE_TAG
+
+
+def _to_json(value):
+    if isinstance(value, _dt.datetime):
+        return {"__datetime__": value.isoformat()}
+    if isinstance(value, _dt.date):
+        return {"__date__": value.isoformat()}
+    if isinstance(value, dict):
+        return {str(k): _to_json(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_to_json(v) for v in value]
+    return value
+
+
+def _from_json(value):
+    if isinstance(value, dict):
+        if set(value) == {"__date__"}:
+            return _dt.date.fromisoformat(value["__date__"])
+        if set(value) == {"__datetime__"}:
+            return _dt.datetime.fromisoformat(value["__datetime__"])
+        return {k: _from_json(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_from_json(v) for v in value]
+    return value
+
+
+_CACHE_FILES = {}
+
+
+def _cache_file_for(key):
+    """One cache file per repository: the folder that holds `docs/`."""
+    marker = os.sep + "docs" + os.sep
+    root = key.split(marker, 1)[0] if marker in key else os.path.dirname(key)
+    found = _CACHE_FILES.get(root)
+    if found is None:
+        digest = _hashlib.sha1(str(Path(root).resolve()).encode()).hexdigest()[:16]
+        found = _CACHE_FILES[root] = Path(_tempfile.gettempdir()) / "project-os-note-cache" / ("%s.json" % digest)
+    return found
+
+
+def _cache_for(cache_file):
+    cache = _NOTE_CACHE.get(cache_file)
+    if cache is None:
+        cache = {"dirty": False, "entries": {}}
+        if os.environ.get("PROJECT_OS_NO_CACHE") != "1":
+            try:
+                data = json.loads(cache_file.read_text(encoding="utf-8"))
+                if data.get("tag") == _cache_tag():
+                    cache["entries"] = data.get("entries") or {}
+            except (OSError, ValueError, AttributeError):
+                pass
+        _NOTE_CACHE[cache_file] = cache
+    return cache
+
+
+@_atexit.register
+def _save_note_caches():
+    if os.environ.get("PROJECT_OS_NO_CACHE") == "1":
+        return
+    for cache_file, cache in _NOTE_CACHE.items():
+        if not cache["dirty"]:
+            continue
+        try:
+            cache_file.parent.mkdir(parents=True, exist_ok=True)
+            tmp = cache_file.with_suffix(".%d.tmp" % os.getpid())
+            tmp.write_text(json.dumps({"tag": _cache_tag(), "entries": cache["entries"]}), encoding="utf-8")
+            os.replace(tmp, cache_file)
+        except (OSError, TypeError, ValueError):
+            pass
+
+
+def cached_note_value(path, kind, compute):
+    """compute(path), cached like the frontmatter under `kind` (ISS-0093)."""
+    try:
+        st = path.stat()
+    except OSError:
+        return compute(path)
+    key = os.path.abspath(path) + "#" + kind
+    cache = _cache_for(_cache_file_for(os.path.abspath(path)))
+    hit = cache["entries"].get(key)
+    if hit and hit[0] == st.st_size and hit[1] == st.st_mtime_ns:
+        return _from_json(hit[2])
+    value = compute(path)
+    try:
+        cache["entries"][key] = [st.st_size, st.st_mtime_ns, _to_json(value)]
+        json.dumps(cache["entries"][key])
+        cache["dirty"] = True
+    except (TypeError, ValueError):
+        cache["entries"].pop(key, None)
+    return value
+
+
+def _frontmatter_entry(path):
+    """[size, mtime, value as JSON, strict] for a note, from the cache or a parse."""
+    try:
+        st = path.stat()
+    except OSError:
         return None
-    return load_yaml(text[4:end]) or {}
+    key = os.path.abspath(path)
+    cache = _cache_for(_cache_file_for(key))
+    hit = cache["entries"].get(key)
+    if hit and len(hit) == 4 and hit[0] == st.st_size and hit[1] == st.st_mtime_ns:
+        return hit
+    value, strict = _parse_frontmatter_strict(path)
+    entry = [st.st_size, st.st_mtime_ns, _to_json(value), strict]
+    try:
+        json.dumps(entry)
+        cache["entries"][key] = entry
+        cache["dirty"] = True
+    except (TypeError, ValueError):
+        cache["entries"].pop(key, None)   # a value JSON cannot hold is simply not cached
+    return entry
+
+
+_DECODED = {}             # (path, size, mtime) -> the frontmatter, pickled
+
+
+def parse_frontmatter(path):
+    """A note's frontmatter, parsed at most once per process and cached on disk.
+
+    Every call returns a fresh copy, so a caller that changes the dict cannot
+    change what the next caller reads. The validator asks for each note about
+    five times, so the copy comes from a pickle, which is several times faster
+    than decoding the cached JSON again.
+    """
+    entry = _frontmatter_entry(path)
+    if entry is None:
+        return None
+    key = (os.path.abspath(path), entry[0], entry[1])
+    blob = _DECODED.get(key)
+    if blob is not None:
+        return _pickle.loads(blob)
+    value = _from_json(entry[2])
+    try:
+        _DECODED[key] = _pickle.dumps(value, protocol=_pickle.HIGHEST_PROTOCOL)
+    except Exception:  # noqa: BLE001 -- a value pickle cannot hold is decoded each time
+        pass
+    return value
+
+
+def frontmatter_is_strict_yaml(path):
+    """True when PyYAML parsed this note's frontmatter as NOTE-FRONTMATTER reads it."""
+    entry = _frontmatter_entry(path)
+    return bool(entry and entry[3])
 
 
 # ------------------------------------------------------------------ helpers
@@ -1593,16 +1846,128 @@ def count_acceptance_boxes(path, heading=r"Acceptance\b", require_heading=False,
     return counts
 
 
+#: The day each content rule reached the template (its first commit in
+#: project-os). A note that was finished before its rule arrived is not judged
+#: by it: nobody goes back to rewrite a closed note for a later rule, so every
+#: run printed those findings and every reader learned to skip them. On
+#: your-trainer they were 315 of 1,139 findings (project-os-dev ISS-0094,
+#: ADR-0048). Structural checks are not listed and judge every note.
+RULE_ARRIVED = {
+    "REQ-BOXES": "2026-07-24",
+    "FEATURE-REQ": "2026-07-24",
+    "VERIFY-ACCEPTANCE": "2026-08-18",
+    "FEATURE-UNCOVERED": "2026-08-25",
+    "REVIEW-STALE": "2026-09-18",
+}
+_FINDING_ID = re.compile(r"^([A-Z]+-\d+[A-Za-z]?)\b")
+#: What the validator still says about an archived note (ISS-0091): whether it
+#: parses, whether its id is unique and counted, and whether links resolve.
+#: Everything else about a finished, released ticket is history.
+STRUCTURAL_CODES = frozenset({
+    "NOTE-FRONTMATTER", "NOTE-DUP-ID", "NOTE-STATUS", "STATUS-VALUE", "COUNTER",
+    "LINK", "DANGLING-LINK", "ITEM-FILE", "ITEM-ID", "ITEM-TYPE", "ITEM-SHAPE",
+    "FRONTMATTER-TYPO",
+})
+ARCHIVE_DIR = "docs/archive/"
+
+
 class Report:
     def __init__(self):
         self.errors = []
         self.warnings = []
+        #: Set by validate() once the notes are read: (code, msg) -> True when
+        #: the finding is about a note finished before its rule arrived.
+        self.predates = None
+        self.predating = {}
+        #: Ids of notes under docs/archive/, set by validate() (ISS-0091).
+        self.archived = set()
+        self.archived_hidden = 0
+        #: Ids of notes finished when the last release went out, and its tag
+        #: (TASK-0184).
+        self.released = set()
+        self.release_tag = ""
+        self.released_hidden = 0
+
+    def _skip(self, code, msg):
+        if code not in STRUCTURAL_CODES and code != "FROZEN-EDIT" and (self.archived or ARCHIVE_DIR in msg):
+            m = _FINDING_ID.match(msg)
+            if ARCHIVE_DIR in msg or (m and m.group(1) in self.archived):
+                self.archived_hidden += 1
+                return True
+        if self.released and code not in STRUCTURAL_CODES and code != "FROZEN-EDIT":
+            m = _FINDING_ID.match(msg)
+            if m and m.group(1) in self.released:
+                self.released_hidden += 1
+                return True
+        if self.predates is not None and self.predates(code, msg):
+            self.predating[code] = self.predating.get(code, 0) + 1
+            return True
+        return False
 
     def error(self, code, msg):
+        if self._skip(code, msg):
+            return
         self.errors.append("ERROR [%s] %s" % (code, msg))
 
     def warn(self, code, msg):
+        if self._skip(code, msg):
+            return
         self.warnings.append("WARN  [%s] %s" % (code, msg))
+
+
+def rule_arrived_here(root, code):
+    """The day `code` reached this repo: the later of the template's date and
+    the first commit of this repo's own validate-docs.py that contains it.
+
+    A rule reaches a repo when the template is synced there, often weeks after
+    it was written. The git lookup is cached with this file, so it runs once
+    per template update.
+    """
+    template = RULE_ARRIVED.get(code, "")
+    script = Path(root) / "tools" / "scripts" / "validate-docs.py"
+    if not script.is_file():
+        return template
+
+    def first_commit(_path):
+        out = _git_out(root, "log", "-S", '"%s"' % code, "--reverse", "--format=%ad",
+                       "--date=short", "--", "tools/scripts/validate-docs.py")
+        return (out or "").split("\n", 1)[0].strip()
+    here = cached_note_value(script, "arrived-" + code, first_commit)
+    return max(template, here) if here else template
+
+
+def predates_rule(note_index, root=None):
+    """A judge for Report: is this finding about a note finished before its rule?
+
+    Every rule in RULE_ARRIVED names its note first. A note is finished when its
+    status resolves it for its type (PHASE_RESOLVED), and it was finished by
+    the date in its `updated:` field, the last day anyone changed it. The rule
+    arrived on the later of its template date and the day it reached this repo.
+    """
+    arrived_at = {}
+
+    def judge(code, msg):
+        if code not in RULE_ARRIVED:
+            return False
+        if code not in arrived_at:
+            arrived_at[code] = rule_arrived_here(root, code) if root is not None else RULE_ARRIVED[code]
+        arrived = arrived_at[code]
+        if not arrived:
+            return False
+        m = _FINDING_ID.match(msg)
+        entry = note_index.get(m.group(1)) if m else None
+        if entry is None:
+            return False
+        fm = entry[1] or {}
+        if str(fm.get("status", "")).strip() not in PHASE_RESOLVED.get(note_type(fm), ()):
+            return False
+        updated = str(fm.get("updated") or fm.get("created") or "")[:10]
+        #: On or before: a note last touched on the day its rule arrived was
+        #: touched by that rule's own rollout. your-trainer's REQ-0142 was
+        #: implemented on 2026-07-05, and its `updated:` is 2026-07-24, the
+        #: day REQ-BOXES arrived there with a bulk edit of every requirement.
+        return bool(re.match(r"^\d{4}-\d{2}-\d{2}$", updated)) and updated <= arrived
+    return judge
 
 
 # ------------------------------------------------------------------ checks
@@ -1611,7 +1976,56 @@ class Report:
 NOTE_INDEX_FOR_PLANS = {}
 
 
+_NOTE_INDEX_MEMO = {}
+
+
+def invalidate_note_index():
+    """Forget the per-process note index; a tool that writes notes calls this."""
+    _NOTE_INDEX_MEMO.clear()
+
+
+def _docs_fingerprint(docs_dir):
+    """Every note's path, size and mtime: what the index was built from."""
+    out = []
+    stack = [str(docs_dir)]
+    while stack:
+        try:
+            entries = list(os.scandir(stack.pop()))
+        except OSError:
+            continue
+        for entry in entries:
+            if entry.is_dir(follow_symlinks=False):
+                stack.append(entry.path)
+            elif entry.name.endswith(".md"):
+                try:
+                    st = entry.stat()
+                except OSError:
+                    continue
+                out.append((entry.path, st.st_size, st.st_mtime_ns))
+    return hash(tuple(sorted(out)))
+
+
 def build_note_index(docs_dir):
+    """build_note_index, rebuilt only when a note under docs_dir changed.
+
+    sync-snapshot.py asked for it five times in one run (statuses twice,
+    titles, the reverse lists, the back-pointers): 0.5 s of a warm run on
+    your-trainer (project-os-dev ISS-0093). The result is kept with the path,
+    size and mtime of every note, and a call that finds any of them changed
+    rebuilds it: a tool that writes notes and asks again gets what is on disk
+    (the cockpit's migrate-fleet-validator.py does exactly that). The dicts are
+    copied, so a caller that edits them edits its own.
+    """
+    key = str(Path(docs_dir).resolve())
+    stamp = _docs_fingerprint(docs_dir)
+    held = _NOTE_INDEX_MEMO.get(key)
+    if held is None or held[0] != stamp:
+        held = _NOTE_INDEX_MEMO[key] = (stamp, _build_note_index(docs_dir))
+    index, claimants = held[1]
+    return dict(index), {k: list(v) for k, v in claimants.items()}
+
+
+def _build_note_index(docs_dir):
     """Map ID -> (path, frontmatter) for every note in docs/ with an ID.
 
     Also returns claimants: ID -> [paths], every file declaring that ID. The
@@ -2081,11 +2495,15 @@ def validate_review_and_issue_fields(note_index, grandfathered, report):
         name = owner.split(":", 1)[1].strip() if owner.startswith("user:") else ""
         waits = r"\b(owner|user)'?s (call|decision|input)\b|\bwaits? on (the )?(owner|user)\b|\bneeds? (the )?(owner|user)'?s? (input|decision)\b"
         if name:
-            waits += r"|\b%s'?s (call|decision|input|choice)\b|\b(for|ask|awaiting|needs?|waits? on) %s\b" % ((re.escape(name),) * 2)
+            waits += r"|\b%s'?s (call|decision|input|choice)\b|\b(ask|awaiting|needs?|waits? on) %s\b" % ((re.escape(name),) * 2)
         try:
-            body = path.read_text(encoding="utf-8")
+            text = path.read_text(encoding="utf-8")
         except OSError:
             continue
+        # The body only: the issue template's own comment on `question:`
+        # says "only when it waits on the owner", so reading the frontmatter
+        # warned on every new issue made from the template (FEAT-0035 review).
+        body = text.split("\n---", 1)[1] if text.startswith("---") and "\n---" in text else text
         if re.search(waits, body, re.I):
             promotion_emit(report, "ISSUE-QUESTION", grandfathered, note_id)(
                 "ISSUE-QUESTION", "%s says it waits on the owner but has no `question:`. State the question, the "
@@ -2401,7 +2819,7 @@ def validate_plan_notes(root, docs_dir, allowed_status, grandfathered, report):
 #: Ported from project-os-cockpit on 2026-09-18 (project-os-dev FEAT-0037,
 #: TASK-0136): the acceptance-ledger checks (its ADR-0037) and the frontmatter
 #: parse check (its ISS-0214; this repo's ISS-0053). Every repo that keeps
-#: ledgers already reads them through walk-sheet.py, so the rules belong here.
+#: ledgers already reads them through release-test.py, so the rules belong here.
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 
@@ -2431,6 +2849,19 @@ LEDGER_MARKS = ("pass", "partial", "na", "excused", "blocked", "fail",
                 "question")
 LEDGER_NEEDS_REASON = tuple(m for m in LEDGER_MARKS if m != "pass")
 LEDGER_METHODS = ("manual", "automated", "migration")
+
+
+def _entry_result(entry):
+    """A ledger entry's result: `result`, or `mark` in an entry written before it.
+
+    New entries write `result` (project-os-dev ADR-0050). Sealed ledgers are
+    records and are never rewritten, so every reader accepts `mark` for good.
+    `release-test.py`'s `entry_result` is the same rule.
+    """
+    value = entry.get("result")
+    if value in (None, ""):
+        value = entry.get("mark")
+    return str(value or "").strip()
 LEDGER_NAME_RE = re.compile(r"^(?:WORKING|[A-Z]{2,6}-\d{3,4})-(.+)$")
 
 
@@ -2457,12 +2888,12 @@ def validate_vouched_ledgers(root, report, note_index):
     """Every ledger a release vouches for still hashes to what it recorded.
 
     **Driven from the release note, not from the ledger.** The first version
-    walked `docs/releases/ledgers/*.json` and checked the ones whose `sealed`
+    read `docs/releases/ledgers/*.json` and checked the ones whose `sealed`
     key was set -- gating the check on a field *inside the file it protects*.
     Independent review reproduced four clean bypasses: delete the `sealed`
     key and rewrite every entry; delete the file; move it out of the
     directory; rewrite LF to CRLF. The record that vouches lives outside the
-    file, so the walk starts there.
+    file, so the check starts there.
 
     **Bytes, not text.** `Path.read_text()` normalises newlines, so a CRLF
     rewrite hashed identically -- a hash that is not a hash of the bytes is
@@ -2483,7 +2914,7 @@ def validate_vouched_ledgers(root, report, note_index):
                     "LEDGER-SEALED",
                     "%s vouches for %s and it is not there. A release that "
                     "records what it was measured against, against a file "
-                    "nobody can open, is the answer `was release R walked?` "
+                    "nobody can open, is the answer `was release R tested?` "
                     "silently becoming unavailable" % (note_id, rel))
                 continue
             raw = target.read_bytes()
@@ -2492,19 +2923,19 @@ def validate_vouched_ledgers(root, report, note_index):
                 promotion_emit(report, "LEDGER-SEALED", {}, None)(
                     "LEDGER-SEALED",
                     "%s no longer hashes to what %s records (%s != %s). "
-                    "`was release R walked?` is answerable only while that "
+                    "`was release R tested?` is answerable only while that "
                     "answer cannot change"
                     % (rel, note_id, found[:12], vouched[:12] or "nothing"))
 
 
 def validate_acceptance_location(root, report, note_index):
-    """A walked acceptance check lives under docs/tests/acceptance/ (project-os-dev ISS-0063).
+    """A manual acceptance check lives under docs/tests/acceptance/ (project-os-dev ISS-0063).
 
-    The cockpit reads acceptance checks from that folder only, while walk-sheet.py
-    reads every `level: acceptance` note, so a walked check stored beside its
+    The cockpit reads acceptance checks from that folder only, while release-test.py
+    reads every `level: acceptance` note, so a manual check stored beside its
     feature was on the sheet and missing from the cockpit. An automated check
-    (one with a `command:`) is run, not walked, and may stay beside its feature.
-    Measured before adding this: 666 walked checks in four repos, none outside.
+    (one with a `command:`) is run by a machine, and may stay beside its feature.
+    Measured before adding this: 666 manual checks in four repos, none outside.
     """
     home = root / "docs" / "tests" / "acceptance"
     for nid, (path, fm) in sorted(note_index.items()):
@@ -2518,9 +2949,71 @@ def validate_acceptance_location(root, report, note_index):
         try:
             path.relative_to(home)
         except ValueError:
-            report.error("ACCEPT-LOCATION", "%s is an acceptance check a person walks, but it is not under "
-                         "docs/tests/acceptance/, where the walk and the cockpit look for it; move it there, "
+            report.error("ACCEPT-LOCATION", "%s is an acceptance check a person tests by hand, but it is not under "
+                         "docs/tests/acceptance/, where the release test and the cockpit look for it; move it there, "
                          "or give it a command: if it is automated (%s)" % (nid, path.relative_to(root)))
+
+
+#: The walk was renamed the release test (project-os-dev ADR-0050). Each old
+#: path, and the name that replaced it. A consumer's own files move with the
+#: migration command; the template's copies are deleted by the sync.
+RELEASE_TEST_MIGRATE = "python3 tools/scripts/migrate-release-test-names.py --apply"
+RELEASE_TEST_OLD_OWN = (
+    ("docs/tests/acceptance/WALK.md", "docs/tests/acceptance/RELEASE-TEST.md"),
+    ("docs/tests/acceptance/walk", "docs/tests/acceptance/release-test"),
+)
+RELEASE_TEST_OLD_TEMPLATE = (
+    ("tools/scripts/walk-sheet.py", "tools/scripts/release-test.py"),
+    ("tools/scripts/walk-tags.py", "tools/scripts/release-test-tags.py"),
+    ("tools/scripts/test-walk-sheet.sh", "tools/scripts/test-release-test.sh"),
+    ("tools/scripts/test-walk-preparation.py", "tools/scripts/test-release-test-preparation.py"),
+    ("docs/__templates__/walk.md", "docs/__templates__/release-test.md"),
+    ("tools/skills/walk-procedure", "tools/skills/release-test-procedure"),
+    (".claude/skills/walk-procedure", ".claude/skills/release-test-procedure"),
+    (".agents/skills/walk-procedure", ".agents/skills/release-test-procedure"),
+)
+
+
+def validate_release_test_names(root, report, note_index):
+    """An old name of the release test is an error that names the new one.
+
+    project-os-dev ADR-0050 renamed the walk to the release test in one go,
+    with no second period in which both names work. A consumer's files are
+    moved by the migration command, and anything the migration missed is
+    refused here rather than silently ignored: `release-test.py` reads only the
+    new names, so an old one would drop a section or a readiness notice
+    without a word.
+    """
+    for old, new in RELEASE_TEST_OLD_OWN:
+        if (root / old).exists():
+            report.error("OLD-NAME", "%s is the old name; it is now %s. Run `%s` "
+                         "(project-os-dev ADR-0050)" % (old, new, RELEASE_TEST_MIGRATE))
+    for old, new in RELEASE_TEST_OLD_TEMPLATE:
+        if (root / old).exists():
+            report.error("OLD-NAME", "%s is the old name; the template now ships %s. "
+                         "Delete it: a template sync deletes it, and nothing reads it "
+                         "any more (project-os-dev ADR-0050)" % (old, new))
+    procedures = root / "docs" / "tests" / "acceptance" / "release-test"
+    for path in sorted(procedures.glob("*.md")) if procedures.is_dir() else []:
+        fm = parse_frontmatter(path)
+        if isinstance(fm, dict) and "sitting" in fm:
+            report.error("OLD-NAME", "%s: `sitting:` is the old name; it is now "
+                         "`section:`. Run `%s` (project-os-dev ADR-0050)"
+                         % (path.relative_to(root).as_posix(), RELEASE_TEST_MIGRATE))
+    for note_id, (path, fm) in sorted((note_index or {}).items()):
+        if isinstance(fm, dict) and "walk_readiness_for" in fm:
+            report.error("OLD-NAME", "%s: `walk_readiness_for:` is the old name; it is "
+                         "now `readiness_for:`. Run `%s` (project-os-dev ADR-0050) (%s)"
+                         % (note_id, RELEASE_TEST_MIGRATE, path.relative_to(root).as_posix()))
+    claude = root / "CLAUDE.md"
+    try:
+        text = claude.read_text(encoding="utf-8") if claude.is_file() else ""
+    except OSError:
+        text = ""
+    if "tools/skills/walk-procedure/" in text:
+        report.error("OLD-NAME", "CLAUDE.md lists tools/skills/walk-procedure/, the old "
+                     "name of tools/skills/release-test-procedure/. Run `%s` "
+                     "(project-os-dev ADR-0050)" % RELEASE_TEST_MIGRATE)
 
 
 def validate_moved_verdict_fields(root, report, note_index):
@@ -2555,6 +3048,255 @@ def validate_moved_verdict_fields(root, report, note_index):
                    LEDGERS_REL, rel))
 
 
+def _edit_distance(a, b):
+    prev = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        cur = [i]
+        for j, cb in enumerate(b, 1):
+            cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
+        prev = cur
+    return prev[-1]
+
+
+def validate_frontmatter_typos(root, report):
+    """A misspelt link field (project-os-dev ISS-0053, TASK-0163).
+
+    `related:` typed as `elated:` parses cleanly, so NOTE-FRONTMATTER cannot
+    see it, and the note silently loses its whole link graph. Reported: a
+    top-level key that no template or SCHEMAS.md defines and that is one
+    letter (two, for a key of six letters or more) from a field that carries
+    links. A singular or plural of the field is not a typo.
+
+    Narrow on purpose. Measured over 8,668 notes in the fleet on 2026-09-25:
+    flagging every unknown key near ANY known key gave about 50 findings,
+    nearly all legitimate project fields (`feature`, `review_note`,
+    `decisions`); this rule gives 0, and still catches `elated:`. So it ships
+    as an error.
+    """
+    templates = root / "docs" / "__templates__"
+    docs = root / "docs"
+    if not templates.is_dir() or not docs.is_dir():
+        return
+    key_re = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*):", re.M)
+    known = set()
+    for tpl in templates.glob("*.md"):
+        text = tpl.read_text(encoding="utf-8", errors="replace")
+        if text.startswith("---"):
+            known |= set(key_re.findall(text.split("---", 2)[1]))
+    schemas = templates / "SCHEMAS.md"
+    if schemas.is_file():
+        known |= set(re.findall(r"`([a-z_]+):?`", schemas.read_text(encoding="utf-8", errors="replace")))
+    links = set(RELATIONSHIP_FIELDS) | {"related"}
+    resembles = {}
+
+    def top_keys(path):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):             # pragma: no cover
+            return []
+        if not text.startswith("---"):
+            return []
+        return key_re.findall(text.split("\n---", 1)[0])
+
+    for path in sorted(docs.rglob("*.md")):
+        if templates in path.parents:
+            continue
+        for key in cached_note_value(path, "top-keys", top_keys):
+            if key in known or key in links or len(key) < 4:
+                continue
+            if key not in resembles:
+                resembles[key] = next((field for field in sorted(links)
+                                       if key + "s" != field and field + "s" != key
+                                       and 0 < _edit_distance(key, field) <= (1 if len(field) < 6 else 2)), "")
+            field = resembles[key]
+            if field:
+                report.error("FRONTMATTER-TYPO", "%s: frontmatter key `%s:` is defined nowhere and looks like "
+                             "`%s:`, a field that carries links; as written, the note has no `%s`"
+                             % (path.relative_to(root), key, field, field))
+
+
+#: Which file indexes which directory (project-os-dev ISS-0052, TASK-0164).
+#: (index, directory, "file" for *.md files or "dir" for subdirectories).
+#: A CLAUDE.md counts only once it already lists entries of that directory:
+#: the check keeps an index complete, it does not demand one.
+INDEX_COVERAGE = (
+    ("tools/instructions/README.md", "tools/instructions", "file"),
+    ("docs/INDEX.md", "tools/instructions", "file"),
+    ("tools/skills/README.md", "tools/skills", "dir"),
+    ("CLAUDE.md", "tools/instructions", "file"),
+    ("CLAUDE.md", "tools/skills", "dir"),
+)
+
+
+def validate_index_coverage(root, grandfathered, report):
+    """An index that lists fewer entries than its directory holds.
+
+    Eight instances across two drift sweeps (ISS-0052): docs/INDEX.md without
+    TESTING.md and OBSIDIAN.md, tools/skills/README.md without two skills, a
+    CLAUDE.md without two more. adapter-sync made checking this a manual step,
+    which is the sign it should not be manual.
+    """
+    for index_rel, dir_rel, kind in INDEX_COVERAGE:
+        index, directory = root / index_rel, root / dir_rel
+        if not index.is_file() or not directory.is_dir():
+            continue
+        text = index.read_text(encoding="utf-8", errors="replace")
+        if kind == "file":
+            entries = sorted(p.name for p in directory.glob("*.md") if p.name != "README.md")
+        else:
+            entries = sorted(p.name for p in directory.iterdir()
+                             if p.is_dir() and not p.name.startswith((".", "_")))
+        if index_rel == "CLAUDE.md" and dir_rel + "/" not in text:
+            continue
+        missing = [e for e in entries if e not in text]
+        if missing:
+            promotion_emit(report, "INDEX-COVERAGE", grandfathered, index_rel)(
+                "INDEX-COVERAGE", "%s lists %d of the %d entries in %s/; missing: %s"
+                % (index_rel, len(entries) - len(missing), len(entries), dir_rel, ", ".join(missing)))
+
+
+def frontmatter_fields_read():
+    """Every frontmatter key this validator reads, derived from its own source.
+
+    project-os-dev ISS-0052 (TASK-0165). Walks this file's syntax tree:
+    `.get("key")` and `["key"]` on a variable whose name ends in `fm`, and
+    every string in a constant or table whose name ends in `_FIELDS` or holds
+    "field" (`RELATIONSHIP_FIELDS`, the `back_fields` table that reads
+    `fixes:`). Derived, so a check added tomorrow is covered without a list
+    to remember.
+    """
+    import ast
+    tree = ast.parse(Path(__file__).read_text(encoding="utf-8"))
+    keys = set()
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+                and node.func.attr == "get" and node.args
+                and isinstance(node.func.value, ast.Name) and node.func.value.id.endswith("fm")
+                and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str)):
+            keys.add(node.args[0].value)
+        elif (isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name)
+                and node.value.id.endswith("fm") and isinstance(node.slice, ast.Constant)
+                and isinstance(node.slice.value, str)):
+            keys.add(node.slice.value)
+        elif isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and (target.id.endswith("_FIELDS") or "field" in target.id.lower()):
+                    keys |= {n.value for n in ast.walk(node.value)
+                             if isinstance(n, ast.Constant) and isinstance(n.value, str)
+                             and re.fullmatch(r"[a-z_]+", n.value)}
+    return keys
+
+
+def validate_fields_documented(root, grandfathered, report):
+    """A frontmatter field the validator enforces that no document defines.
+
+    Pass 12 of the drift sweep found `waiver_expires:` (an error when missing,
+    documented nowhere) and `fixes:` (drives PARENT-BACKLINK, absent from the
+    schema). A reader who follows SCHEMAS.md should never trip a check it
+    never mentioned (ISS-0052).
+    """
+    schemas = root / "docs" / "__templates__" / "SCHEMAS.md"
+    if not schemas.is_file():
+        return
+    text = schemas.read_text(encoding="utf-8", errors="replace")
+    documented = set(re.findall(r"`([a-z_]+)`", text)) | set(re.findall(r"`([a-z_]+):", text))
+    for key in sorted(frontmatter_fields_read() - documented):
+        promotion_emit(report, "FIELD-UNDOCUMENTED", grandfathered, key)(
+            "FIELD-UNDOCUMENTED", "the validator reads frontmatter field `%s:`, and "
+            "docs/__templates__/SCHEMAS.md does not define it" % key)
+
+
+#: Files a citation may name before the repo has them, each with its reason.
+_OPTIONAL_CITATIONS = frozenset({
+    "GRANDFATHERED.yaml",   # written the first time a repo grandfathers a finding
+})
+_CITED_PATH_RE = re.compile(r"`([A-Za-z0-9_.][A-Za-z0-9_./-]*/[A-Za-z0-9_./-]*\.(?:md|py|sh|yaml|yml|json|mjs|base))`")
+_CITED_SECTION_RE = re.compile(r"`([A-Za-z0-9_.][A-Za-z0-9_./-]*\.md)`,?\s+\"([^\"]+)\"")
+_CITATION_PLACEHOLDER_RE = re.compile(r"YYYY|0000|0001|\.\.\.|Short-|[<>*{}]|####")
+
+
+def validate_citations(root, grandfathered, report):
+    """A cited path or section that resolves nowhere (project-os-dev ISS-0052, TASK-0166).
+
+    Twenty-two instances over two drift sweeps: paths that resolve nowhere and
+    section headings that do not exist. Read: the startup files, every
+    instruction and every skill. A backticked path with a folder in it is
+    resolved against the citing file's folder, the repo root, the adapter and
+    agent folders and the templates. Skipped: placeholders, a path whose first
+    folder exists in none of those (it is relative to something the sentence
+    names, like `plan/PLAN.md`), anything that lands in `docs/` outside the
+    templates (a project's own content, which a template may cite before a
+    project has it), and `_OPTIONAL_CITATIONS`. A cited section,
+    `` `FILE.md`, "Heading" ``, must match a heading or a bold lead-in of that
+    file, backticks ignored. Quoted sentences and bare `ADR-####` ids are left
+    alone: the first is prose, the second is CONTEXT.md's citation rule.
+    """
+    files = [root / name for name in ("AGENTS.md", "CONTEXT.md", "CLAUDE.md")]
+    files += sorted((root / "tools" / "instructions").glob("*.md"))
+    files += sorted((root / "tools" / "skills").glob("*/SKILL.md"))
+    docs, templates = (root / "docs").resolve(), (root / "docs" / "__templates__").resolve()
+
+    def bases(src):
+        return [src.parent, root, root / "docs", root / "tools" / "adapters" / "claude-code",
+                root / "tools" / "adapters" / "codex", root / "tools" / "agents", templates]
+
+    def norm(text):
+        return re.sub(r"[`*]", "", text).strip().rstrip(".:").lower()
+
+    anchor_cache = {}
+
+    def anchors(path):
+        if path not in anchor_cache:
+            found = []
+            for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+                if line.startswith("#"):
+                    found.append(norm(re.sub(r"^#+\s*", "", line)))
+                found += [norm(m) for m in re.findall(r"\*\*([^*]+)\*\*", line)]
+            anchor_cache[path] = found
+        return anchor_cache[path]
+
+    for src in files:
+        if not src.is_file():
+            continue
+        fence = False
+        for number, line in enumerate(src.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+            if line.strip().startswith("```"):
+                fence = not fence
+                continue
+            if fence:
+                continue
+            where = "%s:%d" % (src.relative_to(root), number)
+            for match in _CITED_PATH_RE.finditer(line):
+                ref = match.group(1)
+                if _CITATION_PLACEHOLDER_RE.search(ref) or Path(ref).name in _OPTIONAL_CITATIONS:
+                    continue
+                first = ref.split("/")[0]
+                #: Only the bases the path can start from: where its first
+                #: folder exists, or the citing folder for a `..` path.
+                starts = [src.parent] if first in ("..", ".") else [b for b in bases(src) if (b / first).is_dir()]
+                if not starts:
+                    continue
+                hit = next(((b / ref).resolve() for b in starts if (b / ref).exists()), None)
+                if hit is None:
+                    tried = [(b / ref).resolve() for b in starts]
+                    if all(docs in t.parents and templates not in t.parents for t in tried):
+                        continue
+                    promotion_emit(report, "CITATION", grandfathered, where)(
+                        "CITATION", "%s cites `%s`, which resolves to no file" % (where, ref))
+            for match in _CITED_SECTION_RE.finditer(line):
+                ref, heading = match.group(1), match.group(2)
+                target = next(((b / ref) for b in bases(src) if (b / ref).is_file()), None)
+                if target is None and (root / "tools" / "instructions" / Path(ref).name).is_file():
+                    target = root / "tools" / "instructions" / Path(ref).name
+                if target is None:
+                    continue
+                wanted = norm(heading)
+                if not any(a == wanted or a.startswith(wanted) for a in anchors(target)):
+                    promotion_emit(report, "CITATION", grandfathered, where)(
+                        "CITATION", '%s cites `%s`, "%s", and that file has no such heading'
+                        % (where, ref, heading))
+
+
 def validate_frontmatter_parses(root, report):
     """A note whose frontmatter is not YAML ([[ISS-0214]]).
 
@@ -2572,22 +3314,32 @@ def validate_frontmatter_parses(root, report):
     docs = root / "docs"
     if not docs.is_dir():
         return
-    for path in sorted(docs.rglob("*.md")):
+    def yaml_error(path):
+        """"" when the frontmatter parses as YAML (or there is none), else
+        the parser's first line. Cached by path, size and mtime (ISS-0093)."""
         try:
             text = path.read_text(encoding="utf-8")
         except OSError:                                  # pragma: no cover
-            continue
+            return ""
         if not text.startswith("---"):
-            continue
+            return ""
+        if frontmatter_is_strict_yaml(path):
+            return ""                    # PyYAML already parsed this text
         try:
             #: **A real YAML parse, not `load_yaml`.** This script's own
             #: parser is a deliberate dependency-free SUBSET, and it is
             #: lenient exactly where a broken note is broken -- it read
-            #: `title: "Retire "walk" from it"` without complaint. So the
+            #: `title: "Retire "old" from it"` without complaint. So the
             #: check needs PyYAML, and is silent where PyYAML is absent
             #: rather than pretending a subset parse is a YAML parse.
-            yaml.safe_load(text.split("---", 2)[1])
+            yaml.load(text.split("---", 2)[1], Loader=_yaml_loader())
         except Exception as exc:                         # noqa: BLE001
+            return str(exc).splitlines()[0] or type(exc).__name__
+        return ""
+
+    for path in sorted(docs.rglob("*.md")):
+        error = cached_note_value(path, "yaml-error", yaml_error)
+        if error:
             try:
                 rel = path.relative_to(root)
             except ValueError:                           # pragma: no cover
@@ -2596,7 +3348,7 @@ def validate_frontmatter_parses(root, report):
                 "NOTE-FRONTMATTER",
                 "%s: frontmatter does not parse (%s). Identity comes from the "
                 "filename, so this note still indexes and links while every "
-                "field on it reads as absent" % (rel, str(exc).splitlines()[0]))
+                "field on it reads as absent" % (rel, error))
 
 
 def _blob_sha(text):
@@ -2622,7 +3374,7 @@ def _sealed_shas(note_index):
 def validate_ledgers(root, report, note_index):
     """The acceptance ledgers — required fields, reasons, and immutability.
 
-    Three rules, and the third is the one that makes *"was release R walked?"*
+    Three rules, and the third is the one that makes *"was release R tested?"*
     answerable at all:
 
     * every entry names a check, a date, an author and a method;
@@ -2647,7 +3399,7 @@ def validate_ledgers(root, report, note_index):
     for path in sorted(ledger_dir.glob("*.json")):
         rel = "docs/%s/%s" % (LEDGERS_REL, path.name)
         # A filename the reader cannot place is a ledger that disappears from
-        # its own platform while still sitting there looking read -- the same
+        # its own platform while it still looks read -- the same
         # failure the `_platform_of` fix closed, reached through a different
         # door (independent review, finding 5).
         if not LEDGER_NAME_RE.match(path.stem):
@@ -2702,15 +3454,22 @@ def validate_ledgers(root, report, note_index):
                 report.error("LEDGER-ENTRY",
                              "%s %s is not a note in this repo" % (rel, check))
             if entry.get("invalidated_by"):
-                if entry.get("mark"):
+                if _entry_result(entry):
                     report.error(
                         "LEDGER-ENTRY",
-                        "%s %s carries both a mark and an invalidation — they "
+                        "%s %s carries both a result and an invalidation — they "
                         "are two events and belong on two lines" % (rel, check))
                 continue
-            mark = str(entry.get("mark") or "").strip()
+            both = [str(entry.get(k) or "").strip() for k in ("result", "mark")]
+            if all(both) and both[0] != both[1]:
+                report.error(
+                    "LEDGER-ENTRY",
+                    "%s %s says result %r and mark %r. `mark` is the old name of "
+                    "`result` (project-os-dev ADR-0050), so one entry holds two "
+                    "answers; keep `result`" % (rel, check, both[0], both[1]))
+            mark = _entry_result(entry)
             if mark not in LEDGER_MARKS:
-                report.error("LEDGER-MARK", "%s %s has mark %r; expected one "
+                report.error("LEDGER-MARK", "%s %s has result %r; expected one "
                              "of %s" % (rel, check, mark,
                                         ", ".join(LEDGER_MARKS)))
                 continue
@@ -2718,7 +3477,7 @@ def validate_ledgers(root, report, note_index):
                     entry.get("reason") or "").strip():
                 report.error(
                     "LEDGER-REASON",
-                    "%s a %s verdict on %s needs a reason — the mark and its "
+                    "%s a %s verdict on %s needs a reason — the result and its "
                     "justification are one event, so a check cannot leave the "
                     "gate without saying why" % (rel, mark, check))
             if str(entry.get("method") or "").strip() not in LEDGER_METHODS:
@@ -2738,7 +3497,7 @@ def validate_ledgers(root, report, note_index):
                 report.error(
                     "LEDGER-EVIDENCE",
                     "%s evidence %d is for %s @ %s, which matches no entry — "
-                    "evidence for a walk nobody recorded is a claim with "
+                    "evidence for a test nobody recorded is a claim with "
                     "nothing behind it" % (rel, n, key[0] or "?", key[1] or "?"))
 
         if str(data.get("sealed") or "").strip() and path.name not in sealed_shas:
@@ -2752,20 +3511,265 @@ def validate_ledgers(root, report, note_index):
 
 
 
+#: Fields the tools write into old notes (derive-pointers.py, derive-lists.py).
+#: A diff that touches only these is the tooling at work, not an edit.
+TOOL_WRITTEN_FIELDS = ("superseded", "superseded_by", "amended_by", "tasks",
+                       "features", "issues", "requirements")
+
+
+def _git_out(root, *args):
+    try:
+        r = subprocess.run(["git", *args], cwd=root, capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return r.stdout if r.returncode == 0 else None
+
+
+def release_boundary(root):
+    """The git tag of the newest release that is out, or "".
+
+    From the release notes first: a `released` REL-* note says which tag it
+    shipped as, which a tag pattern can only guess (release-test.py's
+    `last_release` reads them the same way). A repo with no such note falls
+    back to the newest tag git can reach from HEAD.
+    """
+    found = []
+    rel = root / "docs" / "releases"
+    if rel.is_dir():
+        for path in sorted(rel.glob("*.md")):
+            fm = parse_frontmatter(path)
+            if not isinstance(fm, dict) or note_type(fm) != "release":
+                continue
+            if str(fm.get("status", "")).strip() != "released":
+                continue
+            tag = str(fm.get("tag", "") or "").strip()
+            if tag:
+                found.append((str(fm.get("date", "") or ""), tag))
+    if found:
+        return sorted(found)[-1][1]
+    out = _git_out(root, "describe", "--tags", "--abbrev=0", "HEAD")
+    return (out or "").strip()
+
+
+def _split_note(text):
+    """(frontmatter dict, body text) of a note's text."""
+    if not text.startswith("---"):
+        return {}, text
+    end = text.find("\n---", 3)
+    if end == -1:
+        return {}, text
+    fm = load_yaml(text[4:end])
+    return (fm if isinstance(fm, dict) else {}), text[end + 4:]
+
+
+def _only_tool_written(before, after):
+    """True when the two versions differ only in what the tools write:
+    a supersession or amendment pointer, the `superseded` status that comes
+    with it, or a reverse list derive-lists.py keeps."""
+    fm_a, body_a = _split_note(before)
+    fm_b, body_b = _split_note(after)
+    if body_a != body_b:
+        return False
+    keys = (set(fm_a) | set(fm_b)) - set(TOOL_WRITTEN_FIELDS)
+    for key in keys:
+        if fm_a.get(key) == fm_b.get(key):
+            continue
+        if key == "status" and str(fm_b.get(key, "")).strip() == "superseded":
+            continue
+        return False
+    return True
+
+
+def changed_since_head(root):
+    """Repo-relative paths changed since HEAD (staged, unstaged or new), and
+    the note ids their file names carry."""
+    paths = set()
+    for args in (("diff", "--name-only", "HEAD"), ("ls-files", "--others", "--exclude-standard")):
+        out = _git_out(root, *args)
+        if out:
+            paths.update(l.strip() for l in out.splitlines() if l.strip())
+    ids = set()
+    for rel in paths:
+        m = ID_RE.match(Path(rel).name)
+        if m:
+            ids.add("%s-%s" % (m.group(1), m.group(2)))
+    return paths, ids
+
+
+def _mentions(line, about):
+    paths, ids = about
+    if any(p in line for p in paths):
+        return True
+    m = re.match(r"^(?:ERROR|WARN)\s+\[[A-Z0-9-]+\]\s+([A-Z]+-\d+[A-Za-z]?)\b", line)
+    return bool(m and m.group(1) in ids)
+
+
+def release_date(root):
+    """(tag, date) of the newest `released` REL note that states a date, or ("", "")."""
+    found = []
+    rel = root / "docs" / "releases"
+    if rel.is_dir():
+        for path in sorted(rel.glob("*.md")):
+            fm = parse_frontmatter(path)
+            if not isinstance(fm, dict) or note_type(fm) != "release":
+                continue
+            if str(fm.get("status", "")).strip() != "released":
+                continue
+            date = str(fm.get("date", "") or "").strip()[:10]
+            if re.match(r"^\d{4}-\d{2}-\d{2}$", date):
+                found.append((date, str(fm.get("tag", "") or fm.get("id", "") or path.stem).strip()))
+    if not found:
+        return "", ""
+    date, tag = sorted(found)[-1]
+    return tag, date
+
+
+def released_finished(root, note_index):
+    """(release, ids of notes finished when it went out and finished now).
+
+    From the notes alone when the newest released REL note states its date: a
+    note finished now whose `updated:` is on or before that date. That answer
+    is the same in every checkout; reading statuses at the git tag, below, is
+    not, because a shallow clone (CI's) or an archive carries no tags, and
+    there nothing would be hidden (project-os-dev TASK-0186). The git reading
+    is the fallback for a repo that tags releases without a release note.
+    """
+    tag, date = release_date(root)
+    if date:
+        out = set()
+        for nid, (_path, fm) in note_index.items():
+            fm = fm or {}
+            if str(fm.get("status", "")).strip() not in PHASE_RESOLVED.get(note_type(fm), ()):
+                continue
+            updated = str(fm.get("updated") or fm.get("created") or "")[:10]
+            if re.match(r"^\d{4}-\d{2}-\d{2}$", updated) and updated <= date:
+                out.add(nid)
+        return tag, out
+    return _released_finished_at_tag(root, note_index)
+
+
+def _released_finished_at_tag(root, note_index):
+    """(tag, ids of notes finished when that release went out and finished now).
+
+    project-os-dev TASK-0184, Edwin 2026-09-26: a note released earlier should
+    only be the subject of a finding about a newer note that changes what it
+    shipped, and that finding belongs on the newer note. So content rules stop
+    judging these notes; structural checks and FROZEN-EDIT still do. Each
+    note's status at the tag is read once, in one `git cat-file --batch` call,
+    and cached with the note.
+    """
+    tag = release_boundary(root)
+    if not tag or _git_out(root, "rev-parse", "--verify", "--quiet", tag + "^{commit}") is None:
+        return "", set()
+    kind = "status-at-" + tag
+    finished_now, statuses, misses = {}, {}, []
+    for nid, (path, fm) in note_index.items():
+        ntype = note_type(fm or {})
+        if str((fm or {}).get("status", "")).strip() not in PHASE_RESOLVED.get(ntype, ()):
+            continue
+        finished_now[nid] = (path, ntype)
+        try:
+            st = path.stat()
+        except OSError:
+            continue
+        key = os.path.abspath(path)
+        cache = _cache_for(_cache_file_for(key))
+        hit = cache["entries"].get(key + "#" + kind)
+        if hit and hit[0] == st.st_size and hit[1] == st.st_mtime_ns:
+            statuses[nid] = hit[2]
+        else:
+            misses.append((nid, path, st))
+    if misses:
+        rels = [p.relative_to(root).as_posix() for _n, p, _s in misses]
+        raw = subprocess.run(["git", "cat-file", "--batch"], cwd=root, capture_output=True,
+                             input="".join("%s:%s\n" % (tag, r) for r in rels).encode()).stdout
+        pos = 0
+        for nid, path, st in misses:
+            end = raw.index(b"\n", pos)
+            header = raw[pos:end].decode(errors="replace").split()
+            pos = end + 1
+            status = ""
+            if len(header) >= 3 and header[1] != "missing":
+                size = int(header[2])
+                status = str(_split_note(raw[pos:pos + size].decode(errors="replace"))[0].get("status", "") or "").strip()
+                pos += size + 1
+            statuses[nid] = status
+            key = os.path.abspath(path)
+            cache = _cache_for(_cache_file_for(key))
+            cache["entries"][key + "#" + kind] = [st.st_size, st.st_mtime_ns, status]
+            cache["dirty"] = True
+    return tag, {nid for nid, (_p, ntype) in finished_now.items()
+                 if statuses.get(nid, "") in PHASE_RESOLVED.get(ntype, ())}
+
+
+def validate_frozen_edits(root, report):
+    """FROZEN-EDIT: a released ticket was edited (ISS-0097, ADR-0048).
+
+    A warning, never an error, as Edwin decided on 2026-09-26: "I think warning
+    we need to allow editing frozen tickets for unforeseen circumstances". The
+    warning names the ticket, so the edit is a visible choice rather than
+    routine upkeep. A pure rename is not an edit: that is how the archive
+    moves a note (ISS-0091). Nor is a diff that touches only the fields the
+    tools write, such as a supersession pointer.
+    """
+    #: A ticket is a record of an event, and once the release that shipped it
+    #: is out it is frozen: a task or issue finished by then, and every change
+    #: note, which is a record from the day it is written. Built from the
+    #: registered tables, so a new terminal status needs no second edit here.
+    frozen = {"task": PHASE_RESOLVED["task"], "issue": PHASE_RESOLVED["issue"],
+              "change": ALLOWED_STATUS["change"]}
+    if _git_out(root, "rev-parse", "--git-dir") is None:
+        return
+    tag = release_boundary(root)
+    if not tag or _git_out(root, "rev-parse", "--verify", "--quiet", tag + "^{commit}") is None:
+        return
+    out = _git_out(root, "diff", "--name-status", "-M", "HEAD", "--", "docs")
+    if not out:
+        return
+    for line in out.splitlines():
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+        code, path = parts[0], parts[-1]
+        if code.startswith("R100") or code.startswith("A") or code.startswith("D"):
+            continue
+        before = parts[1]
+        old = _git_out(root, "show", "%s:%s" % (tag, before))
+        if old is None:
+            continue
+        fm = _split_note(old)[0]
+        ntype = note_type(fm)
+        if ntype not in frozen or str(fm.get("status", "")).strip() not in frozen[ntype]:
+            continue
+        head = _git_out(root, "show", "HEAD:%s" % before)
+        try:
+            now = (root / path).read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if head is not None and _only_tool_written(head, now):
+            continue
+        the_id = str(fm.get("id", "") or "").strip() or Path(path).stem
+        report.warn("FROZEN-EDIT", "%s was %s when %s was released, so it is a record now; "
+                    "this edit changes it. Keep it if it corrects something nobody foresaw, "
+                    "otherwise record the new fact in a new note (ADR-0048) (%s)"
+                    % (the_id, str(fm.get("status", "")).strip(), tag, path))
+
+
 def validate(root, report):
     # Self-check first: it needs no repo state, and a validator whose own status
     # tables disagree cannot be trusted to report on anything else.
     validate_status_tables(report)
     validate_frontmatter_parses(root, report)
+    validate_frontmatter_typos(root, report)
 
     snap_path = root / "SNAPSHOT.yaml"
     if not snap_path.is_file():
         report.error("SNAP-MISSING", "SNAPSHOT.yaml not found at repo root")
         return
     try:
-        snap = load_yaml(snap_path.read_text(encoding="utf-8"))
+        snap = load_snapshot_yaml(snap_path.read_text(encoding="utf-8"))
     except Exception as exc:  # noqa: BLE001
-        report.error("SNAP-PARSE", "SNAPSHOT.yaml failed to parse: %s" % exc)
+        report.error("SNAP-PARSE", "SNAPSHOT.yaml failed to parse: %s" % str(exc).splitlines()[0])
         return
     if not isinstance(snap, dict):
         report.error("SNAP-PARSE", "SNAPSHOT.yaml did not parse to a mapping")
@@ -2782,10 +3786,14 @@ def validate(root, report):
     allowed_status = load_allowed_status(root)
     validate_ledgers(root, report, note_index)
     validate_acceptance_location(root, report, note_index)
+    validate_release_test_names(root, report, note_index)
     ledger_cleared = _ledger_cleared(root)
     validate_moved_verdict_fields(root, report, note_index)
     validate_vouched_ledgers(root, report, note_index)
     grandfathered = load_grandfathered(root)
+    validate_index_coverage(root, grandfathered, report)
+    validate_fields_documented(root, grandfathered, report)
+    validate_citations(root, grandfathered, report)
     verification_cfg = snap.get("verification") if isinstance(snap.get("verification"), dict) else {}
     try:
         staleness_days = int(verification_cfg.get("staleness_days", DEFAULT_STALENESS_DAYS))
@@ -2839,6 +3847,10 @@ def validate(root, report):
         if item_id in grandfathered.get(gate, ()):
             return report.warn
         return report.error
+    report.predates = predates_rule(note_index, root)
+    report.archived = {i for i, (p, _fm) in note_index.items()
+                       if p.relative_to(root).as_posix().startswith(ARCHIVE_DIR)}
+    report.release_tag, report.released = released_finished(root, note_index)
     validate_unregistered_notes(root, items, note_index, note_claimants, allowed_status, report)
     NOTE_INDEX_FOR_PLANS.clear()
     NOTE_INDEX_FOR_PLANS.update(note_index)
@@ -2894,6 +3906,7 @@ def validate(root, report):
     validate_design_notes(root, docs_dir, report)
     validate_release_contents(note_index, report)
     validate_review_and_issue_fields(note_index, grandfathered, report)
+    validate_frozen_edits(root, report)
     validate_plan_notes(root, docs_dir, allowed_status, grandfathered, report)
 
     def resolves(ref_id):
@@ -3001,7 +4014,7 @@ def validate(root, report):
             # and features, where linked tests are the agreed instrument.
             if coll_name == "requirements":
                 terminal = None
-            # A check is verified BY BEING WALKED, and its verdict lives in
+            # A check is verified BY BEING TESTED BY HAND, and its verdict lives in
             # `mark:`. Demanding linked passing tests before it may be
             # retired would gate a human judgement on an automated one --
             # the collision ADR-0030 gives the type its own name to avoid.
@@ -3052,13 +4065,13 @@ def validate(root, report):
                         # feature's 62), so the guard stays until those are
                         # normalised too. It is deliberately keyed on the
                         # LEVEL and not on the id prefix -- after the merge a
-                        # walk and a pytest module share the `TST-` space.
+                        # manual check and a pytest module share the `TST-` space.
                         # ADR-0034: an acceptance test gates what it COVERS,
                         # like any other test. What differs is only what
                         # `settled` means -- a runner's exit code for an
-                        # executable test, a settled `mark:` for a walked one --
+                        # executable test, a settled `mark:` for a manual one --
                         # so the gate asks that question instead of demanding a
-                        # status the walked population never holds.
+                        # status the manual population never holds.
                         #
                         # This `continue` was ADR-0031's stopgap: acceptance
                         # tests rest at `active`, and a gate demanding `passing`
@@ -3247,18 +4260,18 @@ def validate(root, report):
                 "Run obligation counts (%s)" % (the_id, status, status, rel))
 
         #: **A check names what it verifies** (REQ-0060). Without a `FEAT-*` or
-        #: an `ISS-*` its section cannot be derived and it defaults to a
+        #: an `ISS-*` its test kind cannot be derived and it defaults to a
         #: behaviour claim -- which keeps it on the list, the safe direction,
         #: but by guessing rather than by reading.
         #:
-        #: Automated checks are exempt: `command:` decides their section
+        #: Automated checks are exempt: `command:` decides their test kind
         #: outright, so nothing about them is being guessed.
         if level == "acceptance" and not command:
             refs = extract_ids((fm or {}).get("covers"))
             if not any(r.startswith(("FEAT-", "ISS-")) for r in refs):
                 promotion_emit(report, "CHECK-SUBJECT", grandfathered, the_id)(
                     "CHECK-SUBJECT",
-                    "%s names no FEAT-* or ISS-* in covers:, so its section cannot be derived and it "
+                    "%s names no FEAT-* or ISS-* in covers:, so its test kind cannot be derived and it "
                     "defaults to a feature check -- name the feature it verifies, or the issue whose "
                     "fix it verifies (ADR-0039) (%s)" % (the_id, rel))
 
@@ -3303,8 +4316,8 @@ def validate(root, report):
                     % (the_id, status, rel))
             if not has_value((fm or {}).get("last_verified")):
                 if level == "acceptance":
-                    # An acceptance test records WHEN IT WAS WALKED in
-                    # `verdict_date:`, beside the `mark:` that says what the walk
+                    # An acceptance test records WHEN IT WAS TESTED in
+                    # `verdict_date:`, beside the `mark:` that says what the test
                     # found. Demanding `last_verified:` as well would be the same
                     # fact in two fields, which is the duplication ADR-0032 exists
                     # to remove -- and the migration would have had to synthesise
@@ -3337,7 +4350,7 @@ def validate(root, report):
                     # reported them as local divergence and they were one --force
                     # away from being lost." They were then lost, and the cost was
                     # paid downstream, where authoring a genuinely never-run manual
-                    # test required typing a verification date for a walk nobody had
+                    # test required typing a verification date for a test nobody had
                     # performed, plus a paragraph of prose explaining that the field
                     # did not mean what the field means.
                     continue
@@ -3368,7 +4381,7 @@ def validate(root, report):
     # validator error and no test failure.
     #
     # This closes it from the side where the population lives -- `area:` values
-    # naming no surface -- because nothing walked them at all. The other
+    # naming no surface -- because nothing checked them at all. The other
     # direction (a surface no check names) is NOT reported: that is the row
     # FEAT-0130 built the type to produce.
     #
@@ -3655,7 +4668,7 @@ def validate(root, report):
         age = (_today() - when).days
         if age <= staleness_days:
             continue
-        report.warn("ACCEPT-STALE", "%s is done and has asked for acceptance for %d days (threshold %d); walk its criteria in the cockpit or drop the request (%s)" % (
+        report.warn("ACCEPT-STALE", "%s is done and has asked for acceptance for %d days (threshold %d); go through its criteria in the cockpit or drop the request (%s)" % (
             feat_id, age, staleness_days, f_path.relative_to(root)))
 
     # -- ISS-0357 PHASE-CHILDREN / PHASE-BOXES: a closed phase must have closed
@@ -3691,7 +4704,14 @@ def validate(root, report):
     #    ADR-0009 makes the note the authored source of state, so the note wins
     #    and the snapshot is what gets corrected. Only TASK ids are compared:
     #    a `tasks:` list that mentions another id type is a different defect.
-    snap_features = ((items or {}).get("features") or {})
+    # ADR-0048 (project-os-dev ISS-0095): with `retention.derive_lists` the
+    # sync writes every reverse list from the child's own field, so a list that
+    # disagrees is the sync's to fix, and `sync-snapshot.py --check` (in CI and
+    # before every commit and stop) is what reports it. These three checks
+    # would tell the author to hand-edit a list nobody writes by hand.
+    _ret = snap.get("retention") if isinstance(snap, dict) else None
+    lists_derived = bool(isinstance(_ret, dict) and _ret.get("derive_lists"))
+    snap_features = ((items or {}).get("features") or {}) if not lists_derived else {}
     for feat_id, entry in sorted(snap_features.items()):
         if not isinstance(entry, dict):
             continue
@@ -3735,6 +4755,8 @@ def validate(root, report):
     for child_id, (c_path, c_fm) in sorted(note_index.items()):
         ctype = note_type(c_fm)
         back_fields = {"task": ("tasks",), "issue": ("fixes", "issues")}.get(ctype)
+        if lists_derived and ctype == "task":
+            continue
         if not back_fields:
             continue
         for parent_id in extract_ids((c_fm or {}).get("parent")):
@@ -3753,6 +4775,30 @@ def validate(root, report):
                     child_id, parent_id, parent_id,
                     " / ".join("`%s:`" % f for f in back_fields),
                     c_path.relative_to(root)))
+
+    # -- ISS-0096 CITES-SUPERSEDED: work in flight that links to a note that
+    #    has been replaced. derive-pointers.py stamps the old note, so an agent
+    #    who opens it is told; this tells the one who only follows the link.
+    #    Only in-flight notes are judged, and only their link fields: a closed
+    #    ticket or an accepted ADR citing its predecessor is history, not a
+    #    wrong turn.
+    in_flight = {"backlog", "doing", "review", "planned", "active", "open", "triage", "draft", "proposed", "approved"}
+    cite_fields = tuple(f for f in RELATIONSHIP_FIELDS if f not in ("supersedes", "superseded")) + ("related",)
+    for nid, (n_path, n_fm) in sorted(note_index.items()):
+        if str((n_fm or {}).get("status", "")).strip() not in in_flight:
+            continue
+        #: A parent's `tasks:` and a phase's lists hold its children, and a
+        #: superseded child still belongs to it: that is not a wrong turn.
+        own_children = ("tasks", "features", "issues", "requirements") if prefix_of(nid) == "PHASE" else ("tasks",)
+        for field in (f for f in cite_fields if f not in own_children):
+            for ref in extract_ids((n_fm or {}).get(field)):
+                target = note_index.get(ref)
+                if ref == nid or target is None or str((target[1] or {}).get("status", "")).strip() != "superseded":
+                    continue
+                by = extract_ids((target[1] or {}).get("superseded_by")) or extract_ids((target[1] or {}).get("superseded"))
+                report.warn(
+                    "CITES-SUPERSEDED", "%s links to %s in `%s:`, and %s is superseded%s; link the note that replaced it (%s)" % (
+                        nid, ref, field, ref, " by %s" % ", ".join(by) if by else "", n_path.relative_to(root)))
 
     children_by_phase = {}   # PHASE id -> [(child id, child status)]
     for child_id, (_c_path, c_fm) in note_index.items():
@@ -3891,6 +4937,46 @@ def validate(root, report):
                 if not resolves(ref):
                     report.error("FOCUS", "focus.%s = %s resolves to no snapshot item or note" % (key, ref))
 
+    # -- project-os-dev ISS-0084 FOCUS-MEMBERSHIP and TASK-MEMBERSHIP: work in
+    #    progress has a snapshot entry of its own.
+    #
+    #    FOCUS above accepts an id that resolves to a note, and
+    #    SNAPSHOT-MEMBERSHIP compares a feature's `tasks:` list in the note with
+    #    the same list in the snapshot. Neither sees a task that both lists name
+    #    but that has no `items.tasks` entry: on 2026-09-24 five such tasks,
+    #    one of them `focus.task`, passed every gate, and the session-start
+    #    orientation and the close-out hook both lost them. The cause was a
+    #    string replace that matched nothing, as in ISS-0117.
+    def in_items(ref_id):
+        return any(isinstance(c, dict) and ref_id in c for c in items.values())
+
+    if isinstance(focus, dict):
+        for key in ("feature", "task", "issue", "phase"):
+            for ref in extract_ids(focus.get(key, "")):
+                if ref in note_index and not in_items(ref):
+                    promotion_emit(report, "FOCUS-MEMBERSHIP", grandfathered, ref)(
+                        "FOCUS-MEMBERSHIP", "focus.%s = %s has a note but no entry in SNAPSHOT.yaml `items`; "
+                        "add one, since the session-start orientation and the close-out hook read the snapshot (%s)"
+                        % (key, ref, note_index[ref][0].relative_to(root)))
+
+    PARENT_SETTLED = {"done", "cancelled", "superseded", "fixed", "declined", "deferred", "implemented", "retired"}
+    snap_tasks_coll = items.get("tasks") if isinstance(items.get("tasks"), dict) else {}
+    flagged = set()
+    for coll in (("features", "phases", "issues") if not lists_derived else ()):
+        for parent_id, entry in sorted(((items or {}).get(coll) or {}).items()):
+            if not isinstance(entry, dict) or str(entry.get("status", "")) in PARENT_SETTLED:
+                continue
+            for ref in extract_ids(entry.get("tasks")):
+                if prefix_of(ref) != "TASK" or ref in snap_tasks_coll or ref in flagged or ref not in note_index:
+                    continue
+                if str((note_index[ref][1] or {}).get("status", "")) not in ("backlog", "doing"):
+                    continue
+                flagged.add(ref)
+                promotion_emit(report, "TASK-MEMBERSHIP", grandfathered, ref)(
+                    "TASK-MEMBERSHIP", "%s is '%s' and %s lists it, but it has no entry under `items.tasks` in "
+                    "SNAPSHOT.yaml; add one (%s)" % (ref, note_index[ref][1].get("status"), parent_id,
+                                                    note_index[ref][0].relative_to(root)))
+
     # -- note frontmatter link integrity for notes referenced by the snapshot
     for item_id, (path, fm) in sorted(note_index.items()):
         if not fm:
@@ -3908,6 +4994,9 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Validate project-os SNAPSHOT.yaml <-> docs/ consistency.")
     ap.add_argument("--repo-root", default=None, help="Repo root (default: nearest ancestor with SNAPSHOT.yaml)")
     ap.add_argument("--quiet", action="store_true", help="Suppress warnings and the success line")
+    ap.add_argument("--changed", action="store_true",
+                    help="Print only findings about files changed since HEAD, with a count of the rest; "
+                         "the exit status still counts every error")
     ap.add_argument("--fix-metrics", action="store_true", help="Rewrite metrics.counts to the computed counts before validating")
     ap.add_argument("--self-check", action="store_true", help="Run only the validator's internal consistency checks (STATUS-TABLE) and exit; needs no repo")
     args = ap.parse_args(argv)
@@ -3958,16 +5047,46 @@ def main(argv=None):
         print("validate-docs: internal error: %s" % exc, file=sys.stderr)
         return 2
 
-    for line in report.errors:
+    errors, warnings = report.errors, report.warnings
+    hidden_errors = hidden_warnings = 0
+    if args.changed:
+        #: project-os-dev ISS-0091/ISS-0094: while working, show what this
+        #: change is about. The exit status still counts every error, so a
+        #: hidden one cannot make a commit pass.
+        about = changed_since_head(root)
+        errors = [l for l in report.errors if _mentions(l, about)]
+        warnings = [l for l in report.warnings if _mentions(l, about)]
+        hidden_errors = len(report.errors) - len(errors)
+        hidden_warnings = len(report.warnings) - len(warnings)
+    for line in errors:
         print(line)
     if not args.quiet:
-        for line in report.warnings:
+        for line in warnings:
             print(line)
+        if hidden_errors or hidden_warnings:
+            print("validate-docs: %d error(s) and %d warning(s) about files not changed since HEAD "
+                  "are not shown (--changed); run without it to see them" % (hidden_errors, hidden_warnings))
+        if report.released_hidden:
+            print("validate-docs: %d finding(s) about notes finished when %s was released not shown; "
+                  "a newer note that changes one carries the finding (ADR-0048)"
+                  % (report.released_hidden, report.release_tag))
+        if report.archived_hidden:
+            print("validate-docs: %d finding(s) about archived notes not shown; only structural "
+                  "checks judge docs/archive/ (ISS-0091)" % report.archived_hidden)
+        if report.predating:
+            print("validate-docs: %d finding(s) not shown, about notes finished before their rule "
+                  "arrived (%s); ADR-0048" % (sum(report.predating.values()), ", ".join(
+                      "%s %d" % kv for kv in sorted(report.predating.items()))))
+    # Run from validate-docs.sh, this is one step of several, and the script
+    # prints the verdict for all of them last. A line reading "validate-docs:
+    # OK" here was taken for the whole answer while a later step failed
+    # (project-os-dev ISS-0089), so the step says it is only the notes.
+    name = "validate-docs [notes]" if os.environ.get("PROJECT_OS_VALIDATE_STEP") == "1" else "validate-docs"
     if report.errors:
-        print("validate-docs: FAIL (%d error%s)" % (len(report.errors), "s" if len(report.errors) != 1 else ""))
+        print("%s: FAIL (%d error%s)" % (name, len(report.errors), "s" if len(report.errors) != 1 else ""))
         return 1
     if not args.quiet:
-        print("validate-docs: OK (%s)" % root)
+        print("%s: OK (%s)" % (name, root))
     return 0
 
 

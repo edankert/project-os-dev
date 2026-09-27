@@ -288,6 +288,7 @@ Frontmatter: the standing-document fields (`type`, `title`, `status`, `owner`, `
 
 - (optional) `gallery` (string): a command that regenerates the project's screen gallery. The release test sheet prints it at the top of what changed, as the thing to run and compare before testing anything.
 - (optional) `length_limits` (map): overrides the length check's limits, with the keys `action` (words in an action line, default 20), `expected` (words in an expected line, default 25), `section_base` and `section_per_check` (a section's budget is `section_base` plus `section_per_check` for each printed check; defaults 300 and 40), and `error` (false makes the reports warnings; default true). Any other key, or a limit that is not a whole number above 0, fails `release-test.py --check`. What the check counts is `tools/instructions/TESTING.md`, "The release test", rule 10.
+- (optional) `quoted_lines` (string): `refused` (the default) or `warning`. A procedure line that quotes a check's expected result instead of giving its tags alone refuses the procedure; `warning` reports it and keeps the procedure, for a project still moving to tags alone. Any other value fails `release-test.py --check`. See `tools/instructions/TESTING.md`, "The release test", rule 9.
 
 Body: prose the tester reads once, then **one `### ` heading per section with one fenced `yaml` block under it**. The heading is the section's name as the sheet prints it. The block's keys:
 

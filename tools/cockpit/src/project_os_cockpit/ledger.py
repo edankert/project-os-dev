@@ -229,7 +229,10 @@ def _entry_json(entry: Entry) -> str:
     if entry.invalidated_by:
         row["invalidated_by"] = entry.invalidated_by
     else:
-        row["mark"] = entry.mark
+        #: `result` since 2026-09-27 (project-os-dev ADR-0050). Only the
+        #: working ledger is ever rewritten, and the migration had already
+        #: renamed its key; a sealed one keeps `mark` for good.
+        row["result"] = entry.mark
     row["date"] = entry.date
     for name in ("method", "by", "reason"):
         value = getattr(entry, name)
@@ -270,14 +273,17 @@ def check_entry(raw: dict[str, Any], *, where: str) -> Entry:
 
     invalidated = str(raw.get("invalidated_by", "") or "").strip()
     if invalidated:
-        if raw.get("mark"):
+        if raw.get("result") or raw.get("mark"):
             raise LedgerError(
                 f"{where}: {check} carries both a mark and an invalidation — "
                 f"they are two events and belong on two lines")
         return Entry(check=check, date=when, invalidated_by=invalidated,
                      reason=str(raw.get("reason", "") or "").strip())
 
-    mark = str(raw.get("mark", "") or "").strip()
+    #: The result is stored under `result`; an entry written before 2026-09-27
+    #: stores it under `mark`, and both are read for good, because a sealed
+    #: ledger is never rewritten (project-os-dev ADR-0050).
+    mark = str(raw.get("result", "") or raw.get("mark", "") or "").strip()
     if mark not in MARKS:
         raise LedgerError(
             f"{where}: {check} has mark {mark!r}; expected one of "
@@ -604,7 +610,7 @@ def append(
         if reason:
             raw["reason"] = reason
     else:
-        raw.update({"mark": mark, "by": by, "method": method})
+        raw.update({"result": mark, "by": by, "method": method})
         if reason:
             raw["reason"] = reason
     entry = check_entry(raw, where=f"append to {platform}")

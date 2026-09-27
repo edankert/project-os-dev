@@ -201,6 +201,28 @@ def _markdown_to_html(
 log = logging.getLogger("project_os_cockpit.renderer")
 
 _RENDERED_BOX_RE = _re.compile(r"<input(?=[^>]*\btype=\"checkbox\")")
+
+
+def rendered_checkbox_count(body_md: str, *, source_path: Path) -> int:
+    """How many checkboxes this Markdown body actually draws.
+
+    The write path needs this (ISS-0184). A client addresses a checkbox by its
+    position among the boxes **on the page**, and the server finds it by
+    walking the ``- [ ]`` lines in the **file**; those two counts are equal
+    only while Markdown agrees to make a list of every one. A task list that
+    opens immediately after a paragraph line, with no blank line between, is
+    absorbed into that paragraph and draws no checkbox at all, so the file has
+    rows the page does not — and from the first such row on, every position is
+    one or more behind.
+
+    Counting them means rendering, because pymdownx.tasklist's rules are the
+    only authority on what draws a box. There is no cheaper honest answer.
+    """
+    return len(_RENDERED_BOX_RE.findall(_markdown_to_html(
+        body_md, resolver=None, asset_resolver=None,
+        source_path=source_path)))
+
+
 def _annotate_checkbox_source(html: str, source_md: str) -> str:
     """Carry each checkbox's **raw** source prose onto its rendered input.
 

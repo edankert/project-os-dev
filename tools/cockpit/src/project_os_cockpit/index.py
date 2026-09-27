@@ -653,7 +653,25 @@ def _normalise_type(raw: Any) -> str | None:
 
     Accepts the wikilink form (``"[[feature]]"``) and bare strings
     (``"feature"`` / ``"reference"``); strips brackets, lowercases.
+
+    **A list means the same thing as the string** (ISS-0279). Obsidian writes
+    a list-valued property as a YAML list, so a note whose type was set
+    through its properties editor arrives as ``["[[@Character]]"]`` rather
+    than as a string. Returning ``None`` for those left 99 of the 407 notes in
+    Edwin's vault untyped — every Character, Page, Location, Chapter and Story
+    — so the Library showed no group for the types that vault is built on.
+
+    **The first usable element wins.** Neither the project-os templates nor
+    the vault's own ever write a second one, so a multi-element list has no
+    established meaning; taking the first is what the one-element case already
+    implies, and it never invents a type the list does not name.
     """
+    if isinstance(raw, (list, tuple)):
+        for item in raw:
+            first = _normalise_type(item)
+            if first:
+                return first
+        return None
     if not isinstance(raw, str):
         return None
     s = raw.strip()

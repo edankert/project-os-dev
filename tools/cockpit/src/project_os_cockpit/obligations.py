@@ -583,7 +583,7 @@ def _gate_rows(index: Any) -> list[dict[str, Any]]:
         # than a group header (Edwin: *"that walk button looks totally out of
         # place there"*). Every other owed row names a verb and has nowhere to
         # put it; this is the first to carry one.
-        "action": "~walk",
+        "action": "~release-test",
     }]
 
 

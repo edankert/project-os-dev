@@ -166,6 +166,9 @@ class CockpitState:
         self._lock = threading.Lock()
         self._agent_focus: dict[str, Any] | None = None
         self._agent_state: dict[str, Any] | None = None
+        # Hook states are tracked by session before choosing a workspace
+        # headline. A late Claude event must not erase a busy Codex turn.
+        self._hook_states: dict[str, dict[str, Any]] = {}
         # Flag flipped to True after the decay thread (TASK-0077)
         # observes a stored busy/waiting that has aged out; ensures
         # we only fire ONE synthetic SSE per decay event.
@@ -197,6 +200,14 @@ class CockpitState:
             return
         if isinstance(data, dict) and isinstance(data.get("state"), str):
             self._agent_state = data
+            saved = data.get("hook_sessions")
+            if isinstance(saved, dict):
+                self._hook_states = {
+                    sid: row for sid, row in saved.items()
+                    if isinstance(sid, str) and isinstance(row, dict)
+                    and isinstance(row.get("state"), str)
+                    and isinstance(row.get("ts"), str)
+                }
 
     def _persist_agent_state(self, payload: dict[str, Any] | None) -> None:
         """Mirror the in-memory state to disk for cross-workspace
@@ -253,6 +264,8 @@ class CockpitState:
         if source != "manual":
             payload["source"] = source
         with self._lock:
+            if source == "manual":
+                self._hook_states.clear()
             self._agent_state = payload
             # A fresh declaration clears the decay-observed flag so the
             # next decay event (if any) fires its own SSE.
@@ -262,6 +275,78 @@ class CockpitState:
             })
             self._persist_agent_state(payload)
         return payload
+
+    def record_agent_hook_state(
+        self, state: str, *, session_id: str, agent: str,
+        message: str | None = None, ended: bool = False,
+    ) -> dict[str, Any]:
+        """Choose a workspace headline from recent hook sessions.
+
+        Keep a separate attention entry for a waiting agent when another
+        agent is busy in the same project. The renderer still paints one
+        icon and one card per project.
+        """
+        ts = _utc_now_iso()
+        session_id = session_id[:128]
+        agent = agent[:40]
+        message = message[:300] if isinstance(message, str) else None
+        with self._lock:
+            if ended:
+                self._hook_states.pop(session_id, None)
+            else:
+                row: dict[str, Any] = {
+                    "state": state, "agent": agent, "ts": ts,
+                    "session_id": session_id,
+                }
+                if message:
+                    row["message"] = message
+                self._hook_states[session_id] = row
+            # This is attention freshness, not a claim about any model's
+            # prompt-cache TTL. The renderer applies its own age policy.
+            cutoff = _parse_iso(ts) - 3600
+            self._hook_states = {
+                sid: row for sid, row in self._hook_states.items()
+                if _parse_iso(row.get("ts", "")) > cutoff
+            }
+            if len(self._hook_states) > 32:
+                newest = sorted(
+                    self._hook_states.items(),
+                    key=lambda item: _parse_iso(item[1]["ts"]),
+                    reverse=True,
+                )[:32]
+                self._hook_states = dict(newest)
+            priority = {"needs-input": 3, "busy": 2, "waiting": 1}
+            rows = sorted(
+                self._hook_states.values(),
+                key=lambda row: (priority.get(row["state"], 0),
+                                 _parse_iso(row["ts"])),
+                reverse=True,
+            )
+            chosen = rows[0] if rows else {
+                "state": "idle", "agent": agent, "ts": ts,
+                "session_id": session_id,
+            }
+            attention = [
+                dict(row)
+                for row in rows if row["state"] in ("waiting", "needs-input")
+            ]
+            payload: dict[str, Any] = {
+                "state": chosen["state"], "agent": chosen["agent"],
+                "ts": chosen["ts"], "source": "hook",
+                "session_id": chosen["session_id"],
+                "attention": attention,
+                "hook_sessions": dict(self._hook_states),
+            }
+            if chosen.get("message"):
+                payload["message"] = chosen["message"]
+            self._agent_state = payload
+            self._agent_state_decay_observed = False
+            self._history.appendleft({
+                "ts": ts, "source": "agent-state",
+                **{k: v for k, v in payload.items() if k != "hook_sessions"},
+            })
+            self._persist_agent_state(payload)
+            return payload
 
     def _effective_agent_state(self, now: float) -> dict[str, Any] | None:
         """Apply lazy decay to the stored agent-state for read paths.
@@ -280,11 +365,7 @@ class CockpitState:
         age = now - _parse_iso(stored["ts"])
         if age <= _AGENT_STATE_DECAY_SECONDS:
             return stored
-        return {
-            "state": "idle",
-            "decayed_from": stored["state"],
-            "ts": stored["ts"],
-        }
+        return {**stored, "state": "idle", "decayed_from": stored["state"]}
 
     def decay_tick(self, now: float | None = None) -> dict[str, Any] | None:
         """Called by the decay thread (TASK-0077). Returns the
@@ -303,11 +384,7 @@ class CockpitState:
             if self._agent_state_decay_observed:
                 return None
             self._agent_state_decay_observed = True
-            synthetic = {
-                "state": "idle",
-                "decayed_from": stored["state"],
-                "ts": stored["ts"],
-            }
+            synthetic = {**stored, "state": "idle", "decayed_from": stored["state"]}
             # Mirror the observable state to disk so the workspace
             # rail (TASK-0082) sees the same `idle` the SSE consumers
             # see, without needing to re-derive decay on the reader side.
@@ -954,6 +1031,15 @@ def _make_handler(
                 self._respond_json(criteria.debt_payload(index))
                 return
 
+            #: ``GET /api/cockpit/vocabulary`` — the status bands, the severity
+            #: lists and the callout types, as data (ISS-0292). A second app
+            #: over the same notes had to copy these and its copy drifted
+            #: within two days; a read is what lets it ask instead. Behind the
+            #: same guards as every other read, and it adds no write surface.
+            if path == "/api/cockpit/vocabulary":
+                self._respond_json(cockpit.vocabulary_payload())
+                return
+
             if path == "/api/cockpit/transitions":
                 self._respond_json({
                     "transitions": status_diff.transitions() if status_diff else [],
@@ -1054,73 +1140,63 @@ def _make_handler(
                 })
                 return
 
-            if path == "/api/cockpit/walk":
-                #: **The owed checks as a procedure** ([[FEAT-0149]] /
-                #: [[TASK-0618]]). The same rows `/api/cockpit/acceptance`
-                #: reports as owed, in the order the browsed repo authored in
-                #: `docs/tests/acceptance/WALK.md`, with each check's setup,
-                #: steps and expected result on the row.
+            if path == "/api/cockpit/release-test":
+                #: **One platform's release test** ([[FEAT-0155]] /
+                #: [[TASK-0640]]): the page upstream's generator prints, as
+                #: data, plus which of its checks already have a result in the
+                #: open ledger (`acceptance.release_test_payload`).
                 _params = urllib.parse.parse_qs(parsed.query)
                 _platform = (_params.get("platform", [""])[0]).strip().lower()
-                from . import ledger as _led_walk
-                _known = _led_walk.platforms(docs_root)
+                from . import ledger as _led_rt
+                _known = _led_rt.platforms(docs_root)
                 #: **`all` is refused rather than answered.** The acceptance
                 #: route accepts it because a gate over two ledgers must fail
-                #: closed by taking the union. A walk is a person at one bench
-                #: with one build, and a union walk would ask them to tick a
-                #: check for a platform they are not holding.
+                #: closed by taking the union. A release test is a person at
+                #: one bench with one build, and a union would ask them to
+                #: record a result for a platform they are not holding.
                 if _platform == "all":
                     self._respond_json(
                         {"ok": False, "error": (
-                            "a walk is on one platform. Ask for one of: "
+                            "a release test is on one platform. Ask for one of: "
                             + (", ".join(_known) or "(this repo keeps no "
                                                     "ledger)")),
                          "platforms": _known},
                         HTTPStatus.BAD_REQUEST)
                     return
-                #: **Which release this walk is of** ([[TASK-0624]]). It was
-                #: resolved for the platform and not for the release, so a
-                #: caller sending neither got a walk that named no release —
-                #: and the page keys a half-walked sitting's step ticks by
-                #: release, platform, sitting and step. With an empty release
-                #: segment, a tick left over from the last walk would show as
-                #: already ticked on the next one, on a step somebody still
-                #: has to walk.
+                #: **Which release this is** ([[TASK-0624]]). The page keys
+                #: its per-check results by release, platform, section and
+                #: check, so an empty release would let a result left over
+                #: from the last release show on the next one.
                 _release = (_params.get("release") or [""])[0].strip()
-                if not _platform or not _release:
-                    from . import publication as _pub_walk
-
-                    _open = _pub_walk.open_releases(index)
-                    if not _platform:
-                        _platform = (
-                            str((_open[0].get("platform") or "")).strip().lower()
-                            if _open else ""
-                        )
-                        if not _platform and len(_known) == 1:
-                            _platform = _known[0]
-                    #: **And it must be a release for THIS platform.**
-                    #: `open_releases` is the whole fleet of drafts, so the
-                    #: first row is whichever version sorts highest — on
-                    #: `your-trainer` that is an Android draft, and
-                    #: `~walk/ios` was headed with it and keyed its iOS step
-                    #: ticks under an Android release id. A note carrying no
-                    #: `platform:` counts for every platform, which is the
-                    #: opt-in rule release contents already use. Found by
-                    #: independent review, 2026-09-14.
-                    if not _release:
-                        _mine = [
-                            r for r in _open
-                            if str(r.get("platform") or "").strip().lower()
-                            in ("", _platform)
-                        ]
-                        if _mine:
-                            _release = str(_mine[0].get("id") or "").strip()
+                from . import publication as _pub_rt
+                _open = _pub_rt.open_releases(index)
+                if not _platform:
+                    _platform = (
+                        str((_open[0].get("platform") or "")).strip().lower()
+                        if _open else ""
+                    )
+                    if not _platform and len(_known) == 1:
+                        _platform = _known[0]
+                #: **And it must be a release for THIS platform.** A note
+                #: carrying no `platform:` counts for every platform, which is
+                #: the opt-in rule release contents already use. Found by
+                #: independent review, 2026-09-14.
+                _mine = [
+                    r for r in _open
+                    if str(r.get("platform") or "").strip().lower()
+                    in ("", _platform)
+                ]
+                #: A platform with no open release of its own is tested against
+                #: the newest open one, as the Tests pane lists it.
+                _mine = _mine or _open
+                if not _release and _mine:
+                    _release = str(_mine[0].get("id") or "").strip()
+                _version = next((str(r.get("version") or "") for r in _open
+                                 if str(r.get("id") or "") == _release), "")
                 #: **An unknown name is refused, never answered.** A ledger
-                #: read for a platform that has none returns no verdicts, so
-                #: every check in the repo comes back owed — 545 rows on
-                #: `your-trainer` for `--platform andriod`, printed with total
-                #: confidence. Upstream refuses the generation for this reason
-                #: and so does this.
+                #: read for a platform that has none returns no results, so
+                #: every check in the repo comes back owed. Upstream refuses
+                #: the generation for this reason and so does this.
                 if _platform not in _known:
                     self._respond_json(
                         {"ok": False, "error": (
@@ -1132,15 +1208,9 @@ def _make_handler(
                     return
                 self._respond_json({
                     "schema_version": cockpit.SCHEMA_VERSION,
-                    **acceptance.walk_payload(
-                        docs_root, index, platform=_platform,
-                        release=_release,
-                        review_ids={value for part in _params.get("review", [])
-                                    for value in part.split(",")
-                                    if re.fullmatch(r"(?:TST|CHK)-[0-9]{4}", value)}
-                        if sum(len(part.split(",")) for part in _params.get("review", [])) <= 1024
-                        else set(),
-                    ),
+                    **acceptance.release_test_payload(
+                        docs_root, platform=_platform, release=_release),
+                    "version": _version,
                     "platforms": _known,
                 })
                 return
@@ -1531,16 +1601,11 @@ def _make_handler(
             thread emits a synthetic event flipping the observable
             state to ``idle``.
             """
-            try:
-                length = int(self.headers.get("Content-Length") or 0)
-            except ValueError:
-                length = 0
-            raw = self.rfile.read(length) if length else b""
-            try:
-                body = json.loads(raw.decode("utf-8")) if raw else {}
-            except (ValueError, UnicodeDecodeError):
-                self._respond_json({"ok": False, "error": "invalid JSON"},
-                                   status=HTTPStatus.BAD_REQUEST)
+            #: Through the shared reader, so the `Content-Type` refusal is in
+            #: one place rather than repeated four times (ISS-0301). What this
+            #: gains besides the guard is the size cap the copy never had.
+            body = self._read_json_body()
+            if body is None:
                 return
             state_value = (body.get("state") or "").strip().lower()
             if not state_value:
@@ -1668,6 +1733,13 @@ def _make_handler(
             pass a raw upstream blob without rewriting JSON (the
             statusline and Codex notify scripts use this).
             """
+            #: This one keeps its own body reader — it refuses an empty body
+            #: and drops the connection on an oversized one, neither of which
+            #: the shared reader does — so it calls the guard directly
+            #: (ISS-0301). All three forwarders that reach it are shell scripts
+            #: this repo emits, and each already sends the header.
+            if not self._require_json_content_type():
+                return
             try:
                 length = int(self.headers.get("Content-Length") or 0)
             except ValueError:
@@ -1703,6 +1775,11 @@ def _make_handler(
                 )
                 return
             params = urllib.parse.parse_qs(query_string)
+            body.pop("_cockpit_notify", None)
+            if (params.get("agent") or [None])[0] == "codex" and params.get("event"):
+                # Codex's legacy notify callback supplies the event through
+                # the query. Native hooks carry hook_event_name themselves.
+                body["_cockpit_notify"] = True
             for key, field in (("event", "hook_event_name"), ("agent", "agent")):
                 default = (params.get(key) or [None])[0]
                 if default and not body.get(field):
@@ -1738,11 +1815,13 @@ def _make_handler(
             state_value = outcome.get("state")
             if state_value:
                 agent_name = body.get("agent")
-                payload = state.record_agent_state(
+                session_id = body.get("session_id") or body.get("thread-id")
+                payload = state.record_agent_hook_state(
                     state_value,
+                    session_id=str(session_id) if session_id else "unknown",
                     agent=str(agent_name) if agent_name else "claude",
                     message=outcome.get("message"),
-                    source="hook",
+                    ended=body.get("hook_event_name") == "SessionEnd",
                 )
                 bus.publish(ControlEvent("cockpit:agent-state", payload))
             activity = outcome.get("activity")
@@ -1761,16 +1840,11 @@ def _make_handler(
             enqueue?}``. With ``enqueue`` the record is also stored as
             a queue-request for the desktop shell (the `cockpit
             dispatch` CLI path, TASK-0136) and announced over SSE."""
-            try:
-                length = int(self.headers.get("Content-Length") or 0)
-            except ValueError:
-                length = 0
-            raw = self.rfile.read(length) if length else b""
-            try:
-                body = json.loads(raw.decode("utf-8")) if raw else {}
-            except (ValueError, UnicodeDecodeError):
-                self._respond_json({"ok": False, "error": "invalid JSON"},
-                                   status=HTTPStatus.BAD_REQUEST)
+            #: Through the shared reader, so the `Content-Type` refusal is in
+            #: one place rather than repeated four times (ISS-0301). What this
+            #: gains besides the guard is the size cap the copy never had.
+            body = self._read_json_body()
+            if body is None:
                 return
             note_id = body.get("id")
             if not isinstance(note_id, str) or not note_id.strip():
@@ -1802,6 +1876,52 @@ def _make_handler(
             host = (self.client_address[0] if self.client_address else "") or ""
             return host in _LOOPBACK_HOSTS
 
+        def _require_json_content_type(self) -> bool:
+            """Refuse a body that does not say it is JSON (ISS-0301).
+
+            **This is the no-preflight path, closed.** A browser will send a
+            cross-origin POST with no permission asked first only while its
+            `Content-Type` is one of three "simple" values — `text/plain`,
+            `application/x-www-form-urlencoded` or `multipart/form-data`. Ask
+            for `application/json` and the browser has to preflight, which the
+            sidecar answers for nothing.
+
+            That matters because `_require_loopback` asks **where the request
+            came from**, and a page the cockpit's viewer frames comes from this
+            machine, so it passes. Its sandbox is `allow-scripts` with no
+            same-origin flag: it cannot read the reply, and it does not need to
+            — the write happens either way. The reviewer demonstrated it
+            against a live sidecar with one `curl -H 'Content-Type:
+            text/plain'`.
+
+            **Checked against every client first.** The Electron renderer, the
+            sidecar's own `static/cockpit.js`, the hook and statusline
+            forwarders, the dispatch queue, the `cockpit` CLI
+            (`cli.py`) and project-os-deck's one write path
+            (`desktop/src/shared/write-client.ts`) all set the header already.
+            Deck's sidecar proxy forwards reads only.
+
+            An absent header is refused too. Every client this repo knows sends
+            one, and "absent" is precisely what a hand-rolled `fetch` from a
+            framed page produces when it is trying not to be noticed.
+
+            **It is not the whole answer.** A page that sets the header still
+            gets through the preflight if the sidecar ever answers one. The
+            real fix is a secret the shell knows and a framed page does not,
+            and that is a larger change (see this issue's second candidate).
+            """
+            raw = self.headers.get("Content-Type") or ""
+            kind = raw.split(";", 1)[0].strip().lower()
+            if kind == "application/json":
+                return True
+            self._respond_json(
+                {"ok": False,
+                 "error": ("a write must say Content-Type: application/json; "
+                           "this one said %r" % (raw or "nothing"))},
+                status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE,
+            )
+            return False
+
         def _read_json_body(self, max_bytes: int | None = None) -> dict[str, Any] | None:
             """The request body as JSON, or ``None`` (already responded).
 
@@ -1812,7 +1932,12 @@ def _make_handler(
             reach, which is worse than a small limit honestly stated.
             (That number was 25 MB when this was written and is 250 MB
             now; the figure lived in two places and only one moved.)
+
+            The `Content-Type` refusal lives here because this is the one place
+            every guarded write reads its body (ISS-0301).
             """
+            if not self._require_json_content_type():
+                return None
             try:
                 length = int(self.headers.get("Content-Length") or 0)
             except ValueError:
@@ -3155,16 +3280,11 @@ def _make_handler(
             """
             if not self._require_loopback():
                 return
-            try:
-                length = int(self.headers.get("Content-Length") or 0)
-            except ValueError:
-                length = 0
-            raw = self.rfile.read(length) if length else b""
-            try:
-                body = json.loads(raw.decode("utf-8")) if raw else {}
-            except (ValueError, UnicodeDecodeError):
-                self._respond_json({"ok": False, "error": "invalid JSON"},
-                                   status=HTTPStatus.BAD_REQUEST)
+            #: Through the shared reader, so the `Content-Type` refusal is in
+            #: one place rather than repeated four times (ISS-0301). What this
+            #: gains besides the guard is the size cap the copy never had.
+            body = self._read_json_body()
+            if body is None:
                 return
             rel = (body.get("path") or "").strip()
             try:
@@ -3194,7 +3314,15 @@ def _make_handler(
                 self._respond_json({"ok": False, "error": f"not a markdown file: {rel}"},
                                    status=HTTPStatus.NOT_FOUND)
                 return
-            ok, error = _toggle_task_at(target, idx, checked)
+            #: The prose the client read off the box it clicked (ISS-0184).
+            #: Optional, because a page drawn by an older sidecar does not send
+            #: it and the count refusal below is the guard that does not depend
+            #: on the client at all.
+            expect = body.get("raw")
+            ok, error = _toggle_task_at(
+                target, idx, checked,
+                expect=expect if isinstance(expect, str) else None,
+            )
             if not ok:
                 self._respond_json({"ok": False, "error": error},
                                    status=HTTPStatus.NOT_FOUND)
@@ -3409,16 +3537,11 @@ def _make_handler(
             cockpit tabs that have "follow agent" enabled jump to the
             resolved URL. TASK-0048.
             """
-            try:
-                length = int(self.headers.get("Content-Length") or 0)
-            except ValueError:
-                length = 0
-            raw = self.rfile.read(length) if length else b""
-            try:
-                body = json.loads(raw.decode("utf-8")) if raw else {}
-            except (ValueError, UnicodeDecodeError):
-                self._respond_json({"ok": False, "error": "invalid JSON"},
-                                   status=HTTPStatus.BAD_REQUEST)
+            #: Through the shared reader, so the `Content-Type` refusal is in
+            #: one place rather than repeated four times (ISS-0301). What this
+            #: gains besides the guard is the size cap the copy never had.
+            body = self._read_json_body()
+            if body is None:
                 return
             target = (body.get("target") or "").strip()
             if not target:
@@ -3444,16 +3567,11 @@ def _make_handler(
             (``GET /api/cockpit/state``) prunes tabs that haven't
             pinged in ``_TAB_STALE_SECONDS``.
             """
-            try:
-                length = int(self.headers.get("Content-Length") or 0)
-            except ValueError:
-                length = 0
-            raw = self.rfile.read(length) if length else b""
-            try:
-                body = json.loads(raw.decode("utf-8")) if raw else {}
-            except (ValueError, UnicodeDecodeError):
-                self._respond_json({"ok": False, "error": "invalid JSON"},
-                                   status=HTTPStatus.BAD_REQUEST)
+            #: Through the shared reader, so the `Content-Type` refusal is in
+            #: one place rather than repeated four times (ISS-0301). What this
+            #: gains besides the guard is the size cap the copy never had.
+            body = self._read_json_body()
+            if body is None:
                 return
             tab_id = (body.get("tab_id") or "").strip()
             url = (body.get("url") or "").strip()
@@ -4180,7 +4298,7 @@ _TASK_LINE_RE = _re.compile(r"^(\s*[-*+]\s+)\[([ xX])\](\s)")
 
 
 def _toggle_task_at(
-    target: Path, index: int, checked: bool,
+    target: Path, index: int, checked: bool, expect: str | None = None,
 ) -> tuple[bool, str]:
     """Toggle the ``index``-th task-list checkbox in ``target`` to
     ``checked``. Returns ``(ok, error_message)``.
@@ -4189,6 +4307,31 @@ def _toggle_task_at(
     render. The rendered DOM and the source are walked in the same
     document order, so the Nth rendered checkbox corresponds to the
     Nth matching source line.
+
+    **Two refusals stand between that assumption and somebody else's row**
+    (ISS-0184).
+
+    The first is the count. The correspondence above holds only while every
+    ``- [ ]`` line in the file draws a box on the page, and one does not: a
+    task list that opens immediately after a paragraph line, with no blank
+    line between, is absorbed into that paragraph and draws nothing. The file
+    then has rows the page has not, and from the first of them onwards every
+    click lands one row too early — silently, reporting success. The
+    *labelling* path already refuses in exactly this case, by leaving
+    ``data-raw`` off rather than telling a box it is a line it is not
+    (ISS-0175); this is that same refusal applied to the write.
+
+    The second is the text. ``expect`` is the prose the client read off the
+    box it clicked. The counts can agree and still be addressing a different
+    document — the file may have been edited since the page was drawn — so
+    when the client sends the text, the line about to change has to be that
+    text. Compared through ``note_writes._criterion_text`` so a resolved
+    criterion's evidence is stripped on both sides, the same normalisation
+    ``data-raw`` is written with.
+
+    A refusal is the specified behaviour, not a degradation: where the address
+    cannot be established the box is not writable, and the reader is told so
+    instead of having a tick appear somewhere they cannot see.
     """
     key = str(target)
     with _TASK_TOGGLE_LOCKS_MUTEX:
@@ -4213,6 +4356,29 @@ def _toggle_task_at(
                 f"checkbox index {index} not found "
                 f"(only {seen + 1} checkbox(es) in file)"
             )
+        in_file = sum(1 for line in lines if _TASK_LINE_RE.match(line))
+        try:
+            _, body_md = note_writes._split_frontmatter(text)
+        except note_writes.WriteError:
+            body_md = text
+        on_page = renderer.rendered_checkbox_count(
+            body_md, source_path=target)
+        if on_page != in_file:
+            return False, (
+                f"this document's checkboxes cannot be addressed: the page "
+                f"draws {on_page} and the file holds {in_file}, so position "
+                f"{index} names a different row in each. A task list that "
+                f"opens immediately after a paragraph line draws no checkbox; "
+                f"add a blank line before it."
+            )
+        if expect is not None and expect.strip():
+            here = note_writes._criterion_text(lines[hit])
+            if (here or "").strip() != expect.strip():
+                return False, (
+                    f"checkbox {index} reads {(here or '').strip()!r} in the "
+                    f"file and {expect.strip()!r} on the page; the file "
+                    f"changed since it was drawn. Reload and click again."
+                )
         replacement = "x" if checked else " "
         lines[hit] = _TASK_LINE_RE.sub(
             lambda m: f"{m.group(1)}[{replacement}]{m.group(3)}",

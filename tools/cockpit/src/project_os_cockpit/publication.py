@@ -622,16 +622,16 @@ _EVIDENCE_RE = re.compile(
 
 
 def _grade(record: Any) -> dict[str, Any]:
-    """How much of a test note was actually walked, and with what evidence."""
+    """How much of a test note was actually tested, and with what evidence."""
     body = record.body or ""
     marks = _BOX_RE.findall(body)
-    walked = sum(1 for m in marks if m.strip().lower() == "x")
+    tested = sum(1 for m in marks if m.strip().lower() == "x")
     front = record.frontmatter or {}
     created = str(front.get("created") or "").strip()
     verified = str(front.get("last_verified") or "").strip()
     return {
         "total": len(marks),
-        "walked": walked,
+        "tested": tested,
         "evidence": len(_EVIDENCE_RE.findall(body)),
         "last_verified": verified,
         # The whole point. `last_verified == created` means the field was

@@ -1419,7 +1419,7 @@ def create_release(
         "",
         "The Tier 1/2 gate blocks a release while any check is unticked "
         "(`tools/instructions/TESTING.md`). Record exceptions here, with "
-        "justification, or walk the checks.",
+        "justification, or test the checks.",
         "",
         "## Notes",
         "",
@@ -1928,8 +1928,8 @@ def settle_checks(
         raise WriteError(
             f"a release page may not write {mark!r}. It settles a check — "
             f"{', '.join(sorted(SETTLE_MARKS))} — which are decisions about "
-            "scope. `pass`, `partial` and `fail` attest that somebody walked "
-            "the procedure, and those are recorded where the check lives "
+            "scope. `pass`, `partial` and `fail` attest that somebody tested "
+            "the check, and those are recorded where the check lives "
             "(ADR-0035, ADR-0041).",
             status=400)
     reason = str(reason or "").strip()
@@ -2283,7 +2283,7 @@ def mark_released(
         more = f" (and {len(blocking) - 5} more)" if len(blocking) > 5 else ""
         raise WriteError(
             f"{len(blocking)} Tier 1/2 check(s) are todo and the note "
-            f"records no exceptions: {names}{more}. Walk them, or document the "
+            f"records no exceptions: {names}{more}. Test them, or document the "
             "exceptions with justification in the release note — TESTING.md "
             "allows the second and this refusal is what makes it a decision "
             "rather than an omission.",
@@ -2803,7 +2803,7 @@ def record_verdict(
                 #: 2026-08-19.
                 raise WriteError(
                     "a verdict must name who produced it — a person for a "
-                    "walk, the test for a run. Inventing one would put a name "
+                    "release test, the test for a run. Inventing one would put a name "
                     "behind a claim nobody made.",
                     status=400)
             entry = _ledger.append(
@@ -2932,8 +2932,8 @@ def mark_check(
         raise WriteError(
             "this verdict has no platform to belong to. A verdict is an event "
             "about one platform (ADR-0037), and this repo keeps ledgers for: "
-            f"{known}. Open a release and give it a `platform:` — the walk "
-            "then records against it — or name the platform on this mark.",
+            f"{known}. Open a release and give it a `platform:` — the release "
+            "test then records against it — or name the platform on this mark.",
             status=409)
 
     verdict = (verdict or "").strip().lower()

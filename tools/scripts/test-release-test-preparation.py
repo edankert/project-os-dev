@@ -20,6 +20,10 @@ spec = importlib.util.spec_from_file_location("release_test_preparation_test", M
 rt = importlib.util.module_from_spec(spec)
 sys.modules[spec.name] = rt
 spec.loader.exec_module(rt)
+#: These fixtures quote expected lines in the older form, and what they test is
+#: preparation, not quoting, so a quote is a warning here as `quoted_lines:
+#: warning` makes it in a repo (project-os-dev REQ-0034).
+rt.QUOTED_EXPECTATIONS_REFUSED = False
 
 
 PROCEDURE = """---
@@ -388,6 +392,59 @@ Connect the trainer.
                          rt.shown_expected("Step 1: `unknown` is shown."))
         self.assertEqual("A step 3 of the ride is shown.",
                          rt.shown_expected("A step 3 of the ride is shown."))
+
+    def test_a_step_prefix_in_single_emphasis_is_stripped(self):
+        # Independent review, 2026-09-27: only `**` and `__` were stripped.
+        self.assertEqual("Done.", rt.shown_expected("- *Step 2:* done."))
+        self.assertEqual("Done.", rt.shown_expected("_Step 2:_ done."))
+        self.assertEqual("*The tile shows cadence.*",
+                         rt.shown_expected("*Step 3: the tile shows cadence.*"))
+        self.assertEqual("_The tile_ shows cadence.",
+                         rt.shown_expected("Step 3: _the tile_ shows cadence."))
+        self.assertEqual("***The panel** shows.*",
+                         rt.shown_expected("*Step 2: **the panel** shows.*"))
+
+    def test_identical_expect_lines_keep_their_positions(self):
+        # Independent review, 2026-09-27: a repeated line was dropped, so tag
+        # .3 named line 4.
+        check = rt.Check("TST-1009", "Twice", "c.md", "Bench",
+                         steps="1. A.\n2. B.\n3. C.\n4. D.",
+                         expect="- The slot is empty.\n- It connects.\n- The slot is empty.\n- It stays.")
+        self.assertEqual(["The slot is empty."], rt.expect_for(check, "3"))
+        self.assertEqual(["It stays."], rt.expect_for(check, "4"))
+        unpaired = rt.Check("TST-1010", "Unpaired", "c.md", "Bench", steps="1. A.",
+                            expect="- The slot is empty.\n- The slot is empty.\n- It stays.")
+        self.assertEqual(["The slot is empty.", "It stays."], rt.expect_for(unpaired, "1"))
+
+    def test_short_lines_with_no_release_tag_say_why_they_are_unused(self):
+        short = rt.ShortLines("docs/what-changed-android.md", "v1",
+                              {("CHG-1", "SUR-0001"): "A slot."})
+        lines, why = rt.short_lines_for(short, "")
+        self.assertEqual({}, lines)
+        self.assertIn("no release has been tagged on this platform yet", why)
+        self.assertIn("Impact sentences", why)
+        change = rt.Change("CHG-1", "Slot", "change.md", screens=[("SUR-0001", "A slot.")])
+        sheet = rt.build_release_test({}, [], [], release="R", platform="android",
+                                      changes=[change], short_lines=short)
+        self.assertIn("no release has been tagged", rt.render(sheet))
+
+    def test_a_short_line_prints_once_for_two_impact_lines_on_one_screen(self):
+        surfaces = {"SUR-0001": rt.Surface("SUR-0001", "Equipment panel")}
+        change = rt.Change("CHG-1", "Slot", "change.md",
+                           screens=[("SUR-0001", "A slot."), ("SUR-0001", "A label.")])
+        short = {("CHG-1", "SUR-0001"): "The panel gains a slot."}
+        screen, = rt.build_what_changed([change], surfaces, short=short)
+        self.assertEqual([("CHG-1", "Slot", "The panel gains a slot.")], screen.sentences)
+        self.assertEqual([True], screen.short)
+        screen, = rt.build_what_changed([change], surfaces)
+        self.assertEqual(["A slot.", "A label."], [s[2] for s in screen.sentences])
+
+    def test_what_changed_names_the_platform_as_a_sentence_writes_it(self):
+        for name, shown in (("android", "Android"), ("ios", "iOS"), ("macos", "macOS"),
+                            ("testbed", "Testbed")):
+            sheet = rt.build_release_test({}, [], [], release="R", platform=name,
+                                          what_changed_tag="v1")
+            self.assertIn("\n## What changed on %s\n" % shown, rt.render(sheet))
 
     def test_a_readiness_problem_offers_a_result_by_its_kind(self):
         self.assertEqual("blocked", rt._readiness({"kind": "preparation", "reason": "r"})["result"])
