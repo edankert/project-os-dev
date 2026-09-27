@@ -37,11 +37,7 @@ The limits:
 
 A limit counts the words the tester sees on the page, after the generator has picked this platform's lines.
 
-**The skill.** `tools/skills/release-test-prep/SKILL.md` runs at release preparation. It asks an agent to do three things ([[ADR-0050-The-Walk-Becomes-The-Release-Test-And-Its-Expected-Results-Live-In-The-Checks|ADR-0050]], D3):
-
-1. Write the short what-changed lines for each section and platform (REQ-0035).
-2. Shorten each over-long Expect line in the test note itself, keeping its meaning (REQ-0034). A change of meaning is a change to the check and reopens it in the ledger.
-3. Shorten each over-long action line in the procedure.
+**The skill.** `tools/skills/release-test-prep/SKILL.md` runs at release preparation and prepares the whole release test in one request ([[ADR-0050-The-Walk-Becomes-The-Release-Test-And-Its-Expected-Results-Live-In-The-Checks|ADR-0050]], D3). Edwin widened it on 2026-09-27. For each platform it recaptures the screenshots and flags stale ones, finds the sections whose owed checks changed, rewrites those sections' procedures with the procedure skill, writes the what-changed lines (REQ-0035), and shortens each over-long Expect line in the test note itself (REQ-0034). A change of meaning is a change to the check and reopens it in the ledger. [[TASK-0193-A-Release-Preparation-Skill-Writes-The-Short-Text|TASK-0193]] lists the seven steps in order.
 
 It then runs the length check and the validator. It keeps its edits only if both pass, and the owner reviews them in the commit.
 

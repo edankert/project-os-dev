@@ -14,14 +14,14 @@ The rename goes first, because every other task edits the files it renames. Then
 
 | Order | Task | What it delivers | Depends on |
 |---|---|---|---|
-| 1 | [[TASK-0187]] | Every name in ADR-0050's rename map, a migration script for consumers, old names refused | nothing; the ledger key waits on Edwin |
+| 1 | [[TASK-0187]] | Every name in ADR-0050's rename map, a migration script for consumers, old names refused | nothing |
 | 2 | [[TASK-0188]] | Expect lines marked `[android]` or `[ios]` | TASK-0187 |
 | 2 | [[TASK-0189]] | Procedures grouped under headings with a `Start:` line; `readiness_for:` gains `result:` | TASK-0187 |
 | 2 | [[TASK-0191]] | Change notes declare `platforms:`; what changed per section and platform; stale screenshots flagged | TASK-0187 |
 | 3 | [[TASK-0190]] | The new output: sections, setup in three parts, numbered checks in groups, in Markdown and JSON | TASK-0188, TASK-0189 |
 | 3 | [[TASK-0194]] | The procedure skill renamed and rewritten for the new shape | TASK-0187, TASK-0189 |
 | 4 | [[TASK-0192]] | The length check, as a warning | TASK-0190 |
-| 5 | [[TASK-0193]] | The `release-test-prep` skill, called from release-prep | TASK-0191, TASK-0192 |
+| 5 | [[TASK-0193]] | The `release-test-prep` skill prepares a whole release test in one request: screenshots, changed sections, procedures, what changed, short Expect lines, checks, then opens it in the cockpit. Called from release-prep | TASK-0191, TASK-0192, TASK-0194 |
 | 6 | [[TASK-0195]] | Sync to project-os-cockpit and your-trainer; the Equipment section pilot on Android | TASK-0190 to TASK-0194 |
 | 7 | [[TASK-0196]] | The length check becomes an error | TASK-0195 and your-trainer's other sections |
 
