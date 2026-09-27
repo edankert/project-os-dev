@@ -29,6 +29,10 @@ A tester reads one short page per section and platform instead of a 37,000-word 
 
 The decisions are in [[ADR-0050-The-Walk-Becomes-The-Release-Test-And-Its-Expected-Results-Live-In-The-Checks|ADR-0050]]: rename the walk to the release test everywhere (D1), keep each short expected result in the check's own note (D2), and let an agent write what cannot be generated (D3).
 
+## The shared finish line
+
+Edwin set one goal for this feature, project-os-dev FEAT-0040, project-os-cockpit FEAT-0155 and your-trainer FEAT-0129 on 2026-09-27: **Edwin can test v2.2.0 on Android and iOS from the cockpit's Tests pane, every section opens in the approved layout, and one `release-test-prep` request prepared all of them.** your-trainer FEAT-0129, "The shared finish line for all three features", states the seven conditions and the nine stages. The three features finish together.
+
 ## Scope
 
 In scope, all in the template (`~/Dev/repos/project-os`):
