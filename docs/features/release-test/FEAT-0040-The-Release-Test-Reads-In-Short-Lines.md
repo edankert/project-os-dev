@@ -14,10 +14,10 @@ requirements: ["[[REQ-0033-A-Section-Prints-Each-Check-As-One-Action-And-One-Exp
 tasks: ["[[TASK-0187]]", "[[TASK-0188]]", "[[TASK-0189]]", "[[TASK-0190]]", "[[TASK-0191]]", "[[TASK-0192]]", "[[TASK-0193]]", "[[TASK-0194]]", "[[TASK-0195]]", "[[TASK-0196]]"]
 release: ""
 acceptance_exception: ""
-reviewed_by: ""
-review_date: ""
-review_verdict: ""
-review_round: ""
+reviewed_by: "model:claude-opus-5-5 (two reviewers, fresh contexts)"
+review_date: 2026-09-27
+review_verdict: "changes-requested"
+review_round: 1
 related: ["[[ADR-0050-The-Walk-Becomes-The-Release-Test-And-Its-Expected-Results-Live-In-The-Checks]]", "[[FEAT-0029-The-Walk-Sheet]]", "[[FEAT-0030-A-Surface-Is-A-Screen-And-A-Change-Names-Its-Screens]]", "[[FEAT-0031-A-Sitting-Is-Walked-From-A-Written-Procedure]]", "[[FEAT-0033-A-Walk-Keeps-Required-Preparation]]", "[[ISS-0086-Sheet-Step-Numbers-Do-Not-Match-Procedure-Prose]]", "[[ISS-0067-Git-Rename-Detection-Can-Hide-A-New-Change-Note-From-The-Survey]]", "[[RISK-0005-Renaming-The-Walk-Breaks-Callers-That-Use-The-Old-Paths]]"]
 ---
 
@@ -73,3 +73,31 @@ Not yet run. The acceptance check is [[TST-0040-A-Release-Test-Section-Reads-As-
 - Plan: [[features/release-test/plan/PLAN|PLAN]]
 - Earlier work this changes: [[FEAT-0029-The-Walk-Sheet|FEAT-0029]] (the sheet), [[FEAT-0030-A-Surface-Is-A-Screen-And-A-Change-Names-Its-Screens|FEAT-0030]] (changed screens), [[FEAT-0031-A-Sitting-Is-Walked-From-A-Written-Procedure|FEAT-0031]] (procedures), [[FEAT-0033-A-Walk-Keeps-Required-Preparation|FEAT-0033]] (declared preparation)
 - Risk: [[RISK-0005-Renaming-The-Walk-Breaks-Callers-That-Use-The-Old-Paths|RISK-0005]]
+
+## Review
+
+Round 1, 2026-09-27. Two independent reviewers (model:claude-opus-5-5, fresh contexts) reviewed project-os 681675d..116d14e. Every guard they removed was caught by a test, 14 in all. Combined verdict: **changes-requested**.
+
+| Claim | Combined | What was done (project-os e292e4e, aee9c6a, 8088594) |
+|---|---|---|
+| Rename: no template file uses the old words, and readers accept `mark` (REQ-0037) | refuted | The template's shipped `tools/cockpit/` was from 2026-09-19. It read WALK.md through `walk_sheet_bundled.py` and refused a ledger migrated to `result`. It is now released from project-os-cockpit's latest, and it reads your-trainer's ledgers. |
+| Tag `.N` pairs with the Nth line (REQ-0034) | refuted | When a check's Expect lines did not number one per step on a platform, every tag printed every line, silently. `--check` now refuses such a tag, naming the check, the platform and both counts. |
+| TST-0040 tested | the packet said "not yet run" | TST-0040 is a manual check in a repo with no ledger. Its result is `last_verified: 2026-09-27` and its "Tested" section, which one reviewer reproduced. |
+| Every other claim | holds | — |
+
+Fixed from the observations as well:
+
+- Identical Expect lines no longer shift the pairing.
+- A "Step N:" prefix in single emphasis is stripped.
+- With no release tag, the page says why the short lines are unused.
+- A short line prints once per change and screen.
+- The heading says "What changed on Android".
+- The prep skill calls over-long lines errors.
+
+Kept as they are, with the reason:
+
+- `PLATFORMS_REQUIRED_FROM` is 2026-09-28 on purpose. Notes written before it get a warning.
+- A sync deletes a renamed old path whether or not it was edited, as its docstring says.
+- A group with no Start line after skipped checks prints no start when the state has not changed.
+- Some project-os-dev test note file names keep the old words. They are identifiers.
+- Two reviewers working in one tree at once was unsafe. Round 2 reviewers work in their own worktrees.
