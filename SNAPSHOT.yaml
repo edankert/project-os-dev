@@ -2190,6 +2190,12 @@ items:
   workflows: {}
 
   changes:
+    CHG-20260927-A-Procedure-Groups-Its-Steps-Under-A-Start-Line:
+      file: "docs/changes/CHG-20260927-A-Procedure-Groups-Its-Steps-Under-A-Start-Line.md"
+      status: merged
+      features: [FEAT-0040]
+      tests: [TST-0043]
+      note: "TASK-0189. A ### heading under ## Steps starts a group and a Start: line under it is its start state; state_for is still read with a warning; a step need not name its screen; readiness_for accepts result: with a stored result value. Landed in the template (73b8d07, 43a293c); not synced."
     CHG-20260927-Expect-Lines-Can-Name-A-Platform:
       file: "docs/changes/CHG-20260927-Expect-Lines-Can-Name-A-Platform.md"
       status: merged
