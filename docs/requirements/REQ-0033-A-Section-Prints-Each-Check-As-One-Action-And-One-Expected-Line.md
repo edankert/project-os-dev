@@ -3,12 +3,12 @@ type: "[[requirement]]"
 id: REQ-0033
 aliases: ["REQ-0033"]
 title: "A release test section prints each check as a number, one action line, one expected line and its tag"
-status: draft
+status: approved
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27
 updated: 2026-09-27
-source: ["Edwin, 2026-09-27: approval of the release test page example", "[[ADR-0050-The-Walk-Becomes-The-Release-Test-And-Its-Expected-Results-Live-In-The-Checks]]"]
+source: ["Edwin, 2026-09-27: approval of the release test page example", "[[ADR-0050-The-Walk-Becomes-The-Release-Test-And-Its-Expected-Results-Live-In-The-Checks]]", "Edwin, 2026-09-27, approving REQ-0033 to REQ-0037: 'approved, start stage 2'"]
 priority: high
 scope: "tools/scripts/walk-sheet.py (renamed release-test.py), docs/__templates__/procedure.md, TESTING.md"
 acceptance:

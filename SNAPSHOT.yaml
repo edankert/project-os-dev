@@ -1751,35 +1751,35 @@ items:
   requirements:
     REQ-0033:
       file: docs/requirements/REQ-0033-A-Section-Prints-Each-Check-As-One-Action-And-One-Expected-Line.md
-      status: draft
+      status: approved
       owner: user:edwin
       priority: high
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
       implements: [FEAT-0040]
     REQ-0034:
       file: docs/requirements/REQ-0034-A-Check-Writes-Its-Expected-Result-Once-Per-Platform.md
-      status: draft
+      status: approved
       owner: user:edwin
       priority: high
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
       implements: [FEAT-0040]
     REQ-0035:
       file: docs/requirements/REQ-0035-Each-Section-Says-What-Changed-On-This-Platform.md
-      status: draft
+      status: approved
       owner: user:edwin
       priority: high
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
       implements: [FEAT-0040]
     REQ-0036:
       file: docs/requirements/REQ-0036-A-Line-Or-Section-Over-Its-Word-Limit-Is-Reported.md
-      status: draft
+      status: approved
       owner: user:edwin
       priority: high
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
       implements: [FEAT-0040]
     REQ-0037:
       file: docs/requirements/REQ-0037-The-Walk-Is-Called-The-Release-Test-Everywhere.md
-      status: draft
+      status: approved
       owner: user:edwin
       priority: high
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"

@@ -3,12 +3,12 @@ type: "[[requirement]]"
 id: REQ-0037
 aliases: ["REQ-0037"]
 title: "The walk is called the release test everywhere, and a consumer's old names are migrated by a script and then refused"
-status: draft
+status: approved
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27
 updated: 2026-09-27
-source: ["Edwin, 2026-09-27: rename everywhere in one go, internal names included, 'to avoid confusion later on'", "[[ADR-0050-The-Walk-Becomes-The-Release-Test-And-Its-Expected-Results-Live-In-The-Checks]] (D1)"]
+source: ["Edwin, 2026-09-27: rename everywhere in one go, internal names included, 'to avoid confusion later on'", "[[ADR-0050-The-Walk-Becomes-The-Release-Test-And-Its-Expected-Results-Live-In-The-Checks]] (D1)", "Edwin, 2026-09-27, approving REQ-0033 to REQ-0037: 'approved, start stage 2'"]
 priority: high
 scope: "every template file in ADR-0050's rename map, and sync-project-os"
 acceptance:

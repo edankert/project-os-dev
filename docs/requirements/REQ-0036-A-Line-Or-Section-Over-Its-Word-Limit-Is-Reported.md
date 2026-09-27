@@ -3,12 +3,12 @@ type: "[[requirement]]"
 id: REQ-0036
 aliases: ["REQ-0036"]
 title: "An action line, an expected line or a section over its word limit is reported, and release preparation writes the short text and checks it"
-status: draft
+status: approved
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27
 updated: 2026-09-27
-source: ["Edwin, 2026-09-27: the length guard and the rollout order", "[[ADR-0050-The-Walk-Becomes-The-Release-Test-And-Its-Expected-Results-Live-In-The-Checks]] (D3)"]
+source: ["Edwin, 2026-09-27: the length guard and the rollout order", "[[ADR-0050-The-Walk-Becomes-The-Release-Test-And-Its-Expected-Results-Live-In-The-Checks]] (D3)", "Edwin, 2026-09-27, approving REQ-0033 to REQ-0037: 'approved, start stage 2'"]
 priority: high
 scope: "the generator's --check, tools/skills/release-test-prep/, tools/skills/release-prep/"
 acceptance:

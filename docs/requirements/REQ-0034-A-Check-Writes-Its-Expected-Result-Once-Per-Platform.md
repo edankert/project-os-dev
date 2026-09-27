@@ -3,12 +3,12 @@ type: "[[requirement]]"
 id: REQ-0034
 aliases: ["REQ-0034"]
 title: "A check writes its short expected result once, with one line per platform where the platforms differ"
-status: draft
+status: approved
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27
 updated: 2026-09-27
-source: ["[[ADR-0050-The-Walk-Becomes-The-Release-Test-And-Its-Expected-Results-Live-In-The-Checks]] (D2)"]
+source: ["[[ADR-0050-The-Walk-Becomes-The-Release-Test-And-Its-Expected-Results-Live-In-The-Checks]] (D2)", "Edwin, 2026-09-27, approving REQ-0033 to REQ-0037: 'approved, start stage 2'"]
 priority: high
 scope: "docs/__templates__/test.md, SCHEMAS.md, TESTING.md, the generator and validator"
 acceptance:
