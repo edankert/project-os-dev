@@ -44,11 +44,11 @@ counters:
   WF: 3
 
 focus:
-  task: "TASK-0187"
+  task: "TASK-0188"
   feature: "FEAT-0040"
   phase: "PHASE-0010"
   issue: ""
-  note: "2026-09-27: PHASE-0010 carries out the release test redesign Edwin approved (ADR-0050). TASK-0187, the rename, is done in the project-os template (66cee10 to cd0de05, not pushed, not synced anywhere): the walk is the release test, a sitting a section, the survey what changed, and the ledger writes result. Next: TASK-0188, TASK-0189 and TASK-0191, which all depend only on it. The section word budget waits for the pilot (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
+  note: "2026-09-27: PHASE-0010 carries out the release test redesign Edwin approved (ADR-0050). TASK-0187, the rename, is done in the project-os template (not pushed, not synced anywhere). Stage 2 runs TASK-0188 (Expect lines marked per platform), then TASK-0189 (procedure groups with a start line), then TASK-0191 (what changed per section and platform), one after another because all three edit release-test.py. The section word budget waits for the pilot (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
@@ -441,7 +441,7 @@ items:
       phase: "[[PHASE-0010]]"
     TASK-0188:
       file: docs/features/release-test/plan/tasks/TASK-0188-Expect-Lines-Can-Be-Marked-Per-Platform.md
-      status: backlog
+      status: doing
       parent: FEAT-0040
       phase: "[[PHASE-0010]]"
     TASK-0189:

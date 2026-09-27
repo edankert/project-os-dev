@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0188
 aliases: ["TASK-0188"]
 title: "Expect lines in a test note can be marked for one platform, and the generator prints only this platform's lines"
-status: backlog
+status: doing
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27
