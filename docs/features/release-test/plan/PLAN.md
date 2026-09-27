@@ -29,7 +29,7 @@ Rollout, as Edwin set it on 2026-09-27: pilot the Equipment section end to end i
 
 Work in the other two repositories:
 
-- project-os-cockpit: the release test page in the Tests pane (ID to follow). It reads TASK-0190's JSON and renames the cockpit's bundle, route and tests.
-- your-trainer: rewrite of the procedures and test notes, Equipment section pilot (ID to follow). It shortens Expect lines, splits them per platform, regroups the procedures and writes the what-changed lines.
+- project-os-cockpit FEAT-0155, the release test page in the Tests pane. It reads TASK-0190's JSON and renames the cockpit's bundle, route and tests.
+- your-trainer FEAT-0129, the rewrite of the procedures and test notes with the Equipment section pilot. It shortens Expect lines, splits them per platform, regroups the procedures and writes the what-changed lines.
 
 Complexity by blast radius: High overall, because the rename reaches three repositories and every acceptance check's Expect lines change. The pilot is Medium.

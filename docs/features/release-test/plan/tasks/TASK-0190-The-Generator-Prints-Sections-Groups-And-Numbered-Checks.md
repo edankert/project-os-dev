@@ -41,5 +41,5 @@ This is the new output. For each platform the generator lists the sections with 
 - [ ] Regenerate Your Trainer's Equipment section on Android from a copy and compare it with the approved example.
 
 ## Notes
-- The cockpit draws the page from the JSON: project-os-cockpit: the release test page in the Tests pane (ID to follow). Agree the payload shape with that item before this task is done.
+- The cockpit draws the page from the JSON: project-os-cockpit FEAT-0155, the release test page in the Tests pane. Agree the payload shape with that item before this task is done.
 - The approved example is the Equipment Hub section, Android, v2.2.0. It was a static HTML page Edwin approved on 2026-09-27.

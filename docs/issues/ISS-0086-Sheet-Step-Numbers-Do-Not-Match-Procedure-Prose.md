@@ -38,7 +38,7 @@ Whatever number a walker sees for a step matches what the procedure's text calls
 The redesigned release test answers this issue, and [[TASK-0190]] closes it. On the new page, checks are numbered from 1 in each section, those printed numbers are the only step numbers a tester sees, and text the generator writes refers to them ("check 13 needs Pro"). Procedure prose no longer cites step numbers ([[ADR-0050-The-Walk-Becomes-The-Release-Test-And-Its-Expected-Results-Live-In-The-Checks|ADR-0050]]).
 
 - **Generator half, first fix: done.** [[TASK-0162]], template `cd50653`, prints each kept step under its number in the procedure, as Edwin chose on 2026-09-25 (option 1). TASK-0190 replaces that numbering with the section's own.
-- **Cockpit half: no longer a separate change.** The handoff below asked the cockpit's walk page to show the procedure's number. The page is being rebuilt as project-os-cockpit: the release test page in the Tests pane (ID to follow), which reads TASK-0190's numbers directly. The handoff is kept for the record and should not be applied on its own.
+- **Cockpit half: no longer a separate change.** The handoff below asked the cockpit's walk page to show the procedure's number. The page is being rebuilt as project-os-cockpit FEAT-0155, the release test page in the Tests pane, which reads TASK-0190's numbers directly. The handoff is kept for the record and should not be applied on its own.
 
 This issue is `fixed` when TASK-0190 lands and the cockpit's release test page shows the same numbers.
 

@@ -41,8 +41,8 @@ In scope, all in the template (`~/Dev/repos/project-os`):
 
 Out of scope:
 
-- The page in the cockpit: project-os-cockpit: the release test page in the Tests pane (ID to follow).
-- Your Trainer's own procedures and test notes: your-trainer: rewrite of the procedures and test notes, Equipment section pilot (ID to follow).
+- The page in the cockpit: project-os-cockpit FEAT-0155, the release test page in the Tests pane.
+- Your Trainer's own procedures and test notes: your-trainer FEAT-0129, the rewrite of the procedures and test notes with the Equipment section pilot.
 - Rewriting closed ADRs, change notes and archived notes.
 - Recording results other than pass and fail. The template's ledger already stores all seven (pass, fail, partial, question, blocked, N/A, excused); offering them on the page is the cockpit's work.
 

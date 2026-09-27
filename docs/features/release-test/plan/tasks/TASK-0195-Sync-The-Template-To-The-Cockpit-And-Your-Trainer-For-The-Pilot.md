@@ -23,9 +23,9 @@ tests: []
 The template's changes reach the two repositories that use them, and the Equipment section is tested end to end on Android.
 
 ## Definition of Done
-- [ ] project-os-cockpit takes the template sync, and its release test page reads the new JSON (project-os-cockpit: the release test page in the Tests pane, ID to follow).
+- [ ] project-os-cockpit takes the template sync, and its release test page reads the new JSON (project-os-cockpit FEAT-0155, the release test page in the Tests pane).
 - [ ] your-trainer takes the template sync and runs the migration script. Its validator reports no old name.
-- [ ] your-trainer's Equipment section on Android passes the length check (your-trainer: rewrite of the procedures and test notes, Equipment section pilot, ID to follow).
+- [ ] your-trainer's Equipment section on Android passes the length check (your-trainer FEAT-0129, the rewrite of the procedures and test notes with the Equipment section pilot).
 - [ ] TST-0040 is walked on that section, and its result is recorded.
 - [ ] The section budget is set from the pilot's measured page, or from Edwin's answer if he has given one.
 

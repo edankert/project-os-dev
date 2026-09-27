@@ -36,7 +36,7 @@ Confirms that the template produces the page Edwin approved on 2026-09-27, for Y
 
 ## Setup
 
-A copy of your-trainer that has taken the template sync and run the migration script, with the Equipment section's procedure and test notes rewritten (your-trainer: rewrite of the procedures and test notes, Equipment section pilot, ID to follow). The cheapest way: check out that branch in a scratch folder.
+A copy of your-trainer that has taken the template sync and run the migration script, with the Equipment section's procedure and test notes rewritten (your-trainer FEAT-0129, the rewrite of the procedures and test notes with the Equipment section pilot). The cheapest way: check out that branch in a scratch folder.
 
 ## Steps
 

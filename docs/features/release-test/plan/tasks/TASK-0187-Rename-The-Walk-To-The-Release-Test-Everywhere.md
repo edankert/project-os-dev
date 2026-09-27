@@ -42,4 +42,4 @@ Every name in ADR-0050's rename map changes in the template in one commit, and c
 ## Notes
 - The ledger's stored key `mark` is not touched until Edwin answers ADR-0050's open question. If he picks (b), a follow-up step writes `result` on new entries, reads `mark` forever, and migrates unsealed `WORKING-*.json` ledgers once.
 - Moving many files in one commit is when git's rename detection can hide a new change note from "what changed" ([[ISS-0067-Git-Rename-Detection-Can-Hide-A-New-Change-Note-From-The-Survey|ISS-0067]]). Commit the rename separately from any new change note.
-- The cockpit's bundle, route and tests are renamed in project-os-cockpit: the release test page in the Tests pane (ID to follow). This task only changes what the cockpit bundles.
+- The cockpit's bundle, route and tests are renamed in project-os-cockpit FEAT-0155, the release test page in the Tests pane. This task only changes what the cockpit bundles.

@@ -42,8 +42,8 @@ The decisions behind this phase are in [[ADR-0050-The-Walk-Becomes-The-Release-T
 
 ## Out of Scope
 
-- The page itself. It is built in project-os-cockpit: the release test page in the Tests pane (ID to follow).
-- Rewriting Your Trainer's procedures and test notes. That is your-trainer: rewrite of the procedures and test notes, Equipment section pilot (ID to follow).
+- The page itself. It is built in project-os-cockpit FEAT-0155, the release test page in the Tests pane.
+- Rewriting Your Trainer's procedures and test notes. That is your-trainer FEAT-0129, the rewrite of the procedures and test notes with the Equipment section pilot.
 - Rewriting closed ADRs, change notes and archived notes. They keep the old words.
 
 ## Exit Criteria
