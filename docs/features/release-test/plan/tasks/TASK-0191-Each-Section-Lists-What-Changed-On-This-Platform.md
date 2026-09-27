@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0191
 aliases: ["TASK-0191"]
 title: "Change notes declare their platforms, and each section lists what changed on its own screens for this platform"
-status: backlog
+status: doing
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27
