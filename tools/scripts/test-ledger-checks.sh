@@ -104,6 +104,18 @@ def placed(rel, **fm):
 check("a manual check beside its feature is refused", placed("docs/features/x/plan/tests/TST-0009-A.md"))
 check("a manual check under docs/tests/acceptance/ is fine", not placed("docs/tests/acceptance/TST-0009-A.md"))
 check("an automated check beside its feature is fine", not placed("docs/features/x/plan/tests/TST-0009-A.md", command="make test"))
+# project-os-dev ISS-0104: a check may declare kind: feature or kind: regression,
+# never beside a command:, and never any other value
+def kinded(**fm):
+    p = loc / "docs/tests/acceptance/TST-0010-A.md"; p.parent.mkdir(parents=True, exist_ok=True); p.write_text("---\n---\n")
+    r = vd.Report(); vd.validate_check_kind(loc, r, {"TST-0010": (p, dict({"id": "TST-0010", "type": "[[test]]", "level": "acceptance", "covers": ["[[ISS-0001]]"]}, **fm))})
+    return [m for m in r.errors if "CHECK-KIND" in m]
+check("a check with no kind: draws nothing", kinded() == [])
+check("kind: feature beside an ISS-* in covers: draws nothing", kinded(kind="feature") == [])
+check("kind: regression draws nothing", kinded(kind="regression") == [])
+check("an unknown kind: draws CHECK-KIND", len(kinded(kind="feture")) == 1)
+check("kind: beside a command: draws CHECK-KIND", len(kinded(kind="feature", command="make test")) == 1)
+check("a command: with no kind: draws nothing", kinded(command="make test") == [])
 # a release note vouching for a sealed ledger's bytes (validate_vouched_ledgers)
 import hashlib
 def vouched(edit=None):
@@ -129,9 +141,11 @@ cp -R "$REPO/SNAPSHOT.yaml" "$REPO/docs" "$T/"; mkdir -p "$T/tools"; cp -R "$REP
 mkdir -p "$T/docs/releases/ledgers" "$T/docs/issues"
 printf '{"platform": "app", "entries": [{"check": "TST-0001", "result": "fail", "date": "2026-09-20", "by": "user:x", "method": "by hand"}]}\n' > "$T/docs/releases/ledgers/WORKING-app.json"
 printf -- '---\ntype: "[[issue]]"\nid: ISS-0902\ntitle: "Retire "old" from it"\n---\n' > "$T/docs/issues/ISS-0902-x.md"
+mkdir -p "$T/docs/tests/acceptance"
+printf -- '---\ntype: "[[test]]"\nid: TST-0903\ntitle: "A"\nstatus: active\nlevel: acceptance\narea: "A"\ncovers: ["[[ISS-0902-x]]"]\nkind: feture\n---\n# A\n' > "$T/docs/tests/acceptance/TST-0903-A.md"
 out="$(PYTHONDONTWRITEBYTECODE=1 python3 "$T/tools/scripts/validate-docs.py" --repo-root "$T" 2>&1)"
 e2e=0
-python3 -c 'import yaml' 2>/dev/null && want="LEDGER-REASON NOTE-FRONTMATTER" || want="LEDGER-REASON"
+python3 -c 'import yaml' 2>/dev/null && want="LEDGER-REASON NOTE-FRONTMATTER CHECK-KIND" || want="LEDGER-REASON CHECK-KIND"
 for code in $want; do
   if grep -q "\[$code\]" <<<"$out"; then echo "  ok   the validator's run reports $code"; else echo "  FAIL the validator's run reports $code"; e2e=$((e2e + 1)); fi
 done

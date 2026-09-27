@@ -388,6 +388,11 @@ class Item:
     #: `your-trainer` carry one, and **nine of the 68 blocking its release were
     #: executed by a machine**.
     command: str = ""
+    #: `kind: feature` or `kind: regression` from the note, lower-cased, or ""
+    #: (project-os-dev ISS-0104, [[ISS-0316]]). It decides the check's kind
+    #: after `command:` and before `covers:`; the validator refuses any other
+    #: value, so `kind_of` ignores one rather than guessing.
+    declared_kind: str = ""
     #: `full` / `partial` / `manual`, and what supplies the coverage. Rolled up
     #: as a release's *confidence*, which is why it is a check property and not
     #: — as first proposed — a feature stat.
@@ -1007,6 +1012,7 @@ def item_from_note(
         verdict_date=str(fm.get("verdict_date", "") or "").strip(),
         verdict_reason=str(fm.get("verdict_reason", "") or "").strip(),
         command=str(fm.get("command", "") or "").strip(),
+        declared_kind=str(fm.get("kind", "") or "").strip().lower(),
         automation=str(fm.get("automation", "") or "").strip(),
         burden=_as_tuple(fm.get("burden")),
         evidence=_as_tuple(fm.get("evidence")),
@@ -1684,6 +1690,13 @@ def kind_of(item: "Item") -> str:
         return _FILE_SHAPE_KINDS.get(item.tier, KIND_FEATURE)
     if item.command:
         return KIND_AUTOMATED
+    #: **A check may say which kind it is** (project-os-dev ISS-0104, from
+    #: your-trainer ISS-0414, Edwin, 2026-09-27). A check that covers an
+    #: `ISS-*` but states how the product behaves now says `kind: feature`,
+    #: keeps the issue in `covers:` for traceability, and is reopened by a
+    #: change like any feature check. `command:` still wins: a machine runs it.
+    if item.declared_kind in (KIND_FEATURE, KIND_REGRESSION):
+        return item.declared_kind
     if any(_ISS_REF.match(ref) for ref in item.refs):
         return KIND_REGRESSION
     return KIND_FEATURE

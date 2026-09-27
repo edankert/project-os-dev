@@ -20,7 +20,7 @@ related: []
 
 ## Sections and rules
 
-The three test kinds, when a check is created, invalidated or retired, and release gating are stated once in `tools/instructions/TESTING.md`. A check is not filed into a test kind; its test kind is derived from `covers:` and `command:`.
+The three test kinds, when a check is created, invalidated or retired, and release gating are stated once in `tools/instructions/TESTING.md`. In this document a check's test kind is the heading it sits under. A check stored as a note has its test kind worked out from `command:` and `covers:`, unless it declares `kind:`.
 
 ---
 

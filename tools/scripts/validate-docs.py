@@ -2954,6 +2954,52 @@ def validate_acceptance_location(root, report, note_index):
                          "or give it a command: if it is automated (%s)" % (nid, path.relative_to(root)))
 
 
+def declared_check_kind(fm):
+    """The test kind an acceptance check declares in `kind:`, lower-cased, or "".
+
+    project-os-dev ISS-0104 (your-trainer ISS-0414, Edwin, 2026-09-27): a check
+    may say `kind: feature` or `kind: regression`, and that wins over the kind
+    its `covers:` would give. A `command:` still makes it automated. Read here
+    so the validator and `release-test.py` agree on one spelling.
+    """
+    return str((fm or {}).get("kind", "") or "").strip().lower()
+
+
+def validate_check_kind(root, report, note_index):
+    """A declared `kind:` on an acceptance check is `feature` or `regression`,
+    and never sits beside a `command:` (project-os-dev ISS-0104).
+
+    A `command:` decides the kind outright: a machine runs the check, so it is
+    an automated test whatever else it says. A `kind:` beside it would be a
+    second answer that nothing reads, and a reader who trusted it would be
+    wrong. Any other value is refused, because a misspelt `kind: feture` would
+    otherwise fall back to the derivation without a word.
+    """
+    for nid, (path, fm) in sorted(note_index.items()):
+        fm = fm or {}
+        if note_type(fm) != "test":
+            continue
+        if str(fm.get("level", "") or "").strip().lower() != "acceptance":
+            continue
+        if str(fm.get("id", "") or "").strip() not in ("", nid):
+            continue   # a composite name indexed under another id
+        declared = declared_check_kind(fm)
+        if not declared:
+            continue
+        try:
+            rel = path.relative_to(root).as_posix()
+        except ValueError:                           # pragma: no cover
+            rel = str(path)
+        if str(fm.get("command", "") or "").strip():
+            report.error("CHECK-KIND", "%s declares kind: %s and has a command:. A command: makes a check an "
+                         "automated test whatever else it says, so remove kind: (TESTING.md, \"The three test "
+                         "kinds\") (%s)" % (nid, declared, rel))
+        elif declared not in ("feature", "regression"):
+            report.error("CHECK-KIND", "%s declares kind: %s; a check's kind is feature or regression, or "
+                         "leave kind: out and it is worked out from covers: (TESTING.md, \"The three test "
+                         "kinds\") (%s)" % (nid, declared, rel))
+
+
 #: The walk was renamed the release test (project-os-dev ADR-0050). Each old
 #: path, and the name that replaced it. A consumer's own files move with the
 #: migration command; the template's copies are deleted by the sync.
@@ -3786,6 +3832,7 @@ def validate(root, report):
     allowed_status = load_allowed_status(root)
     validate_ledgers(root, report, note_index)
     validate_acceptance_location(root, report, note_index)
+    validate_check_kind(root, report, note_index)
     validate_release_test_names(root, report, note_index)
     ledger_cleared = _ledger_cleared(root)
     validate_moved_verdict_fields(root, report, note_index)

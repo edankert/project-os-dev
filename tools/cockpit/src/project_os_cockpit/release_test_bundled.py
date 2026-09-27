@@ -223,6 +223,9 @@ class Check:
     after: list[str] = field(default_factory=list)
     covers: list[str] = field(default_factory=list)
     command: str = ""
+    #: `kind: feature` or `kind: regression` from the note, lower-cased, or ""
+    #: (project-os-dev ISS-0104). The validator refuses any other value.
+    declared_kind: str = ""
     setup: str = ""
     steps: str = ""
     expect: str = ""
@@ -239,16 +242,23 @@ class Check:
 
     @property
     def kind(self) -> str:
-        """feature / regression / automated -- derived, never filed.
+        """feature / regression / automated.
 
-        `TESTING.md`, "The three test kinds": a `command:` makes it automated; a
+        `TESTING.md`, "The three test kinds": a `command:` makes it automated.
+        Otherwise a `kind: feature` or `kind: regression` on the note decides
+        it (project-os-dev ISS-0104, Edwin, 2026-09-27). Without one, a
         `covers:` naming an `ISS-*` makes it a claim about a past defect, so a
-        regression; everything else is a standing claim about behaviour. A
+        regression, and everything else is a standing claim about behaviour. A
         check naming no issue reads as a behaviour claim, which is the safe
         direction -- it stays on the list rather than settling forever.
         """
         if self.command:
             return "automated"
+        #: A declared kind wins over `covers:`, so a check can keep the
+        #: `ISS-*` that says which defect it came from and still be a feature
+        #: check that a change reopens (your-trainer ISS-0414).
+        if self.declared_kind in ("feature", "regression"):
+            return self.declared_kind
         #: **Only the automated branch changes a sheet**, because both of the
         #: others are manual and a row does not say which it is. The split is
         #: kept so this module and the cockpit name the same three test kinds
@@ -321,6 +331,7 @@ def load_checks(docs_root: Path, index=None, repo_root: Path | None = None) -> d
             after=_ids(fm.get("after")),
             covers=_ids(fm.get("covers")),
             command=_text(fm.get("command")),
+            declared_kind=vd.declared_check_kind(fm),
             setup=under_heading(body, "Setup"),
             #: Procedure and Expected results are the pre-ADR-0027 headings.
             #: Read as fallbacks so a corpus nobody has rewritten yet still

@@ -577,5 +577,35 @@ Connect the trainer.
         self.assertIn("readiness declaration is invalid", rendered)
 
 
+
+class DeclaredKindTest(unittest.TestCase):
+    """A check's `kind:` wins over `covers:`, and a `command:` wins over both.
+
+    project-os-dev ISS-0104 (your-trainer ISS-0414, Edwin, 2026-09-27).
+    """
+
+    def kind_of(self, extra: str) -> str:
+        root = pathlib.Path(tempfile.mkdtemp())
+        home = root / "docs" / "tests" / "acceptance"
+        home.mkdir(parents=True)
+        (home / "TST-0901-A.md").write_text(
+            '---\ntype: "[[test]]"\nid: TST-0901\ntitle: "A"\nstatus: active\n'
+            'level: acceptance\narea: "Bench"\ncovers: ["[[ISS-0001]]"]\n' + extra
+            + '---\n\n# A\n', encoding="utf-8")
+        return rt.load_checks(root / "docs")["TST-0901"].kind
+
+    def test_an_issue_in_covers_makes_a_regression_check_by_default(self):
+        self.assertEqual("regression", self.kind_of(""))
+
+    def test_a_declared_feature_kind_wins_over_the_issue(self):
+        self.assertEqual("feature", self.kind_of("kind: feature\n"))
+
+    def test_a_command_still_makes_it_automated(self):
+        self.assertEqual("automated", self.kind_of('kind: feature\ncommand: "make test"\n'))
+
+    def test_an_unknown_kind_falls_back_to_the_derivation(self):
+        self.assertEqual("regression", self.kind_of("kind: feture\n"))
+
+
 if __name__ == "__main__":
     unittest.main()

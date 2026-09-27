@@ -10,19 +10,21 @@ tags: [instructions, testing]
 
 # Acceptance test rules
 
-The three kinds of acceptance test, their lifecycle, and release gating. There is no tier system: a check's test kind is derived from what it covers and who executes it.
+The three kinds of acceptance test, their lifecycle, and release gating. There is no tier system: a check's test kind comes from who executes it, then from what it declares or covers.
 
 ## The three test kinds
 
-A check is not filed into a test kind. Its test kind is computed from two fields it carries: `covers:` says what it is about, `command:` says who executes it (ADR-0034). **Precedence:** a non-empty `command:` makes it an automated test; otherwise a `covers:` naming an `ISS-*` makes it a regression test; otherwise it is a feature test.
+A check's test kind is read from three fields it carries: `command:` says who executes it, `kind:` says what it claims, and `covers:` says what it is about (ADR-0034). **Precedence:** a non-empty `command:` makes it an automated test. Otherwise `kind: feature` or `kind: regression` decides it. Otherwise a `covers:` naming an `ISS-*` makes it a regression test, and anything else is a feature test.
+
+Most checks leave `kind:` out and take the kind `covers:` gives. Write `kind: feature` on a check that covers an `ISS-*` but states how the product behaves now, so a change to that behaviour reopens it; the `ISS-*` stays in `covers:` as the record of which defect it came from (project-os-dev ISS-0104, from your-trainer ISS-0414, Edwin, 2026-09-27: "take your recommendation, option 1"). The validator refuses any other `kind:` value, and a `kind:` beside a `command:` (CHECK-KIND).
 
 ### Feature tests — re-checked when behaviour changes
-- Asserts *the system does X*, a standing claim about current behaviour; `covers:` names a `FEAT-*`.
+- Asserts *the system does X*, a standing claim about current behaviour; `covers:` names a `FEAT-*`, or the check says `kind: feature`.
 - Never removed, and **invalidated when a change overlaps its scope**. The only test kind that is.
 
 ### Regression tests — completed once
 - Asserts *this defect was fixed*, a claim about a past event; `covers:` names the `ISS-*`.
-- Discharged once, by a person completing it or by a `command:` that makes it automated. A later change does not re-open it: nothing a change does can falsify a claim about the past. Without the `ISS-*` link it is read as a feature test.
+- Discharged once, by a person completing it or by a `command:` that makes it automated. A later change does not re-open it: nothing a change does can falsify a claim about the past. Without the `ISS-*` link, and without `kind: regression`, it is read as a feature test.
 
 ### Automated tests — executed by CI
 - Carries a non-empty `command:`; it is here because a machine executes it, and leaves when the command is removed.
@@ -40,7 +42,7 @@ A check is not filed into a test kind. Its test kind is computed from two fields
 - **Say which change did it, in the same action**: the invalidation is a dated event in the release ledger naming the check and the change (`TAXONOMY.md`, "Acceptance outcomes (the ledger's vocabulary)"), and it is refused without a change id; no field on the note records it (ADR-0037). Reason: clearing a tick otherwise destroys the only record the check ever passed, and the re-check never happens (measured in project-os CHG-20260903-Instruction-Weight).
 - Best done at the close-out of the work that caused it, as one sweep over the areas touched.
 - A regression test is not invalidated by a later change; a returned defect files a new issue.
-- **A regression test that also states current behaviour is split when a change overlaps it** (project-os-dev ISS-0069, Edwin, 2026-09-18). A regression test's claim should be only that the defect stays fixed. If it also asserts how the product behaves now, a change to that behaviour leaves it ticked though it no longer holds. At the close-out sweep, split it: the regression test keeps only the defect's own assertion, and a new feature test, with `covers:` naming the `FEAT-*`, carries the behaviour, and is invalidated like any other.
+- **A regression test that also states current behaviour becomes a feature test when a change overlaps it** (project-os-dev ISS-0104, Edwin, 2026-09-27). A regression test's claim should be only that the defect stays fixed. If it also asserts how the product behaves now, a change to that behaviour leaves it ticked though it no longer holds. At the close-out sweep, give it `kind: feature`, keep its `ISS-*` in `covers:`, and invalidate it like any other feature test. This replaces the rule of 2026-09-18 that split such a check in two (project-os-dev ISS-0069).
 
 ### When to remove
 - **Nothing removes a check.** A check whose subject is gone goes `retired`; one a machine now covers gets a `command:`. Reason: a deleted check cannot report that its covering test was renamed.
@@ -52,7 +54,7 @@ A check is not filed into a test kind. Its test kind is computed from two fields
 
 A repo stores its suite one of two ways, never both.
 
-**Notes (current).** One check per note: `type: [[test]]`, `level: acceptance`, id `TST-*`, stored per `LIFECYCLE.md` "Test storage", from `../../docs/__templates__/test.md`. A check a person tests by hand lives under `docs/tests/acceptance/`, where the release test and the cockpit both look for it; an automated check, one with a `command:`, may sit beside its feature (project-os-dev ISS-0063). `status:` is the lifecycle (`draft`/`active`/`retired`); the verdict is not on the note (`STATUSES.md` `[[test]]`). The test kind is derived and never written down. See `SCHEMAS.md` `test.md` ("Acceptance fields") and `STATUSES.md` `[[test]]`.
+**Notes (current).** One check per note: `type: [[test]]`, `level: acceptance`, id `TST-*`, stored per `LIFECYCLE.md` "Test storage", from `../../docs/__templates__/test.md`. A check a person tests by hand lives under `docs/tests/acceptance/`, where the release test and the cockpit both look for it; an automated check, one with a `command:`, may sit beside its feature (project-os-dev ISS-0063). `status:` is the lifecycle (`draft`/`active`/`retired`); the verdict is not on the note (`STATUSES.md` `[[test]]`). The test kind is worked out from `command:` and `covers:`, and is written down only as `kind:`, when a check needs a kind `covers:` would not give it ("The three test kinds"). See `SCHEMAS.md` `test.md` ("Acceptance fields") and `STATUSES.md` `[[test]]`.
 
 **One document (older).** `docs/tests/ACCEPTANCE_TESTS.md`, from `../../docs/__templates__/acceptance-tests.md`: `# Feature tests`, `# Regression tests` and `# Automated tests`, grouped by area, one `- [x] **Test Name:** procedure and expected result` row per check (automated rows have no checkbox). Everything in this file applies to it. A repo that migrates to notes deletes the document in the migration commit, because two records of one thing drift and git holds the old one.
 
