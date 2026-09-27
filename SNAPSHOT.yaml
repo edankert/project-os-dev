@@ -40,7 +40,7 @@ counters:
   REQ: 37
   RISK: 5
   TASK: 196
-  TST: 40
+  TST: 41
   WF: 3
 
 focus:
@@ -48,7 +48,7 @@ focus:
   feature: "FEAT-0040"
   phase: "PHASE-0010"
   issue: ""
-  note: "2026-09-27: PHASE-0010 carries out the release test redesign Edwin approved (ADR-0050). TASK-0187, the rename, is in progress in the project-os template: the walk becomes the release test, a sitting a section, the survey what changed, and the ledger writes result. Edwin answered ADR-0050's questions the same day; the section word budget waits for the pilot (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
+  note: "2026-09-27: PHASE-0010 carries out the release test redesign Edwin approved (ADR-0050). TASK-0187, the rename, is done in the project-os template (66cee10 to cd0de05, not pushed, not synced anywhere): the walk is the release test, a sitting a section, the survey what changed, and the ledger writes result. Next: TASK-0188, TASK-0189 and TASK-0191, which all depend only on it. The section word budget waits for the pilot (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
@@ -436,7 +436,7 @@ items:
   tasks:
     TASK-0187:
       file: docs/features/release-test/plan/tasks/TASK-0187-Rename-The-Walk-To-The-Release-Test-Everywhere.md
-      status: doing
+      status: done
       parent: FEAT-0040
       phase: "[[PHASE-0010]]"
     TASK-0188:
@@ -2456,8 +2456,8 @@ metrics:
     phases_total: 11
     phases_done: 7
     tasks_total: 196
-    tasks_done: 178
-    tests_total: 31
+    tasks_done: 179
+    tests_total: 32
     tests_passing: 0
     tests_failing: 0
     issues_open: 12
