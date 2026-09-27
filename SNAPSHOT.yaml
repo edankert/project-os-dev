@@ -40,15 +40,15 @@ counters:
   REQ: 37
   RISK: 5
   TASK: 196
-  TST: 43
+  TST: 44
   WF: 3
 
 focus:
-  task: "TASK-0191"
+  task: "TASK-0190"
   feature: "FEAT-0040"
   phase: "PHASE-0010"
   issue: ""
-  note: "2026-09-27: PHASE-0010 carries out the release test redesign Edwin approved (ADR-0050). TASK-0187, the rename, is done in the project-os template (not pushed, not synced anywhere). Stage 2 runs TASK-0188 (Expect lines marked per platform), then TASK-0189 (procedure groups with a start line), then TASK-0191 (what changed per section and platform), one after another because all three edit release-test.py. The section word budget waits for the pilot (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
+  note: "2026-09-27: PHASE-0010 carries out the release test redesign Edwin approved (ADR-0050). TASK-0187, the rename, is done in the project-os template (not pushed, not synced anywhere). Stage 2 is done: TASK-0188 (Expect lines marked per platform), TASK-0189 (procedure groups with a start line) and TASK-0191 (what changed per section and platform), in the template, not pushed. Stage 3 is next: TASK-0190 (the generator's new output) and TASK-0194 (the procedure skill in the new shape). The section word budget waits for the pilot (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
@@ -456,7 +456,7 @@ items:
       phase: "[[PHASE-0010]]"
     TASK-0191:
       file: docs/features/release-test/plan/tasks/TASK-0191-Each-Section-Lists-What-Changed-On-This-Platform.md
-      status: doing
+      status: done
       parent: FEAT-0040
       phase: "[[PHASE-0010]]"
     TASK-0192:
@@ -2190,6 +2190,12 @@ items:
   workflows: {}
 
   changes:
+    CHG-20260927-Each-Section-Lists-What-Changed-On-Its-Own-Screens:
+      file: "docs/changes/CHG-20260927-Each-Section-Lists-What-Changed-On-Its-Own-Screens.md"
+      status: merged
+      features: [FEAT-0040]
+      tests: [TST-0044]
+      note: "TASK-0191. Each section opens with the changes to its own screens on the platform being tested; a change note's platforms: and an Impact line's [platform] mark decide where it is listed; a picture older than its change is flagged; what-changed-<platform>.md short lines replace the Impact sentences while they name the last release tag. Landed in the template (61421da, 0a14cef); not synced."
     CHG-20260927-A-Procedure-Groups-Its-Steps-Under-A-Start-Line:
       file: "docs/changes/CHG-20260927-A-Procedure-Groups-Its-Steps-Under-A-Start-Line.md"
       status: merged
@@ -2468,8 +2474,8 @@ metrics:
     phases_total: 11
     phases_done: 7
     tasks_total: 196
-    tasks_done: 181
-    tests_total: 34
+    tasks_done: 182
+    tests_total: 35
     tests_passing: 0
     tests_failing: 0
     issues_open: 12
