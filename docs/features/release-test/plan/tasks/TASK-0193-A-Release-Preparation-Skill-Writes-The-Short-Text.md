@@ -8,7 +8,7 @@ phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27
 updated: 2026-09-27
-source: ["[[FEAT-0040-The-Release-Test-Reads-In-Short-Lines, "Edwin, 2026-09-27: 'Are we considering writing a release skill which enables an LLM to build the release test pages?'", "Edwin, 2026-09-27: 'widen the task as suggested'"]]"]
+source: ["[[FEAT-0040-The-Release-Test-Reads-In-Short-Lines]]", "Edwin, 2026-09-27: 'Are we considering writing a release skill which enables an LLM to build the release test pages?'", "Edwin, 2026-09-27: 'widen the task as suggested'"]
 parent: "[[FEAT-0040-The-Release-Test-Reads-In-Short-Lines]]"
 effort: "L"
 due: ""
