@@ -40,7 +40,7 @@ counters:
   REQ: 37
   RISK: 5
   TASK: 196
-  TST: 42
+  TST: 43
   WF: 3
 
 focus:
@@ -446,7 +446,7 @@ items:
       phase: "[[PHASE-0010]]"
     TASK-0189:
       file: docs/features/release-test/plan/tasks/TASK-0189-A-Procedure-Groups-Its-Checks-Under-A-Start-State.md
-      status: doing
+      status: done
       parent: FEAT-0040
       phase: "[[PHASE-0010]]"
     TASK-0190:
@@ -2462,8 +2462,8 @@ metrics:
     phases_total: 11
     phases_done: 7
     tasks_total: 196
-    tasks_done: 180
-    tests_total: 33
+    tasks_done: 181
+    tests_total: 34
     tests_passing: 0
     tests_failing: 0
     issues_open: 12
