@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0189
 aliases: ["TASK-0189"]
 title: "A procedure groups its checks under headings with a start state, and each step is one action line with tags"
-status: backlog
+status: doing
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27

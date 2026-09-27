@@ -44,7 +44,7 @@ counters:
   WF: 3
 
 focus:
-  task: "TASK-0188"
+  task: "TASK-0189"
   feature: "FEAT-0040"
   phase: "PHASE-0010"
   issue: ""
@@ -446,7 +446,7 @@ items:
       phase: "[[PHASE-0010]]"
     TASK-0189:
       file: docs/features/release-test/plan/tasks/TASK-0189-A-Procedure-Groups-Its-Checks-Under-A-Start-State.md
-      status: backlog
+      status: doing
       parent: FEAT-0040
       phase: "[[PHASE-0010]]"
     TASK-0190:
