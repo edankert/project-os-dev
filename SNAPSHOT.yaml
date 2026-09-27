@@ -48,7 +48,7 @@ focus:
   feature: "FEAT-0040"
   phase: "PHASE-0010"
   issue: ""
-  note: "2026-09-27: PHASE-0010 plans the release test redesign Edwin approved (ADR-0050): the walk is renamed the release test, each check's short expected line lives in its test note, and an agent writes the short text at release preparation. TASK-0187, the rename, goes first. Open for Edwin: the ledger's stored key (ADR-0050) and the section word budget (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
+  note: "2026-09-27: PHASE-0010 carries out the release test redesign Edwin approved (ADR-0050). TASK-0187, the rename, is in progress in the project-os template: the walk becomes the release test, a sitting a section, the survey what changed, and the ledger writes result. Edwin answered ADR-0050's questions the same day; the section word budget waits for the pilot (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
@@ -157,7 +157,7 @@ items:
   features:
     FEAT-0040:
       file: docs/features/release-test/FEAT-0040-The-Release-Test-Reads-In-Short-Lines.md
-      status: planned
+      status: doing
       owner: user:edwin
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
       requirements: [REQ-0033, REQ-0034, REQ-0035, REQ-0036, REQ-0037]
@@ -436,7 +436,7 @@ items:
   tasks:
     TASK-0187:
       file: docs/features/release-test/plan/tasks/TASK-0187-Rename-The-Walk-To-The-Release-Test-Everywhere.md
-      status: backlog
+      status: doing
       parent: FEAT-0040
       phase: "[[PHASE-0010]]"
     TASK-0188:

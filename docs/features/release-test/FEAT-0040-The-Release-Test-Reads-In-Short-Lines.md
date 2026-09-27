@@ -3,7 +3,7 @@ type: "[[feature]]"
 id: FEAT-0040
 aliases: ["FEAT-0040"]
 title: "The release test reads in short lines: the generator feeds one short page per section and platform"
-status: planned
+status: doing
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27

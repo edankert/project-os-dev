@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0187
 aliases: ["TASK-0187"]
 title: "Rename the walk to the release test in every template file, with a migration script for consumers"
-status: backlog
+status: doing
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27
