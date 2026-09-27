@@ -15,6 +15,7 @@ consequences: ["Work lands in three repos: the template, the cockpit and the fir
 supersedes: ""
 superseded: ""
 related: ["[[ADR-0027-An-Acceptance-Check-Is-Walkable-By-A-Stranger]]", "[[ADR-0025-An-Executable-Test-Records-No-Verdict]]", "[[ADR-0024-A-Normative-Rule-Is-Stated-Once]]", "[[REQ-0028-A-Release-Presents-Its-Owed-Checks-As-A-Walk]]", "[[FEAT-0029-The-Walk-Sheet]]", "[[ISS-0060-The-Acceptance-Gate-Reads-A-Mark-And-Never-The-Ledger]]"]
+amended_by: ["[[ADR-0050]]"]
 ---
 
 # The walk sheet is derived, and its order is authored once

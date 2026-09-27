@@ -17,6 +17,7 @@ consequences: ["Procedure authors must declare dependencies and setup scope wher
 supersedes: ""
 superseded: ""
 related: ["[[ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure]]", "[[FEAT-0033-A-Walk-Keeps-Required-Preparation]]", "[[REQ-0031-Preparation-Is-Declared-And-Validated]]"]
+amended_by: ["[[ADR-0050]]"]
 ---
 
 # Declared preparation survives filtering of settled walk checks

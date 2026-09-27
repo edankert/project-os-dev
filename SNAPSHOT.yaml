@@ -30,28 +30,34 @@ counters:
   # ADR-0030..ADR-0043 by bare number (TESTING.md's 'ADR-0031', SCHEMAS.md's 'ADR-0032' and
   # 'ADR-0034', and more), so a local ADR-0030..0043 would make those citations ambiguous.
   # Same fix as project-os-cockpit ISS-0123. 0030-0043 are never allocated here.
-  ADR: 49
+  ADR: 50
   CHG:
     last_date: 20260916
-  FEAT: 39
+  FEAT: 40
   ISS: 103
-  PHASE: 9
+  PHASE: 10
   REL: 0
-  REQ: 32
-  RISK: 4
-  TASK: 186
-  TST: 39
+  REQ: 37
+  RISK: 5
+  TASK: 196
+  TST: 40
   WF: 3
 
 focus:
-  task: ""
-  feature: ""
-  phase: "PHASE-0009"
+  task: "TASK-0187"
+  feature: "FEAT-0040"
+  phase: "PHASE-0010"
   issue: ""
-  note: "2026-09-26: PHASE-0009's sixteen tasks are done and its issues fixed. One exit criterion waits: measuring opened notes once sessions use the new tools (Edwin decided the other, TASK-0184). Open elsewhere: ISS-0086's cockpit half; the cockpit's SNAPSHOT.yaml declares items.releases twice."
+  note: "2026-09-27: PHASE-0010 plans the release test redesign Edwin approved (ADR-0050): the walk is renamed the release test, each check's short expected line lives in its test note, and an agent writes the short text at release preparation. TASK-0187, the rename, goes first. Open for Edwin: the ledger's stored key (ADR-0050) and the section word budget (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
+    PHASE-0010:
+      file: docs/phases/PHASE-0010-The-Release-Test-Reads-In-Short-Lines.md
+      status: active
+      order: 10
+      owner: user:edwin
+      related: [ADR-0050, ADR-0029, ADR-0045, ADR-0046, ADR-0049, PHASE-0004, PHASE-0005]
     PHASE-0009:
       file: docs/phases/PHASE-0009-A-Change-Costs-Only-Its-Own-Work.md
       title: "A change costs only its own work"
@@ -145,10 +151,18 @@ items:
       status: planned
       order: 999
       owner: user:edwin
-      issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083, ISS-0085, ISS-0086, ISS-0010, ISS-0011, ISS-0012, ISS-0013, ISS-0014, ISS-0015, ISS-0016, ISS-0017, ISS-0018, ISS-0019, ISS-0020, ISS-0021, ISS-0022, ISS-0023, ISS-0024, ISS-0025, ISS-0026, ISS-0027, ISS-0029, ISS-0030, ISS-0031, ISS-0032, ISS-0040, ISS-0066, ISS-0067, ISS-0074, ISS-0075, ISS-0076]
+      issues: [ISS-0005, ISS-0079, ISS-0080, ISS-0081, ISS-0082, ISS-0083, ISS-0085, ISS-0010, ISS-0011, ISS-0012, ISS-0013, ISS-0014, ISS-0015, ISS-0016, ISS-0017, ISS-0018, ISS-0019, ISS-0020, ISS-0021, ISS-0022, ISS-0023, ISS-0024, ISS-0025, ISS-0026, ISS-0027, ISS-0029, ISS-0030, ISS-0031, ISS-0032, ISS-0040, ISS-0066, ISS-0067, ISS-0074, ISS-0075, ISS-0076]
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0040:
+      file: docs/features/release-test/FEAT-0040-The-Release-Test-Reads-In-Short-Lines.md
+      status: planned
+      owner: user:edwin
+      phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
+      requirements: [REQ-0033, REQ-0034, REQ-0035, REQ-0036, REQ-0037]
+      tests: [TST-0040]
+      related: [ADR-0050, FEAT-0029, FEAT-0030, FEAT-0031, FEAT-0033, ISS-0086, ISS-0067, RISK-0005]
     FEAT-0039:
       file: docs/features/opus-5-5-conformance/FEAT-0039-Opus-5-5-Prompting-Guide-Conformance.md
       status: done
@@ -420,6 +434,56 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0187:
+      file: docs/features/release-test/plan/tasks/TASK-0187-Rename-The-Walk-To-The-Release-Test-Everywhere.md
+      status: backlog
+      parent: FEAT-0040
+      phase: "[[PHASE-0010]]"
+    TASK-0188:
+      file: docs/features/release-test/plan/tasks/TASK-0188-Expect-Lines-Can-Be-Marked-Per-Platform.md
+      status: backlog
+      parent: FEAT-0040
+      phase: "[[PHASE-0010]]"
+    TASK-0189:
+      file: docs/features/release-test/plan/tasks/TASK-0189-A-Procedure-Groups-Its-Checks-Under-A-Start-State.md
+      status: backlog
+      parent: FEAT-0040
+      phase: "[[PHASE-0010]]"
+    TASK-0190:
+      file: docs/features/release-test/plan/tasks/TASK-0190-The-Generator-Prints-Sections-Groups-And-Numbered-Checks.md
+      status: backlog
+      parent: FEAT-0040
+      phase: "[[PHASE-0010]]"
+    TASK-0191:
+      file: docs/features/release-test/plan/tasks/TASK-0191-Each-Section-Lists-What-Changed-On-This-Platform.md
+      status: backlog
+      parent: FEAT-0040
+      phase: "[[PHASE-0010]]"
+    TASK-0192:
+      file: docs/features/release-test/plan/tasks/TASK-0192-The-Validator-Reports-Over-Long-Lines-And-Sections.md
+      status: backlog
+      parent: FEAT-0040
+      phase: "[[PHASE-0010]]"
+    TASK-0193:
+      file: docs/features/release-test/plan/tasks/TASK-0193-A-Release-Preparation-Skill-Writes-The-Short-Text.md
+      status: backlog
+      parent: FEAT-0040
+      phase: "[[PHASE-0010]]"
+    TASK-0194:
+      file: docs/features/release-test/plan/tasks/TASK-0194-Rename-The-Walk-Procedure-Skill-And-Teach-It-The-New-Shape.md
+      status: backlog
+      parent: FEAT-0040
+      phase: "[[PHASE-0010]]"
+    TASK-0195:
+      file: docs/features/release-test/plan/tasks/TASK-0195-Sync-The-Template-To-The-Cockpit-And-Your-Trainer-For-The-Pilot.md
+      status: backlog
+      parent: FEAT-0040
+      phase: "[[PHASE-0010]]"
+    TASK-0196:
+      file: docs/features/release-test/plan/tasks/TASK-0196-Turn-The-Length-Warning-Into-An-Error.md
+      status: backlog
+      parent: FEAT-0040
+      phase: "[[PHASE-0010]]"
     TASK-0186:
       file: docs/features/agent-time/plan/tasks/TASK-0186-The-Fleet-Adopts-PHASE-0009s-Tools.md
       status: done
@@ -1201,8 +1265,8 @@ items:
     ISS-0086:
       file: docs/issues/ISS-0086-Sheet-Step-Numbers-Do-Not-Match-Procedure-Prose.md
       status: open
-      phase: "[[PHASE-999]]"
-      tasks: [TASK-0162]
+      phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
+      tasks: [TASK-0162, TASK-0190]
     ISS-0085:
       file: docs/issues/ISS-0085-Parallel-Reviewers-Mutate-The-Same-Working-Tree.md
       status: open
@@ -1685,6 +1749,41 @@ items:
   # Pruned: ISS-0001 (closed, PHASE-0001). Note preserved under docs/issues/.
 
   requirements:
+    REQ-0033:
+      file: docs/requirements/REQ-0033-A-Section-Prints-Each-Check-As-One-Action-And-One-Expected-Line.md
+      status: draft
+      owner: user:edwin
+      priority: high
+      phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
+      implements: [FEAT-0040]
+    REQ-0034:
+      file: docs/requirements/REQ-0034-A-Check-Writes-Its-Expected-Result-Once-Per-Platform.md
+      status: draft
+      owner: user:edwin
+      priority: high
+      phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
+      implements: [FEAT-0040]
+    REQ-0035:
+      file: docs/requirements/REQ-0035-Each-Section-Says-What-Changed-On-This-Platform.md
+      status: draft
+      owner: user:edwin
+      priority: high
+      phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
+      implements: [FEAT-0040]
+    REQ-0036:
+      file: docs/requirements/REQ-0036-A-Line-Or-Section-Over-Its-Word-Limit-Is-Reported.md
+      status: draft
+      owner: user:edwin
+      priority: high
+      phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
+      implements: [FEAT-0040]
+    REQ-0037:
+      file: docs/requirements/REQ-0037-The-Walk-Is-Called-The-Release-Test-Everywhere.md
+      status: draft
+      owner: user:edwin
+      priority: high
+      phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
+      implements: [FEAT-0040]
     REQ-0032:
       file: docs/requirements/REQ-0032-Ranking-Claims-Measured.md
       status: implemented
@@ -1937,6 +2036,14 @@ items:
       related: [ADR-0024, REQ-0018, ISS-0041, ISS-0042, ISS-0043]
       note: "ADR-0024 option 1: widens REQ-0018 from state rules to every normative rule. Supersedes it rather than reopening a terminal requirement."
   risks:
+    RISK-0005:
+      file: docs/risks/RISK-0005-Renaming-The-Walk-Breaks-Callers-That-Use-The-Old-Paths.md
+      status: open
+      owner: user:edwin
+      phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
+      likelihood: high
+      impact: medium
+      related: [FEAT-0040, TASK-0187, TASK-0195, ADR-0050, ISS-0067]
     RISK-0004:
       file: docs/risks/RISK-0004-Transcript-Privacy.md
       status: closed
@@ -1972,6 +2079,14 @@ items:
       related: [FEAT-0015, TASK-0060, ADR-0009, REQ-0019]
 
   tests:
+    TST-0040:
+      file: docs/tests/acceptance/TST-0040-A-Release-Test-Section-Reads-As-Short-Lines.md
+      status: active
+      scope: feature
+      level: acceptance
+      phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
+      features: [FEAT-0040]
+      tasks: [TASK-0195]
     TST-0021:
       file: docs/tests/acceptance/TST-0021-Caveat-With-Every-Row.md
       status: active
@@ -2130,6 +2245,11 @@ items:
       status: merged
 
   decisions:
+    ADR-0050:
+      file: docs/decisions/ADR-0050-The-Walk-Becomes-The-Release-Test-And-Its-Expected-Results-Live-In-The-Checks.md
+      status: accepted
+      owner: user:edwin
+      related: [ADR-0029, ADR-0045, ADR-0046, ADR-0049, ADR-0027, ADR-0044, FEAT-0040, ISS-0086]
     ADR-0049:
       file: docs/decisions/ADR-0049-A-Walk-Step-May-Cite-A-Check-Without-Quoting-It.md
       status: accepted
@@ -2325,11 +2445,11 @@ items:
 
 metrics:
   counts:
-    features_total: 39
+    features_total: 40
     features_done: 36
-    phases_total: 10
+    phases_total: 11
     phases_done: 7
-    tasks_total: 186
+    tasks_total: 196
     tasks_done: 178
     tests_total: 31
     tests_passing: 0
@@ -2338,8 +2458,8 @@ metrics:
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 5
-    requirements_total: 32
+    requirements_total: 37
     requirements_implemented: 29
-    risks_open: 1
+    risks_open: 2
     releases_total: 0
-    decisions_total: 35
+    decisions_total: 36

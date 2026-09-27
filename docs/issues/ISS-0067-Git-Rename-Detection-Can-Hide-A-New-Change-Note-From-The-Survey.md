@@ -12,7 +12,7 @@ reported_by: review
 severity: low
 component: tooling
 parent: ""
-related: ["[[TASK-0118-The-Survey-Comes-From-Change-Notes-And-Captures]]", "[[ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure]]"]
+related: ["[[TASK-0118-The-Survey-Comes-From-Change-Notes-And-Captures]]", "[[ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure]]", "[[FEAT-0040-The-Release-Test-Reads-In-Short-Lines]]"]
 tests: []
 ---
 

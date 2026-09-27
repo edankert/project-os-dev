@@ -18,6 +18,7 @@ amends: "[[ADR-0045-A-Sitting-Is-Walked-From-A-Written-Procedure]]"
 decided_option: "1"
 decided: 2026-09-26
 related: ["[[ADR-0048-Old-Tickets-Are-Records-And-Every-Fact-Is-Written-Once]]", "[[PHASE-0009-A-Change-Costs-Only-Its-Own-Work]]", "[[TASK-0175]]"]
+amended_by: ["[[ADR-0050]]"]
 ---
 
 # A walk step may cite a check's step without quoting it, and the sheet prints the check's current words
