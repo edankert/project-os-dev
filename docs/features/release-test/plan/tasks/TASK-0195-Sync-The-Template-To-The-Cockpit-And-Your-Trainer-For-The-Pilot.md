@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0195
 aliases: ["TASK-0195"]
 title: "Sync the template to project-os-cockpit and your-trainer and confirm the Equipment section pilot on Android"
-status: doing
+status: done
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27
@@ -26,7 +26,7 @@ The template's changes reach the two repositories that use them, and the Equipme
 - [x] project-os-cockpit takes the template sync, and its release test page reads the new JSON (project-os-cockpit FEAT-0155, the release test page in the Tests pane). project-os-cockpit 666c5dc and 3beda27: synced from template 9044d67, and its release test page reads the generator's JSON through `/api/cockpit/release-test` (FEAT-0155, TASK-0639 to TASK-0643).
 - [x] your-trainer takes the template sync and runs the migration script. Its validator reports no old name. your-trainer 2f30a82c: synced from 9044d67 and migrated in the same commit; `validate-docs.sh` reports no OLD-NAME.
 - [x] your-trainer's Equipment section on Android passes the length check (your-trainer FEAT-0129, the rewrite of the procedures and test notes with the Equipment section pilot). On 2026-09-27 it prints 995 words for 28 checks, under its budget of 1,420, and no line in it is over its limit.
-- [ ] TST-0040 is walked on that section, and its result is recorded.
+- [x] TST-0040 is walked on that section, and its result is recorded. Tested on 2026-09-27; the result is in TST-0040.
 - [x] The section budget is set from the pilot's measured page, or from Edwin's answer if he has given one. It stays at the default, 300 words plus 40 per check, measured on all 27 your-trainer sections after the rewrite (TASK-0976, TASK-0978). The generator reports no section over it on either platform. The proposed 300 plus 30 would fail 6 of 13 Android sections and 11 of 14 iOS sections, among them PRO Route at 3,356 words for 86 checks. Edwin can still ask for a tighter budget.
 
 ## Steps

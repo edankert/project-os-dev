@@ -157,7 +157,7 @@ items:
   features:
     FEAT-0040:
       file: docs/features/release-test/FEAT-0040-The-Release-Test-Reads-In-Short-Lines.md
-      status: doing
+      status: review
       owner: user:edwin
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
       requirements: [REQ-0033, REQ-0034, REQ-0035, REQ-0036, REQ-0037]
@@ -476,12 +476,12 @@ items:
       phase: "[[PHASE-0010]]"
     TASK-0195:
       file: docs/features/release-test/plan/tasks/TASK-0195-Sync-The-Template-To-The-Cockpit-And-Your-Trainer-For-The-Pilot.md
-      status: doing
+      status: done
       parent: FEAT-0040
       phase: "[[PHASE-0010]]"
     TASK-0196:
       file: docs/features/release-test/plan/tasks/TASK-0196-Turn-The-Length-Warning-Into-An-Error.md
-      status: backlog
+      status: done
       parent: FEAT-0040
       phase: "[[PHASE-0010]]"
     TASK-0186:
@@ -1264,7 +1264,7 @@ items:
       phase: "[[PHASE-0009]]"
     ISS-0086:
       file: docs/issues/ISS-0086-Sheet-Step-Numbers-Do-Not-Match-Procedure-Prose.md
-      status: open
+      status: fixed
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
       tasks: [TASK-0162, TASK-0190]
     ISS-0085:
@@ -2491,11 +2491,11 @@ metrics:
     phases_total: 11
     phases_done: 7
     tasks_total: 196
-    tasks_done: 186
+    tasks_done: 188
     tests_total: 37
     tests_passing: 0
     tests_failing: 0
-    issues_open: 12
+    issues_open: 11
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 5

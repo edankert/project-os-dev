@@ -3,7 +3,7 @@ type: "[[feature]]"
 id: FEAT-0040
 aliases: ["FEAT-0040"]
 title: "The release test reads in short lines: the generator feeds one short page per section and platform"
-status: doing
+status: review
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27
@@ -54,15 +54,17 @@ Open for Edwin, from ADR-0050: whether the ledger's stored key `mark` becomes `r
 
 ## Acceptance
 
-- [ ] For Your Trainer's Equipment section on Android, the generated page has the approved example's shape: what changed for Android only, grouped by screen; setup in "On the bench", "Before you start" and "Later"; checks numbered from 1 in groups, each a single action line, a single expected line and a tag.
-- [ ] No Android page prints an iOS-only Expect line, and no iOS page prints an Android-only one.
-- [ ] No expected line on the page starts with "Step N:".
-- [ ] A group's start state prints once, and again only after checks that were skipped.
-- [ ] The length check warns on an over-long line or section, and a switch turns the warning into an error.
-- [ ] `release-test-prep` shortens lines with an agent and keeps its edits only when the length check and the validator pass.
-- [ ] No file outside history in the template uses "walk", "sitting" or "survey" for this feature, and a consumer's old names are migrated by a script and then refused with the new name.
+- [x] For Your Trainer's Equipment section on Android, the generated page has the approved example's shape: what changed for Android only, grouped by screen; setup in "On the bench", "Before you start" and "Later"; checks numbered from 1 in groups, each a single action line, a single expected line and a tag. TST-0040, tested 2026-09-27.
+- [x] No Android page prints an iOS-only Expect line, and no iOS page prints an Android-only one. TST-0040 on the Equipment section; your-trainer TASK-0976 and TASK-0978 moved the rest of its iOS wording into `action_for:` and iOS setup items.
+- [x] No expected line on the page starts with "Step N:". TST-0040; the generator strips the prefix (`_STEP_PREFIX_RE`).
+- [x] A group's start state prints once, and again only after checks that were skipped. TST-0040; `test-release-test.sh`.
+- [x] The length check warns on an over-long line or section, and a switch turns the warning into an error. REQ-0036; since template aa5fd7e the default is an error.
+- [x] `release-test-prep` shortens lines with an agent and keeps its edits only when the length check and the validator pass. REQ-0036; the skill prepared your-trainer's v2.2.0 on 2026-09-27, and a reviewer checked each batch before it was kept.
+- [x] No file outside history in the template uses "walk", "sitting" or "survey" for this feature, and a consumer's old names are migrated by a script and then refused with the new name. REQ-0037.
 
 ## Verification
+
+Full run in project-os, 2026-09-27, at 116d14e: every `tools/scripts/test-*.sh` passes (`test-release-test.sh`: 270 assertions, 0 failures), `test-release-test-preparation.py` OK, `test-retention.py` OK (26 assertions), and `validate-docs.sh` OK. On the consumers: your-trainer's release test has no error or warning on Android or iOS, and project-os-cockpit's 2,136 Python tests pass against the synced bundle.
 
 Not yet run. The acceptance check is [[TST-0040-A-Release-Test-Section-Reads-As-Short-Lines|TST-0040]].
 

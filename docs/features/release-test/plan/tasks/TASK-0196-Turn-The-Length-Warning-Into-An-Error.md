@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0196
 aliases: ["TASK-0196"]
 title: "Turn the length check from a warning into an error once your-trainer's Android and iOS sections pass it"
-status: backlog
+status: done
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27
@@ -23,13 +23,13 @@ tests: []
 The length check becomes an error by default, so a release test cannot grow back to 37,000 words unnoticed.
 
 ## Definition of Done
-- [ ] Every Android and every iOS section in your-trainer passes the length check with no warning.
-- [ ] The template's switch defaults to error.
-- [ ] Every consumer with a release test passes after the sync, or has a task to shorten its sections.
+- [x] Every Android and every iOS section in your-trainer passes the length check with no warning. your-trainer b5cb041f, 2026-09-27: TST-0350 and TST-0353 split their quoted copy into two steps, two lines shortened, two sections trimmed; `--check` prints nothing on either platform.
+- [x] The template's switch defaults to error. project-os aa5fd7e (`LengthLimits.error = True`); project-os 116d14e also refuses a quoted procedure line by default (REQ-0034).
+- [x] Every consumer with a release test passes after the sync, or has a task to shorten its sections. your-trainer passes (bbd72118). project-os-cockpit's own macOS release test does not: three owed checks are still prose, so it sets `length_limits: {error: false}` until its ISS-0315 is fixed at its next release preparation (34effb9).
 
 ## Steps
-- [ ] Confirm your-trainer's Android and iOS runs are clean.
-- [ ] Flip the default and sync.
+- [x] Confirm your-trainer's Android and iOS runs are clean. Clean on both platforms after the sync.
+- [x] Flip the default and sync. Synced to project-os-dev (b5a29ab), your-trainer (bbd72118) and project-os-cockpit (34effb9, with the bundle re-copied).
 
 ## Notes
 - This waits on your-trainer's rewrite of its other sections, which is outside this repo.

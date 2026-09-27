@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0086
 aliases: ["ISS-0086"]
 title: "A walk's printed step numbers do not match the step numbers the procedure's own text refers to"
-status: open
+status: fixed
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-25
@@ -54,3 +54,7 @@ Edwin chose option 1: the sheet and the cockpit both show the procedure's step n
 ### Handoff for the cockpit session
 
 > The template's `walk-sheet.py` at `cd50653` prints each kept procedure step under its number in the procedure (project-os-dev ISS-0086, option 1, Edwin 2026-09-25), because procedure text refers to steps by those numbers ("for step 21"). The walk page should show the same number. In `acceptance.py`, the walk payload's `display_number` is the kept-step position; `renderer.ts` `walkStepPosition` and the card headings use it, and `walk-page.test.mjs` asserts "a display position, not source step 13". Change the headings and "waits on step N" text to the step's own number (`number`), keep "Step 1 of 4" progress as a separate count (FEAT-0151 B3), then sync the template (walk-sheet.py and both bundled copies, test-walk-preparation.py, TESTING.md) in the same commit, so the sheet and the page change together. your-trainer takes the same template sync afterwards.
+
+## Fixed 2026-09-27
+
+project-os-cockpit TASK-0643 draws the release test page from the generator's JSON, so the cockpit shows the same check numbers as the sheet. Checked on your-trainer's Fresh install section in the cockpit, TST-0092 step 4: checks 1 to 7, as the sheet numbers them.

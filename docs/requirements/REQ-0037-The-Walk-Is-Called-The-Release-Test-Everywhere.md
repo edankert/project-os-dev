@@ -38,12 +38,12 @@ Where "walk" is ordinary English and not the name of this feature (for example "
 
 ## Acceptance Criteria
 
-- [ ] Every name in ADR-0050's rename map has its new name in the template, and no file outside history uses walk, sitting or survey for this feature — evidence:
-- [ ] The walk-procedure skill is renamed release-test-procedure in tools/skills, .claude/skills and .agents/skills, and describes the new procedure shape — evidence:
-- [ ] A migration script moves a consumer's WALK.md and walk/ folder and rewrites sitting: and walk_readiness_for:, and running it twice changes nothing — evidence:
-- [ ] After migration the validator reports each old name as an error that names the new one — evidence:
-- [ ] A template sync removes the old script and skill files from a consumer — evidence:
-- [ ] Stored result values are unchanged, new ledger entries use the key `result`, and every reader still accepts `mark` — evidence:
+- [x] Every name in ADR-0050's rename map has its new name in the template, and no file outside history uses walk, sitting or survey for this feature — evidence: TASK-0187 (template cb01d0a); live notes swept in your-trainer d98ed48c and project-os-cockpit 89e4655; what still names the walk records the rename or is ordinary English
+- [x] The walk-procedure skill is renamed release-test-procedure in tools/skills, .claude/skills and .agents/skills, and describes the new procedure shape — evidence: TASK-0194 (template 8309260); the adapters are regenerated in each consumer
+- [x] A migration script moves a consumer's WALK.md and walk/ folder and rewrites sitting: and walk_readiness_for:, and running it twice changes nothing — evidence: `migrate-release-test-names.py` (template 88d0c8b) and `test-migrate-release-test-names.sh`, which runs it twice
+- [x] After migration the validator reports each old name as an error that names the new one — evidence: `OLD-NAME` in `validate-docs.py`; it named project-os-dev's own leftovers on 2026-09-27
+- [x] A template sync removes the old script and skill files from a consumer — evidence: the sync removed `walk-sheet.py`, `walk-tags.py` and the walk-procedure skill from project-os-dev on 2026-09-27 (b5a29ab)
+- [x] Stored result values are unchanged, new ledger entries use the key `result`, and every reader still accepts `mark` — evidence: TASK-0187; readers accept `mark` and `result`, new entries write `result` (project-os-cockpit `ledger.py`)
 
 ## Traceability
 

@@ -43,11 +43,11 @@ It then runs the length check and the validator. It keeps its edits only if both
 
 ## Acceptance Criteria
 
-- [ ] The check reports each action line over its limit (default 20 words) and each expected line over its limit (default 25 words), naming the section, the check number and the tag — evidence:
-- [ ] The check reports a section whose printed words exceed its budget — evidence:
-- [ ] The limits and the budget are set in one place, and a switch makes the report an error instead of a warning — evidence:
-- [ ] release-test-prep writes the what-changed lines, shortens Expect lines and shortens procedure actions with an agent, and keeps its edits only when the length check and the validator pass — evidence:
-- [ ] release-prep calls release-test-prep before the release test is handed over — evidence:
+- [x] The check reports each action line over its limit (default 20 words) and each expected line over its limit (default 25 words), naming the section, the check number and the tag — evidence: `length_findings` (TASK-0192, template 9044d67)
+- [x] The check reports a section whose printed words exceed its budget — evidence: `length_findings` section budget (TASK-0192)
+- [x] The limits and the budget are set in one place, and a switch makes the report an error instead of a warning — evidence: `LengthLimits` and `length_limits:`; errors by default since template aa5fd7e (TASK-0196)
+- [x] release-test-prep writes the what-changed lines, shortens Expect lines and shortens procedure actions with an agent, and keeps its edits only when the length check and the validator pass — evidence: the `release-test-prep` skill (TASK-0193, template 25e4eed), used to prepare your-trainer's v2.2.0 on 2026-09-27
+- [x] release-prep calls release-test-prep before the release test is handed over — evidence: `release-prep` step 2a (TASK-0193, template 25e4eed)
 
 ## Traceability
 

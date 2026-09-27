@@ -46,11 +46,11 @@ The four headings a check needs (Setup, Steps, Expect, Not this check) stay, so 
 
 ## Acceptance Criteria
 
-- [ ] An Expect line marked [android] or [ios] prints only on that platform; an unmarked line prints on every platform — evidence:
-- [ ] Tag .N pairs with the Nth Expect line that applies on the current platform — evidence:
-- [ ] A platform name in brackets that has no ledger is refused by the validator — evidence:
-- [ ] A procedure expectation line is its tags only; a quoted expectation is refused once consumers have migrated — evidence:
-- [ ] The test template and SCHEMAS.md show the per-platform form, and TESTING.md states the rule once — evidence:
+- [x] An Expect line marked [android] or [ios] prints only on that platform; an unmarked line prints on every platform — evidence: `Change.on` and `shown_expected` (TASK-0188, template 72b0d29); `test-release-test.sh` "a line marked [testbed] prints on testbed"
+- [x] Tag .N pairs with the Nth Expect line that applies on the current platform — evidence: `expect_for` (TASK-0188); checked for every tag of your-trainer's 14 procedures by the reviewers of your-trainer TASK-0976
+- [x] A platform name in brackets that has no ledger is refused by the validator — evidence: `test-release-test.sh` "an Expect line marked for a platform with no ledger is refused"
+- [x] A procedure expectation line is its tags only; a quoted expectation is refused once consumers have migrated — evidence: tag-only lines (TASK-0188); refused by default since template 116d14e, with `quoted_lines: warning` for a project still moving
+- [x] The test template and SCHEMAS.md show the per-platform form, and TESTING.md states the rule once — evidence: template 0289cb8: TESTING.md, SCHEMAS.md and the test template
 
 ## Traceability
 

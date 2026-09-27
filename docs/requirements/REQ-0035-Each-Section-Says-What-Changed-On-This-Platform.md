@@ -40,11 +40,11 @@ What each part needs:
 
 ## Acceptance Criteria
 
-- [ ] A change note that names a screen in its Impact list declares platforms:, and the validator reports one that does not — evidence:
-- [ ] A section lists only changes to its own screens on the platform being tested, grouped by screen, one line per change — evidence:
-- [ ] Short what-changed lines written at release preparation are used when they match the last release tag, and the Impact sentences are used otherwise, with a line saying so — evidence:
-- [ ] Each changed screen shows its before and after screenshots, and a screenshot older than the change is flagged — evidence:
-- [ ] A changed screen that belongs to no section is listed once on the platform overview — evidence:
+- [x] A change note that names a screen in its Impact list declares platforms:, and the validator reports one that does not — evidence: `platform_findings` and `PLATFORMS_REQUIRED_FROM` (TASK-0191, template 61421da and 0a14cef)
+- [x] A section lists only changes to its own screens on the platform being tested, grouped by screen, one line per change — evidence: `screen_homes` and `build_what_changed` with `keep` (TASK-0191); TST-0040
+- [x] Short what-changed lines written at release preparation are used when they match the last release tag, and the Impact sentences are used otherwise, with a line saying so — evidence: `load_short_lines` and `short_lines_for` (TASK-0191); your-trainer's `what-changed-android.md`
+- [x] Each changed screen shows its before and after screenshots, and a screenshot older than the change is flagged — evidence: `capture_finder` and `stale_finder` (TASK-0191)
+- [x] A changed screen that belongs to no section is listed once on the platform overview — evidence: `test-release-test.sh` "the screen no section tests is listed before the sections, and only there"
 
 ## Traceability
 

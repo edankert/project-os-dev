@@ -46,13 +46,13 @@ A section with no procedure still prints: each owed check becomes one row, with 
 
 ## Acceptance Criteria
 
-- [ ] Per platform, the output lists the sections in order, each with its owed check count and one on-the-bench line — evidence:
-- [ ] Per section, the output has three parts in this order: what changed, setup, checks — evidence:
-- [ ] Setup is split into On the bench (things), Before you start (numbered actions) and Later (needs of a single check, naming its number) — evidence:
-- [ ] Checks are numbered from 1 in each section; each is one action line, the check's own Expect line for this platform, and its tag — evidence:
-- [ ] Checks sit in groups; each group has a heading and a start state printed once, and printed again only after skipped checks — evidence:
-- [ ] A readiness problem prints as one line saying why and which result fits — evidence:
-- [ ] The Markdown sheet and the cockpit's JSON carry the same sections, groups, numbers and lines — evidence:
+- [x] Per platform, the output lists the sections in order, each with its owed check count and one on-the-bench line — evidence: the section table (TASK-0190, template b2dc17f); your-trainer's REL-0017 page on both platforms
+- [x] Per section, the output has three parts in this order: what changed, setup, checks — evidence: `render_section` (TASK-0190); TST-0040
+- [x] Setup is split into On the bench (things), Before you start (numbered actions) and Later (needs of a single check, naming its number) — evidence: `_setup_payload` (TASK-0190); TST-0040, where Later names checks 13 and 19
+- [x] Checks are numbered from 1 in each section; each is one action line, the check's own Expect line for this platform, and its tag — evidence: TASK-0190; TST-0040
+- [x] Checks sit in groups; each group has a heading and a start state printed once, and printed again only after skipped checks — evidence: `Start:` groups (TASK-0189, template 73b8d07) and `readiness_line`; TST-0040
+- [x] A readiness problem prints as one line saying why and which result fits — evidence: `readiness_line` with `result:` (TASK-0189); your-trainer Equipment checks 18, 27 and 28
+- [x] The Markdown sheet and the cockpit's JSON carry the same sections, groups, numbers and lines — evidence: one model rendered two ways, `payload` and `render_page` (TASK-0190, template b2dc17f and d4b4010); the cockpit's route test compares the page with the ledger on your-trainer's corpus
 
 ## Traceability
 
