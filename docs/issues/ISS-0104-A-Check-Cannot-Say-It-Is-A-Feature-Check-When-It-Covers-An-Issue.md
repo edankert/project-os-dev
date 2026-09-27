@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0104
 aliases: ["ISS-0104"]
 title: "A check that covers an issue is always a regression check, so a change to the behaviour it states never reopens it"
-status: open
+status: fixed
 phase: ""
 owner: user:edwin
 created: 2026-09-27
@@ -47,6 +47,13 @@ A check with `covers: [ISS-0387]` and `kind: feature` is listed under feature te
 The same check is a regression test everywhere, whatever the author meant, and an invalidation never reopens it.
 
 ## Next Actions
-- [ ] project-os: `release-test.py` and `validate-docs.py` honour `kind:`, the validator refuses an unknown value and a `kind:` beside a `command:`, with tests. `TESTING.md`, `SCHEMAS.md` and `test.md` say so.
-- [ ] project-os-cockpit: `acceptance.kind_of` honours `kind:`, with a test, and the bundled copies are refreshed. The cockpit is released into project-os.
-- [ ] Sync the template to project-os-dev and your-trainer. your-trainer sets `kind: feature` on TST-0451, TST-0633 and TST-0642, and closes ISS-0414.
+- [x] project-os: `release-test.py` and `validate-docs.py` honour `kind:`, the validator refuses an unknown value and a `kind:` beside a `command:`, with tests. `TESTING.md`, `SCHEMAS.md` and `test.md` say so.
+- [x] project-os-cockpit: `acceptance.kind_of` honours `kind:`, with a test, and the bundled copies are refreshed. The cockpit is released into project-os.
+- [x] Sync the template to project-os-dev and your-trainer. your-trainer sets `kind: feature` on TST-0451, TST-0633 and TST-0642, and closes ISS-0414.
+
+## Fixed, 2026-09-27
+
+- **project-os `275673f`**: `release-test.py` reads `kind:` after `command:` and before `covers:`. The validator's CHECK-KIND refuses an unknown value and a `kind:` beside a `command:`. `TESTING.md`, `SCHEMAS.md`, `test.md` and `acceptance-tests.md` say so. New cases in `test-ledger-checks.sh` and `test-release-test-preparation.py` each fail when their line of the change is removed.
+- **project-os-cockpit `d1df13c`** (its ISS-0316): `acceptance.kind_of` reads it the same way, and the bundled copies match. Released into project-os as `1200759`.
+- **your-trainer `d082c854`, `de971acd`**: synced; TST-0451, TST-0633 and TST-0642 declare `kind: feature`, and ISS-0414 is fixed. REL-0017 owes the same checks as before on both platforms.
+- Change note: [[CHG-20260927-A-Check-May-Declare-Its-Own-Kind]].
