@@ -2190,6 +2190,12 @@ items:
   workflows: {}
 
   changes:
+    CHG-20260927-The-Walk-Is-Renamed-The-Release-Test:
+      file: "docs/changes/CHG-20260927-The-Walk-Is-Renamed-The-Release-Test.md"
+      status: merged
+      features: [FEAT-0040]
+      tests: [TST-0009, TST-0010, TST-0011, TST-0023, TST-0028, TST-0033]
+      note: "TASK-0187. Every template file says release test, section, what changed and result; a consumer runs migrate-release-test-names.py --apply once, and the validator reports any old name as OLD-NAME. Landed in the template (66cee10, bff690e, 88d0c8b, cb01d0a); not yet synced anywhere."
     CHG-20260926-A-Change-Costs-Only-Its-Own-Work:
       file: "docs/changes/CHG-20260926-A-Change-Costs-Only-Its-Own-Work.md"
       status: merged

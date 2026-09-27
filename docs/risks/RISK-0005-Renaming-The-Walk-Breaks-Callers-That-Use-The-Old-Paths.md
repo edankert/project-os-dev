@@ -21,7 +21,7 @@ related: [FEAT-0040, TASK-0187, TASK-0195, ADR-0050, ISS-0067]
 
 ADR-0050 renames `walk-sheet.py`, `walk-tags.py`, their test harnesses, `WALK.md`, the `walk/` folder, the `walk-procedure` skill and several frontmatter fields, with no aliases. Anything that still calls an old name fails:
 
-- this repo's five test notes whose `command:` runs `test-walk-sheet.sh` or `test-walk-preparation.py` (TST-0009, TST-0010, TST-0011, TST-0023, TST-0033);
+- this repo's six test notes whose `command:` ran `test-walk-sheet.sh` or `test-walk-preparation.py` (TST-0009, TST-0010, TST-0011, TST-0023, TST-0033, and TST-0028, which ADR-0050's list missed). All six run the new names since TASK-0187;
 - the cockpit's bundled copy of the generator, its `/api/cockpit/walk` route and its tests;
 - your-trainer's own scripts, CI steps and hooks that call the generator;
 - any agent session that follows an older skill text.
@@ -30,12 +30,17 @@ Moving many files in one commit can also hide a new change note from "what chang
 
 ## Mitigation
 
-- Rename in one template release, so no consumer sees half of it.
-- The migration script moves a consumer's files and fields, and is safe to run twice.
-- The validator reports every old name with the new one.
-- The template sync deletes the old files and prints the migration command.
-- Sync project-os-cockpit first, then your-trainer.
-- Commit the rename apart from any new change note.
+In place in the template since TASK-0187 (2026-09-27):
+
+- The rename is one template release: project-os commits 66cee10 to cb01d0a.
+- `migrate-release-test-names.py` moves a consumer's files and fields, and a second run changes nothing.
+- The validator reports every old name it finds as OLD-NAME, with the new name and the migration command.
+- The template sync deletes renamed files and prints the migration command. A sync runs the consumer's own copy of the sync script, so the first sync that brings this in does neither. Its validator run reports each old name as OLD-NAME instead, so nothing is missed.
+- The rename commits in project-os carry no change note; the change note is in this repo, in its own commit.
+
+Still to do (TASK-0195):
+
+- Sync project-os-cockpit first, then your-trainer. The cockpit's bundle reads `walk-sheet.py` until FEAT-0155 re-bundles `release-test.py` under its new code names.
 
 ## Triggers
 
