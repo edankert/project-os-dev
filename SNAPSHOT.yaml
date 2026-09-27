@@ -2190,6 +2190,12 @@ items:
   workflows: {}
 
   changes:
+    CHG-20260927-Expect-Lines-Can-Name-A-Platform:
+      file: "docs/changes/CHG-20260927-Expect-Lines-Can-Name-A-Platform.md"
+      status: merged
+      features: [FEAT-0040]
+      tests: [TST-0042]
+      note: "TASK-0188. A check's Expect line may start [android] or [ios] and then prints only on that platform; a tag pairs per platform; a quoted procedure line is a warning until the consumers move to tags. Landed in the template (72b0d29, 0289cb8); not synced."
     CHG-20260927-The-Walk-Is-Renamed-The-Release-Test:
       file: "docs/changes/CHG-20260927-The-Walk-Is-Renamed-The-Release-Test.md"
       status: merged
