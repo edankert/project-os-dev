@@ -157,7 +157,7 @@ items:
   features:
     FEAT-0040:
       file: docs/features/release-test/FEAT-0040-The-Release-Test-Reads-In-Short-Lines.md
-      status: planned
+      status: doing
       owner: user:edwin
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
       requirements: [REQ-0033, REQ-0034, REQ-0035, REQ-0036, REQ-0037]
