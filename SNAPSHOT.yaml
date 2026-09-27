@@ -40,15 +40,15 @@ counters:
   REQ: 37
   RISK: 5
   TASK: 196
-  TST: 45
+  TST: 46
   WF: 3
 
 focus:
-  task: "TASK-0192"
+  task: "TASK-0195"
   feature: "FEAT-0040"
   phase: "PHASE-0010"
   issue: ""
-  note: "2026-09-27: PHASE-0010 carries out the release test redesign Edwin approved (ADR-0050). TASK-0187, the rename, is done in the project-os template (not pushed, not synced anywhere). Stage 2 is done: TASK-0188 (Expect lines marked per platform), TASK-0189 (procedure groups with a start line) and TASK-0191 (what changed per section and platform), in the template, not pushed. Stage 3 is done: TASK-0190 (the section page and its JSON, TESTING.md rule 10) and TASK-0194 (the procedure skill). Stage 4 is next: TASK-0192 (the length check as a warning) and TASK-0193 (the release-test-prep skill). The section word budget waits for the pilot (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
+  note: "2026-09-27: PHASE-0010 carries out the release test redesign Edwin approved (ADR-0050). TASK-0187, the rename, is done in the project-os template (not pushed, not synced anywhere). Stage 2 is done: TASK-0188 (Expect lines marked per platform), TASK-0189 (procedure groups with a start line) and TASK-0191 (what changed per section and platform), in the template, not pushed. Stage 3 is done: TASK-0190 (the section page and its JSON, TESTING.md rule 10) and TASK-0194 (the procedure skill). Stage 4 is done: TASK-0192 (the length check, a warning) and TASK-0193 (the release-test-prep skill). Stage 5 is next: TASK-0195 syncs the template to project-os-cockpit and your-trainer, which then run their own renames (cockpit TASK-0639, your-trainer TASK-0979). The section word budget waits for the pilot (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
   phases:
@@ -461,12 +461,12 @@ items:
       phase: "[[PHASE-0010]]"
     TASK-0192:
       file: docs/features/release-test/plan/tasks/TASK-0192-The-Validator-Reports-Over-Long-Lines-And-Sections.md
-      status: backlog
+      status: done
       parent: FEAT-0040
       phase: "[[PHASE-0010]]"
     TASK-0193:
       file: docs/features/release-test/plan/tasks/TASK-0193-A-Release-Preparation-Skill-Writes-The-Short-Text.md
-      status: backlog
+      status: done
       parent: FEAT-0040
       phase: "[[PHASE-0010]]"
     TASK-0194:
@@ -2190,6 +2190,12 @@ items:
   workflows: {}
 
   changes:
+    CHG-20260927-The-Length-Check-And-The-Release-Test-Prep-Skill:
+      file: "docs/changes/CHG-20260927-The-Length-Check-And-The-Release-Test-Prep-Skill.md"
+      status: merged
+      features: [FEAT-0040]
+      tests: [TST-0046]
+      note: "TASK-0192 and TASK-0193. --check warns about action lines over 20 words, expected lines over 25 and sections over 300 + 40 per printed check, overridable in length_limits:, with error: true; the release-test-prep skill prepares a release for testing and release-prep calls it. Template 9044d67, 25e4eed; not synced."
     CHG-20260927-A-Release-Test-Section-Is-Numbered-Checks-In-Groups:
       file: "docs/changes/CHG-20260927-A-Release-Test-Section-Is-Numbered-Checks-In-Groups.md"
       status: merged
@@ -2485,8 +2491,8 @@ metrics:
     phases_total: 11
     phases_done: 7
     tasks_total: 196
-    tasks_done: 184
-    tests_total: 36
+    tasks_done: 186
+    tests_total: 37
     tests_passing: 0
     tests_failing: 0
     issues_open: 12
