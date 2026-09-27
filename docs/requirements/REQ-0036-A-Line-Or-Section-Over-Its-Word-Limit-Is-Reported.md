@@ -33,7 +33,7 @@ The limits:
 
 - An action line: about 20 words.
 - An expected line: about 25 words.
-- A section: a budget of printed words. The approved Equipment Hub example prints about 1,000 words for 28 checks. The budget's exact form (a fixed number, or words per check plus setup) is an open question for Edwin. Until he answers, the pilot measures the Equipment section and the budget is set from it.
+- A section: a budget of printed words. The approved Equipment Hub example prints about 1,000 words for 28 checks. Edwin decided on 2026-09-27 that the pilot sets it: the rewritten Equipment section is measured, and the budget is set from it, for example as words per check.
 
 A limit counts the words the tester sees on the page, after the generator has picked this platform's lines.
 

@@ -33,6 +33,8 @@ Every name in ADR-0050's rename map changes in the template in one commit, and c
 
 ## Steps
 - [ ] Rename the scripts, the order-file template, the skill folders and the instruction sections.
+- [ ] New ledger entries write `result`; every reader accepts `mark`; the migration script rewrites unsealed `WORKING-*.json` ledgers once.
+- [ ] `TESTING.md` and the code call feature, regression and automated tests "test kinds", so "section" has one meaning.
 - [ ] Rename the code identifiers in the generator and the validator (`survey` to `what_changed`, `sitting` to `section`, and so on).
 - [ ] Write the migration script and its test.
 - [ ] Add the old-name errors to the validator.
@@ -40,6 +42,7 @@ Every name in ADR-0050's rename map changes in the template in one commit, and c
 - [ ] Update this repo's five test notes.
 
 ## Notes
-- The ledger's stored key `mark` is not touched until Edwin answers ADR-0050's open question. If he picks (b), a follow-up step writes `result` on new entries, reads `mark` forever, and migrates unsealed `WORKING-*.json` ledgers once.
+- The ledger's stored key `mark` becomes `result` (Edwin, 2026-09-27, ADR-0050). New entries write `result`, every reader accepts `mark` forever, and the migration script rewrites unsealed `WORKING-*.json` ledgers once.
+- The three kinds of test (feature, regression, automated) are renamed from "sections" to "test kinds" in `TESTING.md` and in code (Edwin, 2026-09-27, ADR-0050).
 - Moving many files in one commit is when git's rename detection can hide a new change note from "what changed" ([[ISS-0067-Git-Rename-Detection-Can-Hide-A-New-Change-Note-From-The-Survey|ISS-0067]]). Commit the rename separately from any new change note.
 - The cockpit's bundle, route and tests are renamed in project-os-cockpit FEAT-0155, the release test page in the Tests pane. This task only changes what the cockpit bundles.

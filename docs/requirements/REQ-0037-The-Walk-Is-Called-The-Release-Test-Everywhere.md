@@ -17,7 +17,7 @@ acceptance:
   - "A migration script moves a consumer's WALK.md and walk/ folder and rewrites sitting: and walk_readiness_for:, and running it twice changes nothing"
   - "After migration the validator reports each old name as an error that names the new one"
   - "A template sync removes the old script and skill files from a consumer"
-  - "Stored result values are unchanged, and the ledger's key follows Edwin's answer to ADR-0050's open question"
+  - "Stored result values are unchanged, new ledger entries use the key `result`, and every reader still accepts `mark`"
 implements: "[[FEAT-0040-The-Release-Test-Reads-In-Short-Lines]]"
 verifies: []
 related: ["[[RISK-0005-Renaming-The-Walk-Breaks-Callers-That-Use-The-Old-Paths]]"]
@@ -43,7 +43,7 @@ Where "walk" is ordinary English and not the name of this feature (for example "
 - [ ] A migration script moves a consumer's WALK.md and walk/ folder and rewrites sitting: and walk_readiness_for:, and running it twice changes nothing — evidence:
 - [ ] After migration the validator reports each old name as an error that names the new one — evidence:
 - [ ] A template sync removes the old script and skill files from a consumer — evidence:
-- [ ] Stored result values are unchanged, and the ledger's key follows Edwin's answer to ADR-0050's open question — evidence:
+- [ ] Stored result values are unchanged, new ledger entries use the key `result`, and every reader still accepts `mark` — evidence:
 
 ## Traceability
 
