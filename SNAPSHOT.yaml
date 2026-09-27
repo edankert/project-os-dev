@@ -40,7 +40,7 @@ counters:
   REQ: 37
   RISK: 5
   TASK: 196
-  TST: 41
+  TST: 42
   WF: 3
 
 focus:
@@ -441,7 +441,7 @@ items:
       phase: "[[PHASE-0010]]"
     TASK-0188:
       file: docs/features/release-test/plan/tasks/TASK-0188-Expect-Lines-Can-Be-Marked-Per-Platform.md
-      status: doing
+      status: done
       parent: FEAT-0040
       phase: "[[PHASE-0010]]"
     TASK-0189:
@@ -2456,8 +2456,8 @@ metrics:
     phases_total: 11
     phases_done: 7
     tasks_total: 196
-    tasks_done: 179
-    tests_total: 32
+    tasks_done: 180
+    tests_total: 33
     tests_passing: 0
     tests_failing: 0
     issues_open: 12
