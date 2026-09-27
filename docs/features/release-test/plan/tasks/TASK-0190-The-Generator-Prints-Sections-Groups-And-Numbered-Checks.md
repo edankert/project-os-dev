@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0190
 aliases: ["TASK-0190"]
 title: "The generator prints each section as what changed, setup in three parts, and numbered checks in groups, in both the sheet and the cockpit's JSON"
-status: backlog
+status: doing
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27
