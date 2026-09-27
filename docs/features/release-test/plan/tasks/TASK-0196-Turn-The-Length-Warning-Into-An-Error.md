@@ -33,3 +33,7 @@ The length check becomes an error by default, so a release test cannot grow back
 
 ## Notes
 - This waits on your-trainer's rewrite of its other sections, which is outside this repo.
+
+## State, 2026-09-27
+
+The budget stays at 300 plus 40 per check (TASK-0195). After the rewrite, no your-trainer section is over it on either platform. Five lines are still over their word limit, each kept long on purpose. On Android they are TST-0350.1 and TST-0353.1, which quote the app's copy. On iOS they are TST-0350.1, TST-0015.2 and TST-0329.3, which keep every assertion. So the first box needs Edwin to accept these lines, or the switch to exempt a line that quotes app copy, before the default flips to error.
