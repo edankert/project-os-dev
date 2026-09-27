@@ -1,7 +1,7 @@
 ---
 type: "[[plan]]"
 title: "The release test reads in short lines: delivery plan"
-status: draft
+status: done
 owner: user:edwin
 created: 2026-09-27
 updated: 2026-09-27

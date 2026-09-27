@@ -44,9 +44,9 @@ counters:
   WF: 3
 
 focus:
-  task: "TASK-0195"
-  feature: "FEAT-0040"
-  phase: "PHASE-0010"
+  task: ""
+  feature: ""
+  phase: ""
   issue: ""
   note: "2026-09-27: PHASE-0010 carries out the release test redesign Edwin approved (ADR-0050). TASK-0187, the rename, is done in the project-os template (not pushed, not synced anywhere). Stage 2 is done: TASK-0188 (Expect lines marked per platform), TASK-0189 (procedure groups with a start line) and TASK-0191 (what changed per section and platform), in the template, not pushed. Stage 3 is done: TASK-0190 (the section page and its JSON, TESTING.md rule 10) and TASK-0194 (the procedure skill). Stage 4 is done: TASK-0192 (the length check, a warning) and TASK-0193 (the release-test-prep skill). Stage 5 is done: the template is synced to project-os-cockpit and your-trainer, each with its own renames (cockpit TASK-0639, your-trainer TASK-0979), and the cockpit's release test page is built (stage 6, FEAT-0155). TASK-0195 stays doing for the Equipment pilot (stage 7, your-trainer TASK-0975). The section word budget waits for the pilot (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
 items:
@@ -54,7 +54,7 @@ items:
   phases:
     PHASE-0010:
       file: docs/phases/PHASE-0010-The-Release-Test-Reads-In-Short-Lines.md
-      status: active
+      status: done
       order: 10
       owner: user:edwin
       related: [ADR-0050, ADR-0029, ADR-0045, ADR-0046, ADR-0049, PHASE-0004, PHASE-0005]
@@ -157,7 +157,7 @@ items:
   features:
     FEAT-0040:
       file: docs/features/release-test/FEAT-0040-The-Release-Test-Reads-In-Short-Lines.md
-      status: review
+      status: done
       owner: user:edwin
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
       requirements: [REQ-0033, REQ-0034, REQ-0035, REQ-0036, REQ-0037]
@@ -1751,35 +1751,35 @@ items:
   requirements:
     REQ-0033:
       file: docs/requirements/REQ-0033-A-Section-Prints-Each-Check-As-One-Action-And-One-Expected-Line.md
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: high
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
       implements: [FEAT-0040]
     REQ-0034:
       file: docs/requirements/REQ-0034-A-Check-Writes-Its-Expected-Result-Once-Per-Platform.md
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: high
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
       implements: [FEAT-0040]
     REQ-0035:
       file: docs/requirements/REQ-0035-Each-Section-Says-What-Changed-On-This-Platform.md
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: high
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
       implements: [FEAT-0040]
     REQ-0036:
       file: docs/requirements/REQ-0036-A-Line-Or-Section-Over-Its-Word-Limit-Is-Reported.md
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: high
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
       implements: [FEAT-0040]
     REQ-0037:
       file: docs/requirements/REQ-0037-The-Walk-Is-Called-The-Release-Test-Everywhere.md
-      status: approved
+      status: implemented
       owner: user:edwin
       priority: high
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
@@ -2038,7 +2038,7 @@ items:
   risks:
     RISK-0005:
       file: docs/risks/RISK-0005-Renaming-The-Walk-Breaks-Callers-That-Use-The-Old-Paths.md
-      status: open
+      status: closed
       owner: user:edwin
       phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
       likelihood: high
@@ -2487,9 +2487,9 @@ items:
 metrics:
   counts:
     features_total: 40
-    features_done: 36
+    features_done: 37
     phases_total: 11
-    phases_done: 7
+    phases_done: 8
     tasks_total: 196
     tasks_done: 188
     tests_total: 37
@@ -2500,7 +2500,7 @@ metrics:
     tasks_deferred: 0
     issues_deferred: 5
     requirements_total: 37
-    requirements_implemented: 29
-    risks_open: 2
+    requirements_implemented: 34
+    risks_open: 1
     releases_total: 0
     decisions_total: 36

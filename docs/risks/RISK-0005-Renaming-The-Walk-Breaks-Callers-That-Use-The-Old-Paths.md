@@ -3,7 +3,7 @@ type: "[[risk]]"
 id: RISK-0005
 aliases: ["RISK-0005"]
 title: "Renaming the walk breaks any hook, CI job, bundle or test that still calls the old script names and paths"
-status: open
+status: closed
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27
@@ -47,3 +47,14 @@ Still to do (TASK-0195):
 - A test note's command fails with "No such file" after the sync.
 - The cockpit's Tests pane shows no release test after a sync.
 - A consumer's CI fails on a missing `walk-sheet.py`.
+
+## Closed 2026-09-27
+
+Every consumer took the rename and runs the new names:
+
+- project-os-cockpit re-bundles `release-test.py` and serves `/api/cockpit/release-test` (FEAT-0155, done).
+- your-trainer's procedures, scripts and corpus test use the new paths, and its release test passes on both platforms.
+- This repository synced on 2026-09-27 (b5a29ab).
+- The template's shipped `tools/cockpit` was re-released without `walk_sheet_bundled.py` (project-os aee9c6a, 2c037dd).
+
+None of the triggers fired after the syncs.

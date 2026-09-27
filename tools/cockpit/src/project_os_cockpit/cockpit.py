@@ -606,7 +606,7 @@ DOC_TREE_INLINE_TYPES: tuple[str, ...] = ("reference", "workflow")
 # `surface` joined on 2026-09-25 for the same reason. This repo's surface notes
 # reached six, one over _BY_TYPE_MIN_COUNT, and a Surfaces group appeared in
 # Library; the full suite's library guard caught it. Surfaces already have the
-# design view (TASK-0516) and the walk survey.
+# design view (TASK-0516) and the release test's what-changed list.
 _BY_TYPE_SKIP_IN_LIBRARY: frozenset[str] = frozenset({
     "feature", "issue", "requirement", "phase", "task",
     "change", "adr", "decision", "release", "risk", "test", "workflow",
@@ -5316,21 +5316,21 @@ def _release_content_rows(
             # FILES under a label that reads as a count of TESTS.
             label = (f"Acceptance tests · {unchecked} unchecked" if unchecked
                      else "Acceptance tests · all settled")
-            #: **The door to the walk** ([[TASK-0621]]). The row above says how
+            #: **The door to the release test** ([[TASK-0621]], renamed by TASK-0639). The row above says how
             #: many are owed and opens the list; this one opens the procedure —
             #: the same rows in the order the repo authored, with each check's
             #: setup and steps on it.
             #:
             #: Only while a release is in preparation, and only while something
-            #: is owed: a link to an empty walk is the permanent blank button
+            #: is owed: a link to an empty release test is the permanent blank button
             #: FEAT-0102 records the rule about twice. And only when the repo
-            #: keeps a ledger for the platform, because a walk asked for by a
+            #: keeps a ledger for the platform, because a release test asked for by a
             #: name no ledger carries reads no verdicts and reports every check
             #: in the repo as owed.
             _draft = _pub.preparing(index)
             _draft_platform = str((_draft or {}).get("platform") or "").strip().lower()
             if _draft and _draft_platform in _ledger_platforms(index):
-                #: **The count is the walk's own, taken on the walk's
+                #: **The count is the release test's own, taken on its
                 #: platform.** `unchecked` above is the UNION across every
                 #: ledger, because this call passes no platform — 327 on
                 #: `your-trainer`, where its open Android release owes **39**.

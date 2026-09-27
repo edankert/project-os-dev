@@ -3,7 +3,11 @@ type: "[[requirement]]"
 id: REQ-0035
 aliases: ["REQ-0035"]
 title: "Each section says what changed on this platform since the last release, grouped by screen, one line per change"
-status: approved
+status: implemented
+review_verdict: approved
+review_round: 2
+review_date: 2026-09-27
+reviewed_by: "model:claude-opus-5-5 (FEAT-0040 review, two rounds)"
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27

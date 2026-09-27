@@ -3,7 +3,7 @@ type: "[[feature]]"
 id: FEAT-0040
 aliases: ["FEAT-0040"]
 title: "The release test reads in short lines: the generator feeds one short page per section and platform"
-status: review
+status: done
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27
@@ -16,8 +16,8 @@ release: ""
 acceptance_exception: ""
 reviewed_by: "model:claude-opus-5-5 (two reviewers, fresh contexts)"
 review_date: 2026-09-27
-review_verdict: "changes-requested"
-review_round: 1
+review_verdict: "approved"
+review_round: 2
 related: ["[[ADR-0050-The-Walk-Becomes-The-Release-Test-And-Its-Expected-Results-Live-In-The-Checks]]", "[[FEAT-0029-The-Walk-Sheet]]", "[[FEAT-0030-A-Surface-Is-A-Screen-And-A-Change-Names-Its-Screens]]", "[[FEAT-0031-A-Sitting-Is-Walked-From-A-Written-Procedure]]", "[[FEAT-0033-A-Walk-Keeps-Required-Preparation]]", "[[ISS-0086-Sheet-Step-Numbers-Do-Not-Match-Procedure-Prose]]", "[[ISS-0067-Git-Rename-Detection-Can-Hide-A-New-Change-Note-From-The-Survey]]", "[[RISK-0005-Renaming-The-Walk-Breaks-Callers-That-Use-The-Old-Paths]]"]
 ---
 
@@ -101,3 +101,5 @@ Kept as they are, with the reason:
 - A group with no Start line after skipped checks prints no start when the state has not changed.
 - Some project-os-dev test note file names keep the old words. They are identifiers.
 - Two reviewers working in one tree at once was unsafe. Round 2 reviewers work in their own worktrees.
+
+Round 2, 2026-09-27. Two reviewers, each working in its own worktree, answered **fixed** for both refuted claims. Removing the new pairing refusal failed two tests. The shipped cockpit loads your-trainer's three ledgers and has no reader of the old files. Both returned **approved**. A comment in the shipped `cockpit.py` still said "the walk survey", and it was corrected at its source (project-os 2c037dd).

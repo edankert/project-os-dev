@@ -3,7 +3,7 @@ type: "[[phase]]"
 id: PHASE-0010
 aliases: ["PHASE-0010"]
 title: "The release test reads in short lines, one section at a time"
-status: active
+status: done
 order: 10
 owner: user:edwin
 created: 2026-09-27
@@ -59,3 +59,7 @@ The decisions behind this phase are in [[ADR-0050-The-Walk-Becomes-The-Release-T
 - Rollout order: pilot the Equipment section end to end in Your Trainer (Android), then the other Android sections, then iOS, then turn the warning into an error.
 - Complexity by blast radius: High overall, because the rename touches three repositories and every acceptance check's Expect lines. The pilot is Medium.
 - Work lands in three repositories. The template (`~/Dev/repos/project-os`) is planned here. The other two are named above and will get their own IDs.
+
+## Closed 2026-09-27
+
+Every exit criterion is met, and FEAT-0040 passed its independent review in two rounds. Edwin asked to close the work after using the release test in the cockpit: *"It looks great, I think we can now fully close out the cockpit phase-0010 and the release test functionality."*

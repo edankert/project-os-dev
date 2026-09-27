@@ -3,7 +3,11 @@ type: "[[requirement]]"
 id: REQ-0036
 aliases: ["REQ-0036"]
 title: "An action line, an expected line or a section over its word limit is reported, and release preparation writes the short text and checks it"
-status: approved
+status: implemented
+review_verdict: approved
+review_round: 2
+review_date: 2026-09-27
+reviewed_by: "model:claude-opus-5-5 (FEAT-0040 review, two rounds)"
 phase: "[[PHASE-0010-The-Release-Test-Reads-In-Short-Lines]]"
 owner: user:edwin
 created: 2026-09-27
