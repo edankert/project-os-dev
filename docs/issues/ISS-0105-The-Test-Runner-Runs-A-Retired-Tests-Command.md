@@ -3,7 +3,7 @@ type: "[[issue]]"
 id: ISS-0105
 aliases: ["ISS-0105"]
 title: "The test runner runs a retired test's command, so a push fails on a test whose subject was deleted"
-status: open
+status: fixed
 phase: ""
 owner: user:edwin
 created: 2026-10-06
@@ -35,4 +35,10 @@ A retired test's command is not run. The runner's report does not list it, and i
 The command runs, fails with "Could not find ...", and the pre-push hook refuses the push.
 
 ## Next Actions
-- [ ] project-os: `run-tests.py` skips a note whose `status:` is `retired`, including under `--filter`; `test-verdict-model.sh` gets a case that fails when the skip is removed; HC-009 in `HOOKS.md` says so.
+- [x] project-os: `run-tests.py` skips a note whose `status:` is `retired`, including under `--filter`; `test-verdict-model.sh` gets a case that fails when the skip is removed; HC-009 in `HOOKS.md` says so.
+
+## Fixed, 2026-10-06
+
+- **project-os `e9b7744`**: `run-tests.py` skips a note at `status: retired`, even under `--filter`, and leaves it out of the report. Three new checks in `test-verdict-model.sh` each fail when the skip is removed. HC-009 in `HOOKS.md` has a fourth line saying so.
+- Downstream repos get it at their next template sync. Nothing was synced as part of this fix.
+- Change note: [[CHG-20261006-The-Test-Runner-Skips-A-Retired-Test]].
