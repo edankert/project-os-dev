@@ -56,6 +56,7 @@ These files contain detailed rules. Read them when performing the related operat
 - Project derive: tools/skills/project-derive/SKILL.md
 - Design authoring: tools/skills/design-authoring/SKILL.md
 - Release test procedure: tools/skills/release-test-procedure/SKILL.md
+- Release test preparation: tools/skills/release-test-prep/SKILL.md
 ## Key Files
 - `SNAPSHOT.yaml` — canonical project state
 - `CONTEXT.md` — LLM operating contract

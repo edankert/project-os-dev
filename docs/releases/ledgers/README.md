@@ -10,7 +10,7 @@ tags: [releases, acceptance]
 
 # Acceptance ledgers
 
-This folder records the result of each acceptance walk. A result is not written on the test note. It is a dated line in a JSON file here, saying who walked which check, on which platform, with what outcome (ADR-0037). The outcomes and what each one means are in `tools/instructions/TAXONOMY.md`, "Acceptance outcomes (the ledger's vocabulary)".
+This folder records the result of each acceptance check tested in a release test. A result is not written on the test note. It is a dated line in a JSON file here, saying who tested which check, on which platform, with what outcome (ADR-0037). The outcomes and what each one means are in `tools/instructions/TAXONOMY.md`, "Acceptance outcomes (the ledger's vocabulary)".
 
 ## The files
 
@@ -27,11 +27,13 @@ The platform is the surface a result was earned on. A project that is one applic
 {
   "platform": "app",
   "entries": [
-    {"check": "TST-0001", "mark": "pass", "date": "2026-09-18", "method": "manual", "by": "user:you"},
-    {"check": "TST-0002", "mark": "fail", "date": "2026-09-18", "method": "manual", "by": "user:you", "reason": "The save button stays grey after typing a name."}
+    {"check": "TST-0001", "result": "pass", "date": "2026-09-18", "method": "manual", "by": "user:you"},
+    {"check": "TST-0002", "result": "fail", "date": "2026-09-18", "method": "manual", "by": "user:you", "reason": "The save button stays grey after typing a name."}
   ]
 }
 ```
+
+An entry written before 2026-09-27 stores its result under `mark` instead of `result`. Every reader accepts both, and a sealed ledger is never rewritten to change it (project-os-dev ADR-0050).
 
 Every outcome except `pass` needs a `reason`. To withdraw a result after the code changes, add an entry with `invalidated_by:` naming the change note, rather than deleting the line.
 
@@ -40,6 +42,6 @@ Every outcome except `pass` needs a `reason`. To withdraw a result after the cod
 Once this folder holds a `.json` file:
 - each entry is checked for its fields, its date and its outcome word (the `LEDGER-*` codes);
 - a test note may no longer carry `mark:` or the other verdict fields that moved here (`LEDGER-FIELD`);
-- a finished feature's acceptance checks count as walked when a ledger clears them on at least one platform (`VERIFY-ACCEPTANCE`).
+- a finished feature's acceptance checks count as tested when a ledger clears them on at least one platform (`VERIFY-ACCEPTANCE`).
 
-`tools/scripts/walk-sheet.py` reads the same files to list what is still owed for a release.
+`tools/scripts/release-test.py` reads the same files to list what is still owed for a release.

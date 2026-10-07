@@ -12,6 +12,10 @@ cannot run has no verdict, unless PROJECT_OS_ALLOW_UNRUNNABLE=1 accepts that.
 Notes that share a `command:` run it once and share the outcome: a second run of
 the same command in the same tree cannot reach a different verdict.
 
+A note at `status: retired` is skipped, even when `--filter` names it: its subject
+is gone (STATUSES.md [[test]]), and its command often names a file deleted with it
+(project-os-dev ISS-0105).
+
 Usage: run-tests.py [--repo-root DIR] [--filter TST-0001 ...] [--timeout SECONDS]
 """
 
@@ -94,6 +98,8 @@ def discover(root, only=None):
         _pre, fm, _post = parts
         cmd = fm_get(fm, "command")
         if not cmd:
+            continue
+        if fm_get(fm, "status") == "retired":
             continue
         tid = fm_get(fm, "id") or path.name.split("-")[0] + "-" + path.name.split("-")[1]
         if only and tid not in only:

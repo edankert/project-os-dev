@@ -124,6 +124,7 @@ Contract IDs are `HC-001`..`HC-010`. (Earlier revisions of this file used `CHC-0
   1. Notes sharing a `command:` run it once and share the outcome.
   2. `--ci` runs the repo's `ci.suite_command` from `SNAPSHOT.yaml` once, when one is declared, and every command when none is.
   3. The pre-push hook runs the full set locally and refuses the push on a failure.
+  4. A note at `status: retired` is not run, even under `--filter`. Its subject is gone, and its command often names a file deleted with it (project-os-dev ISS-0105).
 - Why the split: a repo's test notes carry filtered commands, and a filtered command is a subset of the suite. your-health has 26 notes running the same Gradle task with different `--tests` filters; one by one on a cold runner that is about 45 minutes a push for an answer one suite run already gives. The suite is the covering command, so CI runs that and keeps the non-bypassable verdict; the filtered commands run where the toolchain is already warm.
 - Failure behaviour: pre-push exits non-zero and the push does not happen. `--no-verify` skips it, and `PROJECT_OS_SKIP_PREPUSH=1` skips it without skipping the rest — both leave CI's suite run in place, which is the point of keeping one there.
 - A repo that declares no `ci.suite_command` is unaffected: CI runs every command exactly as before.

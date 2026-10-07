@@ -1,5 +1,5 @@
-baseline_sha: "1200759e1e8ac330304c1a595348c9ced31e4b91"
-synced: "2026-09-27T19:27Z"
+baseline_sha: "e9b77445523e4ae011d616b7f2d83a494f103ece"
+synced: "2026-10-07T12:30Z"
 source: "/Users/Edwin/Dev/repos/project-os"
 keep_local:
   - ".github/workflows/validate-docs.yml"   # checks out ../project-os beside the repo, because its TST-* commands run the template's harnesses

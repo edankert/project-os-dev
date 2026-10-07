@@ -8,8 +8,9 @@
 #   3. a manual test (no command:) at `ready` under a done task still fails the
 #      gate, so the change loosened nothing for manual tests;
 #   4. run-tests.py leaves every note byte-identical, exits 1 when a command
-#      fails, rejects --write, runs a repeated command: only once, and under
-#      --ci runs the declared ci.suite_command instead of every command.
+#      fails, rejects --write, runs a repeated command: only once, under
+#      --ci runs the declared ci.suite_command instead of every command, and
+#      skips a retired test's command.
 # Paths resolve from this script's location. Exit 0 = every assertion holds.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -210,6 +211,17 @@ fixture "$TMP/run-quiet" $'status: active' 'command: "echo fine"'
 out="$(python3 "$RUNNER" --repo-root "$TMP/run-quiet" 2>&1)"
 check "a passing command does not echo its output" \
   "$(printf '%s' "$out" | grep -q '      | ' && echo 1 || echo 0)" "$out"
+
+# 4f. a retired test's command is not run, even under --filter (ISS-0105). Its
+# subject is gone, and its command named a file deleted with it, so running it
+# refused a push in project-os-deck.
+fixture "$TMP/run-retired" $'status: retired' 'command: "false"'
+out="$(python3 "$RUNNER" --repo-root "$TMP/run-retired" 2>&1)"; code=$?
+check "a retired test's failing command does not fail the run" "$code" "exit $code: $out"
+check "a retired test is not listed in the report" \
+  "$(printf '%s' "$out" | grep -q 'TST-0001' && echo 1 || echo 0)" "$out"
+python3 "$RUNNER" --repo-root "$TMP/run-retired" --filter TST-0001 >/dev/null 2>&1; code=$?
+check "--filter naming a retired test does not run it" "$code" "exit $code"
 
 
 echo "test-verdict-model: $assertions assertions, $failures failure(s)"
