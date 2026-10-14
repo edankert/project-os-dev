@@ -38,16 +38,17 @@ counters:
   PHASE: 10
   REL: 0
   REQ: 37
-  RISK: 5
-  TASK: 197
-  TST: 46
+  RISK: 6
+  TASK: 203
+  TST: 47
   WF: 3
 
 focus:
-  task: ""
-  feature: ""
+  task: "TASK-0198"
+  feature: "FEAT-0041"
   phase: ""
   issue: ""
+  # 2026-10-14: FEAT-0041 started (Edwin, in project-os-cockpit: "Build FEAT-0041 too"), so cockpit FEAT-0157 can put its facts on the same line. TASK-0198 first: it checks live how two plugins share the band above the prompt and how a repo loads the mod.
   note: "2026-09-27: PHASE-0010 carries out the release test redesign Edwin approved (ADR-0050). TASK-0187, the rename, is done in the project-os template (not pushed, not synced anywhere). Stage 2 is done: TASK-0188 (Expect lines marked per platform), TASK-0189 (procedure groups with a start line) and TASK-0191 (what changed per section and platform), in the template, not pushed. Stage 3 is done: TASK-0190 (the section page and its JSON, TESTING.md rule 10) and TASK-0194 (the procedure skill). Stage 4 is done: TASK-0192 (the length check, a warning) and TASK-0193 (the release-test-prep skill). Stage 5 is done: the template is synced to project-os-cockpit and your-trainer, each with its own renames (cockpit TASK-0639, your-trainer TASK-0979), and the cockpit's release test page is built (stage 6, FEAT-0155). TASK-0195 stays doing for the Equipment pilot (stage 7, your-trainer TASK-0975). The section word budget waits for the pilot (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -155,6 +156,16 @@ items:
       goal: "Forward home for work that is wanted but unscheduled: deferred items descoped from a parent, and tracked-but-unplanned issues that belong to no active phase"
 
   features:
+    FEAT-0041:
+      file: docs/features/claude-code-mod/FEAT-0041-Project-Os-Mod.md
+      status: doing
+      owner: user:edwin
+      phase: ""
+      requirements: []
+      tasks: [TASK-0198, TASK-0199, TASK-0200, TASK-0201, TASK-0202, TASK-0203]
+      tests: [TST-0047]
+      related: [ISS-0106, RISK-0006, REFERENCE-PROJECT-LINE-CONTRACT]
+      note: "STARTED 2026-10-14 on Edwin's decision in project-os-cockpit ('Build FEAT-0041 too'): the project-os mod and its line are built upstream first, then cockpit FEAT-0157, then both are tested. No phase: one feature and one issue (CLAUDE.md phase rule). Loading is ISS-0106 option (a), in scope as TASK-0199. The cockpit adds its facts to the line through the render chain, never through project-os (REFERENCE-PROJECT-LINE-CONTRACT)."
     FEAT-0040:
       file: docs/features/release-test/FEAT-0040-The-Release-Test-Reads-In-Short-Lines.md
       status: done
@@ -411,16 +422,6 @@ items:
       requirements: [REQ-0019, REQ-0020, REQ-0021]
       tasks: [TASK-0060, TASK-0061, TASK-0062, TASK-0063, TASK-0064, TASK-0065, TASK-0072, TASK-0074]
       related: [ADR-0009, ADR-0005, ADR-0003, RISK-0002]
-    FEAT-0016:
-      file: docs/features/executable-verification/FEAT-0016-Executable-Verification.md
-      title: "Executable verification — test status is stamped by running the test, manual checks expire, waivers get an end date"
-      status: done
-      owner: user:edwin
-      phase: PHASE-0002
-      goal: "Make the verification gate load-bearing: a TST-* note with a command has its status written by executing that command, manual tests carry a freshness date and go stale, and verification_waiver stops being open-ended"
-      requirements: [REQ-0022, REQ-0023]
-      tasks: [TASK-0066, TASK-0067, TASK-0068]
-      related: [ADR-0010, ADR-0004, REQ-0006]
     FEAT-0017:
       file: docs/features/enforcement-severity/FEAT-0017-Enforcement-Severity.md
       title: "Enforcement severity — every validator rule is an error or is deleted; clear the fleet's ~600 warnings"
@@ -434,6 +435,30 @@ items:
   # Pruned: FEAT-0001 through FEAT-0006 (all done, PHASE-0001). Notes preserved under docs/features/.
 
   tasks:
+    TASK-0198:
+      file: docs/features/claude-code-mod/plan/tasks/TASK-0198-Two-Plugins-Share-The-Line-Above-The-Prompt-Checked-Live.md
+      status: done
+      parent: FEAT-0041
+    TASK-0199:
+      file: docs/features/claude-code-mod/plan/tasks/TASK-0199-The-Mod-Reaches-Every-Repo-Through-The-Template-Sync.md
+      status: backlog
+      parent: FEAT-0041
+    TASK-0200:
+      file: docs/features/claude-code-mod/plan/tasks/TASK-0200-A-File-Changed-From-The-Shell-Counts-As-A-Write-At-Close-Out.md
+      status: backlog
+      parent: FEAT-0041
+    TASK-0201:
+      file: docs/features/claude-code-mod/plan/tasks/TASK-0201-A-Session-On-The-Wrong-Model-Is-Named-At-Start.md
+      status: backlog
+      parent: FEAT-0041
+    TASK-0202:
+      file: docs/features/claude-code-mod/plan/tasks/TASK-0202-The-Project-Line-Above-The-Prompt.md
+      status: backlog
+      parent: FEAT-0041
+    TASK-0203:
+      file: docs/features/claude-code-mod/plan/tasks/TASK-0203-The-Mod-Is-Pinned-Tested-In-CI-And-Synced-To-The-Cockpit.md
+      status: backlog
+      parent: FEAT-0041
     TASK-0187:
       file: docs/features/release-test/plan/tasks/TASK-0187-Rename-The-Walk-To-The-Release-Test-Everywhere.md
       status: done
@@ -1178,6 +1203,11 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0106:
+      file: docs/issues/ISS-0106-Project-Os-As-A-Plugin.md
+      status: open
+      parent: FEAT-0041
+      tasks: [TASK-0199]
     ISS-0105:
       file: docs/issues/ISS-0105-The-Test-Runner-Runs-A-Retired-Tests-Command.md
       status: fixed
@@ -2042,6 +2072,13 @@ items:
       related: [ADR-0024, REQ-0018, ISS-0041, ISS-0042, ISS-0043]
       note: "ADR-0024 option 1: widens REQ-0018 from state rules to every normative rule. Supersedes it rather than reopening a terminal requirement."
   risks:
+    RISK-0006:
+      file: docs/risks/RISK-0006-The-Project-Os-Mod-Runs-Unsandboxed-In-Every-Session-On-A-New-Interface.md
+      status: open
+      owner: user:edwin
+      likelihood: medium
+      impact: medium
+      related: [FEAT-0041, ISS-0106]
     RISK-0005:
       file: docs/risks/RISK-0005-Renaming-The-Walk-Breaks-Callers-That-Use-The-Old-Paths.md
       status: closed
@@ -2085,6 +2122,12 @@ items:
       related: [FEAT-0015, TASK-0060, ADR-0009, REQ-0019]
 
   tests:
+    TST-0047:
+      file: docs/tests/acceptance/TST-0047-A-Claude-Session-Shows-The-Project-Line-And-Names-A-Wrong-Model-And-A-Shell-Edit.md
+      status: active
+      scope: feature
+      level: acceptance
+      features: [FEAT-0041]
     TST-0040:
       file: docs/tests/acceptance/TST-0040-A-Release-Test-Section-Reads-As-Short-Lines.md
       status: active
@@ -2496,17 +2539,17 @@ metrics:
     features_done: 37
     phases_total: 11
     phases_done: 8
-    tasks_total: 197
-    tasks_done: 189
+    tasks_total: 203
+    tasks_done: 190
     tests_total: 37
     tests_passing: 0
     tests_failing: 0
-    issues_open: 11
-    issues_triage: 1
+    issues_open: 12
+    issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 5
     requirements_total: 37
     requirements_implemented: 34
-    risks_open: 1
+    risks_open: 2
     releases_total: 0
     decisions_total: 36
