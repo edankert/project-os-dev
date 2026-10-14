@@ -6,7 +6,7 @@ title: "A finding is fixed in the feature that caused it, and a review is sized 
 status: "accepted"
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-19
+updated: 2026-10-14
 source: ["[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]", "Edwin, 2026-09-18, on review effort and on issues 'not fixed as part of the features they belong to'"]
 decision: "Keep ADR-0028's two-round cap, its adjudication rule and its ban on the author answering the reviewer. Replace its severity bar. A finding about code the feature changed is fixed before the feature closes. It is filed as an ISS-* only when the fix needs a product decision, touches code the feature did not change, or is too large for the session. A finding that is neither fixed nor worth filing is recorded in the feature's review section and dropped. A review covers one feature's diff, follows a fixed procedure and stops at a budget."
 context: "ADR-0028 stopped review loops. It did so by letting every true finding that does not break behaviour be filed at triage while the item closes. In your-trainer, that turned a review's findings into backlog: 55 of 121 open issues come from reviews, and FEAT-0107's main behaviour has no test that can fail, which was filed as ISS-0466 instead of fixed. A single review still takes about 160 turns and 90-100 tool calls, because it has no scope limit, no procedure and no stopping point."
@@ -75,3 +75,11 @@ Decided by Edwin after the measured comparison in [[TASK-0130-Re-Run-The-FEAT-01
 Edwin, 2026-09-19, after the project-os-cockpit suite showed six failures that were set aside as "failing before today": "You should not care if those failures were for today, they need to be fixed. Make sure to update the rules around this!"
 
 The filing bar lets a defect in code the feature did not change become an issue. **A failing test is never that case.** A test that fails in any run you make is fixed before the work closes, whoever broke it and whenever. A failure caused by the machine rather than the code (a missing build, a device) skips with its reason, or the run gains the step it needs. Only a fix that needs the owner's decision waits, and it is asked in the same turn. Stated once in `QUALITY.md` (project-os `aa278b5`), with pointers from `LIFECYCLE.md` "Scope of a change" and the close-out skill. Recorded in [[TASK-0144-A-Failing-Test-Is-Fixed-Whoever-Broke-It|TASK-0144]].
+
+## Amendment, 2026-10-14: a defect you find is one you fix
+
+The filing bar let a defect in code the feature did not change become an issue, and nothing then said to fix it. An agent in project-os-cockpit found such a defect in its own acceptance run, knew its cause, filed ISS-0320 and listed it as open; the owner had to direct the fix. Edwin: "why do I need to direct you to fix this, you found this, you prioritized this, you should fix this."
+
+**The filing bar keeps the scope rule and loses the stopping point.** A defect you find yourself, with a known cause, is fixed in the same session wherever it is: in code the work did not change, code that predates it, or code someone else wrote. It gets a task under the feature that owns the code and its own commit, so the work in hand keeps its scope. It gets no `ISS-*`: a defect fixed in the session it was found in needs one note, not two, and the task records the symptom, the cause and the fix. An existing `ISS-*`, because someone reported the defect, is closed by the fix instead. A found defect stays open only when the fix needs an owner decision, is too large or wide for the session, belongs to another repository, or its cause is still unknown after looking; then it gets an `ISS-*`, and the issue and the summary name the reason.
+
+**What this costs.** A defect that shipped in an earlier release and is found and fixed in one session appears in the next release under its change note, not in the release's "Issues Fixed" list. That list then holds the problems someone reported and the ones that stayed open. Stated once in `QUALITY.md`, with pointers from `LIFECYCLE.md` "Scope of a change", the issue-intake skill and the close-out skill. Recorded in [[TASK-0197-A-Defect-You-Find-Is-One-You-Fix|TASK-0197]].

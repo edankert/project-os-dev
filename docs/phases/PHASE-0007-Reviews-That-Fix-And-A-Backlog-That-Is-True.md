@@ -6,11 +6,11 @@ status: done
 order: 7
 owner: user:edwin
 created: 2026-09-18
-updated: 2026-09-20
+updated: 2026-10-14
 goal: "A review costs what the change is worth and its findings are fixed in the feature that caused them, so the open issues in every repo are real, readable, and mostly reported by a person."
 features: [FEAT-0034, FEAT-0035, FEAT-0036, FEAT-0037]
 requirements: []
-tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0132, TASK-0133, TASK-0134, TASK-0135, TASK-0136, TASK-0137, TASK-0138, TASK-0139, TASK-0140, TASK-0141, TASK-0142, TASK-0143, TASK-0144, TASK-0145, TASK-0146, TASK-0147, TASK-0148, TASK-0149]
+tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0132, TASK-0133, TASK-0134, TASK-0135, TASK-0136, TASK-0137, TASK-0138, TASK-0139, TASK-0140, TASK-0141, TASK-0142, TASK-0143, TASK-0144, TASK-0145, TASK-0146, TASK-0147, TASK-0148, TASK-0149, TASK-0197]
 issues: [ISS-0028, ISS-0062, ISS-0033, ISS-0034, ISS-0035, ISS-0036, ISS-0037, ISS-0038, ISS-0039, ISS-0068, ISS-0069, ISS-0070, ISS-0071, ISS-0072, ISS-0073]
 related: ["[[ADR-0047-A-Finding-Is-Fixed-In-The-Feature-That-Caused-It]]", "[[ADR-0028-A-Review-Gate-Runs-Two-Rounds]]", "[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]"]
 tags: [review, issues, fleet]
@@ -116,3 +116,6 @@ Closing it needed one more thing than the features did. `PHASE-CHILDREN` refuses
 
 **One to watch.** `articles` ISS-0005 was filed on 2026-09-20 into a repo this cleanup had just emptied. That is the backlog beginning to refill, which is what ADR-0047 exists to prevent and what the cancelled TASK-0131 would have measured. One issue is not a trend. It is the first data point, and nothing is now measuring the rest.
 
+## Added, 2026-10-14
+
+[[TASK-0197-A-Defect-You-Find-Is-One-You-Fix|TASK-0197]] adds one rule here, beside the failing-test rule: a defect an agent finds and understands is fixed in the same session, with no issue, wherever its code is. Edwin asked for it after an agent in project-os-cockpit filed a defect it already understood (cockpit ISS-0320) and left it for him to direct. The task was written, synced to every enabled repo and closed on the same day, so the phase stays done.

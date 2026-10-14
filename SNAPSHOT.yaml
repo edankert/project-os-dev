@@ -39,7 +39,7 @@ counters:
   REL: 0
   REQ: 37
   RISK: 5
-  TASK: 196
+  TASK: 197
   TST: 46
   WF: 3
 
@@ -84,7 +84,7 @@ items:
       order: 7
       owner: user:edwin
       features: [FEAT-0034, FEAT-0035, FEAT-0036, FEAT-0037]
-      tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0132, TASK-0133, TASK-0134, TASK-0135, TASK-0136, TASK-0137, TASK-0138, TASK-0139, TASK-0140, TASK-0141, TASK-0142, TASK-0143, TASK-0144, TASK-0145, TASK-0146, TASK-0147, TASK-0148, TASK-0149]
+      tasks: [TASK-0126, TASK-0127, TASK-0128, TASK-0129, TASK-0130, TASK-0131, TASK-0132, TASK-0133, TASK-0134, TASK-0135, TASK-0136, TASK-0137, TASK-0138, TASK-0139, TASK-0140, TASK-0141, TASK-0142, TASK-0143, TASK-0144, TASK-0145, TASK-0146, TASK-0147, TASK-0148, TASK-0149, TASK-0197]
       issues: [ISS-0028, ISS-0062, ISS-0033, ISS-0034, ISS-0035, ISS-0036, ISS-0037, ISS-0038, ISS-0039, ISS-0068, ISS-0069, ISS-0070, ISS-0071, ISS-0072, ISS-0073]
       related: [ADR-0047]
     PHASE-0006:
@@ -200,7 +200,7 @@ items:
     FEAT-0035:
       file: docs/features/fix-before-filing/FEAT-0035-A-Finding-Is-Fixed-Before-It-Is-Filed.md
       status: done
-      tasks: [TASK-0132, TASK-0133, TASK-0144]
+      tasks: [TASK-0132, TASK-0133, TASK-0144, TASK-0197]
       owner: user:edwin
       phase: "[[PHASE-0007]]"
       related: [ADR-0047]
@@ -2496,8 +2496,8 @@ metrics:
     features_done: 37
     phases_total: 11
     phases_done: 8
-    tasks_total: 196
-    tasks_done: 188
+    tasks_total: 197
+    tasks_done: 189
     tests_total: 37
     tests_passing: 0
     tests_failing: 0
