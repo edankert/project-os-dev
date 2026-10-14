@@ -33,8 +33,8 @@ counters:
   ADR: 50
   CHG:
     last_date: 20260916
-  FEAT: 40
-  ISS: 105
+  FEAT: 41
+  ISS: 106
   PHASE: 10
   REL: 0
   REQ: 37
@@ -2492,7 +2492,7 @@ items:
 
 metrics:
   counts:
-    features_total: 40
+    features_total: 41
     features_done: 37
     phases_total: 11
     phases_done: 8
@@ -2502,7 +2502,7 @@ metrics:
     tests_passing: 0
     tests_failing: 0
     issues_open: 11
-    issues_triage: 0
+    issues_triage: 1
     tasks_deferred: 0
     issues_deferred: 5
     requirements_total: 37
