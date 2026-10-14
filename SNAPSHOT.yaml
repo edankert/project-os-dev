@@ -34,7 +34,7 @@ counters:
   CHG:
     last_date: 20260916
   FEAT: 41
-  ISS: 106
+  ISS: 107
   PHASE: 10
   REL: 0
   REQ: 37
@@ -441,7 +441,7 @@ items:
       parent: FEAT-0041
     TASK-0199:
       file: docs/features/claude-code-mod/plan/tasks/TASK-0199-The-Mod-Reaches-Every-Repo-Through-The-Template-Sync.md
-      status: backlog
+      status: done
       parent: FEAT-0041
     TASK-0200:
       file: docs/features/claude-code-mod/plan/tasks/TASK-0200-A-File-Changed-From-The-Shell-Counts-As-A-Write-At-Close-Out.md
@@ -1205,7 +1205,7 @@ items:
   issues:
     ISS-0106:
       file: docs/issues/ISS-0106-Project-Os-As-A-Plugin.md
-      status: open
+      status: fixed
       parent: FEAT-0041
       tasks: [TASK-0199]
     ISS-0105:
@@ -2540,7 +2540,7 @@ metrics:
     phases_total: 11
     phases_done: 8
     tasks_total: 203
-    tasks_done: 190
+    tasks_done: 191
     tests_total: 37
     tests_passing: 0
     tests_failing: 0

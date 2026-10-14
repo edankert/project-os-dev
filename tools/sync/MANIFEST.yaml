@@ -71,8 +71,16 @@ paths:
   ".claude/skills/": generated
   ".claude/agents/": generated
   ".cursor/rules/": generated
+  # The repo's own marketplace for the project-os plugin, named after the
+  # project (project-os-dev TASK-0199). Never copied: the template's names
+  # project-os-project-os, and two repos sharing a name run each other's plugin.
+  ".claude-plugin/": generated
 excludes:
   "tools/cockpit/": [".venv", "*.egg-info", "__pycache__", ".pytest_cache"]
+  # Claude Code writes its type declarations beside a plugin each time it loads
+  # it (.claude-plugin/types/, with its own .gitignore). They describe the
+  # Claude Code version on that machine, so they are never copied or deleted.
+  "tools/adapters/claude-code/plugin/": ["types"]
 # Paths the template renamed: old -> new. A sync deletes the old path from a
 # consumer, edited or not, and says what replaced it. project-os-dev ADR-0050
 # renamed the walk to the release test, with no period in which both names work.

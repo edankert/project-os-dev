@@ -1,0 +1,5 @@
+{
+  "name": "project-os",
+  "version": "0.1.0",
+  "description": "project-os for Claude Code sessions in every project-os repo: the project line above the prompt, a warning when the session runs on a model other than the pinned one, and files changed from the shell counted at close-out (project-os-dev FEAT-0041). Tested on Claude Code 2.1.300."
+}
