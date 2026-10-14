@@ -44,11 +44,11 @@ counters:
   WF: 3
 
 focus:
-  task: "TASK-0198"
+  task: ""
   feature: "FEAT-0041"
   phase: ""
   issue: ""
-  # 2026-10-14: FEAT-0041 started (Edwin, in project-os-cockpit: "Build FEAT-0041 too"), so cockpit FEAT-0157 can put its facts on the same line. TASK-0198 first: it checks live how two plugins share the band above the prompt and how a repo loads the mod.
+  # 2026-10-14: FEAT-0041 is built: TASK-0198 to TASK-0203 done, in project-os 96cfc97, 1e09218 and 5307fd6, synced here and into project-os-cockpit (032a6f8). It waits for Edwin's TST-0047 walk, after cockpit FEAT-0157 is built (Edwin: implement the rest of PHASE-046 first, then test), and then its independent review. Not pushed.
   note: "2026-09-27: PHASE-0010 carries out the release test redesign Edwin approved (ADR-0050). TASK-0187, the rename, is done in the project-os template (not pushed, not synced anywhere). Stage 2 is done: TASK-0188 (Expect lines marked per platform), TASK-0189 (procedure groups with a start line) and TASK-0191 (what changed per section and platform), in the template, not pushed. Stage 3 is done: TASK-0190 (the section page and its JSON, TESTING.md rule 10) and TASK-0194 (the procedure skill). Stage 4 is done: TASK-0192 (the length check, a warning) and TASK-0193 (the release-test-prep skill). Stage 5 is done: the template is synced to project-os-cockpit and your-trainer, each with its own renames (cockpit TASK-0639, your-trainer TASK-0979), and the cockpit's release test page is built (stage 6, FEAT-0155). TASK-0195 stays doing for the Equipment pilot (stage 7, your-trainer TASK-0975). The section word budget waits for the pilot (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
 items:
   # Pruned by retention policy (ADR-0018); the notes remain the archive.
@@ -445,19 +445,19 @@ items:
       parent: FEAT-0041
     TASK-0200:
       file: docs/features/claude-code-mod/plan/tasks/TASK-0200-A-File-Changed-From-The-Shell-Counts-As-A-Write-At-Close-Out.md
-      status: backlog
+      status: done
       parent: FEAT-0041
     TASK-0201:
       file: docs/features/claude-code-mod/plan/tasks/TASK-0201-A-Session-On-The-Wrong-Model-Is-Named-At-Start.md
-      status: backlog
+      status: done
       parent: FEAT-0041
     TASK-0202:
       file: docs/features/claude-code-mod/plan/tasks/TASK-0202-The-Project-Line-Above-The-Prompt.md
-      status: backlog
+      status: done
       parent: FEAT-0041
     TASK-0203:
       file: docs/features/claude-code-mod/plan/tasks/TASK-0203-The-Mod-Is-Pinned-Tested-In-CI-And-Synced-To-The-Cockpit.md
-      status: backlog
+      status: done
       parent: FEAT-0041
     TASK-0187:
       file: docs/features/release-test/plan/tasks/TASK-0187-Rename-The-Walk-To-The-Release-Test-Everywhere.md
@@ -2540,7 +2540,7 @@ metrics:
     phases_total: 11
     phases_done: 8
     tasks_total: 203
-    tasks_done: 191
+    tasks_done: 195
     tests_total: 37
     tests_passing: 0
     tests_failing: 0

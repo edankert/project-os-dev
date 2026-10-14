@@ -10,10 +10,11 @@
 # close-out-check.sh deletes the marker when it blocks, so the reminder arrives
 # once per burst of work rather than once per turn.
 #
-# Known limit, recorded rather than papered over: only the file-editing tools
-# set this. A session that writes through Bash instead leaves no marker and the
-# close-out check stays quiet. Guessing which shell commands write would be a
-# string match that ages badly; ISS-0056 carries the alternatives.
+# Writes through Bash are covered elsewhere: in Claude Code, the project-os
+# plugin (plugin/hooks/register.ts) compares the working tree at the start and
+# end of each turn and leaves this same marker when it changed (project-os-dev
+# TASK-0200). Codex has no equivalent. Guessing which shell commands write
+# would be a string match that ages badly; ISS-0056 carries the alternatives.
 #
 # Exit 0 always. This hook never blocks and never prints.
 

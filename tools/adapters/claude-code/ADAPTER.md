@@ -194,6 +194,38 @@ Claude Code runs the plugin from the repo's folder; it makes no copy. A sync tha
 
 **Inside a cockpit terminal** the cockpit's own plugin loads as well, through `CLAUDE_CODE_PLUGIN_DIRS`. The two share the line above the prompt without either naming the other; the contract is in project-os-dev REFERENCE-PROJECT-LINE-CONTRACT.
 
+### What the plugin does
+
+- **A file changed from the shell counts as a write at close-out** (HC-006). The plugin fingerprints the working tree with `git` when a main-loop turn starts and when it stops, and leaves the marker `hooks/session-touch.sh` leaves when the two differ, at the path `hooks/shared/session-marker.sh` gives.
+- **A session on the wrong model is named** (HC-011): a warning row above the project line, and the same sentence in the model's context.
+- **The project line above the prompt** (HC-012): for example `FEAT-0157 doing · PHASE-046 · 2 validator errors · 61 review-stale · route: implement here`.
+
+Its tests run with `claude plugin test tools/adapters/claude-code/plugin`. Use the binary itself: a shell alias that puts an option before `plugin` makes the command refuse to run.
+
+### Moving the tested version
+
+`plugin.json`'s description names the Claude Code version the plugin was tested on, and the template's CI (`.github/workflows/validate-docs.yml`) installs exactly that version to run `claude plugin validate` and `claude plugin test`. To move to a newer release: install it, run both commands and a live session, then change the version in both places in one commit. The interface is early access and may change between releases, so the pin moves on purpose, never by itself.
+
+### A copy of a repo in a second folder
+
+A clone or worktree of a repo carries the same marketplace name. Claude Code keeps one registration per name per machine, so a session started in the second folder re-points it there, and the next session in the first folder points it back. Each session still loads a plugin, but possibly the other folder's copy until that happens. This matters only when the two copies' plugins differ. `claude plugin marketplace list` shows which folder a name points at.
+
+### The project line
+
+There is one line above the Claude Code prompt, and the project-os plugin draws it. Another plugin may add its own facts to the end of the same line. The two never call each other; they meet only in the drawing that Claude Code passes from one plugin's `ui.render` hook to the next. The cockpit's plugin is the first to do this. These rules were checked live in Claude Code 2.1.300 (project-os-dev TASK-0198); the history of how they were chosen is project-os-dev REFERENCE-PROJECT-LINE-CONTRACT.
+
+1. **The project-os plugin draws its line as one Box keyed `project-os:line`**, laid out as a row. Its first child is a Text holding the project facts, with `wrap: "truncate-end"`, so a narrow terminal cuts the line from the right.
+2. **Another plugin's facts are a Box keyed `segment:<plugin>`**, for example `segment:cockpit`, laid out as a row, at most one row high. Its first child starts with the separator ` · `. Keys of Buttons inside it start with the plugin's name.
+3. **Every hook on the band calls `next(e)` first.** If `e.props.hasSurvey` is true, it returns what `next(e)` gave, unchanged.
+4. **Whichever hook is outer joins the two, so their order does not matter.** The plugin Claude Code loads first is the outer one: a plugin from `CLAUDE_CODE_PLUGIN_DIRS` is outer to one from the repo's settings.
+   - The project-os plugin takes every `segment:*` element out of the tree beneath and appends them to its line, in the order found. The line goes where the first segment stood. With no segment, it returns a column Box holding the tree beneath and then its line.
+   - Another plugin looks for `project-os:line` in the tree beneath. If it is there, it appends its segment as that Box's last child. If not, it returns a column Box holding the tree beneath and then its segment.
+5. **The tree from `next(e)` is frozen, and the engine's own node must stay in it.** Build a new tree from copies; changing it in place throws, and Claude Code skips the hook. Keep the `{ "type": "engine" }` node where it was. A join that dropped it was not drawn.
+6. **A plugin answers presses on its own Buttons through `ui.press`, by key.** A Button moved into another plugin's tree still raises `ui.press` for the plugin that drew it, and its own `onPress` runs. Matching by key keeps working even if a later release changes that.
+7. **Each plugin refreshes the band itself**, with `$.ui.invalidate("ui.render")` when its facts change; the whole chain redraws. No hook computes anything slow while drawing.
+8. **A fact that cannot be read is left out, never shown as zero.**
+9. **The wrong-model warning is not part of the line.** It is a row of its own just above it.
+
 ## Project-specific customization
 
 After copying the reference CLAUDE.md, projects should add:

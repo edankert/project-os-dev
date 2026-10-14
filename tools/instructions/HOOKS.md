@@ -12,7 +12,7 @@ tags: [instructions, hooks]
 
 These contracts define the checks every project-os workflow must perform at key lifecycle points, independent of which LLM tool drives the session. Each contract states the trigger, the project-os rule it enforces, the check logic, and the failure behavior; `../adapters/<tool>/ADAPTER.md` documents how a given tool implements it. The Claude Code and Codex adapters implement the first eight as session hooks (`../adapters/claude-code/hooks/` and `../adapters/codex/hooks/`). Their tool payloads and support differ, as each adapter documents. The generic path uses `AGENTS.md` instructions plus `tools/agents/*.sh`; pre-commit and CI remain the backstop.
 
-Contract IDs are `HC-001`..`HC-010`. (Earlier revisions of this file used `CHC-00x` codes; the mapping is at the end for downstream docs that still cite them.)
+Contract IDs are `HC-001`..`HC-012`. (Earlier revisions of this file used `CHC-00x` codes; the mapping is at the end for downstream docs that still cite them.)
 
 ## HC-001: Document-first gate
 
@@ -83,8 +83,8 @@ Contract IDs are `HC-001`..`HC-010`. (Earlier revisions of this file used `CHC-0
   - `focus` is cleared or moved to the next active item.
   - Metrics and relationships are updated.
   - Required `CHG-*` and `RISK-*` notes exist when behavior, paths, contracts, or hazards changed.
-- The write test: a `PostToolUse` hook records the session's first write; the Stop hook consumes that record when it blocks, so the reminder arrives once per burst of work rather than once per turn. `focus` is durable project state and says nothing about what a turn did, so reading it alone charged a forced continuation to every stop, questions included, in any repo whose focus item was parked (project-os-dev ISS-0056). Every path that cannot answer the question — no session identifier in the payload, no recorder on disk — blocks, because a check that disables itself when its input is missing is worse than one that nags. A session that writes through the shell rather than the editing tools records nothing and is not reminded; ISS-0056 holds the alternatives that were weighed.
-- Implementations: Claude Code `hooks/close-out-check.sh` (blocking Stop hook, also runs HC-007) with `hooks/session-touch.sh` (`PostToolUse`) as its recorder; Codex `hooks/dispatch.py` uses the same event pattern and a per-session marker for recognized edits. Tools without a per-session identifier implement the focus half unconditionally.
+- The write test: a `PostToolUse` hook records the session's first write; the Stop hook consumes that record when it blocks, so the reminder arrives once per burst of work rather than once per turn. `focus` is durable project state and says nothing about what a turn did, so reading it alone charged a forced continuation to every stop, questions included, in any repo whose focus item was parked (project-os-dev ISS-0056). Every path that cannot answer the question — no session identifier in the payload, no recorder on disk — blocks, because a check that disables itself when its input is missing is worse than one that nags. A file changed from the shell (`sed -i`, a script) leaves the same marker in Claude Code: the project-os plugin compares the working tree at the start and the end of each main-loop turn and writes the marker when it changed (project-os-dev TASK-0200). Codex has no equivalent, so there a session that writes only through the shell is not reminded; ISS-0056 holds the alternatives that were weighed.
+- Implementations: Claude Code `hooks/close-out-check.sh` (blocking Stop hook, also runs HC-007) with `hooks/session-touch.sh` (`PostToolUse`) and the project-os plugin (`plugin/hooks/register.ts`, `classic.Stop`, for shell writes) as its recorders; Codex `hooks/dispatch.py` uses the same event pattern and a per-session marker for recognized edits. Tools without a per-session identifier implement the focus half unconditionally.
 - On failure: complete the missing close-out work before stopping.
 
 ## HC-007: Mechanical docs validation
@@ -143,6 +143,31 @@ Contract IDs are `HC-001`..`HC-010`. (Earlier revisions of this file used `CHC-0
 - On failure: fail open. A broken budget must not block anyone's work; the skill's stated budget still applies.
 - Why a hook and not `maxTurns`: a subagent that reaches `maxTurns` stops without writing a report. A denied tool call is a message the reviewer reads, and the report it then writes is the review. `maxTurns: 100` stays in the agent file as a backstop.
 - Test: `bash tools/scripts/test-review-budget.sh`.
+
+## HC-011: The session runs on the pinned model
+
+- Trigger: the start of a session and of each main-loop turn, and the first request's context.
+- Rule: `../adapters/claude-code/ADAPTER.md`, "Delegation and model pins": the session model is the `model` pinned in `.claude/settings.json`. A resumed session keeps the model its transcript was saved with, whatever the pin says, so nothing else notices.
+- Check logic:
+  1. Read `model` from the repo's `.claude/settings.json`. No pin, or a file that cannot be read: nothing to check.
+  2. Compare it with the session's model in one spelling: lower case, no `claude-` prefix, no date or context suffix. A pin naming only a family (`opus`) is honoured by any model of that family.
+  3. When they differ, draw one row above the project line in the theme's `warning` colour: "This session runs <model>; this repo pins <pin> (.claude/settings.json). Switch with /model, or start a new session." The row goes away when the model changes to the pin.
+  4. Add the same sentence to the model's context, so a session where nothing is drawn (VS Code, `claude -p`) still records it.
+- Implementations: Claude Code, the project-os plugin (`plugin/hooks/register.ts`). Codex: none, its profiles carry no pin.
+- On failure: warn only. A session on the wrong model is not stopped.
+- Test: `claude plugin test tools/adapters/claude-code/plugin`.
+
+## HC-012: The project line
+
+- Trigger: the band above the Claude Code prompt is drawn.
+- Rule: `LIFECYCLE.md` "Source of truth": `SNAPSHOT.yaml` and the notes say where the project stands. The line shows it without spending tokens, because the model never reads it.
+- Check logic:
+  1. The facts are read in the background at session start, and again after a turn that changed `SNAPSHOT.yaml` or `docs/`, never while drawing: the focus item, its status and phase, and what kind of work it is from `hooks/model-routing-hint.sh` (HC-008); the error and REVIEW-STALE counts from one run of `tools/scripts/validate-docs.sh`.
+  2. A fact that has not been read yet, or whose script failed, is left out. A count of zero is shown only when the validator ran to its verdict line and counted zero. With no focus item the line says "no focus item".
+  3. Another plugin may add its facts to the end of the line, by the rules in `../adapters/claude-code/ADAPTER.md`, "The project line".
+- Implementations: Claude Code, the project-os plugin (`plugin/hooks/register.ts`). Codex: none; the session-start orientation (HC-002) remains the text equivalent.
+- On failure: the line is left out. Nothing blocks.
+- Test: `claude plugin test tools/adapters/claude-code/plugin`.
 
 ## Legacy CHC-* code mapping
 

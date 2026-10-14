@@ -29,12 +29,13 @@ The drawing contract with the cockpit plugin ([[REFERENCE-PROJECT-LINE-CONTRACT]
 
 ## Mitigation
 
-- The plugin declares the version it was tested on. The template's CI runs `claude plugin validate` and `claude plugin test` at a pinned Claude Code version (TASK-0203).
-- The mod never answers a permission check and never changes a `tool.check` verdict.
-- Every reader fails quietly: a failed script leaves its fact off the line; a failed `git status` leaves the turn as it is today.
-- Nothing slow runs while drawing. The validator runs at most once at a time, in the background.
-- ADAPTER.md says how to turn the plugin off in one repo, in a way the sync respects (TASK-0199).
-- A key in the drawing contract changes only in the template's ADAPTER.md and the cockpit's plugin on the same day.
+- **Done.** The plugin declares the version it was tested on. The template's CI runs `claude plugin validate` and `claude plugin test` at a pinned Claude Code version (TASK-0203, project-os `5307fd6`). Not yet seen running there: the template's CI has not run since, because nothing is pushed.
+- **Done.** The mod never answers a permission check and never changes a `tool.check` verdict: it hooks no `tool.check` (`claude plugin validate` lists its hooks).
+- **Done.** Every reader fails quietly: a failed script leaves its fact off the line; a failed `git status` leaves the turn as it is today. Covered by `claude plugin test` (no git repository; a validator that times out).
+- **Done.** Nothing slow runs while drawing. The validator runs at most once at a time, in the background (TASK-0202).
+- **Done.** ADAPTER.md says how to turn the plugin off in one repo, in a way the sync respects (TASK-0199); the generator never turns a `false` back on, and a test says so.
+- **Open, by its nature.** A key in the drawing contract changes only in the template's ADAPTER.md and the cockpit's plugin on the same day. Nothing checks it; it is a rule for whoever changes a key.
+- **Found while building, not mitigated:** a clone or worktree of a repo shares its marketplace name, so sessions in the two folders re-point one machine-wide registration between them (ADAPTER.md, "A copy of a repo in a second folder"). It matters only when the two copies' plugins differ.
 
 ## Triggers
 

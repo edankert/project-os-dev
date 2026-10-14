@@ -41,11 +41,11 @@ project-os-cockpit after TASK-0203's sync, opened in macOS Terminal (not a cockp
 ## Steps
 
 1. Start `claude` in the repo. **Expect:** one line above the prompt with the focus item, its status and phase, a validator error count, a review-stale count and a route. No segment after it. No install prompt other than the one ADAPTER.md describes.
-2. Run `python3 tools/scripts/snapshot-query.py` and `bash tools/scripts/validate-docs.sh` in another terminal. **Expect:** the focus item, status and phase on the line match the first; the two counts match the second.
+2. In another terminal, read `focus:` in `SNAPSHOT.yaml` (or look the item up with `python3 tools/scripts/snapshot-query.py <ID>`) and run `bash tools/scripts/validate-docs.sh 2>&1 | grep -c '^ERROR'` and `... | grep -c REVIEW-STALE`. **Expect:** the focus item, status and phase on the line match the snapshot; the two counts match the two greps. The route matches the bracketed kind of work in the hint the session received at its last prompt.
 3. Change the focus item in `SNAPSHOT.yaml` from the session (ask Claude to do it), and let the turn end. **Expect:** the line shows the new focus item within a few seconds, without restarting.
 4. With a focus task set, ask Claude to change one line of a tracked file with `sed -i` through Bash and nothing else. **Expect:** when the turn ends, the close-out check blocks once, as it would after an Edit.
 5. Ask a question that changes no file. **Expect:** no close-out block.
-6. Quit, then resume the session with `claude --resume --model <a model other than the pin>`, or start one with `--model`. **Expect:** a warning row above the line naming the session's model and the pin, and the same sentence visible in the transcript's context.
+6. Quit, then resume the session with `claude --resume --model <a model other than the pin>`, or start one with `--model`. **Expect:** a warning row above the line naming the session's model and the pin. Ask Claude to quote any note about its model from its context. **Expect:** it quotes the same sentence.
 7. Narrow the terminal to 60 columns. **Expect:** the line is cut from the right; the focus item stays visible.
 
 ## Expected result

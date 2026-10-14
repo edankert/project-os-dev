@@ -24,7 +24,7 @@ related:
 
 There is one line above the Claude Code prompt. The project-os mod draws it. When the session runs in a cockpit terminal, the cockpit's plugin adds its own facts to the end of the same line. Neither plugin calls the other, and project-os never names the cockpit, its service or its environment variables. The two meet only in the drawing that Claude Code passes from one plugin's hook to the next.
 
-This note is the plan's version of the contract. [[TASK-0198-Two-Plugins-Share-The-Line-Above-The-Prompt-Checked-Live|TASK-0198]] checks it in a live session before either side builds on it. [[TASK-0202-The-Project-Line-Above-The-Prompt|TASK-0202]] then writes the settled version into the template's `tools/adapters/claude-code/ADAPTER.md`, which becomes the durable home.
+**Since 2026-10-14 this note is the history.** The settled rules are in the template's `tools/adapters/claude-code/ADAPTER.md`, "The project line" (TASK-0202), and that is the version to change. This note is the plan's version of the contract. [[TASK-0198-Two-Plugins-Share-The-Line-Above-The-Prompt-Checked-Live|TASK-0198]] checks it in a live session before either side builds on it. [[TASK-0202-The-Project-Line-Above-The-Prompt|TASK-0202]] then writes the settled version into the template's `tools/adapters/claude-code/ADAPTER.md`, which becomes the durable home.
 
 ## Why the plugins meet in the drawing and not through the cockpit's service
 
