@@ -9,7 +9,7 @@ owner: user:edwin
 created: 2026-10-14
 updated: 2026-10-14
 source: ["Found 2026-10-14 by the session building TASK-0199 in the template, running every tools/scripts/test-*.sh before committing; both fail on a clean checkout of project-os 30e2486"]
-reported_by: model:claude-opus-5-5
+reported_by: agent
 question: "Which to do for each: cut words from LIFECYCLE.md or raise REQ-0026's 1,000-word budget; and reword QUALITY.md's filing bar or narrow test-review-budget.sh?"
 severity: medium
 component: "instructions"
