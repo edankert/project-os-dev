@@ -59,6 +59,7 @@ tags: [skills, closeout]
    - Run `bash tools/scripts/validate-docs.sh` and fix every reported error before finishing.
    - Run the project's full test suite and fix every failing test, including one that failed before this work (`../../instructions/QUALITY.md`, "A failing test is fixed"). Record the run, with no failures, in the feature note's `## Verification`.
    - An error you cannot fix gets an `ISS-*` only under the filing bar in `../../instructions/QUALITY.md` ("The filing bar"). The issue carries the error's code and message word for word, and one open issue per code and subject is enough; add to it instead of filing a second. An error this work caused is fixed, never filed.
+   - A defect you found during this work, in its code or anywhere else, is fixed before you close, under its own task and commit. It gets an `ISS-*` and is left open only for a reason `../../instructions/QUALITY.md` names ("A defect you find is one you fix"), and the close-out summary says which. Do not list it as open for the owner to direct.
    - Before pushing and after, follow `../../instructions/LIFECYCLE.md` close-out steps 8 and 9 (`--as-committed`, then confirm the CI run went green).
 9. **Independent review:**
    - At the review gates stated once in `../../instructions/QUALITY.md` ("Independent review (clean-context)"), run `../independent-review/SKILL.md` before applying the terminal status.

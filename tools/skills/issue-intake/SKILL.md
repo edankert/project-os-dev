@@ -12,7 +12,7 @@ tags: [skills, issues]
 
 ## When to use
 - A prompt reports a bug, mismatch, broken workflow, unclear documentation, or unexpected behavior.
-- An agent or a review finds a defect it will not fix now. **First apply the filing bar** in `../../instructions/QUALITY.md` ("The filing bar"): a defect in code the current feature changed is fixed in that feature, not filed.
+- An agent or a review finds a defect. **First apply the filing bar** in `../../instructions/QUALITY.md` ("The filing bar"): a defect in code the current feature changed is fixed in that feature, not filed. A defect you found elsewhere, whose cause you know, is not filed either: it is fixed in the same session under a task (`QUALITY.md`, "A defect you find is one you fix"). Use this skill only for a defect that stays open, for a reason that rule names.
 
 ## Inputs
 - User prompt, repro steps/logs, and any affected repo paths.
