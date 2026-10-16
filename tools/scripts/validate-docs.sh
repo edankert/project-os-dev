@@ -37,7 +37,11 @@ run_as_committed() {
   # local would be unbound by then (fatal under `set -u`).
   AS_COMMITTED_TMP="$(mktemp -d)"
   trap 'rm -rf "${AS_COMMITTED_TMP:-}"' EXIT
-  local tmp="$AS_COMMITTED_TMP"
+  # Under the repo's own folder name, as a clone or CI checkout would be: the
+  # plugin's marketplace name falls back to the folder name when SNAPSHOT.yaml
+  # has no project name (project-os-dev TASK-0204).
+  local tmp="$AS_COMMITTED_TMP/$(basename "$(cd "$ROOT" && pwd -P)")"
+  mkdir -p "$tmp"
   git -C "$ROOT" archive HEAD | tar -x -C "$tmp"
 
   echo "validate-docs: checking HEAD as a fresh clone would see it ($tmp)"

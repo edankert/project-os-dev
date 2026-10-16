@@ -39,7 +39,7 @@ counters:
   REL: 0
   REQ: 37
   RISK: 6
-  TASK: 203
+  TASK: 204
   TST: 47
   WF: 3
 
@@ -162,7 +162,7 @@ items:
       owner: user:edwin
       phase: ""
       requirements: []
-      tasks: [TASK-0198, TASK-0199, TASK-0200, TASK-0201, TASK-0202, TASK-0203]
+      tasks: [TASK-0198, TASK-0199, TASK-0200, TASK-0201, TASK-0202, TASK-0203, TASK-0204]
       tests: [TST-0047]
       related: [ISS-0106, RISK-0006, REFERENCE-PROJECT-LINE-CONTRACT]
       note: "STARTED 2026-10-14 on Edwin's decision in project-os-cockpit ('Build FEAT-0041 too'): the project-os mod and its line are built upstream first, then cockpit FEAT-0157, then both are tested. No phase: one feature and one issue (CLAUDE.md phase rule). Loading is ISS-0106 option (a), in scope as TASK-0199. The cockpit adds its facts to the line through the render chain, never through project-os (REFERENCE-PROJECT-LINE-CONTRACT)."
@@ -2539,8 +2539,8 @@ metrics:
     features_done: 37
     phases_total: 11
     phases_done: 8
-    tasks_total: 203
-    tasks_done: 195
+    tasks_total: 204
+    tasks_done: 196
     tests_total: 37
     tests_passing: 0
     tests_failing: 0

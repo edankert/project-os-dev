@@ -18,6 +18,7 @@ tasks:
   - "[[TASK-0201-A-Session-On-The-Wrong-Model-Is-Named-At-Start]]"
   - "[[TASK-0202-The-Project-Line-Above-The-Prompt]]"
   - "[[TASK-0203-The-Mod-Is-Pinned-Tested-In-CI-And-Synced-To-The-Cockpit]]"
+  - "[[TASK-0204-The-Committed-State-Check-Copies-The-Repo-Under-Its-Own-Folder-Name]]"
 issues: ["[[ISS-0106-Project-Os-As-A-Plugin]]"]
 release: ""
 acceptance_exception: ""

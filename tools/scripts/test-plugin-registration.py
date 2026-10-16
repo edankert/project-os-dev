@@ -113,6 +113,29 @@ class PluginRegistrationTest(unittest.TestCase):
         self.assertEqual(out.returncode, 1)
         self.assertIn('STALE .claude-plugin/marketplace.json', out.stdout)
 
+    def test_the_committed_state_check_sees_the_folder_name_a_clone_would_have(self):
+        # validate-docs.sh --as-committed unpacks HEAD into a temporary folder
+        # and runs generate-adapters --check there. With no project name the
+        # marketplace name comes from the folder, so the copy must keep the
+        # repo's folder name (project-os-dev TASK-0204).
+        import shutil
+        self.name('REPLACE ME')
+        scripts = self.repo / 'tools/scripts'
+        scripts.mkdir(parents=True)
+        shutil.copy(ROOT / 'tools/scripts/validate-docs.sh', scripts)
+        shutil.copy(GEN, scripts)
+        # The notes validator is not under test here.
+        (scripts / 'validate-docs.py').write_text('import sys\nsys.exit(0)\n')
+        self.assertEqual(self.run_gen('--install-hooks').returncode, 0)
+        git = ['git', '-C', str(self.repo), '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false']
+        subprocess.run(['git', 'init', '-q', str(self.repo)], check=True)
+        subprocess.run(git + ['add', '-A'], check=True)
+        subprocess.run(git + ['commit', '-q', '--no-verify', '-m', 'fixture'], check=True)
+        out = subprocess.run(['bash', str(scripts / 'validate-docs.sh'), '--as-committed'],
+                             capture_output=True, text=True)
+        self.assertEqual(out.returncode, 0, out.stdout + out.stderr)
+        self.assertIn('HEAD passes the full CI step set', out.stdout)
+
     def test_a_repo_without_the_plugin_folder_registers_nothing(self):
         import shutil
         shutil.rmtree(self.repo / 'tools/adapters/claude-code/plugin')
