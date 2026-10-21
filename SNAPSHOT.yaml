@@ -39,7 +39,7 @@ counters:
   REL: 0
   REQ: 37
   RISK: 6
-  TASK: 204
+  TASK: 206
   TST: 47
   WF: 3
 
@@ -48,6 +48,7 @@ focus:
   feature: "FEAT-0041"
   phase: ""
   issue: ""
+  # 2026-10-21: TASK-0205 (ISS-0108) and TASK-0206 (ISS-0109) are done in project-os a76657d, for your-trainer TASK-1127: a command per platform, hand steps, the budget line, the ride script and its import. Not synced anywhere yet; both issues stay open for what is left (CHG-20261021).
   # 2026-10-14: FEAT-0041 is built: TASK-0198 to TASK-0203 done, in project-os 96cfc97, 1e09218 and 5307fd6, synced here and into project-os-cockpit (032a6f8). It waits for Edwin's TST-0047 walk, after cockpit FEAT-0157 is built (Edwin: implement the rest of PHASE-046 first, then test), and then its independent review. Not pushed.
   note: "2026-09-27: PHASE-0010 carries out the release test redesign Edwin approved (ADR-0050). TASK-0187, the rename, is done in the project-os template (not pushed, not synced anywhere). Stage 2 is done: TASK-0188 (Expect lines marked per platform), TASK-0189 (procedure groups with a start line) and TASK-0191 (what changed per section and platform), in the template, not pushed. Stage 3 is done: TASK-0190 (the section page and its JSON, TESTING.md rule 10) and TASK-0194 (the procedure skill). Stage 4 is done: TASK-0192 (the length check, a warning) and TASK-0193 (the release-test-prep skill). Stage 5 is done: the template is synced to project-os-cockpit and your-trainer, each with its own renames (cockpit TASK-0639, your-trainer TASK-0979), and the cockpit's release test page is built (stage 6, FEAT-0155). TASK-0195 stays doing for the Equipment pilot (stage 7, your-trainer TASK-0975). The section word budget waits for the pilot (REQ-0036). PHASE-0009 stays active for its one waiting exit criterion. Open elsewhere: the cockpit's SNAPSHOT.yaml declares items.releases twice."
 items:
@@ -1203,6 +1204,12 @@ items:
       effort: M
       depends: [TASK-0060]
   issues:
+    ISS-0109:
+      file: docs/issues/ISS-0109-The-Release-Test-Should-Be-A-Script-An-App-Can-Run.md
+      status: open
+    ISS-0108:
+      file: docs/issues/ISS-0108-The-Release-Gate-Blocks-On-Every-Hand-Run-Check.md
+      status: open
     ISS-0106:
       file: docs/issues/ISS-0106-Project-Os-As-A-Plugin.md
       status: fixed
@@ -2539,8 +2546,8 @@ metrics:
     features_done: 37
     phases_total: 11
     phases_done: 8
-    tasks_total: 204
-    tasks_done: 196
+    tasks_total: 206
+    tasks_done: 198
     tests_total: 37
     tests_passing: 0
     tests_failing: 0

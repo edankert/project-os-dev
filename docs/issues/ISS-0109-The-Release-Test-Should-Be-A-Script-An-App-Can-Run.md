@@ -7,7 +7,7 @@ status: open
 phase: ""
 owner: user:edwin
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-21
 source: ["Edwin, 2026-10-20, in your-trainer: 'I have no problem going on the bike and testing ... the problem is setting up all the different setups and going through each of these steps separately.'", "Edwin, 2026-10-20: 'I think we could implement something like that for each of the applications, not just the trainer?'", "your-trainer FEAT-0140"]
 reported_by: agent
 question: "Should release-test.py write a ride script, the owed steps in running order with a machine-readable scenario for each, and should a tool import an app's results file into the ledger?"
@@ -16,6 +16,7 @@ component: "scripts"
 parent: ""
 related: ["[[ISS-0108-The-Release-Gate-Blocks-On-Every-Hand-Run-Check]]"]
 tests: []
+tasks: ["[[TASK-0206]]"]
 ---
 
 # The release test should also be a script an app can run
@@ -44,3 +45,9 @@ What is missing is a form an app can load, and a way back into the ledger.
 
 - ISS-0108 cuts how many checks a person owes. This issue makes the ones left cheap to run, and the two work together.
 - your-trainer proposes running its runner in the release build, hidden, without changing the purchase tier. The shared format should not assume a debug build.
+
+## What is done, and what is left
+
+[[TASK-0206-The-Release-Test-Writes-A-Ride-Script-And-Imports-The-Rides-Results|TASK-0206]] built expected items 1 and 3 in project-os a76657d, in the formats your-trainer FEAT-0140's plan fixed. `--ride-script` writes the owed steps in the sheet's order, and `--import-ride` adds the app's results to the working ledger with `method: ride` and the build. Setup names are passed to the app as the procedure's `setup_for:` writes them, and the app maps each one to an action or a prompt (item 2's app half).
+
+Still open: cutting the script to a time target by priority, grouping steps so the setup changes as rarely as possible, and the cockpit showing imported results. project-os-cockpit's `ledger.py` refuses `method: ride` and drops `build` when it rewrites a ledger, so it needs a change before any repo imports a ride.
