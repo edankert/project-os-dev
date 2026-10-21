@@ -3,7 +3,7 @@ type: "[[task]]"
 id: TASK-0207
 aliases: ["TASK-0207"]
 title: "A procedure step may cite a check that one platform tests by command, while another platform still needs it; and hand steps count a note's `## Procedure` items"
-status: doing
+status: done
 phase: ""
 owner: user:edwin
 created: 2026-10-21
@@ -30,7 +30,7 @@ Separately, the validator counts the steps for `hand_steps:` under `## Steps` on
 
 ## Definition of Done
 
-- [ ] `--check` refuses a citation of a command-tested part only when no platform the step runs on still needs that part. A step runs on its `step_platforms`, or on every platform the repo keeps a ledger for.
-- [ ] The validator's hand-step count reads `## Procedure` when the note has no `## Steps`, as `release-test.py` does.
-- [ ] Tests cover both, and each fails with its fix removed; the template's existing release-test tests still pass.
-- [ ] TESTING.md says the rule in one sentence where it describes the citation check.
+- [x] `--check` refuses a citation of a command-tested part only when no platform the step runs on still needs that part. A step runs on its `step_platforms`, or on every platform the repo keeps a ledger for. Evidence: project-os 742fbe9, `_audit_tag` and `Procedure.known_platforms`. Read-only against your-trainer, the Android and iOS checks went from 91 citation errors to one, a tag on TST-0362, which has a `command:` for both platforms and so is rightly refused.
+- [x] The validator's hand-step count reads `## Procedure` when the note has no `## Steps`, as `release-test.py` does. Evidence: `_numbered_step_count` in project-os 742fbe9.
+- [x] Tests cover both, and each fails with its fix removed; the template's existing release-test tests still pass. Evidence: `test-release-ride.py` 68 assertions pass; with the platform rule removed, the shared-step assertion fails, and with `## Procedure` removed, the heading assertion fails. `test-release-test.sh` 273 assertions and `test-release-test-preparation.py` pass.
+- [x] TESTING.md says the rule in one sentence where it describes the citation check. Evidence: "Release gating", rule 2.

@@ -438,7 +438,7 @@ items:
   tasks:
     TASK-0207:
       file: docs/features/release-test/plan/tasks/TASK-0207-A-Step-Shared-By-Two-Platforms-May-Cite-A-Check-One-Of-Them-Tests.md
-      status: doing
+      status: done
       parent: ISS-0108
     TASK-0198:
       file: docs/features/claude-code-mod/plan/tasks/TASK-0198-Two-Plugins-Share-The-Line-Above-The-Prompt-Checked-Live.md
@@ -2551,7 +2551,7 @@ metrics:
     phases_total: 11
     phases_done: 8
     tasks_total: 207
-    tasks_done: 198
+    tasks_done: 199
     tests_total: 37
     tests_passing: 0
     tests_failing: 0
