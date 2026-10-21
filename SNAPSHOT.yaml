@@ -44,7 +44,7 @@ counters:
   WF: 3
 
 focus:
-  task: "TASK-0207"
+  task: ""
   feature: "FEAT-0041"
   phase: ""
   issue: ""
