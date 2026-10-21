@@ -4,7 +4,7 @@ id: INSTR-TESTING
 status: active
 owner: group:maintainers
 created: 2026-03-16
-updated: 2026-09-27
+updated: 2026-10-21
 tags: [instructions, testing]
 ---
 
@@ -28,6 +28,7 @@ Most checks leave `kind:` out and take the kind `covers:` gives. Write `kind: fe
 
 ### Automated tests — executed by CI
 - Carries a non-empty `command:`; it is here because a machine executes it, and leaves when the command is removed.
+- A `commands:` entry makes a check automated on that one platform, and `hand_steps:` keeps some of its steps for a person ("Release gating").
 - **Carries no verdict** (`STATUSES.md` `[[test]]`); a red run is a red build.
 
 ## Lifecycle rules
@@ -85,6 +86,16 @@ A guarding test that cannot fail does not guard, and LLM-authored tests share th
 - A release is **blocked** while any manual check is unsettled.
 - An automated test never enters the manual list; CI gates it. A **broken command** returns its check to the manual list, because nothing is verifying it.
 - A check that cannot be completed (a third-party key unavailable, for example) may be a **release exception**, documented in the release note with justification.
+
+Three rules decide how much a person owes on each platform (project-os-dev ISS-0108, from your-trainer ADR-0020).
+
+**1. A command can cover one platform.** A check is automated on a platform when it has `command:` or a `commands:` entry for that platform. `command:` covers every platform. `commands: {android: "..."}` covers Android alone. On a platform its command covers, the check leaves the sheet and the owed count. On every other platform it stays owed, so a test written for Android never clears the check on iOS. Reason: a check whose test exists on one platform only was otherwise either owed everywhere or cleared everywhere.
+
+**2. A command can leave some steps to a person.** On a platform a command covers, `hand_steps: [3, 5]` names the steps under `## Steps` (or the older `## Procedure`) that a person still runs. The check stays owed there for those steps alone. The sheet prints only them, and `release-test.py --check` refuses a procedure step that cites any other step of the check, unless another platform the step runs on still needs it. A procedure is shared by every platform, so a step iOS still needs may cite a part Android tests by command; the Android sheet leaves that part out. A hand step is one that needs a person: the real hardware, a real third-party account, or a judgement of how something looks. A step that only checks that something is correct gets a test instead, or is retired. On a platform with no command, every step is a hand step. Reason: one step that needs the bike kept the whole check on the sheet.
+
+**3. Each sheet prints a hand-run budget.** One line near the top counts the hand-run checks the platform owes and their hand steps. It compares the checks with a limit of ten, and says how far over it the release is. A project sets its own limit with `hand_run_limit:` in `RELEASE-TEST.md`. The line informs; it does not block the release. Reason: the count grew with every feature and every platform, and nothing showed it.
+
+**A person can run the owed steps in an app.** `release-test.py --ride-script FILE` writes the owed steps as JSON, in the sheet's order, for an app to show one at a time. `release-test.py --import-ride FILE` adds the app's results to the working ledger, with `method: ride` and the build the results were earned on. The formats and the import's rules are in `SCHEMAS.md`, "The ride script and its results" (project-os-dev ISS-0109).
 
 ## The release test
 

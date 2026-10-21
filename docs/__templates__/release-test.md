@@ -8,6 +8,7 @@ updated: 2026-01-26
 gallery: ""          # optional: a command that regenerates the screen gallery; the release test sheet prints it at the top of what changed
 # length_limits: {action: 20, expected: 25, section_base: 300, section_per_check: 40, error: true}  # optional: override the length check (SCHEMAS.md)
 # quoted_lines: refused  # optional: `warning` while procedures still quote expected results (SCHEMAS.md)
+# hand_run_limit: 10  # optional: the most hand-run checks one platform should owe a release; the sheet prints its count against it (SCHEMAS.md)
 ---
 
 # Section order

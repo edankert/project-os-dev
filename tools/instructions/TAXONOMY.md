@@ -4,7 +4,7 @@ id: INSTR-TAXONOMY
 status: active
 owner: group:maintainers
 created: 2026-01-27
-updated: 2026-09-03
+updated: 2026-10-21
 tags: [instructions, taxonomy]
 ---
 
@@ -101,6 +101,8 @@ The verdict on an acceptance test is **an event in a per-release, single-platfor
 | *(no entry)* | nobody has run it on this platform | **blocks** | — |
 
 A ledger entry stores its result under the key `result`. An entry written before 2026-09-27 stores it under `mark`, and every reader accepts both for good, because a sealed ledger is never rewritten (project-os-dev ADR-0050).
+
+An entry's `method` says how the result arrived: `manual`, `automated`, `migration`, or `ride` for a result an app recorded while a person ran the release test in it. A `ride` entry names the `build` it was earned on (`docs/releases/ledgers/README.md`; project-os-dev ISS-0109).
 
 **Every result but `pass` is refused without a reason.** A check that clears the gate without being run, or blocks it after being run, is a claim about the release; the claim carries its evidence or it is refused.
 

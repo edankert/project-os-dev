@@ -2848,7 +2848,10 @@ LEDGERS_REL = "releases/ledgers"
 LEDGER_MARKS = ("pass", "partial", "na", "excused", "blocked", "fail",
                 "question")
 LEDGER_NEEDS_REASON = tuple(m for m in LEDGER_MARKS if m != "pass")
-LEDGER_METHODS = ("manual", "automated", "migration")
+#: How a result arrived. `ride` is a result an app recorded while a person
+#: rode the release test, imported by `release-test.py --import-ride`; it
+#: carries the `build` it was earned on (project-os-dev ISS-0109).
+LEDGER_METHODS = ("manual", "automated", "migration", "ride")
 
 
 def _entry_result(entry):
@@ -2942,7 +2945,9 @@ def validate_acceptance_location(root, report, note_index):
         fm = fm or {}
         if str(fm.get("level", "") or "").strip().lower() != "acceptance":
             continue
-        if str(fm.get("command", "") or "").strip():
+        # A check with `hand_steps:` keeps steps a person runs, so it lives
+        # where the release test and the cockpit look, command or not (ISS-0108).
+        if str(fm.get("command", "") or "").strip() and not fm.get("hand_steps"):
             continue
         if str(fm.get("id", "") or "").strip() not in ("", nid):
             continue   # a composite name indexed under another id
@@ -2998,6 +3003,110 @@ def validate_check_kind(root, report, note_index):
             report.error("CHECK-KIND", "%s declares kind: %s; a check's kind is feature or regression, or "
                          "leave kind: out and it is worked out from covers: (TESTING.md, \"The three test "
                          "kinds\") (%s)" % (nid, declared, rel))
+
+
+_STEP_ITEM_RE = re.compile(r"^ {0,3}\d+[.)]\s+")
+_FENCE_LINE_RE = re.compile(r"^\s*(```|~~~)")
+
+
+def _numbered_step_count(path):
+    """How many numbered items the note's `## Steps` holds, by position.
+
+    The count `release-test.py`'s `numbered_steps` makes: a fenced block is an
+    example and is skipped, and the section ends at the next heading of its
+    level or higher.
+    """
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except OSError:
+        return 0
+    if text.startswith("---"):
+        end = text.find("\n---", 3)
+        text = text[end + 4:] if end != -1 else text
+    # `## Steps`, or `## Procedure` when the note has no `## Steps`: the older
+    # heading `release-test.py` also reads (project-os-dev TASK-0207).
+    for name in ("steps", "procedure"):
+        count, depth, inside, fence, found = 0, 0, False, False, False
+        for line in text.splitlines():
+            if _FENCE_LINE_RE.match(line):
+                fence = not fence
+                continue
+            if fence:
+                continue
+            heading = re.match(r"^(#{1,6})\s+(.*?)\s*$", line)
+            if heading:
+                if inside and len(heading.group(1)) <= depth:
+                    break
+                if not inside and heading.group(2).strip().lower().rstrip(":") == name:
+                    inside, depth, found = True, len(heading.group(1)), True
+                continue
+            if inside and _STEP_ITEM_RE.match(line):
+                count += 1
+        if found:
+            return count
+    return 0
+
+
+def validate_check_commands(root, report, note_index):
+    """`commands:` and `hand_steps:` on an acceptance check (project-os-dev ISS-0108).
+
+    `commands:` maps a ledger platform to the command that tests the check
+    there, so a test written for one platform takes the check off that
+    platform's release test only. `hand_steps:` lists the steps under
+    `## Steps` a person still runs where a command covers the check. Both are
+    read by `release-test.py`, which keeps a check owed whole when either is
+    malformed; this says why (CHECK-COMMANDS).
+    """
+    ledger_dir = root / "docs" / LEDGERS_REL
+    known = sorted({m.group(1) for p in ledger_dir.glob("*.json")
+                    for m in [LEDGER_NAME_RE.match(p.stem)] if m}) if ledger_dir.is_dir() else []
+    for nid, (path, fm) in sorted(note_index.items()):
+        fm = fm or {}
+        if note_type(fm) != "test":
+            continue
+        if str(fm.get("level", "") or "").strip().lower() != "acceptance":
+            continue
+        if str(fm.get("id", "") or "").strip() not in ("", nid):
+            continue   # a composite name indexed under another id
+        commands, hand = fm.get("commands"), fm.get("hand_steps")
+        if commands in (None, "") and hand is None:
+            continue
+        try:
+            rel = path.relative_to(root).as_posix()
+        except ValueError:                           # pragma: no cover
+            rel = str(path)
+        command = str(fm.get("command", "") or "").strip()
+        if commands not in (None, ""):
+            if not isinstance(commands, dict) or not commands:
+                report.error("CHECK-COMMANDS", "%s: `commands:` must map platforms to the command that tests the "
+                             "check there, such as `commands: {android: \"make test\"}` (%s)" % (nid, rel))
+                commands = {}
+            for platform, value in sorted(commands.items(), key=lambda kv: str(kv[0])):
+                if not isinstance(value, str) or not value.strip():
+                    report.error("CHECK-COMMANDS", "%s: `commands.%s` is empty; give it the command that tests the "
+                                 "check on %s, or remove the entry (%s)" % (nid, platform, platform, rel))
+                if known and platform not in known:
+                    report.error("CHECK-COMMANDS", "%s: `commands:` names platform %s, and this repo keeps ledgers "
+                                 "only for %s (%s)" % (nid, platform, ", ".join(known), rel))
+            if command:
+                report.error("CHECK-COMMANDS", "%s has both `command:` and `commands:`. `command:` already covers "
+                             "every platform, so keep one of them (%s)" % (nid, rel))
+        if hand is None:
+            continue
+        if not command and not commands:
+            report.error("CHECK-COMMANDS", "%s lists `hand_steps:` and has no `command:` or `commands:`. Hand "
+                         "steps are the steps a person runs where a command covers the check; without a "
+                         "command every step is run by hand (%s)" % (nid, rel))
+        if (not isinstance(hand, list) or not hand
+                or any(isinstance(n, bool) or not isinstance(n, int) for n in hand)):
+            report.error("CHECK-COMMANDS", "%s: `hand_steps:` must be a non-empty list of step numbers, such as "
+                         "`hand_steps: [3, 5]` (%s)" % (nid, rel))
+            continue
+        steps = _numbered_step_count(path)
+        for number in sorted(set(hand)):
+            if not 1 <= number <= steps:
+                report.error("CHECK-COMMANDS", "%s: `hand_steps:` names step %d, and its `## Steps` has %s (%s)"
+                             % (nid, number, "no numbered steps" if not steps else "steps 1 to %d" % steps, rel))
 
 
 #: The walk was renamed the release test (project-os-dev ADR-0050). Each old
@@ -3526,10 +3635,22 @@ def validate_ledgers(root, report, note_index):
                     "%s a %s verdict on %s needs a reason — the result and its "
                     "justification are one event, so a check cannot leave the "
                     "gate without saying why" % (rel, mark, check))
-            if str(entry.get("method") or "").strip() not in LEDGER_METHODS:
+            method = str(entry.get("method") or "").strip()
+            if method not in LEDGER_METHODS:
                 report.error("LEDGER-ENTRY", "%s %s has method %r; expected "
                              "one of %s" % (rel, check, entry.get("method"),
                                             ", ".join(LEDGER_METHODS)))
+            # A ride result names the build it was earned on, such as
+            # "2.2.0 (123)": the import writes it, and without it nobody can
+            # tell which candidate the rider was holding (ISS-0109).
+            build = entry.get("build")
+            if "build" in entry and (not isinstance(build, str) or not build.strip()):
+                report.error("LEDGER-ENTRY", "%s %s has an empty `build`; it names "
+                             "the build the result was earned on, such as "
+                             "\"2.2.0 (123)\"" % (rel, check))
+            elif method == "ride" and "build" not in entry:
+                report.error("LEDGER-ENTRY", "%s %s was recorded in a ride and "
+                             "names no `build`" % (rel, check))
             if not str(entry.get("by") or "").strip():
                 report.error("LEDGER-ENTRY",
                              "%s %s names nobody in `by`" % (rel, check))
@@ -3833,6 +3954,7 @@ def validate(root, report):
     validate_ledgers(root, report, note_index)
     validate_acceptance_location(root, report, note_index)
     validate_check_kind(root, report, note_index)
+    validate_check_commands(root, report, note_index)
     validate_release_test_names(root, report, note_index)
     ledger_cleared = _ledger_cleared(root)
     validate_moved_verdict_fields(root, report, note_index)

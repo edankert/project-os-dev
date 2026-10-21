@@ -53,7 +53,7 @@ These rules define what "done" means for work tracked in this documentation syst
 
   A found defect stays open only for one of these reasons. Then it gets an `ISS-*`, and the issue and your summary name the reason:
   - **The fix needs a decision the owner has not made.** Ask in the same turn, with a recommendation.
-  - **The fix is too large or too wide.** It needs more than about 40 tool calls, changes more than three source files besides tests, changes a contract other code relies on (an API, a file format, a schema), or changes behaviour a person would notice beyond the defect itself.
+  - **The fix is too large or too wide.** It needs more than about forty tool calls (a size, not the review budget), changes more than three source files besides tests, changes a contract other code relies on (an API, a file format, a schema), or changes behaviour a person would notice beyond the defect itself.
   - **It belongs to another repository.** Write the issue in that repository's `docs/issues/` and commit only that note; if you cannot write there, name the defect in your summary with what you found. A template file's defect goes upstream.
   - **Its cause is still unknown** after the look above.
 

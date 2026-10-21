@@ -51,10 +51,22 @@ implementations of one predicate is how a badge and a gate come to disagree
 about one corpus. The cockpit bundles this module rather than writing a second
 one ("The release test", rule 7).
 
+--ride-script and --import-ride
+------------------------------
+`--ride-script FILE` writes the owed steps as JSON an app can load and show
+one at a time, in the sheet's order (`release-ride-script/1`).
+`--import-ride FILE` reads the results file that app writes back
+(`release-ride-results/1`) and adds one entry per check to the platform's
+working ledger, with `method: ride`. Both formats are SCHEMAS.md, "The
+ride script and its results"; the rules they serve are TESTING.md,
+"Release gating" (project-os-dev ISS-0109).
+
 Exit codes: 0 = a sheet was produced, 2 = usage error or no ledger in this repo.
 
 Stdlib only. Usage:
     release-test.py --release REL-0017 --platform android [--out PATH] [--repo-root DIR]
+    release-test.py --release REL-0017 --platform android --ride-script FILE
+    release-test.py --import-ride FILE --platform android [--dry-run]
     release-test.py --check [--platform android] [--repo-root DIR]
 """
 
@@ -66,7 +78,8 @@ import re
 import subprocess
 import sys
 from dataclasses import dataclass, field
-from datetime import date
+import shutil
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 # --------------------------------------------------------------- note reading
@@ -239,6 +252,43 @@ class Check:
     #: (project-os-dev REQ-0034). The line prints on no platform, so it is
     #: refused rather than lost.
     expect_problems: list[str] = field(default_factory=list)
+    #: `commands:` from the note: a ledger platform -> the command that tests
+    #: the check there (project-os-dev ISS-0108). `command:` still means every
+    #: platform. The validator refuses a malformed map (CHECK-COMMANDS); what
+    #: reaches here is only its well-formed entries.
+    commands: dict[str, str] = field(default_factory=dict)
+    #: `hand_steps:` from the note: the step positions under `## Steps` that a
+    #: person still runs where a command covers the check, sorted.
+    hand_steps: list[int] = field(default_factory=list)
+    #: True when `hand_steps:` is written and cannot be used: not a list of
+    #: positions, or naming a step the note does not have. The check then
+    #: stays owed whole, which is the safe direction; the validator says why.
+    hand_steps_broken: bool = False
+
+    def automated_on(self, platform: str = "") -> bool:
+        """Whether a command tests this check on ``platform``.
+
+        `command:` covers every platform, and `commands.<platform>` covers
+        that one (project-os-dev ISS-0108). With no platform named, only
+        `command:` counts: that is a reader asking about the note, not about
+        one platform's sheet.
+        """
+        return bool(self.command) or bool(platform and self.commands.get(platform))
+
+    def hand_parts(self, platform: str = "") -> list[tuple[str, str]]:
+        """The owed parts a person runs on ``platform``.
+
+        Every part on a platform no command covers. On one a command covers,
+        only the `hand_steps:` positions, and none when it lists none. A
+        broken `hand_steps:` keeps every part, so a typo can never take a step
+        off the sheet without a word.
+        """
+        parts = parts_of(self)
+        if not self.automated_on(platform):
+            return parts
+        if self.hand_steps_broken:
+            return parts
+        return [(self.id, str(n)) for n in self.hand_steps]
 
     @property
     def kind(self) -> str:
@@ -343,8 +393,42 @@ def load_checks(docs_root: Path, index=None, repo_root: Path | None = None) -> d
             readiness_for=readiness,
             readiness_problems=readiness_problems,
             expect_problems=expect_problems,
+            commands=read_commands(fm.get("commands")),
         )
+        out[note_id].hand_steps, out[note_id].hand_steps_broken = read_hand_steps(
+            fm.get("hand_steps"), out[note_id])
     return out
+
+
+def read_commands(raw) -> dict[str, str]:
+    """The well-formed entries of a check's `commands:` map.
+
+    The validator reports everything else (CHECK-COMMANDS). A malformed entry
+    is dropped here, which leaves the check owed on that platform: the safe
+    direction, since a command nobody can read tests nothing.
+    """
+    if not isinstance(raw, dict):
+        return {}
+    return {str(platform).strip(): command.strip() for platform, command in raw.items()
+            if isinstance(platform, str) and platform.strip()
+            and isinstance(command, str) and command.strip()}
+
+
+def read_hand_steps(raw, check: Check) -> tuple[list[int], bool]:
+    """(the `hand_steps:` positions, sorted; whether the field is broken).
+
+    Absent is not broken. A field that is not a list of whole numbers, or
+    that names a step the note does not have, is broken, and the check then
+    stays owed whole (`Check.hand_parts`).
+    """
+    if raw in (None, "", []):
+        return [], raw == []
+    if not isinstance(raw, list) or any(isinstance(n, bool) or not isinstance(n, int) for n in raw):
+        return [], True
+    numbers = set(numbered_steps(check))
+    if not raw or any(n not in numbers for n in raw):
+        return [], True
+    return sorted(set(raw)), False
 
 
 def parse_check_readiness(raw, path: str) -> tuple[dict[str, dict[str, str]], list[str]]:
@@ -989,6 +1073,9 @@ class Procedure:
     parse_warnings: list[tuple[str, str]] = field(default_factory=list)
     #: The same, plus what `audit_procedure` found on its last run.
     warnings: list[tuple[str, str]] = field(default_factory=list)
+    #: Every platform the repo keeps a ledger for, so a step with no
+    #: `step_platforms` is known to run on all of them (project-os-dev TASK-0207).
+    known_platforms: list[str] = field(default_factory=list)
 
 
 _SETUP_ITEM_RE = re.compile(r"^- \[([a-z][a-z0-9_-]*)\] (.+)$")
@@ -1471,6 +1558,7 @@ def load_procedures(docs_root: Path, repo_root: Path | None = None) -> list[Proc
                             + duplicate_declarations(front, shown_path)))
         procedure.parse_problems += unknown_platforms(
             procedure, known_platforms, {name for item in setup_items for name in item.platforms})
+        procedure.known_platforms = list(known_platforms)
         out.append(procedure)
     return out
 
@@ -1505,6 +1593,58 @@ def numbered_steps(check: Check) -> list[int]:
     that needs this looks like that today (project-os-dev ISS-0064).
     """
     return list(range(1, len(written_steps(check)) + 1))
+
+
+def step_items(check: Check) -> tuple[list[str], list[list[str]]]:
+    """(the lines before the first numbered step, each numbered step's lines).
+
+    A step's lines are its own line and every line after it up to the next
+    numbered step, as written. Positions are the list's, as `numbered_steps`
+    counts them.
+    """
+    intro: list[str] = []
+    items: list[list[str]] = []
+    in_fence = False
+    for line in (check.steps or "").splitlines():
+        if FENCE_RE.match(line):
+            in_fence = not in_fence
+        elif not in_fence and _STEP_RE.match(line):
+            items.append([line])
+            continue
+        (items[-1] if items else intro).append(line)
+    return intro, items
+
+
+def hand_steps_text(check: Check, platform: str = "") -> str:
+    """The note's `## Steps` as a per-check row prints it on ``platform``.
+
+    Whole, unless a command covers the check there and `hand_steps:` keeps
+    some steps for a person: then the lines before the first step and those
+    steps alone, each under its own number (project-os-dev ISS-0108).
+    """
+    if not check.automated_on(platform) or check.hand_steps_broken:
+        return check.steps
+    keep = {int(n) for _c, n in check.hand_parts(platform) if n}
+    intro, items = step_items(check)
+    lines = list(intro)
+    for position, item in enumerate(items, start=1):
+        if position in keep:
+            lines.extend(item)
+    return "\n".join(lines).strip("\n")
+
+
+def step_text(check: Check, number: str) -> str:
+    """One numbered step of the note as one line of plain text, its number removed."""
+    if not number:
+        return _WS_RE.sub(" ", (check.steps or check.lead or check.title or check.id)).strip()
+    _intro, items = step_items(check)
+    position = int(number)
+    if not 1 <= position <= len(items):
+        return ""
+    first = _STEP_RE.match(items[position - 1][0])
+    text = " ".join([first.group(2) if first else items[position - 1][0]]
+                    + [line.strip() for line in items[position - 1][1:]])
+    return _WS_RE.sub(" ", text).strip()
 
 
 def parts_of(check: Check) -> list[tuple[str, str]]:
@@ -1828,6 +1968,11 @@ class Section:
 
 
 RELEASE_TEST_REL = "tests/acceptance/RELEASE-TEST.md"
+#: The most hand-run checks one platform should owe a release, unless the
+#: section order file sets `hand_run_limit:` (project-os-dev ISS-0108, from
+#: your-trainer ADR-0020). The sheet prints the count against it; nothing
+#: refuses a sheet over it.
+HAND_RUN_LIMIT = 10
 _YAML_LIST_RE = re.compile(r"^\s*(surfaces|checks|bench)\s*:\s*(.*)$")
 _YAML_SCALAR_RE = re.compile(r"^\s*(state|gallery)\s*:\s*(.*)$")
 
@@ -2045,10 +2190,20 @@ class ReleaseTest:
     #: Change notes in range that declare no `platforms:`, listed on every
     #: platform. Empty for a project with one platform.
     undeclared: list[str] = field(default_factory=list)
+    #: The most hand-run checks one platform should owe a release
+    #: (`hand_run_limit:` in the section order file, project-os-dev ISS-0108).
+    hand_run_limit: int = HAND_RUN_LIMIT
+    #: The owed parts a person runs, over every owed check on this platform.
+    hand_steps: int = 0
 
     @property
     def rows(self) -> int:
         return sum(len(p.rows) for p in self.sections) + len(self.unplaced)
+
+    @property
+    def budget(self) -> dict:
+        """The hand-run budget: owed checks and their hand steps against the limit."""
+        return {"limit": self.hand_run_limit, "checks": self.rows, "steps": self.hand_steps}
 
 
 def order_rows(rows: list[Check], warnings: list[str], where: str) -> list[Check]:
@@ -2077,15 +2232,19 @@ def order_rows(rows: list[Check], warnings: list[str], where: str) -> list[Check
     return out
 
 
-def owed_checks(checks: dict[str, Check], events: list[Event]) -> list[Check]:
-    """The manual checks this platform still owes, in id order.
+def owed_checks(checks: dict[str, Check], events: list[Event],
+                platform: str = "") -> list[Check]:
+    """The hand-run checks this platform still owes, in id order.
 
-    `ledger.owed()` in `project-os-cockpit`, entry for entry: a manual check
-    (a feature or regression test) with no surviving clearing verdict.
+    `ledger.owed()` in `project-os-cockpit`: a check a person runs on
+    ``platform`` with no surviving clearing verdict. A person runs it there
+    when no command covers it on that platform, or when one does and the
+    note keeps `hand_steps:` (project-os-dev ISS-0108). With no platform,
+    only `command:` counts, which is what the cockpit still asks.
     """
     verdicts = resolve(events)
     out = [c for c in checks.values()
-           if c.kind != "automated"
+           if c.hand_parts(platform)
            and ((v := verdicts.get(c.id)) is None or not v.clears)]
     out.sort(key=lambda c: c.id)
     return out
@@ -2255,7 +2414,8 @@ def build_release_test(checks: dict[str, Check], events: list[Event], sections: 
                what_changed_release: str = "", what_changed_tag: str = "",
                what_changed_problem: str = "", short_lines: ShortLines | None = None,
                stale=None, known_platforms=None,
-               quoted_refused: bool | None = None) -> ReleaseTest:
+               quoted_refused: bool | None = None,
+               hand_run_limit: int | None = None) -> ReleaseTest:
     """The sheet as data: what changed, the sections and the unplaced rows.
 
     Takes plain values rather than a repo path, so a host with its own note
@@ -2269,7 +2429,7 @@ def build_release_test(checks: dict[str, Check], events: list[Event], sections: 
     surfaces = surfaces or {}
     surface_notes = surface_notes or {}
     warnings = list(warnings or [])
-    owed = owed_checks(checks, events)
+    owed = owed_checks(checks, events, platform)
     owed_ids = {c.id for c in owed}
 
     changes = list(changes or [])
@@ -2315,7 +2475,9 @@ def build_release_test(checks: dict[str, Check], events: list[Event], sections: 
                 authored_order=authored_order, what_changed_release=what_changed_release,
                 what_changed_tag=what_changed_tag, what_changed_problem=what_changed_problem,
                 what_changed_overview=overview, short_lines_problem=short_problem,
-                undeclared=undeclared)
+                undeclared=undeclared,
+                hand_run_limit=HAND_RUN_LIMIT if hand_run_limit is None else hand_run_limit,
+                hand_steps=sum(len(c.hand_parts(platform)) for c in owed))
 
 
 def short_lines_for(short_lines: ShortLines | None, tag: str
@@ -2402,7 +2564,7 @@ def attach_procedure(entry: Placed, procedure: Procedure, checks: dict[str, Chec
             step.head = "%s %s" % (prefix.group(1), action) if prefix else action
         if step.readiness and step.readiness.get("platforms") and platform not in step.readiness["platforms"]:
             step.readiness = {}
-    owed_parts = {part for c in entry.rows for part in parts_of(c)}
+    owed_parts = {part for c in entry.rows for part in c.hand_parts(platform)}
     direct: set[int] = set()
     for step in procedure.steps:
         for expectation in step.expectations:
@@ -2744,7 +2906,7 @@ def audit_procedure(procedure: Procedure, section: Section, owed: list[Check],
     where = placement(sorted(known.values(), key=lambda c: c.id), sections, surfaces)
     want: dict[tuple[str, str], Check] = {}
     for check in owed:
-        for part in parts_of(check):
+        for part in check.hand_parts(platform):
             want[part] = check
     cited: dict[tuple[str, str], set[int]] = {}
     applicable = [step for step in procedure.steps
@@ -2790,7 +2952,7 @@ def audit_procedure(procedure: Procedure, section: Section, owed: list[Check],
                 % (_part_name(part), ", ".join(str(n) for n in sorted(steps)),
                    procedure.path))
     live = [c for c in known.values()
-            if c.kind != "automated" and where.get(c.id) == section.name]
+            if c.hand_parts(platform) and where.get(c.id) == section.name]
     covered = {tag[0] for tag in cited}
     missing = sorted(c.id for c in live if c.id not in covered)
     if missing:
@@ -2832,6 +2994,29 @@ def _audit_tag(procedure: Procedure, step: Step, expectation: Expectation,
     if not number and numbers:
         return ["%s cites %s with no step number, and that check numbers %d "
                 "steps; cite the step" % (at, check_id, len(numbers))]
+    #: **A step a command tests is not in the procedure on that platform**
+    #: (project-os-dev ISS-0108). The command runs it, so a person would be
+    #: asked to repeat what CI already did, and the step would never print
+    #: anyway because it is never owed. The other platform may still need
+    #: it, which is what `step_platforms` is for.
+    #: **Unless another platform the step runs on still needs it**
+    #: (project-os-dev TASK-0207). A procedure is shared by every platform, and
+    #: a check may have a command on one only. Its steps stay for the others,
+    #: and the sheet already leaves a tag out where it is not owed; refusing
+    #: the citation failed every such step, and `step_platforms` cannot help a
+    #: step that also cites a check this platform still owes.
+    runs_on = sorted(step.platforms) if step.platforms else list(procedure.known_platforms)
+    needed_elsewhere = any((check_id, number) in check.hand_parts(other)
+                           for other in runs_on if other != platform)
+    if (platform and check.automated_on(platform) and not check.hand_steps_broken
+            and (check_id, number) not in check.hand_parts(platform)
+            and not needed_elsewhere):
+        kept = check.hand_parts(platform)
+        return ["%s cites %s, and on %s a command tests %s%s; take the tag out, or "
+                "limit the step to the other platforms with `step_platforms`"
+                % (at, _tag_name(tag), platform, check_id,
+                   " except steps %s, which `hand_steps:` keeps for a person"
+                   % ", ".join(n for _c, n in kept) if kept else "")]
     #: **A tag `.N` needs one Expect line per step.** Otherwise `expect_for`
     #: cannot pair them and prints every line for every tag, so the tester
     #: reads lines meant for other steps and nothing said so. A check with 3
@@ -3094,12 +3279,24 @@ def _row_checks(rows: list[Check], platform: str) -> list[dict]:
     """One printed check per owed check, for a section with no usable procedure."""
     out = []
     for number, check in enumerate(rows, start=1):
+        #: Where a command covers the check and `hand_steps:` keeps some steps
+        #: for a person, the row prints those steps and their Expect lines
+        #: alone, tagged by step (project-os-dev ISS-0108).
+        partial = check.automated_on(platform) and not check.hand_steps_broken
+        if partial:
+            keys: list[str] = []
+            for _c, n in check.hand_parts(platform):
+                keys += [k for k in expect_for(check, n, platform) if k not in keys]
+            tags = [_tag_name(part) for part in check.hand_parts(platform)]
+        else:
+            keys, tags = _unique(expect_text(check, platform)), [check.id]
+        steps = hand_steps_text(check, platform)
         out.append({
             "number": number, "action": check.title or check.id,
             "expected": [{"text": shown_expected(expect_display(check).get(key, key)), "tags": [],
-                          "passed": []} for key in _unique(expect_text(check, platform))],
+                          "passed": []} for key in keys],
             "passed_lines": [],
-            "tags": [check.id], "checks": [check.id], "passed": [],
+            "tags": tags, "checks": [check.id], "passed": [],
             "preparation": False, "start": "",
             "readiness": _readiness(check_readiness(check, platform)),
             "timer": 0, "capture": "", "compare_with": [], "path": check.path,
@@ -3107,8 +3304,8 @@ def _row_checks(rows: list[Check], platform: str) -> list[dict]:
             #: setup and steps stay on the page (rule 5). The length check
             #: counts them, which is what makes writing a procedure pay.
             "setup": check.setup.strip(),
-            "steps": check.steps.strip() or check.lead.strip(),
-            "steps_heading": bool(check.steps.strip()),
+            "steps": steps.strip() or check.lead.strip(),
+            "steps_heading": bool(steps.strip()),
             "expect_stated": bool(check.expect.strip()),
         })
     return out
@@ -3158,6 +3355,9 @@ def payload(sheet: ReleaseTest) -> dict:
     return {
         "release": sheet.release, "platform": sheet.platform, "generated": sheet.generated,
         "owed": sheet.rows, "authored_order": sheet.authored_order,
+        #: TESTING.md, "Release gating": the owed hand-run checks and their
+        #: hand steps against the project's limit.
+        "budget": dict(sheet.budget, over=max(0, sheet.rows - sheet.hand_run_limit)),
         "notices": list(sheet.notices), "warnings": list(sheet.warnings),
         "what_changed": {
             "release": sheet.what_changed_release, "tag": sheet.what_changed_tag,
@@ -3286,6 +3486,18 @@ def render_screens(screens: list[dict], out: list[str], depth: str) -> None:
                 out.append("")
                 out.append("![%s, at the last release](%s)" % (capture["key"], capture["before"]))
             out.append("")
+
+
+def budget_line(budget: dict, platform: str) -> str:
+    """One line near the top of the sheet: what a person owes, against the limit."""
+    checks, steps, limit = budget["checks"], budget["steps"], budget["limit"]
+    line = ("**Hand-run budget:** %d %s with %d %s %s owed by hand on %s. The limit is %d %s."
+            % (checks, _plural(checks, "check"), steps, _plural(steps, "step"),
+               _plural(checks, "is", "are"), platform_name(platform), limit,
+               _plural(limit, "check")))
+    if checks > limit:
+        line += " This release is %d over it." % (checks - limit)
+    return line
 
 
 def readiness_line(readiness: dict) -> str:
@@ -3441,6 +3653,8 @@ def render_page(page: dict) -> str:
                % (count, _plural(count, "check"), len(sections), _plural(len(sections), "section"),
                   page["owed"], _plural(page["owed"], "note")))
     out.append("")
+    out.append(budget_line(page["budget"], page["platform"]))
+    out.append("")
     out.append("The validator counts from `mark:` on the note; this sheet counts "
                "from the ledger (project-os-dev ISS-0060).")
     if not page["authored_order"]:
@@ -3523,6 +3737,8 @@ class Reading:
     #: `quoted_lines:` from the section order file: whether a quoted
     #: expectation line refuses its procedure (the default) or only warns.
     quoted_refused: bool = True
+    #: `hand_run_limit:` from the section order file, or the default.
+    hand_run_limit: int = HAND_RUN_LIMIT
 
 
 def read_repo(repo_root: Path, platform: str) -> Reading:
@@ -3554,6 +3770,7 @@ def read_repo(repo_root: Path, platform: str) -> Reading:
     authored = release_test_path.is_file()
     limits, limit_problems = LengthLimits(), []
     quoted_refused = QUOTED_EXPECTATIONS_REFUSED
+    hand_run_limit = HAND_RUN_LIMIT
     if authored:
         gallery, sections, warnings = parse_section_order(
             release_test_path.read_text(encoding="utf-8"))
@@ -3569,6 +3786,14 @@ def read_repo(repo_root: Path, platform: str) -> Reading:
                 limit_problems.append(
                     "docs/%s: `quoted_lines` is %r; it is refused (the default) or warning"
                     % (RELEASE_TEST_REL, mode))
+        raw_limit = front.get("hand_run_limit") if isinstance(front, dict) else None
+        if raw_limit not in (None, ""):
+            if isinstance(raw_limit, bool) or not isinstance(raw_limit, int) or raw_limit < 0:
+                limit_problems.append(
+                    "docs/%s: `hand_run_limit` is %r; it is a whole number of checks, 0 or more "
+                    "(the default is %d)" % (RELEASE_TEST_REL, raw_limit, HAND_RUN_LIMIT))
+            else:
+                hand_run_limit = raw_limit
     else:
         gallery, sections, warnings = "", unordered_sections(list(checks.values())), []
     surface_notes = load_surfaces(index)
@@ -3589,7 +3814,8 @@ def read_repo(repo_root: Path, platform: str) -> Reading:
         authored=authored, what_changed_release=release_id,
         what_changed_tag="" if problem else tag, what_changed_problem=problem, changes=changes,
         short_lines=load_short_lines(docs_root, platform, repo_root), platforms=known,
-        limits=limits, limit_problems=limit_problems, quoted_refused=quoted_refused)
+        limits=limits, limit_problems=limit_problems, quoted_refused=quoted_refused,
+        hand_run_limit=hand_run_limit)
 
 
 def generate(repo_root: Path, release: str, platform: str) -> ReleaseTest:
@@ -3621,7 +3847,8 @@ def sheet_from(read: Reading, release: str, platform: str, notices=None,
         authored_order=read.authored, what_changed_release=read.what_changed_release,
         what_changed_tag=read.what_changed_tag, what_changed_problem=read.what_changed_problem,
         short_lines=read.short_lines, stale=stale_finder(read.repo_root) if pictures else None,
-        known_platforms=read.platforms, quoted_refused=read.quoted_refused)
+        known_platforms=read.platforms, quoted_refused=read.quoted_refused,
+        hand_run_limit=read.hand_run_limit)
 
 
 def check_repo(repo_root: Path, platform: str) -> tuple[list[str], list[str]]:
@@ -3644,7 +3871,7 @@ def check_repo_findings(repo_root: Path, platform: str
         problems.extend(check.readiness_problems)
         problems.extend(check.expect_problems)
     remarks: list[str] = []
-    owed = owed_checks(read.checks, read.events)
+    owed = owed_checks(read.checks, read.events, platform)
     owed_ids = {c.id for c in owed}
     by_name = {s.name: s for s in read.sections}
     seen: set[str] = set()
@@ -3711,6 +3938,363 @@ def check_repo_findings(repo_root: Path, platform: str
             else:
                 warnings.append(("length", message))
     return problems, warnings, remarks
+
+
+# ------------------------------------------- the ride script and its results
+
+#: The two JSON shapes an app shares with this script (project-os-dev
+#: ISS-0109, your-trainer FEAT-0140's plan, "Formats"). A change to either is
+#: made in that plan first, then here, then in the app.
+RIDE_SCRIPT_FORMAT = "release-ride-script/1"
+RIDE_RESULTS_FORMAT = "release-ride-results/1"
+#: What a ride result may say about one step.
+RIDE_RESULTS = ("pass", "fail", "skip")
+#: The ledger `method` an imported ride result is recorded with.
+RIDE_METHOD = "ride"
+#: Where the import copies a ride's evidence: one folder per ride under the
+#: ledgers folder, named `<release>-<platform>-<started>`. The ledger lists
+#: each file in its `evidence`, with the step it backs as the note.
+RIDE_EVIDENCE_REL = "evidence"
+#: The `do` of a second or later owed part tested by one procedure step. The
+#: step's action is done once, on the first of them; repeating it would ask
+#: the rider to ride forty minutes three times for three lines of one log.
+SAME_ACTION = "Nothing new to do. Check this from what the step before showed."
+_RIDE_ID_RE = re.compile(r"^(TST-\d{2,})(?:\.(\d+))?$")
+
+
+def _now_utc() -> str:
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _procedure_ride_steps(number: int, placed: Placed, platform: str) -> list[dict]:
+    """One script step per owed part a section's procedure tests, in printed order.
+
+    A preparation step, which records nothing, and a start state are not
+    steps of their own in the script: they become the first lines of the
+    next owed step's `do`, so the rider still does them, in order.
+    """
+    procedure = placed.procedure
+    groups, printed = _procedure_checks(placed, platform)
+    source = {shown: n for n, shown in printed.items()}
+    out: list[dict] = []
+    pending: list[str] = []
+    for group in groups:
+        if group["start"]:
+            pending.append("Start: %s" % group["start"])
+        for check in group["checks"]:
+            if check["start"]:
+                pending.append("Start: %s" % check["start"])
+            if check["preparation"]:
+                pending.append(check["action"])
+                continue
+            step_number = source[check["number"]]
+            setup = [item.id for item in procedure.setup_items
+                     if item.id and (not item.platforms or not platform or platform in item.platforms)
+                     and (not item.steps or step_number in item.steps)]
+            for i, tag in enumerate(check["tags"]):
+                out.append({
+                    "id": tag, "check": tag.split(".")[0], "section": number,
+                    "heading": group["title"] or placed.section.name,
+                    "setup": setup,
+                    "do": "\n".join(pending + [check["action"]]) if i == 0 else SAME_ACTION,
+                    "expect": [line["text"] for line in check["expected"] if tag in line["tags"]],
+                })
+            pending = []
+    return out
+
+
+def _row_ride_steps(number: int | None, rows: list[Check], platform: str) -> list[dict]:
+    """One script step per owed part of each check a section prints on its own.
+
+    The check's Setup, when it has one, becomes the first line of its first
+    step's `do`: a check note's setup is prose, and `setup` holds only the
+    names a procedure's `setup_for` gives.
+    """
+    out: list[dict] = []
+    for check in rows:
+        for i, part in enumerate(check.hand_parts(platform)):
+            do = step_text(check, part[1])
+            if i == 0 and check.setup.strip():
+                do = "Setup: %s\n%s" % (_WS_RE.sub(" ", check.setup).strip(), do)
+            display = expect_display(check)
+            out.append({
+                "id": _tag_name(part), "check": check.id, "section": number,
+                "heading": check.title or check.id, "setup": [], "do": do,
+                "expect": [shown_expected(display.get(key, key))
+                           for key in expect_for(check, part[1], platform)],
+            })
+    return out
+
+
+def ride_script(sheet: ReleaseTest, commit: str = "", generated: str = "") -> dict:
+    """The ride script: the sheet's owed steps, in its order, for an app to run.
+
+    Its shape is `release-ride-script/1` (SCHEMAS.md, "The ride script and
+    its results").
+    `screens` is every screen this release changed on the platform, each
+    with its what-changed lines; a screen listed only to show where a changed
+    child opens from is left out, since nothing changed on it.
+    """
+    steps: list[dict] = []
+    for number, placed in enumerate(sheet.sections, start=1):
+        if placed.tested_from_procedure:
+            steps += _procedure_ride_steps(number, placed, sheet.platform)
+        else:
+            steps += _row_ride_steps(number, placed.rows, sheet.platform)
+    steps += _row_ride_steps(None, sheet.unplaced, sheet.platform)
+    return {
+        "format": RIDE_SCRIPT_FORMAT,
+        "release": sheet.release,
+        "platform": sheet.platform,
+        "generated": generated or _now_utc(),
+        "commit": commit,
+        "budget": sheet.budget,
+        "steps": steps,
+        "screens": [{"surface": screen.id, "name": screen.title,
+                     "changes": [text for _cid, _title, text in screen.sentences if text]}
+                    for screen in sheet.what_changed if screen.sentences],
+    }
+
+
+def head_commit(repo_root: Path) -> str:
+    """The repo's git HEAD, abbreviated, or "" outside a git checkout."""
+    code, out = _git(repo_root, "rev-parse", "--short", "HEAD")
+    return out.strip() if code == 0 else ""
+
+
+def ledger_text(data: dict) -> str:
+    """A ledger as the cockpit writes one: each entry and evidence item on its own line.
+
+    The same layout as `ledger.Ledger.to_json` in project-os-cockpit, so an
+    import shows in a diff as the lines it added and nothing else. Keys this
+    script does not know are kept, in their order.
+    """
+    head = [(k, v) for k, v in data.items() if k not in ("entries", "evidence")]
+    lines = ["  %s: %s," % (json.dumps(k), json.dumps(v, ensure_ascii=False)) for k, v in head]
+
+    def block(name: str, rows: list, last: bool) -> list[str]:
+        if not rows:
+            return ['  "%s": []' % name + ("" if last else ",")]
+        out = ['  "%s": [' % name]
+        for i, row in enumerate(rows):
+            out.append("    " + json.dumps(row, ensure_ascii=False) + ("" if i == len(rows) - 1 else ","))
+        out.append("  ]" + ("" if last else ","))
+        return out
+
+    lines += block("entries", list(data.get("entries") or []), False)
+    lines += block("evidence", list(data.get("evidence") or []), True)
+    return "{\n" + "\n".join(lines) + "\n}\n"
+
+
+@dataclass
+class RideImport:
+    """What one results file adds to a ledger, worked out before anything is written."""
+
+    platform: str
+    ledger: Path
+    entries: list[dict] = field(default_factory=list)
+    evidence: list[dict] = field(default_factory=list)
+    #: `(source file, destination file)` for each evidence file to copy.
+    copies: list[tuple[Path, Path]] = field(default_factory=list)
+    #: `check -> why it stays owed`, for checks the ride did not finish.
+    owed: dict[str, str] = field(default_factory=dict)
+    #: Lines about results that were not used, and why.
+    ignored: list[str] = field(default_factory=list)
+    #: `(surface, note)` for each changed screen the ride marked failed.
+    failed_screens: list[tuple[str, str]] = field(default_factory=list)
+    notices: list[str] = field(default_factory=list)
+
+
+def _results_problem(raw, platform: str) -> str:
+    """Why a results file cannot be imported, or ""."""
+    if not isinstance(raw, dict):
+        return "the results file is not a JSON object"
+    if raw.get("format") != RIDE_RESULTS_FORMAT:
+        return "the results file says format %r; this script reads %s" % (
+            raw.get("format"), RIDE_RESULTS_FORMAT)
+    if _text(raw.get("platform")) != platform:
+        return ("the results file is for platform %r and the import was asked for %r"
+                % (raw.get("platform"), platform))
+    if not _text(raw.get("by")):
+        return "the results file names nobody in `by`, and a ledger entry needs an author"
+    build = raw.get("build")
+    if (not isinstance(build, dict) or not _text(build.get("versionName"))
+            or _text(build.get("versionCode")) == ""):
+        return "the results file has no `build` with a versionName and a versionCode"
+    if not isinstance(raw.get("steps"), list):
+        return "the results file has no `steps` list"
+    for step in raw["steps"]:
+        if not isinstance(step, dict) or not _RIDE_ID_RE.match(_text(step.get("id"))):
+            return "a step in the results file has no usable id, such as TST-0034.2: %r" % (step,)
+        if step.get("result") not in RIDE_RESULTS:
+            return ("step %s has result %r; a ride result is %s"
+                    % (step.get("id"), step.get("result"), ", ".join(RIDE_RESULTS)))
+        if not isinstance(step.get("evidence", []), list):
+            return "step %s lists its evidence as something other than a list" % step.get("id")
+    if not isinstance(raw.get("screens", []), list):
+        return "the results file lists its screens as something other than a list"
+    return ""
+
+
+def _ride_date(raw: dict) -> str:
+    """The date the entries carry: the ride's finish, else its start."""
+    for key in ("finished", "started"):
+        value = _text(raw.get(key))[:10]
+        if _usable_date(value):
+            return value
+    return date.today().isoformat()
+
+
+def plan_ride_import(repo_root: Path, results_path: Path, platform: str) -> RideImport:
+    """Work out the ledger entries a results file adds (SCHEMAS.md, "The ride script and its results").
+
+    One entry per check the platform still owes. Every owed step passed is a
+    `pass`. Any failed step is a `fail`, with the step notes as its reason.
+    A step skipped, or missing from the file, with none failed, adds nothing,
+    so the check stays owed. A result for a check or step nothing owes is
+    named and ignored.
+    """
+    try:
+        raw = json.loads(results_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ReleaseTestError("%s is not readable as JSON -- %s" % (results_path, exc)) from None
+    problem = _results_problem(raw, platform)
+    if problem:
+        raise ReleaseTestError("%s: %s" % (results_path, problem))
+    read = read_repo(repo_root, platform)
+    ledger_dir = read.docs_root / LEDGERS_REL
+    plan = RideImport(platform=platform, ledger=ledger_dir / ("WORKING-%s.json" % platform))
+    if plan.ledger.is_file():
+        existing = json.loads(plan.ledger.read_text(encoding="utf-8"))
+        if _text(existing.get("sealed")):
+            raise ReleaseTestError("%s is sealed and cannot be added to" % plan.ledger)
+    else:
+        existing = {}
+    owed = {c.id: c for c in owed_checks(read.checks, read.events, platform)}
+    when = _ride_date(raw)
+    build = raw["build"]
+    build_text = "%s (%s)" % (_text(build.get("versionName")), _text(build.get("versionCode")))
+    by = _text(raw.get("by"))
+    release = _text(raw.get("release"))
+    started = re.sub(r"[^0-9A-Za-z]", "", _text(raw.get("started"))) or when.replace("-", "")
+    folder = ledger_dir / RIDE_EVIDENCE_REL / ("%s-%s-%s" % (release or "ride", platform, started))
+    already = {(_text(e.get("check")), _text(e.get("date")), entry_result(e), _text(e.get("build")))
+               for e in existing.get("entries") or [] if isinstance(e, dict)
+               and _text(e.get("method")) == RIDE_METHOD}
+    head = head_commit(repo_root)
+    script_commit = _text(raw.get("script_commit"))
+    if script_commit and head and not (head.startswith(script_commit) or script_commit.startswith(head)):
+        plan.notices.append(
+            "the ride script was written at %s and the repo is now at %s, so the owed "
+            "steps may have changed since; each result is read against what is owed now"
+            % (script_commit, head))
+
+    by_check: dict[str, list[dict]] = {}
+    for step in raw["steps"]:
+        found = _RIDE_ID_RE.match(_text(step["id"]))
+        by_check.setdefault(found.group(1), []).append(dict(step, _part=(found.group(1), found.group(2) or "")))
+    for check_id, results in by_check.items():
+        check = owed.get(check_id)
+        if check is None:
+            plan.ignored.append(
+                "%s: %s" % (check_id, "not owed on %s any more" % platform if check_id in read.checks
+                            else "no live acceptance check has this id"))
+            continue
+        parts = check.hand_parts(platform)
+        mine = {}
+        for result in results:
+            if result["_part"] in parts:
+                mine[result["_part"]] = result
+            else:
+                plan.ignored.append("%s: not a step %s owes by hand on %s"
+                                    % (_text(result["id"]), check_id, platform))
+        failed = [mine[p] for p in parts if p in mine and mine[p]["result"] == "fail"]
+        if failed:
+            outcome = "fail"
+            reason = "; ".join("%s: %s" % (_text(r["id"]), _text(r.get("note"))
+                                           or "failed in the ride, with no note") for r in failed)
+        elif all(p in mine and mine[p]["result"] == "pass" for p in parts):
+            outcome, reason = "pass", ""
+        else:
+            left = [_tag_name(p) for p in parts if p not in mine or mine[p]["result"] != "pass"]
+            plan.owed[check_id] = "%s not passed in the ride" % ", ".join(left)
+            continue
+        if (check_id, when, outcome, build_text) in already:
+            plan.ignored.append("%s: this ride's %s is already in %s" % (check_id, outcome, plan.ledger.name))
+            continue
+        entry = {"check": check_id, "result": outcome, "date": when, "method": RIDE_METHOD,
+                 "by": by, "build": build_text}
+        if reason:
+            entry["reason"] = reason
+        plan.entries.append(entry)
+        for part in parts:
+            result = mine.get(part)
+            for name in (result or {}).get("evidence", []) or []:
+                name = _text(name)
+                relative = Path(name)
+                if not name or relative.is_absolute() or ".." in relative.parts:
+                    plan.ignored.append("%s: evidence %r is not a file name beside the results file"
+                                        % (_text(result["id"]), name))
+                    continue
+                source = results_path.parent / relative
+                if not source.is_file():
+                    plan.ignored.append("%s: evidence %s is not beside the results file"
+                                        % (_text(result["id"]), name))
+                    continue
+                target = folder / relative
+                plan.copies.append((source, target))
+                plan.evidence.append({"check": check_id, "date": when,
+                                      "ref": target.relative_to(repo_root).as_posix(),
+                                      "note": _text(result["id"])})
+    for screen in raw.get("screens") or []:
+        if isinstance(screen, dict) and screen.get("result") == "fail":
+            plan.failed_screens.append((_text(screen.get("surface")), _text(screen.get("note"))))
+    return plan
+
+
+def apply_ride_import(plan: RideImport) -> None:
+    """Copy the evidence and add the entries to the working ledger."""
+    if not plan.entries:
+        return
+    data = (json.loads(plan.ledger.read_text(encoding="utf-8")) if plan.ledger.is_file()
+            else {"platform": plan.platform})
+    data["entries"] = list(data.get("entries") or []) + plan.entries
+    data["evidence"] = list(data.get("evidence") or []) + plan.evidence
+    for source, target in plan.copies:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
+    plan.ledger.parent.mkdir(parents=True, exist_ok=True)
+    plan.ledger.write_text(ledger_text(data), encoding="utf-8")
+
+
+def report_ride_import(plan: RideImport, repo_root: Path, dry_run: bool) -> list[str]:
+    """What the import added, or would add, as lines for a person."""
+    try:
+        shown = plan.ledger.relative_to(repo_root).as_posix()
+    except ValueError:
+        shown = str(plan.ledger)
+    out = ["release-test --import-ride (%s): %s %d %s to %s%s"
+           % (plan.platform, "would add" if dry_run else "added", len(plan.entries),
+              _plural(len(plan.entries), "entry", "entries"), shown,
+              " (dry run, nothing written)" if dry_run else "")]
+    for entry in plan.entries:
+        out.append("  %s %s%s" % (entry["check"], entry["result"],
+                                  ": %s" % entry["reason"] if entry.get("reason") else ""))
+    if plan.copies:
+        out.append("  %s %d evidence %s to %s" % (
+            "would copy" if dry_run else "copied", len(plan.copies), _plural(len(plan.copies), "file"),
+            plan.copies[0][1].parent.relative_to(repo_root).as_posix()))
+    for check_id, why in sorted(plan.owed.items()):
+        out.append("  stays owed: %s (%s)" % (check_id, why))
+    for line in plan.ignored:
+        out.append("  ignored: %s" % line)
+    for notice in plan.notices:
+        out.append("  note: %s" % notice)
+    if plan.failed_screens:
+        out.append("Changed screens the ride marked failed. Each needs an issue; the ledger has no entry for a screen:")
+        out.extend("  %s%s" % (surface or "(no surface named)", ": %s" % note if note else "")
+                   for surface, note in plan.failed_screens)
+    return out
 
 
 # ----------------------------------------------------------- the length check
@@ -3984,6 +4568,14 @@ def main(argv=None):
     ap.add_argument("--quiet", action="store_true",
                     help="with --check, print remarks only when something is "
                          "also wrong")
+    ap.add_argument("--ride-script", default="", metavar="FILE",
+                    help="write the owed steps as a ride script an app can run "
+                         "(release-ride-script/1) instead of printing a sheet")
+    ap.add_argument("--import-ride", default="", metavar="FILE",
+                    help="add a ride's results file (release-ride-results/1) to "
+                         "the platform's working ledger, one entry per check")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="with --import-ride, print what would be added and write nothing")
     ap.add_argument("--repo-root", default=".")
     args = ap.parse_args(argv)
 
@@ -3993,6 +4585,19 @@ def main(argv=None):
         return 2
     if args.check:
         return run_check(root, args.platform, quiet=args.quiet)
+    if args.import_ride:
+        if not args.platform:
+            print("release-test: --platform required to import a ride", file=sys.stderr)
+            return 2
+        try:
+            plan = plan_ride_import(root, Path(args.import_ride), args.platform)
+        except ReleaseTestError as exc:
+            print("release-test: %s" % exc, file=sys.stderr)
+            return 2
+        if not args.dry_run:
+            apply_ride_import(plan)
+        print("\n".join(report_ride_import(plan, root, args.dry_run)))
+        return 0
     missing = [name for name, value in (("--release", args.release),
                                         ("--platform", args.platform)) if not value]
     if missing:
@@ -4004,6 +4609,15 @@ def main(argv=None):
     except ReleaseTestError as exc:
         print("release-test: %s" % exc, file=sys.stderr)
         return 2
+    if args.ride_script:
+        script = ride_script(sheet, commit=head_commit(root))
+        target = Path(args.ride_script)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(script, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print("release-test: %d %s from %d owed %s -> %s"
+              % (len(script["steps"]), _plural(len(script["steps"]), "step"),
+                 sheet.rows, _plural(sheet.rows, "check"), target))
+        return 0
     text = (json.dumps(payload(sheet), indent=2, ensure_ascii=False) + "\n"
             if args.json else render(sheet))
     if args.out:

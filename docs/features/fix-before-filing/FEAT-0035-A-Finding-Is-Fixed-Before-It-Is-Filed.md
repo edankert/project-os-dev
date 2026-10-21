@@ -10,7 +10,7 @@ updated: 2026-09-19
 source: ["[[REFERENCE-REVIEW-COST-AND-ISSUE-DEBT]]", "Edwin, 2026-09-18: issues 'not reported by me or written in a way that I can understand ... not fixed as part of the features they belong to and often they are marked as needing my input'"]
 goal: "A defect found in a feature's own code is fixed before the feature closes. Only what needs a decision, lies outside the feature, or is too big is filed. Each issue says what a user would notice, and a question for Edwin reaches him in chat with a recommendation."
 requirements: []
-tasks: [TASK-0132, TASK-0133, TASK-0144, TASK-0197]
+tasks: [TASK-0132, TASK-0133, TASK-0144, TASK-0197, TASK-0208]
 release: ""
 acceptance_exception: "A process rule with no product surface. It is checked by what the next five features close with, as PHASE-0007's exit criteria state."
 reviewed_by: ["model:claude-opus-5 (reviewer A)", "model:claude-opus-5 (reviewer B)", "model:claude-opus-5 (round 2)"]

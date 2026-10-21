@@ -20,7 +20,7 @@ setup() {
   # As a fresh clone of a repo with core.fileMode off has it (ISS-0103).
   chmod -x "$1/tools/scripts/validate-docs.sh"
   sed -i.bak 's/^  replace_me: true$/  replace_me: false/' "$1/SNAPSHOT.yaml"; rm -f "$1/SNAPSHOT.yaml.bak"
-  printf -- '---\ntype: "[[issue]]"\nid: ISS-0001\naliases: ["ISS-0001"]\ntitle: "A new issue"\nstatus: triage\nowner: unassigned\ncreated: 2026-09-26\nupdated: 2026-09-26\n---\n# A new issue\n' > "$1/docs/issues/ISS-0001-A-New-Issue.md"
+  printf -- '---\ntype: "[[issue]]"\nid: ISS-0001\naliases: ["ISS-0001"]\ntitle: "A new issue"\nstatus: triage\nreported_by: agent\nowner: unassigned\ncreated: 2026-09-26\nupdated: 2026-09-26\n---\n# A new issue\n' > "$1/docs/issues/ISS-0001-A-New-Issue.md"
 }
 claude_stop() { printf '{"stop_hook_active": false}' | CLAUDE_PROJECT_DIR="$1" bash "$1/tools/adapters/claude-code/hooks/close-out-check.sh" 2>/dev/null; }
 codex_stop() { printf '{"cwd": "%s", "hook_event_name": "Stop"}' "$1" | python3 "$1/tools/adapters/codex/hooks/dispatch.py" 2>/dev/null; }

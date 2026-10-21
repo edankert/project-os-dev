@@ -39,7 +39,7 @@ counters:
   REL: 0
   REQ: 37
   RISK: 6
-  TASK: 207
+  TASK: 208
   TST: 47
   WF: 3
 
@@ -212,7 +212,7 @@ items:
     FEAT-0035:
       file: docs/features/fix-before-filing/FEAT-0035-A-Finding-Is-Fixed-Before-It-Is-Filed.md
       status: done
-      tasks: [TASK-0132, TASK-0133, TASK-0144, TASK-0197]
+      tasks: [TASK-0132, TASK-0133, TASK-0144, TASK-0197, TASK-0208]
       owner: user:edwin
       phase: "[[PHASE-0007]]"
       related: [ADR-0047]
@@ -2550,12 +2550,12 @@ metrics:
     features_done: 37
     phases_total: 11
     phases_done: 8
-    tasks_total: 207
-    tasks_done: 199
+    tasks_total: 208
+    tasks_done: 200
     tests_total: 37
     tests_passing: 0
     tests_failing: 0
-    issues_open: 15
+    issues_open: 14
     issues_triage: 0
     tasks_deferred: 0
     issues_deferred: 5

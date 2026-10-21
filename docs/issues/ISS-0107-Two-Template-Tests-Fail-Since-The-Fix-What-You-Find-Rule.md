@@ -3,11 +3,11 @@ type: "[[issue]]"
 id: ISS-0107
 aliases: ["ISS-0107"]
 title: "Two of the template's own tests fail since the fix-what-you-find rule: LIFECYCLE.md is over its word budget, and the filing bar's \"40 tool calls\" reads as a restated review budget"
-status: open
+status: fixed
 phase: ""
 owner: user:edwin
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-21
 source: ["Found 2026-10-14 by the session building TASK-0199 in the template, running every tools/scripts/test-*.sh before committing; both fail on a clean checkout of project-os 30e2486"]
 reported_by: agent
 question: "Which to do for each: cut words from LIFECYCLE.md or raise REQ-0026's 1,000-word budget; and reword QUALITY.md's filing bar or narrow test-review-budget.sh?"
@@ -40,5 +40,14 @@ Both scripts pass in the template, and the template's CI goes green.
 
 ## Next Actions
 
-- [ ] Edwin decides each question in the frontmatter.
-- [ ] Apply the decisions in the template, run `tools/scripts/test-word-budgets.sh` and `tools/scripts/test-review-budget.sh`, and set this issue to `fixed`.
+- [x] Edwin decides each question in the frontmatter. On 2026-10-21 he said "fix the issue and then push project-os-dev", after the recommendation to cut words and reword the filing bar.
+- [x] Apply the decisions in the template, run `tools/scripts/test-word-budgets.sh` and `tools/scripts/test-review-budget.sh`, and set this issue to `fixed`.
+
+## Resolution
+
+Fixed in project-os 2bb7976, 2026-10-21, as recommended: cut words, and reword the filing bar.
+
+- **`LIFECYCLE.md` is 999 words**, and `.cursor/rules/lifecycle.mdc` is 1,019. "Scope of a change" now names `QUALITY.md` once for its three rules instead of three times. Two sentences that restated a rule stated elsewhere are gone. One was "Never hand-copy a status into the snapshot"; the same bullet already says a status is written once, in the note. The other was Execution's "Start code changes only once the planning artifacts exist, and keep `focus` on what is being worked"; Preflight already says both. No rule was dropped, and `test-pause-rule.sh`'s checks on the file's wording still pass.
+- **The filing bar now says "more than about forty tool calls (a size, not the review budget)".** `test-review-budget.sh` passes and was not changed, so it still catches the review budget restated anywhere.
+
+Running every template test for this fix found a third failure: `test-stop-sync.sh`, broken on 2026-10-19 by a validator rule's date, not by any change. It is fixed as [[TASK-0208-The-Stop-Hook-Test-Issue-Names-Its-Reporter|TASK-0208]]. All 34 template script tests pass, and `claude plugin validate` and `claude plugin test` pass on the plugin (16 tests) with Claude Code 2.1.303.

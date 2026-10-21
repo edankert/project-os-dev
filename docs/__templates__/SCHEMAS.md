@@ -4,7 +4,7 @@ id: TEMPLATES-SCHEMAS
 status: active
 owner: team:docs
 created: 2026-01-27
-updated: 2026-07-21
+updated: 2026-10-21
 tags: [templates, schema]
 ---
 
@@ -246,6 +246,8 @@ An acceptance test is the thing a person tests by hand. It carries the fields be
 - ~~`tier`~~ — **removed (ADR-0034).** There is no tier system: a check's test kind comes from `command:`, `kind:` and `covers:` (`tools/instructions/TESTING.md`, "The three test kinds"). Readers still accept the field on legacy notes and ignore it.
 - (optional) `kind` (string): `feature` or `regression`. It sets the check's test kind in place of the one `covers:` gives, and `covers:` keeps its `ISS-*` for traceability. Leave it out unless the two differ, such as a check that covers an `ISS-*` but states current behaviour. A check with a `command:` is automated and must not carry it. The validator refuses any other value, and a `kind:` beside a `command:` (CHECK-KIND; `tools/instructions/TESTING.md`, "The three test kinds"; project-os-dev ISS-0104).
 - ~~`burden`~~, ~~`migrated_from`~~, ~~`merged_from`~~ — **removed (ISS-0233).** Provenance of migrations that are finished, plus a field empty on every check in the fleet. Git holds the first two, with the shas ADR-0030 and ADR-0031 name; a field is the wrong place for a fact already immutable somewhere better.
+- (optional) `commands` (map): a ledger platform to the command that tests the check on that platform — `commands: {android: "cd android && ./gradlew :app:testDebugUnitTest --tests X"}`. A check is automated on a platform when it has `command:`, which covers every platform, or a `commands:` entry for that platform. It then leaves that platform's release test and owed count, and stays owed on the others. A check carries `command:` or `commands:`, never both. Each value is a non-empty command and each key is a platform the repo keeps a ledger for (CHECK-COMMANDS; `tools/instructions/TESTING.md`, "Release gating"; project-os-dev ISS-0108).
+- (optional) `hand_steps` (list of step numbers): on a platform a command covers, the steps under `## Steps` a person still runs — `hand_steps: [3, 5]`. There the check stays owed for those steps only: the release test prints only them, and a procedure may not cite its other steps on that platform. On a platform with no command every step is run by hand, as before. Each number must be a step of the note, and the field needs a `command:` or `commands:` (CHECK-COMMANDS). A check with `hand_steps:` lives under `docs/tests/acceptance/` even when it has a `command:` (ACCEPT-LOCATION).
 - (required) `area` (string): the human grouping — "The navigator", "Agents and sessions". One section's worth of related checks.
 - (optional) `after` (list of check ids): the checks that should have passed before this one is tested — `after: ["TST-0044"]`. Read by `tools/scripts/release-test.py` to order rows inside a section (`tools/instructions/TESTING.md`, "The release test", rule 4). It gates nothing: a check whose prerequisite has not passed still appears on the sheet and still blocks the release, it is simply printed later.
 - (optional) `readiness_for` (map): on a check no section procedure covers, a known problem per platform — `readiness_for: {ios: {kind: decision, reason: "...", issue: "ISS-0000", result: question}}`, with `kind` either `preparation` or `decision`, and an optional `result` naming the result the tester is offered, one of the seven stored values (`tools/instructions/TAXONOMY.md`, "Acceptance outcomes (the ledger's vocabulary)"). Read by `tools/scripts/release-test.py`, which prints the reason on the check's row (`tools/instructions/TESTING.md`, "The release test", rule 5). A procedure uses the same key per step. Until 2026-09-27 a check wrote it `walk_readiness_for`, which the validator now refuses (project-os-dev ADR-0050).
@@ -285,11 +287,12 @@ Where NOT used:
 
 Purpose: the one file per project that says in what order a release is tested by hand. Instantiated from `release-test.md` to `docs/tests/acceptance/RELEASE-TEST.md`, typed `[[reference]]`, resting at `active` (or `deprecated`). What a release test sheet does with it is stated once in `tools/instructions/TESTING.md`, "The release test"; this entry is the syntax alone.
 
-Frontmatter: the standing-document fields (`type`, `title`, `status`, `owner`, `created`, `updated`), plus two optional keys:
+Frontmatter: the standing-document fields (`type`, `title`, `status`, `owner`, `created`, `updated`), plus four optional keys:
 
 - (optional) `gallery` (string): a command that regenerates the project's screen gallery. The release test sheet prints it at the top of what changed, as the thing to run and compare before testing anything.
 - (optional) `length_limits` (map): overrides the length check's limits, with the keys `action` (words in an action line, default 20), `expected` (words in an expected line, default 25), `section_base` and `section_per_check` (a section's budget is `section_base` plus `section_per_check` for each printed check; defaults 300 and 40), and `error` (false makes the reports warnings; default true). Any other key, or a limit that is not a whole number above 0, fails `release-test.py --check`. What the check counts is `tools/instructions/TESTING.md`, "The release test", rule 10.
 - (optional) `quoted_lines` (string): `refused` (the default) or `warning`. A procedure line that quotes a check's expected result instead of giving its tags alone refuses the procedure; `warning` reports it and keeps the procedure, for a project still moving to tags alone. Any other value fails `release-test.py --check`. See `tools/instructions/TESTING.md`, "The release test", rule 9.
+- (optional) `hand_run_limit` (whole number, 0 or more, default 10): the most hand-run checks one platform should owe a release. Each release test sheet prints its owed hand-run checks and hand steps against it near the top, and `--json` and the ride script carry the same numbers as `budget`. Nothing refuses a sheet over it (`tools/instructions/TESTING.md`, "Release gating"; project-os-dev ISS-0108).
 
 Body: prose the tester reads once, then **one `### ` heading per section with one fenced `yaml` block under it**. The heading is the section's name as the sheet prints it. The block's keys:
 
@@ -335,6 +338,69 @@ Body:
 | the quote | Compared against the lines of the tagged check's `## Expect` section that hold on the platform being tested, after stripping list markers, platform names and collapsing whitespace. Nothing else may differ. |
 
 Any heading other than `## Setup` and `## Steps` is prose for the reader and is not parsed — `## Not covered here` is the conventional place to say which checks in the section the procedure does not yet reach.
+
+## The ride script and its results (`release-ride-script/1`, `release-ride-results/1`)
+
+Purpose: let an app take a person through the owed steps of a release test one at a time, and bring the results back into the ledger. The shapes were fixed in your-trainer FEAT-0140's plan, "Formats", and a change to one is made there first. The rules they serve are `tools/instructions/TESTING.md`, "Release gating" (project-os-dev ISS-0109).
+
+**The ride script.** `python3 tools/scripts/release-test.py --release REL-#### --platform <platform> --ride-script FILE` writes it:
+
+```json
+{
+  "format": "release-ride-script/1",
+  "release": "REL-0017",
+  "platform": "android",
+  "generated": "2026-10-21T10:00:00Z",
+  "commit": "abc1234",
+  "budget": {"limit": 10, "checks": 9, "steps": 41},
+  "steps": [
+    {"id": "TST-0034.2", "check": "TST-0034", "section": 1, "heading": "ERG on the KICKR",
+     "setup": ["kickr-awake"], "do": "Ride the three-minute block.", "expect": ["Resistance rises at each interval change."]}
+  ],
+  "screens": [
+    {"surface": "SUR-0004", "name": "History", "changes": ["A ridden intervals.icu workout shows its name, not its id."]}
+  ]
+}
+```
+
+- `steps` holds one entry per owed part (one numbered step of an owed check), in the order the sheet prints them. `id` is the part's expectation tag, `TST-0034.2`, or the bare check id for a check whose steps are not numbered. `section` is the sheet's section number, `null` for an Unplaced check.
+- `heading` is the procedure group the step sits in, or the section's name when the procedure has no groups. For a check printed on its own it is the check's title.
+- `setup` holds the names of the procedure's setup items this step needs, as `setup_for:` names them, limited to this platform by `setup_platforms:`. An item set to `all` is named on every step of its section. The app maps a name it knows to an action and shows any other name as a prompt.
+- `do` is the step's action. A preparation step, one that records nothing, is not a step of its own: its action becomes a line of the next step's `do`, and so does a group's `Start:` line. When one procedure step tests several owed parts, the first of them carries the action and the others say "Nothing new to do. Check this from what the step before showed." For a check printed on its own, `do` is its numbered step, and its first step starts with its Setup.
+- `expect` is the check's own Expect lines for that part on this platform, as the sheet prints them.
+- `screens` lists each screen the release changed on this platform, with its what-changed lines. A screen listed only to show where a changed child opens from is left out.
+- `budget` is the sheet's budget line: the owed hand-run checks, their hand steps, and the limit.
+
+**The results file.** The app writes it beside any evidence files:
+
+```json
+{
+  "format": "release-ride-results/1",
+  "release": "REL-0017",
+  "platform": "android",
+  "build": {"versionName": "2.2.0", "versionCode": 123, "buildType": "release"},
+  "script_commit": "abc1234",
+  "started": "2026-10-21T18:00:00Z",
+  "finished": "2026-10-21T18:31:00Z",
+  "by": "user:edwin",
+  "steps": [
+    {"id": "TST-0034.2", "result": "pass", "how": "person", "note": "", "evidence": []},
+    {"id": "TST-0670.1", "result": "fail", "how": "person", "note": "Strap did not come back after the power cycle.",
+     "evidence": ["TST-0670.1-screen.png", "TST-0670.1-ble.txt"]}
+  ],
+  "screens": [{"surface": "SUR-0004", "result": "pass", "note": ""}]
+}
+```
+
+A step's `result` is `pass`, `fail` or `skip`. `how` is `app` when the app checked the value itself and `person` otherwise. Each evidence name is a file beside the results file.
+
+**The import.** `python3 tools/scripts/release-test.py --import-ride FILE --platform <platform>` reads the results against what the platform owes now and adds one entry per check to `docs/releases/ledgers/WORKING-<platform>.json`, each with `method: "ride"`, `build: "<versionName> (<versionCode>)"`, the ride's finish date and `by`:
+
+- every owed step of the check passed: `result: "pass"`;
+- any owed step failed: `result: "fail"`, with each failed step's id and note as the `reason`;
+- a step skipped or missing, and none failed: no entry, so the check stays owed.
+
+The evidence files of a check that gets an entry are copied to `docs/releases/ledgers/evidence/<release>-<platform>-<started>/`, and the ledger's `evidence` list names each one, with the step it backs as its `note`. A result for a check or step the platform no longer owes is named and ignored, and so is a ride already imported. A changed screen marked `fail` is printed for an issue and gets no ledger entry. `--dry-run` prints the same report and writes nothing.
 
 ## `check.md` — removed (ADR-0031)
 
