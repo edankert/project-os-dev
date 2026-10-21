@@ -16,7 +16,7 @@ component: "instructions"
 parent: ""
 related: []
 tests: []
-tasks: ["[[TASK-0205]]"]
+tasks: ["[[TASK-0205]]", "[[TASK-0207]]"]
 ---
 
 # The release gate blocks on every hand-run check
